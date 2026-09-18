@@ -1098,12 +1098,8 @@ hash = "abd853502542de7e87f6bbe6d4f08f1185058689fe8a5b2cafafab0d2c74a2d5"
 metafile = true
 
 [[files]]
-file = "mods/EmiDungeonLoot-0.4.0+1.21.1.jar"
-hash = "f9c91468a7202b310a69066584850ed7b4d88aa192012e6ca0ebfaab866d2532"
-
-[[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "376c7d478a74ce3f31c9ee701e9780ec5e0e704df4797e3b3ac748ec4383ff27"
+hash = "39597ae93563282cadb7e9c0ac0ab1004162caabe4418b7d20d0a975bce94bba"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1244,10 +1240,6 @@ metafile = true
 file = "mods/cobbledollars.pw.toml"
 hash = "b61d3783e85f963d6235bf86e0d09a3f9e0030634654b07327600ca6b939d627"
 metafile = true
-
-[[files]]
-file = "mods/cobbleeventalerts-0.1.0-alpha.3+1.21.1.jar"
-hash = "d4c83d617b787c108155723235ba2fdf3b19af52560157c01ab83eb89c612334"
 
 [[files]]
 file = "mods/cobblefurnies.pw.toml"
@@ -1426,14 +1418,6 @@ metafile = true
 file = "mods/elevatormod.pw.toml"
 hash = "9bef602ef888f741dbd48091fe188697619acb29b9f57cadb9a0dc5b3fe55529"
 metafile = true
-
-[[files]]
-file = "mods/emimobcontrol-0.1.0-alpha.4+1.21.1.jar"
-hash = "b383259e7a1ba2da45177f6a6167da7dff9bbb71b779c7624668b1f94bde7125"
-
-[[files]]
-file = "mods/emiprotecciones-0.1.0-alpha.5.jar"
-hash = "9826574faf53ac704a49ba499a515a873e9ebd557be879bcdd7ba45df1d87634"
 
 [[files]]
 file = "mods/enchantmentlevelbreak.pw.toml"
