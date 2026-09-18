@@ -1,0 +1,16 @@
+{
+	emoteChannels: [
+		"emiilyextacy"
+	],
+	twitchGlobalEmotes: false,
+	twitchSubscriberEmotes: true,
+	bttvEmotes: false,
+	bttvChannelEmotes: true,
+	ffzEmotes: false,
+	ffzChannelEmotes: true,
+	x7tvEmotes: false,
+	x7tvChannelEmotes: true,
+	colorEmotes: false,
+	activationMode: "Required",
+	errorReporting: "Toast"
+}

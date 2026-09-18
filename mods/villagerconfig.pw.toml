@@ -1,0 +1,13 @@
+name = "VillagerConfig"
+filename = "villagerconfig-fabric-4.5.4+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/OClpEDe3/versions/sb4XIWwK/villagerconfig-fabric-4.5.4%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "b68155517a6e68ab9a71d4c73fcd9fdc556d38226a209816b7e244e08e596c9f1889c9bf6088fdd6e060c6d96959a6959a687edbee830b0dbcc34ac8aca086dc"
+
+[update]
+[update.modrinth]
+mod-id = "OClpEDe3"
+version = "sb4XIWwK"

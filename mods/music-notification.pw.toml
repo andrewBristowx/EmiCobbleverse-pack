@@ -1,0 +1,13 @@
+name = "Music Notification"
+filename = "musicnotification-fabric-3.3.1+mc1.21.1.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/A4YQgwzz/versions/7lFzffKF/musicnotification-fabric-3.3.1%2Bmc1.21.1.jar"
+hash-format = "sha512"
+hash = "cef71d5e636fd93282d1175422a065fc558013488551d9967eb3229fb506e9771cba6bf232afb7c8bbda85a540b2150254b1590354f3e7eda5e418d6cf922624"
+
+[update]
+[update.modrinth]
+mod-id = "A4YQgwzz"
+version = "7lFzffKF"

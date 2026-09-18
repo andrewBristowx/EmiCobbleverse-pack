@@ -1,0 +1,13 @@
+name = "EnchantmentLevelBreak"
+filename = "EnchantmentLevelBreak-1.21.1-Fabric-1.4.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/HZEbpmoE/versions/yAkBN9Uq/EnchantmentLevelBreak-1.21.1-Fabric-1.4.jar"
+hash-format = "sha512"
+hash = "c34c8c53b686200ad2442eb63290e8a7f6d940474bb27378f0bd859878250805b090965cbf105fe34e5a4848174e00111e98657ba3d9c2ace8f0b9feba2cba76"
+
+[update]
+[update.modrinth]
+mod-id = "HZEbpmoE"
+version = "yAkBN9Uq"

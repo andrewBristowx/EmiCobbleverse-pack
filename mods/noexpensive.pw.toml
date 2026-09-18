@@ -1,0 +1,13 @@
+name = "NoExpensive"
+filename = "NE-1.21.1-1.10.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/2nz0kJ1N/versions/HFdNcDOl/NE-1.21.1-1.10.0.jar"
+hash-format = "sha512"
+hash = "aee671ce6c1bd0e637283fbe819c8f45acd8ade1f8cfe36a5a63cbaf7d4e919f040d4578bd6a7023d28b945c9ac539d88f11201412c3ee5f4c0aa8d8626035df"
+
+[update]
+[update.modrinth]
+mod-id = "2nz0kJ1N"
+version = "HFdNcDOl"

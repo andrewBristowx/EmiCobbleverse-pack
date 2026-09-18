@@ -1,0 +1,13 @@
+name = "Cobblemon Catch Rate Display"
+filename = "catchrate-display-fabric-2.8.22.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/vADO40xp/versions/4MuGKLQg/catchrate-display-fabric-2.8.22.jar"
+hash-format = "sha512"
+hash = "1c92ca05ff0defbc573f0abb15e0e9c0a6d0a7189384f15e01884d019aa93eef2107ae08eedfe37c8a2ef84c7972e87e83e63d507e352ec9817e5d032a3298aa"
+
+[update]
+[update.modrinth]
+mod-id = "vADO40xp"
+version = "4MuGKLQg"

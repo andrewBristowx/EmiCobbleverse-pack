@@ -1,0 +1,13 @@
+name = "Only Bottle Caps"
+filename = "Only Bottle Caps-1.4.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/tDRRddpZ/versions/xkaDeFly/Only%20Bottle%20Caps-1.4.0.jar"
+hash-format = "sha512"
+hash = "2913705de5ac9dd17def117cd199422a5960f77057d6ca41e61d007830742dc220f35aae21c80c23c53dbad76166dedbb88164a8b59b0b9370fe90618cd334c7"
+
+[update]
+[update.modrinth]
+mod-id = "tDRRddpZ"
+version = "xkaDeFly"

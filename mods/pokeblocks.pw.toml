@@ -1,0 +1,13 @@
+name = "Pokeblocks"
+filename = "pokeblocks-1.5.0-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hnOfcjSq/versions/qlp66lU8/pokeblocks-1.5.0-1.21.1.jar"
+hash-format = "sha512"
+hash = "470e811c40f1e37ec6b405139a212a053598b554f2845108a75df575ec5d6c29e89afb309222b54a6724aab4e7fb25df41a1357d0068fb16ba591cbe6077cdfa"
+
+[update]
+[update.modrinth]
+mod-id = "hnOfcjSq"
+version = "qlp66lU8"

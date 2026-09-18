@@ -1,0 +1,13 @@
+name = "Lenient Death"
+filename = "lenientdeath-1.2.5+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Bfi1KBJV/versions/FUbtsgt9/lenientdeath-1.2.5%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "5129657af70a8c710481ab59989952d5ea190ab70fe7547379a2a09241f7935c1f56d743f83a7490aab5f0c257a7eb1a40eb068d4a5d2f19081b2f8adc55521a"
+
+[update]
+[update.modrinth]
+mod-id = "Bfi1KBJV"
+version = "FUbtsgt9"

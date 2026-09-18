@@ -1,0 +1,13 @@
+name = "Advancement Disable"
+filename = "advancementdisable-fabric-1.0.1+1.21.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/XIsVTmcm/versions/Txi9EkP3/advancementdisable-fabric-1.0.1%2B1.21.jar"
+hash-format = "sha512"
+hash = "c31cda01802ee7f9274b9eea504249cdaf60fa5d3edff52fe1ba7db6cf759cfd70423c1433b8f010bc785aeac8b64ecebd40920cd6bac554e37ea328b142005a"
+
+[update]
+[update.modrinth]
+mod-id = "XIsVTmcm"
+version = "Txi9EkP3"

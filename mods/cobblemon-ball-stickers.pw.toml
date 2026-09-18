@@ -1,0 +1,13 @@
+name = "Cobblemon: Ball Stickers"
+filename = "ball-stickers-1.3.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/z1jD2AYf/versions/z6lX3Ha9/ball-stickers-1.3.1.jar"
+hash-format = "sha512"
+hash = "365a43cdf7b7efbd0e82122571cdad1fc88d7be710c5c11d4bcfa0c69edd0dc260a0d1c86743f7e8a66a8f57647abe565c3545f983ff438a64caa3eb940ae633"
+
+[update]
+[update.modrinth]
+mod-id = "z1jD2AYf"
+version = "z6lX3Ha9"

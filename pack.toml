@@ -1,0 +1,17 @@
+name = "EmiCobbleverse"
+author = "SomitadePony"
+version = "1.0.0"
+pack-format = "packwiz:1.1.0"
+
+[index]
+file = "index.toml"
+hash-format = "sha256"
+hash = "7f43416a20df49d008e86571a300f0860e0bd3a1b0e6f59ca40db61f7f6411ce"
+
+[versions]
+fabric = "0.19.3"
+minecraft = "1.21.1"
+
+[options]
+acceptable-game-versions = ["1.21"]
+datapack-folder = "world/datapacks"

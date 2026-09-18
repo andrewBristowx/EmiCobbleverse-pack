@@ -1,0 +1,13 @@
+name = "Carved Wood"
+filename = "Carved Wood-fabric-1.21.1-1.9.8-B.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/WuwijfrW/versions/LdlaVUmN/Carved%20Wood-fabric-1.21.1-1.9.8-B.jar"
+hash-format = "sha512"
+hash = "995772193bb10b5fbfafdd9d7e49687d297a76d2d0d1cdf197c672e0dcabe1a7e6e4bbab2558a3a913aadfa4d197fafbf1ddbcc5cd256fb8ef6e12f8ef48cfda"
+
+[update]
+[update.modrinth]
+mod-id = "WuwijfrW"
+version = "LdlaVUmN"

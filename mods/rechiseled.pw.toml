@@ -1,0 +1,13 @@
+name = "Rechiseled"
+filename = "rechiseled-1.2.4-fabric-mc1.21.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/B0g2vT6l/versions/Whwd5n82/rechiseled-1.2.4-fabric-mc1.21.jar"
+hash-format = "sha512"
+hash = "75d8bb248863221aa957838a1cc386162e72319b33adb2fe104057246d4868bbd107605635bbb5cab39b19a8dbdab584205c9c9c45fc6d569a90cd5ae15cd9a6"
+
+[update]
+[update.modrinth]
+mod-id = "B0g2vT6l"
+version = "Whwd5n82"

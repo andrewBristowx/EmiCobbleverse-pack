@@ -1,0 +1,13 @@
+name = "Cobblemon GTS"
+filename = "Gts-2.5.1-fabric.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/UTjx5ypK/versions/kIWh0VKN/Gts-2.5.1-fabric.jar"
+hash-format = "sha512"
+hash = "742509605aa6747a9be447aee85a81e1748fe930cc773229d7cdb43ebc320bab913663b823284945c6da758aa4e211c829d6cf4d5c8f355393b45a0ae434d281"
+
+[update]
+[update.modrinth]
+mod-id = "UTjx5ypK"
+version = "kIWh0VKN"

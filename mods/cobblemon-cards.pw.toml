@@ -1,0 +1,13 @@
+name = "Cobblemon Cards"
+filename = "cobblemon-cards-fabric-1.0.4.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/9asBGJMf/versions/nL5PnGe6/cobblemon-cards-fabric-1.0.4.jar"
+hash-format = "sha512"
+hash = "1a18e40f1803daa4dd5d3fbdd96f068f60fb2f3b2c39ca18c64112d5651e5adb4267522bba36054f4a02365e27b51665f0d20720d7ee6a6247b4d7b559aa22d4"
+
+[update]
+[update.modrinth]
+mod-id = "9asBGJMf"
+version = "nL5PnGe6"

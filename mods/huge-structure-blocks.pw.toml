@@ -1,0 +1,13 @@
+name = "Huge Structure Blocks"
+filename = "huge-structure-blocks-fabric-1.1.6.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/AMLtKGdJ/versions/jZrAT0D5/huge-structure-blocks-fabric-1.1.6.jar"
+hash-format = "sha512"
+hash = "1dc8769007e3f41010e9fbe53c2f39669a67b75b74bac27b780493f07184c0a62c8699dd624108229e4e577ff1a5a90cceb5c951602f59431e2f3de7e7bc19ff"
+
+[update]
+[update.modrinth]
+mod-id = "AMLtKGdJ"
+version = "jZrAT0D5"

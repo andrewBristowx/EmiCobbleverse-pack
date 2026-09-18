@@ -1,0 +1,13 @@
+name = "TMCraft"
+filename = "tmcraft-1.4.18+1.7.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/HU6mkUZs/versions/RYBI5bnM/tmcraft-1.4.18%2B1.7.3.jar"
+hash-format = "sha512"
+hash = "39fdb210d5a822ef851237e2a7a33eea23f67c210618098587d6a022d72afc33cd52217a3fbae8336353e2d4792510774d15acc5e1073df82437a9f9d9490ff5"
+
+[update]
+[update.modrinth]
+mod-id = "HU6mkUZs"
+version = "RYBI5bnM"

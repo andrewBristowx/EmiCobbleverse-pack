@@ -1,0 +1,13 @@
+name = "MobsBeGone"
+filename = "MobsBeGone-0.0.9.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hXvXSxxg/versions/ZGbHcluC/MobsBeGone-0.0.9.jar"
+hash-format = "sha512"
+hash = "79152cb0ae938ff339145aa5b16e4d72415c26ac8691f35504c5aeb4f17237a1c1df1ea5a9095952a852e4e1e8896aa24aeb9ef67eae71acd89d5be9b28cc605"
+
+[update]
+[update.modrinth]
+mod-id = "hXvXSxxg"
+version = "ZGbHcluC"

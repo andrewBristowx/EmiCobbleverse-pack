@@ -1,0 +1,7 @@
+.git/
+.gitignore
+.gitattributes
+.packwizignore
+README.md
+PUBLICAR-EN-GITHUB.bat
+ACTUALIZAR-PACK.bat

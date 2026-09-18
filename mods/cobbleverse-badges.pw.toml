@@ -1,0 +1,13 @@
+name = "COBBLEVERSE: Badges & Trophies"
+filename = "CobbleverseBadges-1.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/PHT3Zj0r/versions/3aQ0cMqp/CobbleverseBadges-1.3.jar"
+hash-format = "sha512"
+hash = "c5ca78e885defa54d5cc530a3ed80e66c083cfc27c694d385a495ffd3d9506ed64c17ca2697599756d38803dfdbf099f4005f0fc231db6f8db3a3fb8f4ff76b8"
+
+[update]
+[update.modrinth]
+mod-id = "PHT3Zj0r"
+version = "3aQ0cMqp"

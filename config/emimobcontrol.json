@@ -1,0 +1,18 @@
+{
+  "cleanupEnabled": true,
+  "cleanupIntervalMinutes": 15,
+  "cleanupMinimumPlayerDistance": 64,
+  "removeHostileMobs": true,
+  "removePassiveMobs": false,
+  "protectNamedMobs": true,
+  "protectTamedMobs": true,
+  "protectLeashedMobs": true,
+  "protectPersistentMobs": true,
+  "protectVillagers": true,
+  "excludedEntityIds": [
+    "minecraft:villager",
+    "minecraft:wandering_trader",
+    "minecraft:iron_golem",
+    "minecraft:snow_golem"
+  ]
+}

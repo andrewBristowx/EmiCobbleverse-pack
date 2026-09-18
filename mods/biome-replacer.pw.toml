@@ -1,0 +1,13 @@
+name = "Biome Replacer"
+filename = "biomereplacer-3.1-hippo-fabric.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/DAXbR0Wj/versions/yWEYAFRu/biomereplacer-3.1-hippo-fabric.jar"
+hash-format = "sha512"
+hash = "4b3e0d0b5e47e4883b099b46157f2c723f3f890810a1ec524fb7e23612d0949a22037259f90747d78e3cae11e8d8116ff4153182a31026edddaedf348e992eab"
+
+[update]
+[update.modrinth]
+mod-id = "DAXbR0Wj"
+version = "yWEYAFRu"

@@ -1,0 +1,13 @@
+name = "LumyREI"
+filename = "LumyREI-1.1.3.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/FVADf9wU/versions/PnYguaC2/LumyREI-1.1.3.jar"
+hash-format = "sha512"
+hash = "6433ffe3a37e60692bf2d02009b202e317b0fa08a2f743d0ff15abae40547ebbb8510ebb667642d41fc11b8bbc07b11ad2e6a089cf2d046aa1e75c6f58689873"
+
+[update]
+[update.modrinth]
+mod-id = "FVADf9wU"
+version = "PnYguaC2"

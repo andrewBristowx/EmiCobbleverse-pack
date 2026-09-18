@@ -1,0 +1,13 @@
+name = "CobblemonOptimizer"
+filename = "CobbleOptimizer-4.8.0.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/qPJLoYyi/versions/D78ayY4V/CobbleOptimizer-4.8.0.jar"
+hash-format = "sha512"
+hash = "7da9fbf2aa52e9fa4e877e722cbd020135f4c8bfa4b38d41bb461eb7463861602f5a518890cbe6ff056950b91f1749d72930c8467633d279d1568fa21d5b427a"
+
+[update]
+[update.modrinth]
+mod-id = "qPJLoYyi"
+version = "D78ayY4V"
