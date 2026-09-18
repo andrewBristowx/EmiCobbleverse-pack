@@ -1,13 +1,13 @@
 version:3955
-biomeBlendRadius:3
+biomeBlendRadius:2
 enableVsync:true
-entityShadows:true
+entityShadows:false
 fov:0.25
 gamma:1.0
 guiScale:3
-maxFps:260
+maxFps:120
 renderDistance:8
-simulationDistance:8
+simulationDistance:6
 screenEffectScale:0.65
 operatorItemsTab:true
 realmsNotifications:false
@@ -22,3 +22,7 @@ telemetryOptInExtra:false
 onboardAccessibility:false
 soundCategory_music:0.2834286971830985
 modelPart_cape:false
+lang:es_mx
+mipmapLevels:2
+particles:1
+entityDistanceScaling:0.75
