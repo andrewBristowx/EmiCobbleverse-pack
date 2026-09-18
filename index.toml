@@ -246,15 +246,18 @@ hash = "829ec0bf5e127cfe4534864f285163d6a585d05cc0539884b053fd04fbc66232"
 
 [[files]]
 file = "config/defaultoptions/keybindings.txt"
-hash = "e15b879dc5a397502a9edef319c18040e8f19a6886010d1a1d4736afb1d54b94"
+hash = "2a9dac5b9b37ce7decda324ddc30893079e9db78708189a267d7884d11496abe"
+preserve = true
 
 [[files]]
 file = "config/defaultoptions/options.txt"
 hash = "86a4d016188dac65a059d98e9b26572d1a3d3a2d56989309b550151d4bc8f059"
+preserve = true
 
 [[files]]
 file = "config/defaultoptions/servers.dat"
 hash = "befebf3a0de04b5c7be065e934dc54f3693fbaa86e2bd6dbaca46284aceb25df"
+preserve = true
 
 [[files]]
 file = "config/dynamic_fps.json"
@@ -1045,6 +1048,51 @@ file = "datapacks/extra/Terralith-DP.zip"
 hash = "d0f5b0f88152d494cb51c6c06f2b5e52617df9860b2f383d00c85338d81ab164"
 
 [[files]]
+file = "journeymap/config/6.0/addons/addon.cobblemon.config"
+hash = "4c0a54635e68adc70c666fc4ed1dfd1b64a7604169700ba10c9a5034ab2b09fe"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.core.config"
+hash = "76eb4a5aa703d817d4c768423780e6dd365c2565a39b021dce676284d27db3b9"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.fullmap.config"
+hash = "b8fd55ae287ab527fcf7fa3a864b971155ae5f4f3ff17dd50d83cf08da6d1f56"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.minimap.config"
+hash = "9b0001c0bebf72c2594117903a9d90a0be3a3cb91694f6e410e22c1cf93dd0c2"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.minimap2.config"
+hash = "90b6e9731166bfedc0a9d2fc7295e3af3952b54cfee47bd948a59918384191ed"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.rendering.config"
+hash = "bff84fa40be45194e3ff5b6e7cbb2075f9dd3888314eedad497cdcac3a0a90a7"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.topo.config"
+hash = "9d0db174567f12b2fb5b7b9a7d05ebfb9d1731becc17ada888899bf045ca76c9"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.waypoint.config"
+hash = "32200c6abae14a13ac27bd96c630a0a71acfbaa681521e6599c3fd04dce2f02e"
+preserve = true
+
+[[files]]
+file = "journeymap/config/6.0/journeymap.webmap.config"
+hash = "eae3588f45571655754e7fa7fc030f4157826bb61c80585fe1355ab3ffc97cf8"
+preserve = true
+
+[[files]]
 file = "mods/3dskinlayers.pw.toml"
 hash = "abd853502542de7e87f6bbe6d4f08f1185058689fe8a5b2cafafab0d2c74a2d5"
 metafile = true
@@ -1055,7 +1103,7 @@ hash = "f9c91468a7202b310a69066584850ed7b4d88aa192012e6ca0ebfaab866d2532"
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "7ce82101fd3edeb7b28df9ef72575d22c76042d3c43069ff65a26daf0a262f28"
+hash = "376c7d478a74ce3f31c9ee701e9780ec5e0e704df4797e3b3ac748ec4383ff27"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1408,6 +1456,11 @@ hash = "8c091c9a660b84f152e47c0d835d8865463ad79636264a68ca6d312399b46538"
 metafile = true
 
 [[files]]
+file = "mods/essential-commands.pw.toml"
+hash = "4f128957cb3715a76e340e35273e9b38e474a0a3798a325f1b0a998db9d5c0c1"
+metafile = true
+
+[[files]]
 file = "mods/euphoria-patches.pw.toml"
 hash = "93c14684652eae26a5015d4b2663403d5384bcd63e0b196ec042b56cea725a86"
 metafile = true
@@ -1420,6 +1473,11 @@ metafile = true
 [[files]]
 file = "mods/fabric-language-kotlin.pw.toml"
 hash = "2a760e528bf27c3eb4ae7c06200d91ee9c2849295addaa2add05495c7dee9528"
+metafile = true
+
+[[files]]
+file = "mods/fabric-permissions-api.pw.toml"
+hash = "4f7bf8d60ef81f12471455f634bde52cc5a8c845250845b4519ad44ea46e61a6"
 metafile = true
 
 [[files]]
@@ -1519,7 +1577,7 @@ metafile = true
 
 [[files]]
 file = "mods/journeymap.pw.toml"
-hash = "a90d56058e3380b031adf487f0c22582d331778b1e481fe36e2d0aa19c2d36bb"
+hash = "5ce1c952921ec05dc9f3d4f8f2f8d74fce755f1c2064a5b6bbf46b57ab692c7e"
 metafile = true
 
 [[files]]
@@ -1895,6 +1953,11 @@ metafile = true
 [[files]]
 file = "mods/waystones.pw.toml"
 hash = "eedabe95c6fd8a1184d833db98bda2fc35e39839711caae21b1771784d2d5abf"
+metafile = true
+
+[[files]]
+file = "mods/worldedit.pw.toml"
+hash = "08d4775f8546564ad812b09062633ffc48f44b76328efe3832c021651af86b14"
 metafile = true
 
 [[files]]
