@@ -1159,7 +1159,7 @@ metafile = true
 
 [[files]]
 file = "mods/carved-wood.pw.toml"
-hash = "eba125ca58072ca631cafdc7e8ecab57b188c61193b8e6483eac97c05fd00d4f"
+hash = "55f471a7ae8154e0757a9e04af83899d86162b2d6ebd1d15a5a05ccdfe04af75"
 metafile = true
 
 [[files]]
@@ -1351,7 +1351,7 @@ metafile = true
 
 [[files]]
 file = "mods/default-options.pw.toml"
-hash = "dd17d79aae1c76edd58a5c8e51951da43acd431872a9c7c8fde82f327f0865a4"
+hash = "6b7d8a2adb16b48dd3adf27f795c816eff5f5421f2b9fcb920e32363bc79b909"
 metafile = true
 
 [[files]]
@@ -1424,7 +1424,7 @@ metafile = true
 
 [[files]]
 file = "mods/fancymenu.pw.toml"
-hash = "b955929c4bf50c3a216b12cf9f4dc50c0d3fc5a1481110d8780369cba1d1689f"
+hash = "64ae365aeafb5c29ee501f84cd11600515fd2ca02e0aa89c0e282f45c53954af"
 metafile = true
 
 [[files]]
@@ -1449,7 +1449,7 @@ metafile = true
 
 [[files]]
 file = "mods/fusion-connected-textures.pw.toml"
-hash = "f06ffdaf0399248032e2ad958059100597376bb9f02a425c3ebce12827bd7143"
+hash = "0aee156d2192ac57826b8c350748568baf9fb896da553c8d2d9a7ab3fa80aec4"
 metafile = true
 
 [[files]]
@@ -1519,7 +1519,7 @@ metafile = true
 
 [[files]]
 file = "mods/journeymap.pw.toml"
-hash = "047cc1bae1318c3437efbdb150cc3bcb683c18df0e5ec2fd63660bc625c4c0ab"
+hash = "a90d56058e3380b031adf487f0c22582d331778b1e481fe36e2d0aa19c2d36bb"
 metafile = true
 
 [[files]]
@@ -1594,7 +1594,7 @@ metafile = true
 
 [[files]]
 file = "mods/midnightlib.pw.toml"
-hash = "647807ff387e333abd790b47082a3cf6b7d41a2b27a4337ff65a611f096a7315"
+hash = "c9d5144709687e4bc27489fafe94d8cedf42932b60469fb2153e5144322d68b8"
 metafile = true
 
 [[files]]
@@ -1604,7 +1604,7 @@ metafile = true
 
 [[files]]
 file = "mods/mobsbegone.pw.toml"
-hash = "22658d3917f00d695ce3d5b47dc6d8e81e648fe23ec0bac5741fb5d290e63d4d"
+hash = "7d1acd65ee5caa4e88d06fd6e72d766cafd3321052cc24899eeff07ef4a96acc"
 metafile = true
 
 [[files]]
@@ -1629,7 +1629,7 @@ metafile = true
 
 [[files]]
 file = "mods/moreculling.pw.toml"
-hash = "8d013469f5b94e1150927ef3c8d985070222fa61f8c7122173304ffb80363c40"
+hash = "adbf75e453327143c292fb63a4391e1f437744a5ee7397e9baa8c9f367b251c2"
 metafile = true
 
 [[files]]
@@ -1639,7 +1639,7 @@ metafile = true
 
 [[files]]
 file = "mods/music-notification.pw.toml"
-hash = "d1f8ab45fa8c2aaf0f90a5b501294f7461e6c94a7f7d48ccfbc19ce29ae9f693"
+hash = "df48a5447b283e5b061b37d54d1305dd28dc88eaf1f133967b6cd80e4482d4dc"
 metafile = true
 
 [[files]]
@@ -1659,7 +1659,7 @@ metafile = true
 
 [[files]]
 file = "mods/no-chat-restrictions.pw.toml"
-hash = "05d4b29dd2ea6cd95f95215f92bfc27e3cb7c4ef39b79d19ac4ef9cad3ff5f12"
+hash = "467eadd218b315067bd37e3af44d7719f77045cd6d3059bbf89e2ee7ce6b8e4f"
 metafile = true
 
 [[files]]
@@ -1704,12 +1704,12 @@ metafile = true
 
 [[files]]
 file = "mods/particle-rain.pw.toml"
-hash = "fff8a2be1fb3b3ae91e05c67fe783a81787c2f76aa5f121743699255753a0b4c"
+hash = "59929527a55bc610be12ebf89570d1c21d00b5383e84b8f75d950e8c486fbc36"
 metafile = true
 
 [[files]]
 file = "mods/particular-reforged.pw.toml"
-hash = "6d79b6bf55ac384e1b5bd3121f978c6fa469afc78a53dd5eedc3e016d70fd396"
+hash = "53fc6acbaea7dff4fc83f49db785e89f3b3fb1405a6cbbdd4b22ec9f4f335a11"
 metafile = true
 
 [[files]]
@@ -1789,7 +1789,7 @@ metafile = true
 
 [[files]]
 file = "mods/sodium.pw.toml"
-hash = "869af67848bf3b9ba4384bc9fb0cbe303d35263bd8de75eeabcba796edf4d7c6"
+hash = "311d23361c153f7adcad260255fe3b2062f1c8e67c75ee088e0b61855e9d9134"
 metafile = true
 
 [[files]]
@@ -1894,7 +1894,7 @@ metafile = true
 
 [[files]]
 file = "mods/waystones.pw.toml"
-hash = "db279d992170ffe5d79a37771e898e74b6f6cb1c03280727b0debe6e4b6316fb"
+hash = "eedabe95c6fd8a1184d833db98bda2fc35e39839711caae21b1771784d2d5abf"
 metafile = true
 
 [[files]]
