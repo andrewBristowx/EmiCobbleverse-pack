@@ -113,6 +113,14 @@ file = "config/catchrate-display.json"
 hash = "58ef6267cb77a541130f858dcb25533161b0d322bc7aaf31010e1ee18fd3af16"
 
 [[files]]
+file = "config/chat_heads.json5"
+hash = "e70cde5d0fe5e0feb7e75eee919d183fd54e94a5340dc9ef8c18434583d2b842"
+
+[[files]]
+file = "config/chatanimation.json"
+hash = "fa8eebf200c797ea7f62eb932f3eee7dfa50356daccd7a5dff8017827215e8d9"
+
+[[files]]
 file = "config/chunky/config.json"
 hash = "c7384a22595488f79f3125b22cc175eb729267267807a084479419349797abc8"
 
@@ -756,6 +764,10 @@ file = "config/forgivingvoid-common.toml"
 hash = "7ec83d301212b45b8abd5bdf0ca5a2404bdb8fb6f5c57796af9f10381a2938a1"
 
 [[files]]
+file = "config/fpsreducer.json"
+hash = "b5ec902f480d0237607e75a469fa700594296045d89f9ddef790c54783b070e7"
+
+[[files]]
 file = "config/fzzy_config/keybinds.toml"
 hash = "26ac5810c9b5dc5c1968827357f0a58c58ac2b6f7b082630960228e16585062f"
 
@@ -782,6 +794,10 @@ hash = "4d3264b58c502afaeca3f44e8d2db0843c54b8ba957afd21a2d450fe10dafefb"
 [[files]]
 file = "config/iris.properties"
 hash = "27baef32735e5e3efe133a4a9884c493837bd6f294c50543ec60c0c72ad1c9a0"
+
+[[files]]
+file = "config/itemborders.toml"
+hash = "530b8b818fb7efbe0ed8fbc8dbaaa0861c75853d99368bf07ed7a490a6cbf1d0"
 
 [[files]]
 file = "config/journeymap-server.json"
@@ -966,6 +982,10 @@ hash = "14e4fe1ded11fa49bfc3479a8e7efdda0e5bc7333d6c9723b44c87306619d8ab"
 [[files]]
 file = "config/resourcepackoverrides.json"
 hash = "905c663b246970e977ce8b5071d2edb1bb58cc990fa5999c9c8045473072fc54"
+
+[[files]]
+file = "config/resourcify.json"
+hash = "ade1b4a28332a849a0b3dfe006db3d1ef22810301999316fd58a34b130968fb5"
 
 [[files]]
 file = "config/respackopts/_respackopts.conf"
@@ -1396,6 +1416,16 @@ hash = "0fbd0e792635a389917795dc439e763e735256ba81c16b6cb718967587db89a6"
 metafile = true
 
 [[files]]
+file = "mods/chat-heads.pw.toml"
+hash = "49425da66dcffc96fce5343d2029e7714b2f9c47947201e755ce52d6117c0cbf"
+metafile = true
+
+[[files]]
+file = "mods/chatanimation.pw.toml"
+hash = "92b6e91822f1fe384fd566f9d1e0af21d969d24f6d2986a6817175608a135491"
+metafile = true
+
+[[files]]
 file = "mods/chipped.pw.toml"
 hash = "a4d21da45c40e8f1e3b76c9855ea3f1c15736cf2b12475e9de3efd05f8f48a8d"
 metafile = true
@@ -1758,6 +1788,11 @@ hash = "2e3da17af781b0bd4af3cbd6faeaa09b3e00f39c1f49ef569c929c69c56dbbeb"
 metafile = true
 
 [[files]]
+file = "mods/fps-reducer.pw.toml"
+hash = "92a3854c609a52101fe1c702b9b7b52a98a395d54493872ba06f97120d50b5b3"
+metafile = true
+
+[[files]]
 file = "mods/fusion-connected-textures.pw.toml"
 hash = "0aee156d2192ac57826b8c350748568baf9fb896da553c8d2d9a7ab3fa80aec4"
 metafile = true
@@ -1825,6 +1860,11 @@ metafile = true
 [[files]]
 file = "mods/iris.pw.toml"
 hash = "6ee94689dd67f0210e07feafac8140e8968bcbcd67defcfbdcd677cf78943900"
+metafile = true
+
+[[files]]
+file = "mods/item-borders.pw.toml"
+hash = "8a8675e1edc03220d8cfd86100b6f2bc83a9a760c8f6164fcdceb223d838ea60"
 metafile = true
 
 [[files]]
@@ -2078,6 +2118,11 @@ hash = "122659d423e8fe5c47b4121bf382e5ceea0ea2c644cd0a08d577cf58ef55d495"
 metafile = true
 
 [[files]]
+file = "mods/prism-lib.pw.toml"
+hash = "478cf24d75c02422619241c8b79cf938bcf94b220474eef57bcfae17f4816dd9"
+metafile = true
+
+[[files]]
 file = "mods/puzzles-lib.pw.toml"
 hash = "2ece712d0a402e159a033248699a63a6ad813f21b4892972e1fec0eafe126594"
 metafile = true
@@ -2120,6 +2165,11 @@ metafile = true
 [[files]]
 file = "mods/resourceful-lib.pw.toml"
 hash = "d3f633dd12cd039a4e58dd398d1c80a324b0d78b9da5b3972b69640bfed211ed"
+metafile = true
+
+[[files]]
+file = "mods/resourcify.pw.toml"
+hash = "9a485e71c8a0a86cb57443b7ac2579e0668195affa626c73478a48825cea1b00"
 metafile = true
 
 [[files]]
