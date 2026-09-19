@@ -1,0 +1,17 @@
+{
+  "floatingDisplay": true,
+  "displayRangeBlocks": 12,
+  "displayHeight": 2.35,
+  "displayUpdateIntervalTicks": 80,
+  "maxSpeciesLines": 5,
+  "lineWidth": 220,
+  "backgroundArgb": 1610612736,
+  "facePlayer": false,
+  "textShadow": false,
+  "showBackground": false,
+  "showPokemonCount": true,
+  "showLevels": false,
+  "showHopperStatus": true,
+  "showEggCount": true,
+  "showBreedingStatus": true
+}

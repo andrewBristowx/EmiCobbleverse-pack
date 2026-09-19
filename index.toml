@@ -41,6 +41,10 @@ file = "config/badoptimizations.txt"
 hash = "7de607165962952615803b9ffeb3773c0f31fc4e5803086d51333bdb8f5a6af7"
 
 [[files]]
+file = "config/ball_stickers.json"
+hash = "0519187a6a4d24ff2472861a7ae7c9a2772f9f808626e9f44916d05afd3e2705"
+
+[[files]]
 file = "config/beautify.json"
 hash = "58cc17bfedb9baca10c8dafa01cf309a73e17dc0e9bfdceb47e3adbbd99c83d0"
 
@@ -133,6 +137,14 @@ file = "config/cobblemon-battle-extras.json"
 hash = "6803264eaacc23fbf7c5b15a30f9d083f3e563b1f5a12dd5902eac2d42fed456"
 
 [[files]]
+file = "config/cobblemon-cards-species-rarity.json"
+hash = "7a5fe2b17d5aa4fc52bc03c1ebe6dac43389ab8609df26952bff5e673707482c"
+
+[[files]]
+file = "config/cobblemon-cards.json"
+hash = "43a024862861d97a546f45ca3f46f606ccf05059d47bf46d3f6b881129b8cfc8"
+
+[[files]]
 file = "config/cobblemon/main.json"
 hash = "099788d2cc410d4283a3ec0fa487eb9d69179c37b9d2d6a36262ea236a2f55eb"
 
@@ -143,6 +155,10 @@ hash = "96a5b9cd10fc488c5a214e1c1b3b97c4c2371d5091f8346a2104e28f038e6e84"
 [[files]]
 file = "config/cobblemon/starters.json"
 hash = "bceb09d103826d8c94015e64b9c1ac65637a130a59e199aed72666e0cb2acae7"
+
+[[files]]
+file = "config/cobblemonalphas/config.json"
+hash = "da468318bb5f735a2e1d13aa2c6cb188ce9c03696ef6c73bf243d9e8321350ed"
 
 [[files]]
 file = "config/cobblemonbattlepositions.json"
@@ -199,6 +215,10 @@ hash = "ac73001ad97539c5f2f5262026e7dbf0cbb91e78fcedd64a12ef3cf90bf3f2ea"
 [[files]]
 file = "config/cobblenav/server-config.json"
 hash = "d9cdbe4c56f4f2099ba600319c833fe8b20d4eb52e060e5b4978bc2e6bf801f4"
+
+[[files]]
+file = "config/cobblepastureoptimizer.json"
+hash = "3e032c7ed783e6c86bafc6a972c7588532f6cf560134e65a9ac1d37f4b4a5c63"
 
 [[files]]
 file = "config/cobbreeding/main.json"
@@ -626,6 +646,10 @@ hash = "fe35c57287a691a25fc16d5ba80b894e087edb240d1a55e6f02c8ace577bba1a"
 [[files]]
 file = "config/fightorflight_visual_effect.json5"
 hash = "20cdbce203900bf01f5fb4e7127e056947bf5eb275df5be8d0fb92efd48c1b93"
+
+[[files]]
+file = "config/flan/flan_config.json"
+hash = "b00f99d74c6c027f1ed35c77e4adefd5bd8912bcb258209447fb941cbd379205"
 
 [[files]]
 file = "config/forgeconfigapiport.toml"
