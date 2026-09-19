@@ -1,0 +1,13 @@
+name = "Alexandria Lib"
+filename = "Alexandria-1.0.3.3.2+1.21.1-fabric.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/QvtrGaih/versions/XyZJELno/Alexandria-1.0.3.3.2%2B1.21.1-fabric.jar"
+hash-format = "sha512"
+hash = "8044d39f918ae34e5d733460f66593d34161d0b25310a1f0d5cdf1e837f072e608d1f6122dd0abc20d44844ba8cd3118e61e944a5fe84edb2acfe58ec9ab219a"
+
+[update]
+[update.modrinth]
+mod-id = "QvtrGaih"
+version = "XyZJELno"

@@ -1,0 +1,13 @@
+name = "Cobblemon Expeditions"
+filename = "cobblemon-expeditions-fabric-1.6.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/HtRy1shF/versions/kHlSe4nA/cobblemon-expeditions-fabric-1.6.3.jar"
+hash-format = "sha512"
+hash = "8bcc12315c16ff860fa412d951bb85d030ce50fc7fae3e832c2bf011aa50f813b27bc954d3d1826af22d14c4170e26768d13d945309b44ec150ae631e6c8a94c"
+
+[update]
+[update.modrinth]
+mod-id = "HtRy1shF"
+version = "kHlSe4nA"

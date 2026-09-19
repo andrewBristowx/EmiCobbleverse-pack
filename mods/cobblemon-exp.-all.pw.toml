@@ -1,0 +1,8 @@
+name = "Cobblemon - Exp. All"
+filename = "cobblemonexpall-fabric-0.0.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/CjhzwixS/versions/rDd91lLw/cobblemonexpall-fabric-0.0.2.jar"
+hash-format = "sha512"
+hash = "be0d118bcc8795968c64018709f3f0215a3c078fa9bae0dd03baeb2ad607d605ac62dd005584beda69027333b419b01747b85d3aa779662e93512060600e2b8c"

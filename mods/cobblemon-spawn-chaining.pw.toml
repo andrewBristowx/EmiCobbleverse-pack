@@ -1,0 +1,8 @@
+name = "Cobblemon Spawn Chaining"
+filename = "spawnchaining-fabric-1.7.3-1.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/63Gg7vnB/versions/JGJcG65g/spawnchaining-fabric-1.7.3-1.1.1.jar"
+hash-format = "sha512"
+hash = "c404db65e4fb374b1a5504a044ae5c66fe835a10eddb5b44cf9b3ce8a5e3ba9cf21d1c477e1a823eea88dc95c295782630b86c7bf6f62470823f016fd66c1294"

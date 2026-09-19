@@ -1,0 +1,13 @@
+name = "Kits"
+filename = "kits-1.6.2-mc1.21.1.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/yeVTVdYd/versions/RHeKBSQ8/kits-1.6.2-mc1.21.1.jar"
+hash-format = "sha512"
+hash = "776ca6b42221721758a44631c41552a62de99649fd334bbcf68a6e41519068d8f179f4750db9a172da4e3153746400a9eb426344b818ff9f8b55a93ef4440de2"
+
+[update]
+[update.modrinth]
+mod-id = "yeVTVdYd"
+version = "RHeKBSQ8"

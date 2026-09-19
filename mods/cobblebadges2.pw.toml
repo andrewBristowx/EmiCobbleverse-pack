@@ -1,0 +1,13 @@
+name = "CobbleBadges [Cobblemon Addon]"
+filename = "CobbleBadges-fabric-4.0.0+Beta-1+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/SyteL9Kr/versions/I8gERtLO/CobbleBadges-fabric-4.0.0%2BBeta-1%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "9fe6e6c9f2128822c480b6aa65e02efb6273aba1c105bd86bbff992458562672cd4475d8831480e081ed9a716f1a120a7ff50d2b43f01c59a5d6e118b1403102"
+
+[update]
+[update.modrinth]
+mod-id = "SyteL9Kr"
+version = "I8gERtLO"

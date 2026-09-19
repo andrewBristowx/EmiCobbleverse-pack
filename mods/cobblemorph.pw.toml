@@ -1,0 +1,13 @@
+name = "CobbleMorph"
+filename = "cobblemorph-1.0.5.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hWEys3l3/versions/vTUNDkmA/cobblemorph-1.0.5.jar"
+hash-format = "sha512"
+hash = "5c6d2921cdc1bd3402c7dd8ab6f0658281b15038a52cd8ef183d37f64d33dcc4321bf18d11505f65d812ba0f85c81b15d263b0e86c9482dff16957990fe98f61"
+
+[update]
+[update.modrinth]
+mod-id = "hWEys3l3"
+version = "vTUNDkmA"

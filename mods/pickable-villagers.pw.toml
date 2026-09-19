@@ -1,0 +1,13 @@
+name = "Pickable Villagers"
+filename = "PickableVillagers-3.3.4+1.21.1-fabric.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/lMRqnKVq/versions/ScKT8zbm/PickableVillagers-3.3.4%2B1.21.1-fabric.jar"
+hash-format = "sha512"
+hash = "876ab5f64e5b72343b10d615c0a830bda6b6b080dc5a6fee126a276139204a0af4bd8e8bf15564e0b6eec8e98ca46f341a93f06a2cd6e9abfa180f1eec9c506b"
+
+[update]
+[update.modrinth]
+mod-id = "lMRqnKVq"
+version = "ScKT8zbm"

@@ -1,0 +1,13 @@
+name = "Cobblemon Party Extras"
+filename = "cobblemon_party_extras-fabric-1.8.15.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/x2wZP9kQ/versions/400k4IK0/cobblemon_party_extras-fabric-1.8.15.jar"
+hash-format = "sha512"
+hash = "616823910ed94026d1486193290268d318fb3a058a583488b104ee11fa0cc6497818ce81c557a273ffb31d8b1bb1b1480be9acddcdc4494daedb82abab5db157"
+
+[update]
+[update.modrinth]
+mod-id = "x2wZP9kQ"
+version = "400k4IK0"

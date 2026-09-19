@@ -1,0 +1,8 @@
+name = "Cobblemon: Parting Gifts"
+filename = "releaserewards-fabric-3.0.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Qx6M2WkT/versions/6o1Q0OIJ/releaserewards-fabric-3.0.2.jar"
+hash-format = "sha512"
+hash = "3f93fccbd57047dae7c1c8c26204479b832a7a9f916f895e01524fee93f5d51b35d4d9c8fcf7a6fb3e46e458f90f5b09b573f1fc2e26ec5c7afe825ff0880eb0"

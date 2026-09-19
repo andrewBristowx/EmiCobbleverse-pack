@@ -1,0 +1,39 @@
+{
+	"OlderModels": false,
+	"SneakRightClick": true,
+	"KeyShortcut": true,
+	"InventoryTrade": true,
+	"OnlyAdults": true,
+	"PickupCostMultiplier": 2,
+	// Enable / Disable Trader block.
+	"TraderBlock": true,
+	// Enable / Disable Auto Trader block.
+	"AutoTraderBlock": true,
+	// Auto Trader cooldown in ticks.
+	"AutoTraderCooldown": 200,
+	// Enable / Disable Breeder block.
+	"BreederBlock": true,
+	// Breeder cooldown in ticks.
+	"BreederCooldown": 100,
+	// Enable / Disable Incubator block.
+	"IncubatorBlock": true,
+	// Incubator cooldown in ticks.
+	"IncubatorCooldown": 100,
+	// How fast a baby should grow per Incubator cycle. Vanilla default is 1 per tick.
+	"IncubatorGrowthSpeed": 100,
+	// Enable / Disable Healer block.
+	"HealerBlock": true,
+	// Healer cooldown in ticks.
+	"HealerCooldown": 100,
+	// How fast to cure/convert a villager.
+	"HealerMultiplier": 2,
+	// Enable / Disable Farmer block.
+	"FarmerBlock": true,
+	// Farmer cooldown in ticks.
+	"FarmerCooldown": 30,
+	// Enable / Disable Iron Farm block.
+	"IronFarmBlock": true,
+	// Iron Farm cooldown in ticks.
+	"IronFarmCooldown": 50,
+	"RefreshTrades": true
+}

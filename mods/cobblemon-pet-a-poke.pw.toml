@@ -1,0 +1,8 @@
+name = "[Cobblemon] Pet a poke"
+filename = "patapoke.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/kppEhbWI/versions/rJIYdOO5/patapoke.jar"
+hash-format = "sha512"
+hash = "c15175ba3e7668a6580c20684a5fa7f7ae5ae5001970db8ddb394dd841c718836abab4246f2b9666e14a6a119427acbed381b8dbe0a8633b8f18e15b62ef6779"
