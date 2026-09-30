@@ -1279,7 +1279,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "b3cdc66f68df3929097aea98a19721aa4aebb0303e264b545e2df1722f06a6d6"
+hash = "a622ecde02a610e568d8fd7a24b7b4dbe005ffe6e7a69672938d23b4c1a0f238"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
