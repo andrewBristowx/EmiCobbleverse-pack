@@ -385,7 +385,7 @@ hash = "916de4461bd1dd5d2c343e392a3d48a5615920731716b80deb94c03bb0012e47"
 
 [[files]]
 file = "config/emimobcontrol.json"
-hash = "0134aea3cec2c5b4ae0242439f5027991746329a45909095e1603363d48af1a0"
+hash = "76f7de4a21d1ff2699fad245e370dc2d4a86e5d49e5597e82483d536f2cc353d"
 
 [[files]]
 file = "config/emiprogresion.json"
@@ -1279,7 +1279,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "87815c0602b4cb7d0a8d3c3140ccae08943344ab083ede867d35831393d708c5"
+hash = "f34c362d40cc7120ccd146dd183b16341186b24c11891b25ee5acc7b9a25b918"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
