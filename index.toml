@@ -872,10 +872,6 @@ file = "config/midnightlib.json"
 hash = "b14c45c6447f9ee5474d70784a2ef96731abbeca1e92485b7599e76e9dce1444"
 
 [[files]]
-file = "config/mobsbegone-blacklist.json"
-hash = "601c47d93c883a13758a8413ed8f95f8a97dc3350b893bbc322eb3794675769f"
-
-[[files]]
 file = "config/modernfix-mixins.properties"
 hash = "33ba4aa5bf22389048b2eef2586585d5799322ac93c1222463b246aeeef28d3a"
 
@@ -1965,11 +1961,6 @@ metafile = true
 [[files]]
 file = "mods/moar-concrete.pw.toml"
 hash = "6eccb0d79fb0c097aed09d6cb1f1edd635886815c7ea01a1cf8e101781a81b70"
-metafile = true
-
-[[files]]
-file = "mods/mobsbegone.pw.toml"
-hash = "7d1acd65ee5caa4e88d06fd6e72d766cafd3321052cc24899eeff07ef4a96acc"
 metafile = true
 
 [[files]]
