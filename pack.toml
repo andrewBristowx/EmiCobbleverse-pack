@@ -1,12 +1,12 @@
 name = "EmiCobbleverse"
 author = "SomitadePony"
-version = "1.0.20"
+version = "1.0.21"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = "34265222e08ad514013edc00c3dd9da505e004ddb7404bb63800afa6be973fb7"
+hash = "ce72f0aa09ed58019df812ad01af860ff3b5811de8329aad0c9f72ed36ac7caf"
 
 [versions]
 fabric = "0.19.3"
