@@ -2,7 +2,7 @@ hash-format = "sha256"
 
 [[files]]
 file = "config/DistantHorizons.toml"
-hash = "a55a6c71e17851e6b487fd0e06cbbe3bb52fed03e54d094f668d7787f0c10ca4"
+hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
 
 [[files]]
 file = "config/MouseTweaks.cfg"
@@ -929,7 +929,7 @@ hash = "b7bc203723d72ea4be656397987c2994ead752d99677f003a8d2fd077f4a2e2a"
 
 [[files]]
 file = "config/particlerain/config.json"
-hash = "7329886bf0e0be96032d3591e9d331460ad0a7a2272e944a2ebd7e4162e4300b"
+hash = "3aec200612edbd64cc6aa5aaf006b66ab2b5a7786ef603d0cac7144ec9bbdb69"
 
 [[files]]
 file = "config/particlerain/particles.json"
