@@ -4,6 +4,12 @@ Modpack de Emi para Minecraft 1.21.1 / Fabric 0.19.3 (base COBBLEVERSE - Pokemon
 La instancia de Prism (`EmiCobbleverse-Prism-Instance.zip`) ejecuta `packwiz-installer-bootstrap` antes de cada arranque y se
 actualiza sola desde `pack.toml` de este repositorio.
 
+> **Instancia de Prism:** usa el zip de `prism-instance/EmiCobbleverse-Prism-Instance.zip` (Prism → Añadir instancia → Importar).
+> Incluye `packwiz-installer.jar` y arranca con `--bootstrap-no-update`, así el pack se actualiza sin depender de la API de GitHub
+> (el bootstrap antiguo la consultaba en cada arranque y, si fallaba, no se actualizaba nada).
+> Si la instancia ya existe, copia `packwiz-installer.jar` a su carpeta `minecraft/` y añade `--bootstrap-no-update` justo después de
+> `packwiz-installer-bootstrap.jar` en Ajustes de la instancia → Configuración personalizada → Comandos personalizados → Pre-lanzamiento.
+
 - `mods/*.pw.toml`  → mods de Modrinth (versión y hash fijos, `side` = client / server / both)
 - `mods/*.jar`      → jars propios que no están en Modrinth (Emipokemon, EmiProtecciones, EmiMobControl, …)
 - `config/`, `datapacks/`, `resourcepacks/`, `shaderpacks/` → tal cual el perfil de Emi (sin datos de servidor ni de jugadores)
