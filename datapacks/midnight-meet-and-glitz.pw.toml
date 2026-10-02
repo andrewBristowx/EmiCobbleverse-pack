@@ -1,0 +1,13 @@
+name = "Midnight Meet & Glitz (datapack)"
+filename = "Midnight Meet & Glitz Datapack 1.7.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/56Svrp7R/versions/RhQqLGOc/Midnight%20Meet%20%26%20Glitz%20Datapack%201.7.zip"
+hash-format = "sha512"
+hash = "5a38fdafe4ce208a2bb4d5188ac5ea1ed586c89cf37231a70b541133115ecc98703d151684c78cc0d4e26b2e99bdf28840e35bb5cca4b2a607dc89b82f2d3c6a"
+
+[update]
+[update.modrinth]
+mod-id = "56Svrp7R"
+version = "RhQqLGOc"

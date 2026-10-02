@@ -1,0 +1,13 @@
+name = "Midnight Meet & Glitz (resourcepack)"
+filename = "Midnight Meet & Glitz Resourcepack 1.7.zip"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/56Svrp7R/versions/RhQqLGOc/Midnight%20Meet%20%26%20Glitz%20Resourcepack%201.7.zip"
+hash-format = "sha512"
+hash = "241e191b369853f3697afab18ee37c263853bfddfbca28d9ac2193cb144a9add43c344813cf53af7a34cb06b15f080c2000d47e728c8e59a0e00e9e111401ab2"
+
+[update]
+[update.modrinth]
+mod-id = "56Svrp7R"
+version = "RhQqLGOc"
