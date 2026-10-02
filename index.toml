@@ -1,5 +1,6 @@
 hash-format = "sha256"
 
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -382,6 +383,21 @@ preserve = true
 [[files]]
 file = "config/dynamic_fps.json"
 hash = "916de4461bd1dd5d2c343e392a3d48a5615920731716b80deb94c03bb0012e47"
+
+[[files]]
+file = "config/emi_costumes/fire-fits-for-fire-cats.pw.toml"
+hash = "df597a0c87bd8840dbddbcc59ec5e546fdba17173969b7f22c185e5a6cda02b1"
+metafile = true
+
+[[files]]
+file = "config/emi_costumes/midnight-meet-and-glitz.pw.toml"
+hash = "0ecc998002a255a1766e615efd0f85879f12c0e64dd361b3f6f3dc60ac4ea603"
+metafile = true
+
+[[files]]
+file = "config/emi_costumes/styles-upon-styles.pw.toml"
+hash = "8f1f8f8e35397fa6bc3290f95e9379bd17e37a145d6bbabdab3ae0a6ffcd06be"
+metafile = true
 
 [[files]]
 file = "config/emimobcontrol.json"
@@ -773,7 +789,7 @@ hash = "26ac5810c9b5dc5c1968827357f0a58c58ac2b6f7b082630960228e16585062f"
 
 [[files]]
 file = "config/global_packs.toml"
-hash = "d7a28e552872125a961f45631c32e3ae8f6dd63acde561083f15cc9270f7a78a"
+hash = "963d204928775ba79c0b63211eefe8bc6a6346e55947f8282884a104ac7dc4fb"
 
 [[files]]
 file = "config/immediatelyfast.json"
@@ -1208,6 +1224,10 @@ file = "datapacks/COBBLEVERSE-RCT-DP-v20.zip"
 hash = "54f0e8c1b061554bfba3de86dbcd9a6b39da4e8293e2b5141faa4254dc7ae400"
 
 [[files]]
+file = "datapacks/EmiCostumes-DP.zip"
+hash = "387a9bdb9547ebb1b457330b5080e36345dc47aaa8e44a98e550671acef2c3ca"
+
+[[files]]
 file = "datapacks/PokeCenterPCs-DP.zip"
 hash = "e462e091ef376595c5b0efab2615fe0463b93b4c54e462cc841749a90ecefe31"
 
@@ -1226,6 +1246,21 @@ hash = "b2e93ad20f27e96af87f589b8a9653c2f8ce7ed661adf412ba002d0ffec6cc32"
 [[files]]
 file = "datapacks/extra/Terralith-DP.zip"
 hash = "d0f5b0f88152d494cb51c6c06f2b5e52617df9860b2f383d00c85338d81ab164"
+
+[[files]]
+file = "datapacks/fire-fits-for-fire-cats.pw.toml"
+hash = "ad3bb8e30f1d29c2fb50f6b0ca40e52b86cd89c0378c503c7494b34b3f5facd0"
+metafile = true
+
+[[files]]
+file = "datapacks/midnight-meet-and-glitz.pw.toml"
+hash = "7265cd02df1e03a87b8772cc3506f9a691da7418c47c1905f8c5639340ec999c"
+metafile = true
+
+[[files]]
+file = "datapacks/styles-upon-styles.pw.toml"
+hash = "6c98216e7ca1bde6f36397c0f2647ae7cbe5bee1a533900f9db55953bf10b117"
+metafile = true
 
 [[files]]
 file = "journeymap/config/6.0/addons/addon.cobblemon.config"
@@ -1279,7 +1314,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "f6298c511ce42848ff6a1eecaeb5536fbccc9d8156cd28f96c42c5cb92c7c2e2"
+hash = "dd1cc78f2ed433ba737fa07ea38f8798a3081921581f6259bb823c5e80ee5709"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"

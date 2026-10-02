@@ -1,0 +1,13 @@
+name = "Styles Upon Styles (resourcepack)"
+filename = "StylesUponStyles.v.1.6.1.zip"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/LizLsGI4/versions/h4Tv9pCv/StylesUponStyles.v.1.6.1.zip"
+hash-format = "sha512"
+hash = "d44dfa67d97253b2fb8e8397cffd888d6c4e22e52ae15e53744bb8e58c341b17d52d5ba8b3b82956170b83fbec263f0ae9245985540e1e971b5109d715be6de0"
+
+[update]
+[update.modrinth]
+mod-id = "LizLsGI4"
+version = "h4Tv9pCv"

@@ -1,0 +1,13 @@
+name = "Fire Fits for Fire Cats (datapack)"
+filename = "FireFitsforFireCats.v.13.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/MyBgiUdg/versions/i0kTh4oX/FireFitsforFireCats.v.13.zip"
+hash-format = "sha512"
+hash = "f2c4ff05cc27d2de0ef8a616e3c982bc24b539a5ca20239a70d7ec23c1b752e02d9c25e5d2335745ad57c2b43f942a3e0e1f08955eb746865a1724b183953709"
+
+[update]
+[update.modrinth]
+mod-id = "MyBgiUdg"
+version = "i0kTh4oX"
