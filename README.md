@@ -7,6 +7,7 @@ actualiza sola desde `pack.toml` de este repositorio.
 > **Instancia de Prism:** usa el zip de `prism-instance/EmiCobbleverse-Prism-Instance.zip` (Prism → Añadir instancia → Importar).
 > Incluye `packwiz-installer.jar` y arranca con `--bootstrap-no-update`, así el pack se actualiza sin depender de la API de GitHub
 > (el bootstrap antiguo la consultaba en cada arranque y, si fallaba, no se actualizaba nada).
+> Los argumentos de Java incluyen `-XX:+UnlockExperimentalVMOptions` (necesario para `-XX:G1NewSizePercent`; sin él Java no arranca: "Could not create the Java Virtual Machine").
 > Si la instancia ya existe, copia `packwiz-installer.jar` a su carpeta `minecraft/` y añade `--bootstrap-no-update` justo después de
 > `packwiz-installer-bootstrap.jar` en Ajustes de la instancia → Configuración personalizada → Comandos personalizados → Pre-lanzamiento.
 
