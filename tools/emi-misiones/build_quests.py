@@ -456,6 +456,49 @@ for q in t1:
         q.deps.append("inventory_cable")
 tom = Chapter("toms_storage", "Tom's Storage", TS + "storage_terminal", t1, subtitle=["Una red de inventarios con terminal"], group="almacen")
 
+# ============================================================ CICLOS DE DEPENDENCIAS
+# FTB Quests se queda sin pila (StackOverflowError en Quest.isQuestObjectExcluded) si hay un ciclo, tambien entre capitulos.
+# Hay recetas que se convierten entre si (p. ej. Superconductor <-> Conducto de superconductor): se rompe el ciclo quitando la
+# dependencia que lo cierra y se avisa. Al final se comprueba que el grafo completo no tiene ciclos.
+_chs = [bienvenida, cocina_basica, platos, oritech1, oritech0, oritech2, oritech3, oritech4, oritech5, oritech6, tom]
+_by = {(c.key, q.key): q for c in _chs for q in c.quests}
+_chapter_of = {(c.key, q.key): c for c in _chs for q in c.quests}
+
+
+def _norm(ch, d):
+    return (ch.key, d) if isinstance(d, str) else tuple(d)
+
+
+def break_cycles():
+    dropped = []
+    while True:
+        color, found = {}, []
+
+        def dfs(u, path):
+            color[u] = 1
+            for d in _by[u].deps:
+                v = _norm(_chapter_of[u], d)
+                if color.get(v) == 1:
+                    found.append((u, d, path[path.index(v):] + [v]))
+                    return True
+                if color.get(v) is None and dfs(v, path + [v]):
+                    return True
+            color[u] = 2
+            return False
+
+        for u in list(_by):
+            if color.get(u) is None and dfs(u, [u]):
+                break
+        if not found:
+            return dropped
+        u, d, loop = found[0]
+        _by[u].deps.remove(d)
+        dropped.append(" -> ".join("/".join(x) for x in loop))
+
+
+for _loop in break_cycles():
+    print("Ciclo roto:", _loop)
+
 # ============================================================ ESCRIBIR
 if os.path.isdir(out):
     shutil.rmtree(out)
