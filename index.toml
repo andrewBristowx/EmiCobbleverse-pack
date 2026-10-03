@@ -793,6 +793,62 @@ file = "config/fpsreducer.json"
 hash = "b5ec902f480d0237607e75a469fa700594296045d89f9ddef790c54783b070e7"
 
 [[files]]
+file = "config/ftbquests/quests/chapter_groups.snbt"
+hash = "6b8b9ebd3d4a662037f370a6707ba69e55ce1ccb363b86b2479e312e096512d6"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/bienvenida.snbt"
+hash = "b95f715104724072c0384679eb7f9c038b108f1609c710841951cb671e38a417"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/cocina_basica.snbt"
+hash = "6cf97f440b7dc99e1b5935139f82f853a9cacaf7c7a78663ffe129f80b3619ba"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_auto.snbt"
+hash = "33ae53005bd2abcc033e114d8b66563ba7d60979506b649ff40d7c655bddea01"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_avanzado.snbt"
+hash = "879158e5ba39340d5bf52e0e868ec8f63e1a58c640681165e03ba1a2b612a3ac"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_energia.snbt"
+hash = "0013a92940f4bc5c2f2ecaf9a013aed1714dea0ed1a15a83a0772e00ec46b753"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_inicio.snbt"
+hash = "a50be80e96cbbfe0a99aa92af74adbe9ff8fb1733882d5a855f03f48e87f5eb7"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_logistica.snbt"
+hash = "692003fa36dc7e74f3d74cc942f264e027e4a2b47fc3a29acc4dd81ef79df99a"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_procesar.snbt"
+hash = "72b2fc87825f7c78ac0eb165a4205a3e742dc987e871a7080dc018c3f25fb4c9"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/platos_pokemon.snbt"
+hash = "d260e07653052dd9d3c7e81e3f47c4120d7e5ec9b7df7cc51112d438d328efc1"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/toms_storage.snbt"
+hash = "01d25112de2afd788017cde43491af28903db112f1dbbddd554eaff5016a5844"
+
+[[files]]
+file = "config/ftbquests/quests/data.snbt"
+hash = "78f6a71a853fca566cfc06e17c355596d2f003a62f8535138560f700ad140fb3"
+
+[[files]]
+file = "config/ftbquests/quests/lang/en_us.snbt"
+hash = "1ec1705c15842443ec1dd7224fc8ec9fc940aca1f29eb9543fa339b075935934"
+
+[[files]]
+file = "config/ftbquests/quests/lang/es_es.snbt"
+hash = "1ec1705c15842443ec1dd7224fc8ec9fc940aca1f29eb9543fa339b075935934"
+
+[[files]]
 file = "config/fzzy_config/keybinds.toml"
 hash = "26ac5810c9b5dc5c1968827357f0a58c58ac2b6f7b082630960228e16585062f"
 
@@ -1234,7 +1290,7 @@ hash = "54f0e8c1b061554bfba3de86dbcd9a6b39da4e8293e2b5141faa4254dc7ae400"
 
 [[files]]
 file = "datapacks/EmiCocina-DP.zip"
-hash = "999fe826f2344e2f462be63c35d72b7aa139b9b92e4f1fde3157560c7e168021"
+hash = "c3ded8876f15960fbf5ed381d313f848bf96c4d3dea886cf16e4e4c0833e8a97"
 
 [[files]]
 file = "datapacks/EmiCostumes-DP.zip"
@@ -1853,6 +1909,21 @@ metafile = true
 [[files]]
 file = "mods/fps-reducer.pw.toml"
 hash = "92a3854c609a52101fe1c702b9b7b52a98a395d54493872ba06f97120d50b5b3"
+metafile = true
+
+[[files]]
+file = "mods/ftb-library-fabric.pw.toml"
+hash = "bf29f63f173172b1e9736b7ff451f625fbc97e65450db5cb20a870d9f748d1d3"
+metafile = true
+
+[[files]]
+file = "mods/ftb-quests-fabric.pw.toml"
+hash = "5f206e371c496f1159b13e39aff328630aece225f17f552daee14c72e1cc9ca1"
+metafile = true
+
+[[files]]
+file = "mods/ftb-teams-fabric.pw.toml"
+hash = "76461e3bc8817c62f9473dcf52b7eaf6f799f3a1c9e9cca4492abc1cc8d3ac19"
 metafile = true
 
 [[files]]

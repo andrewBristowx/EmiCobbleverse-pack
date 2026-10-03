@@ -1,0 +1,8 @@
+name = "FTB Teams (Fabric)"
+filename = "ftb-teams-fabric-2101.1.11.jar"
+side = "both"
+
+[download]
+url = "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-fabric/2101.1.11/ftb-teams-fabric-2101.1.11.jar"
+hash-format = "sha512"
+hash = "04cd51e44c3c102932804876d673cb00201ca6e36fdd224167dd09d777955e62d5d03b061be30310049c6b7a676c0a82ed581082072073ea8e5ca68101233fb7"

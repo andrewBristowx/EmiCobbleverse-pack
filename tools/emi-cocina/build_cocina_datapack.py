@@ -148,6 +148,14 @@ DISHES["festin_directo"] = (recipe(FESTIN_ING, FESTIN, container=False, experien
                             ("Festín del Directo", "diamante, manzana dorada, baya Enigma, hierba revividora, caramelo raro",
                              f"Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min. Máx. {MAX_SEGUIDOS} seguidos y {COOLDOWN_MIN} min de enfriamiento"))
 
+# Todos los platos llevan custom_data {"emicocina": <id>} para poder detectar cada uno (misiones de FTB Quests: advancements emicocina:comer/<id>)
+for _rid, (_rec, _) in DISHES.items():
+    _rec["result"]["components"]["minecraft:custom_data"] = {"emicocina": _rid}
+
+def eat_advancement(rid, base):
+    return {"criteria": {"eat": {"trigger": "minecraft:consume_item", "conditions": {"item": {
+        "items": base, "components": {"minecraft:custom_data": {"emicocina": rid}}}}}}, "requirements": [["eat"]]}
+
 ADVANCEMENT = {
     "criteria": {"eat": {"trigger": "minecraft:consume_item", "conditions": {"item": {"items": "minecraft:enchanted_golden_apple",
                  "components": {"minecraft:custom_data": {"emicocina": "festin_directo"}}}}}},
@@ -231,6 +239,8 @@ def main(dest, md):
         for rid, (rec, _) in DISHES.items():
             add(f"data/emicocina/loot_table/plato/{rid}.json", json.dumps(plato_loot(rec["result"]), indent=2, ensure_ascii=False) + "\n")
         add("data/emicocina/function/dar_todos.mcfunction", "".join(f"loot give @s loot emicocina:plato/{rid}\n" for rid in DISHES))
+        for rid, (rec, _) in DISHES.items():
+            add(f"data/emicocina/advancement/comer/{rid}.json", json.dumps(eat_advancement(rid, rec["result"]["id"]), indent=2) + "\n")
         add("data/emicocina/advancement/festin_directo.json", json.dumps(ADVANCEMENT, indent=2) + "\n")
         add("data/emicocina/loot_table/festin_directo.json", json.dumps(REFUND, indent=2, ensure_ascii=False) + "\n")
         for fname, body in FUNCTIONS.items():

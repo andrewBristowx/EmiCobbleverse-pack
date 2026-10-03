@@ -1,0 +1,261 @@
+{
+	id: "44E0CAD72B506065"
+	group: "8FD05755043B163E"
+	order_index: 2
+	filename: "oritech_energia"
+	icon: {
+		id: "oritech:basic_generator_block"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "D9734076AAAD8EAF"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "C06FC376DB5B3E7B"
+					type: "item"
+					item: {
+						id: "oritech:basic_generator_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E477FACD7AD15CAD"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "59D5D106632B1A25"
+			x: 2.0d
+			y: 0.0d
+			dependencies: [
+				"D9734076AAAD8EAF"
+			]
+			tasks: [
+				{
+					id: "53C8ABAB388C263B"
+					type: "item"
+					item: {
+						id: "oritech:bio_generator_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5F5A907C5267EB2B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "AC5D27D76E7FBEAF"
+			x: 2.0d
+			y: 1.7d
+			dependencies: [
+				"D9734076AAAD8EAF"
+			]
+			tasks: [
+				{
+					id: "2414AF78D1D69F45"
+					type: "item"
+					item: {
+						id: "oritech:fuel_generator_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1444B380096AC33B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "C141418D6FEB25A6"
+			x: 2.0d
+			y: 3.4d
+			dependencies: [
+				"D9734076AAAD8EAF"
+			]
+			tasks: [
+				{
+					id: "D2FD16F1FE306720"
+					type: "item"
+					item: {
+						id: "oritech:lava_generator_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "F8F3721AB7705D18"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "04079A9FEE94BB05"
+			x: 2.0d
+			y: 5.1d
+			dependencies: [
+				"D9734076AAAD8EAF"
+			]
+			tasks: [
+				{
+					id: "D1CB6601F759F250"
+					type: "item"
+					item: {
+						id: "oritech:steam_engine_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "C0C7574F0F00A478"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "9A065B23954C06D4"
+			x: 2.0d
+			y: 6.8d
+			dependencies: [
+				"D9734076AAAD8EAF"
+			]
+			tasks: [
+				{
+					id: "5DCE2413703B45FA"
+					type: "item"
+					item: {
+						id: "oritech:big_solar_panel_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "02D5E02B12E4C2DA"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "B6CC12C53F8626A2"
+			x: 2.0d
+			y: 8.5d
+			dependencies: [
+				"B31381C44FFD9C92"
+			]
+			tasks: [
+				{
+					id: "ADB2BF38F3DEF5FB"
+					type: "item"
+					item: {
+						id: "oritech:small_storage_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "9DC8B87711CC34A4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "AC6B01EEF2F11D41"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "A4D52737895C8F62"
+					type: "item"
+					item: {
+						id: "oritech:large_storage_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0A6C7A2FA8C1913B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "D569CA0A0064B911"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "ADF01D1556733154"
+					type: "item"
+					item: {
+						id: "oritech:charger_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "BB7F03D565174F43"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "B31381C44FFD9C92"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "59661C5221453944"
+					type: "item"
+					item: {
+						id: "oritech:basic_battery"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "FB17DA2E63DD3784"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+	]
+}

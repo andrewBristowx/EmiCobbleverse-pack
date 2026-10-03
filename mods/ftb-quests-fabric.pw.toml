@@ -1,0 +1,8 @@
+name = "FTB Quests (Fabric)"
+filename = "ftb-quests-fabric-2101.1.36.jar"
+side = "both"
+
+[download]
+url = "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-quests-fabric/2101.1.36/ftb-quests-fabric-2101.1.36.jar"
+hash-format = "sha512"
+hash = "0c298e60ddb0953751c41861ce60adfa3585a3a51757e246a826e926cd2eb96ef967f066ae2d04036e3706ec93d4397e5521d7133b791590dd9871aa6f0b66eb"

@@ -1,0 +1,292 @@
+{
+	id: "5C24E530ED45FBBD"
+	group: "8FD05755043B163E"
+	order_index: 0
+	filename: "oritech_inicio"
+	icon: {
+		id: "oritech:machine_frame_block"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "80BECF0C271ABC12"
+			x: 0.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "02109D78F6A5D85D"
+					type: "item"
+					item: {
+						id: "oritech:machine_frame_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "65C0F68ECD240A6F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "7D528301F64A154E"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "C171D8793FC93D0D"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_1"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "9990EC878A0F67BE"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "D330BDDABE581643"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "B6869C002F4980D7"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_2"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "D56D9BA35CC7A307"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "798A237E59AF7DFE"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "DB9EF881493A8F93"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_3"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "8CFFF8A5F5A1AEC4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "F07DAB56034C547D"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "EA4822B1ABBDC892"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_4"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E5AC36F52E14C33A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "47E091EB7EDF3348"
+			x: 4.0d
+			y: 4.25d
+			dependencies: [
+				"5DF7002A0B1098A5"
+			]
+			tasks: [
+				{
+					id: "D27D3F1571980938"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_5"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "BA625C5A7A0291EA"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "EAD1E72BDDCD9319"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "2CE847028FB2B712"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_6"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "41ED0BB405D9AF95"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "BCA5C3C1EF70B9E4"
+			x: 2.0d
+			y: 0.85d
+			tasks: [
+				{
+					id: "32F4F8FCDB74AC9E"
+					type: "item"
+					item: {
+						id: "oritech:machine_core_7"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "941D7262B15438D0"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "77E3C6E392DFC7B2"
+			x: 2.0d
+			y: 2.55d
+			tasks: [
+				{
+					id: "3A7CAC4D3324B482"
+					type: "item"
+					item: {
+						id: "oritech:steel_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "CF80077370DA1CFD"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "486D2844E3A68BBA"
+			x: 2.0d
+			y: 4.25d
+			tasks: [
+				{
+					id: "83FCC9123F3D2CE0"
+					type: "item"
+					item: {
+						id: "oritech:electrum_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "AF0F2F825D3ADA39"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "5DF7002A0B1098A5"
+			x: 2.0d
+			y: 5.95d
+			tasks: [
+				{
+					id: "C76469251AD1DF2F"
+					type: "item"
+					item: {
+						id: "oritech:adamant_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3C472844FBE73B76"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "7D9BFF8F6D222F12"
+			x: 2.0d
+			y: 7.6499999999999995d
+			tasks: [
+				{
+					id: "3E4ACF8F6C9C0853"
+					type: "item"
+					item: {
+						id: "oritech:wrench"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5446B5FB77665B14"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,491 @@
+{
+	id: "2E0C38B4EE1CB054"
+	group: "9936984355C6AD67"
+	order_index: 0
+	filename: "toms_storage"
+	icon: {
+		id: "toms_storage:storage_terminal"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "1623CAA55A58CA64"
+			x: 0.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "16382FDF8F3FBB81"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_connector"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "58D37767DAF3A2B4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "00D518DFDC305633"
+			x: 2.0d
+			y: 0.0d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "3638376343300311"
+					type: "item"
+					item: {
+						id: "toms_storage:trim"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "CF54D2130E2C6EA1"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "60250A560486E6EE"
+			x: 2.0d
+			y: 1.7d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "7D06D18093C43B04"
+					type: "item"
+					item: {
+						id: "toms_storage:storage_terminal"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "05F64EC82109163A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "467E30F951B70460"
+			x: 6.0d
+			y: 1.7d
+			dependencies: [
+				"60250A560486E6EE"
+			]
+			tasks: [
+				{
+					id: "782C1AB3B2519E1B"
+					type: "item"
+					item: {
+						id: "toms_storage:crafting_terminal"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "FEE397F57C9ADE69"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "7E500C9BD2332669"
+			x: 2.0d
+			y: 3.4d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "07CFD3A4F9D618EC"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_cable"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "D03E10888034BE6A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "BBACC719F0505F60"
+			x: 6.0d
+			y: 3.4d
+			dependencies: [
+				"7E500C9BD2332669"
+			]
+			tasks: [
+				{
+					id: "B5D188C1A38DAAA0"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_cable_connector"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "494AD16D96775109"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3BB470584852F61C"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "66EF40CB3E3A3760"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_proxy"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "F376D20A470E8A92"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "7E36529C3946BE82"
+			x: 2.0d
+			y: 5.1d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "B3184640C343C064"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_interface"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "D030F5F396D2E3C6"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1E7776A156B72829"
+			x: 6.0d
+			y: 5.1d
+			dependencies: [
+				"7E500C9BD2332669"
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "6975AFF061EC8D87"
+					type: "item"
+					item: {
+						id: "toms_storage:basic_inventory_hopper"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5C8D500C44B3FA49"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "B6794FB63D577D5F"
+			x: 6.0d
+			y: 6.8d
+			dependencies: [
+				"7E500C9BD2332669"
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "4D3418A425DD2F7C"
+					type: "item"
+					item: {
+						id: "toms_storage:level_emitter"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "49ACEF74EB07D65B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "9618E23C4DA323C4"
+			x: 2.0d
+			y: 6.8d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "76EB4176F07C31FB"
+					type: "item"
+					item: {
+						id: "toms_storage:filing_cabinet"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0AB269A772C835CF"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "81643C13F9E29435"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "C3B987AFEDB4D529"
+					type: "item"
+					item: {
+						id: "toms_storage:open_crate"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "897C18F10D291E22"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "CF4D1AB1D639D80C"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "08E5597E2A2221E4"
+					type: "item"
+					item: {
+						id: "toms_storage:item_filter"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "4056FB1AFAC1DD6F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "B9439ABA1F6104B2"
+			x: 2.0d
+			y: 8.5d
+			dependencies: [
+				"CF4D1AB1D639D80C"
+			]
+			tasks: [
+				{
+					id: "CE7D4EA65182465A"
+					type: "item"
+					item: {
+						id: "toms_storage:polymorphic_item_filter"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "DAF0AA6BE1F5871D"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "785E8ACE7CE38A33"
+			x: 4.0d
+			y: 2.55d
+			dependencies: [
+				"CF4D1AB1D639D80C"
+			]
+			tasks: [
+				{
+					id: "1303A728F10163EF"
+					type: "item"
+					item: {
+						id: "toms_storage:tag_item_filter"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "CC2728C4BDFAE986"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "4DC2C91440590067"
+			x: 4.0d
+			y: 4.25d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "ED9CBA453116C977"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_configurator"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "40B4F21D2E8A7CE5"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3CE76EAE8EE1567A"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "9E755060D72F3610"
+					type: "item"
+					item: {
+						id: "toms_storage:paint_kit"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0278D3763D46355B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "30FEE0A7A9E3F3E4"
+			x: 4.0d
+			y: 5.95d
+			dependencies: [
+				"1623CAA55A58CA64"
+			]
+			tasks: [
+				{
+					id: "5E7FFA97FE850876"
+					type: "item"
+					item: {
+						id: "toms_storage:wireless_terminal"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "EBE000064D186F3E"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "E1E7A6C129F03946"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "B5CA5F169FD8B7A5"
+					type: "item"
+					item: {
+						id: "toms_storage:adv_wireless_terminal"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "199E1F84B64514F3"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+	]
+}

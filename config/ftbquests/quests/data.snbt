@@ -1,0 +1,20 @@
+{
+	version: 13
+	default_reward_team: false
+	default_consume_items: false
+	default_autoclaim_rewards: "disabled"
+	default_quest_shape: "rsquare"
+	default_quest_disable_jei: false
+	drop_loot_crates: false
+	grid_scale: 0.5d
+	pause_game: false
+	lock_message: ""
+	disable_gui: false
+	progression_mode: "flexible"
+	detection_delay: 20
+	show_lock_icons: true
+	drop_book_on_death: false
+	hide_excluded_quests: false
+	fallback_locale: "en_us"
+	verify_on_load: true
+}

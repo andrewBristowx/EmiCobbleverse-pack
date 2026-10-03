@@ -1,0 +1,212 @@
+{
+	id: "74FDBFB9ADDE62C1"
+	group: "4BD0F4C4DA544665"
+	order_index: 0
+	filename: "cocina_basica"
+	icon: {
+		id: "farmersdelight:cooking_pot"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "126108D94C5FFB3F"
+			x: 0.0d
+			y: 0.85d
+			tasks: [
+				{
+					id: "26D881F57D641E6E"
+					type: "item"
+					item: {
+						id: "farmersdelight:iron_knife"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "A022060944266E5F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "F05148564D2D5AA5"
+			x: 2.0d
+			y: 0.0d
+			dependencies: [
+				"126108D94C5FFB3F"
+			]
+			tasks: [
+				{
+					id: "4CD6F79B95B3E1BB"
+					type: "item"
+					item: {
+						id: "farmersdelight:cutting_board"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E6A1A056735ADBF1"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3771D5B76E52960B"
+			x: 0.0d
+			y: 2.55d
+			tasks: [
+				{
+					id: "44D812C294DC1CED"
+					type: "item"
+					item: {
+						id: "farmersdelight:stove"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "BAC481331B237AE9"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "323D9D47A93925AA"
+			x: 2.0d
+			y: 1.7d
+			dependencies: [
+				"3771D5B76E52960B"
+			]
+			tasks: [
+				{
+					id: "E6069F8C5D1D3849"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooking_pot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "4BDF937479C19315"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "9B993C9E7C9D6C84"
+			x: 2.0d
+			y: 3.4d
+			dependencies: [
+				"3771D5B76E52960B"
+			]
+			tasks: [
+				{
+					id: "88E5F653E4C84DCB"
+					type: "item"
+					item: {
+						id: "farmersdelight:skillet"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0F0BAD9D65A808EB"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "C30C33CCAE96354E"
+			x: 4.0d
+			y: 0.85d
+			dependencies: [
+				"323D9D47A93925AA"
+			]
+			tasks: [
+				{
+					id: "403AB50980CA0E74"
+					type: "item"
+					item: {
+						id: "farmersdelight:rice"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "535289B4B954FC23"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "99D01C0EA298D419"
+			x: 6.0d
+			y: 1.7d
+			dependencies: [
+				"C30C33CCAE96354E"
+			]
+			tasks: [
+				{
+					id: "7D0623122692B832"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "B28BC15001FFDF1B"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "353B6CF3F27545D9"
+			x: 4.0d
+			y: 2.55d
+			dependencies: [
+				"323D9D47A93925AA"
+				"9B993C9E7C9D6C84"
+				"F05148564D2D5AA5"
+			]
+			tasks: [
+				{
+					id: "4B3EF1376953BFBF"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "17AC8D48B627DD79"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+	]
+}

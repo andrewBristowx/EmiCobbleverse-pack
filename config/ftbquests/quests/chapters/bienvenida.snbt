@@ -1,0 +1,94 @@
+{
+	id: "329CA985584961E8"
+	group: ""
+	order_index: 0
+	filename: "bienvenida"
+	icon: {
+		id: "minecraft:written_book"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "2F03AC2F0B579310"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "32A6BA1A1D2187B9"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "8C5DC99C8EE35CE9"
+					type: "xp"
+					xp: 10
+				}
+			]
+		}
+		{
+			id: "54B0369E539A1087"
+			x: 2.0d
+			y: 0.0d
+			dependencies: [
+				"2F03AC2F0B579310"
+			]
+			tasks: [
+				{
+					id: "EDD00F8A84B66FB0"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "1217122A4E916D58"
+					type: "xp"
+					xp: 10
+				}
+			]
+		}
+		{
+			id: "94A79E536B40F774"
+			x: 2.0d
+			y: 1.7d
+			dependencies: [
+				"2F03AC2F0B579310"
+			]
+			tasks: [
+				{
+					id: "C39E3168F4D3D137"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "D9D27C49B689BE50"
+					type: "xp"
+					xp: 10
+				}
+			]
+		}
+		{
+			id: "7D6FE158E67C868C"
+			x: 2.0d
+			y: 3.4d
+			dependencies: [
+				"2F03AC2F0B579310"
+			]
+			tasks: [
+				{
+					id: "BEDBE6D603AE3C2C"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "64710F2C612676AC"
+					type: "xp"
+					xp: 10
+				}
+			]
+		}
+	]
+}

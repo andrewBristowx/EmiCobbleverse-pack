@@ -1,0 +1,276 @@
+{
+	id: "F85747FCF309DCD9"
+	group: "8FD05755043B163E"
+	order_index: 4
+	filename: "oritech_auto"
+	icon: {
+		id: "oritech:destroyer_block"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "DFB9A210948B3524"
+			x: 4.0d
+			y: 2.55d
+			dependencies: [
+				"7F3EF734B1D0F2FA"
+			]
+			tasks: [
+				{
+					id: "67F6C92028716B47"
+					type: "item"
+					item: {
+						id: "oritech:destroyer_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "B135A7D6EFC8C43D"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "57E95C857E4B04AD"
+			x: 0.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "2AB9A4CDE2FC53DF"
+					type: "item"
+					item: {
+						id: "oritech:placer_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "34AF6EB8D74932BB"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "89A35B95D1E9F69E"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "9AD7C85C6D27B2DB"
+					type: "item"
+					item: {
+						id: "oritech:fertilizer_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6BEC36E5046B6DE3"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "03FF6D19DDDF49CB"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "654C0A0B579BADF4"
+					type: "item"
+					item: {
+						id: "oritech:treefeller_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "D3D191EF95189335"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "7F3EF734B1D0F2FA"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "414FB4B7504519D1"
+					type: "item"
+					item: {
+						id: "oritech:laser_arm_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "C26BAEE83F002873"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "E4B5FAE9CDD2C611"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "E2466D9F06C31C04"
+					type: "item"
+					item: {
+						id: "oritech:deep_drill_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "CB13F279955E0260"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "BF09163706F1DFDE"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "59ED846FF7B78011"
+					type: "item"
+					item: {
+						id: "oritech:drone_port_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "8CE32A5D60AA889A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "AC7D5FA0D5E52975"
+			x: 4.0d
+			y: 4.25d
+			dependencies: [
+				"341F911BFC312678"
+				"5B3CD58EC16BE03D"
+			]
+			tasks: [
+				{
+					id: "A584D1AB18FC9D48"
+					type: "item"
+					item: {
+						id: "oritech:spawner_controller_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "794EBBBF7B014979"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "341F911BFC312678"
+			x: 2.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "9B7F025E4921E6E7"
+					type: "item"
+					item: {
+						id: "oritech:spawner_cage_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "DACF8F724C840F52"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "EDF2FD62CA2B54F6"
+			x: 4.0d
+			y: 5.95d
+			dependencies: [
+				"5B3CD58EC16BE03D"
+			]
+			tasks: [
+				{
+					id: "27EB30AC515A88B2"
+					type: "item"
+					item: {
+						id: "oritech:enchanter_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6AA2BB29F36D0509"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "5B3CD58EC16BE03D"
+			x: 2.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "060F1D4526BCF779"
+					type: "item"
+					item: {
+						id: "oritech:enchantment_catalyst_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5DFAEE2AACA6D378"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,1398 @@
+{
+	id: "8C9996AE72CA0F98"
+	group: "4BD0F4C4DA544665"
+	order_index: 1
+	filename: "platos_pokemon"
+	icon: {
+		id: "cobblemon:oran_berry"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	default_hide_dependency_lines: true
+	quests: [
+		{
+			id: "08F1296AA1C977F2"
+			x: 0.0d
+			y: 4.25d
+			tasks: [
+				{
+					id: "72FEF9538EF948CA"
+					type: "item"
+					item: {
+						id: "cobblemon:oran_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "196D61EACCECB865"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "62F605F14A7D1083"
+			x: 2.0d
+			y: 0.0d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "88C842525BF292A8"
+					type: "item"
+					item: {
+						id: "cobblemon:chilan_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "79163ACA25FF2DD8"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "DEA0F7A6E42C577E"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "1F9013DFD7C2740A"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_chilan"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "CD096A4416BB429E"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "38792654DAB76830"
+			x: 2.0d
+			y: 1.7d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "DF2437A804C6F03C"
+					type: "item"
+					item: {
+						id: "cobblemon:occa_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "2C9590FD57E09153"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "FB944BD75483415F"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "5A50ABFEFC081E47"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_occa"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "54917243E2371747"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "E1597F1607A22C7B"
+			x: 2.0d
+			y: 3.4d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "A4CEEE472BEE476D"
+					type: "item"
+					item: {
+						id: "cobblemon:passho_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "39F462C75439A10F"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "B45DB1D91473CF86"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "180193753677DF72"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_passho"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "81C4AED1AAFE444E"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "C4742CABFD86EDA5"
+			x: 2.0d
+			y: 5.1d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "DA00B522555BA909"
+					type: "item"
+					item: {
+						id: "cobblemon:wacan_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "3A2380F2AA50B711"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "27756D75A345F777"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "A6CA42E5744A7291"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_wacan"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "A7A58A1CD6BDB896"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "4F89382F37C7AB29"
+			x: 2.0d
+			y: 6.8d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "88B160FE91008A6B"
+					type: "item"
+					item: {
+						id: "cobblemon:rindo_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "E19D0CC3A413C256"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "97E6C8231B38967B"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "2117781103D73D9E"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_rindo"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "6D31822683513A66"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "DC1E736F5D6675B2"
+			x: 2.0d
+			y: 8.5d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "54D125115B1AF919"
+					type: "item"
+					item: {
+						id: "cobblemon:yache_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "50F45C754E5FDB43"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "A410A9DA79C27915"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "CEBAAB93AEA643FB"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_yache"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "BAAB686DFE5F6ACB"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "70F7723114096CAD"
+			x: 4.0d
+			y: 0.0d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "F9627FABD0CD2E3D"
+					type: "item"
+					item: {
+						id: "cobblemon:chople_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "326430512A8238D5"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "E69DB15E1813791D"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "BC985869288D9308"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_chople"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "F0B91A82BDC8725E"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "B8033ACE8E0A0032"
+			x: 4.0d
+			y: 1.7d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "7E9F27DD1866EA48"
+					type: "item"
+					item: {
+						id: "cobblemon:kebia_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "A90D9B17EE824EF6"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "72A1AAE5E0968D01"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "9A56EA500D9827BD"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_kebia"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "67EC56A69C667EF5"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "328DD7C939B34635"
+			x: 4.0d
+			y: 3.4d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "2FF5437622A7FE7A"
+					type: "item"
+					item: {
+						id: "cobblemon:shuca_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "F0AC6C7BA26A08C1"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "16FBC5CFBD59590C"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "1A617FCCE32E8926"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_shuca"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "B714208ED03024BB"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "03F87B2C072FEDF8"
+			x: 4.0d
+			y: 5.1d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "1C20977F0B91B1CD"
+					type: "item"
+					item: {
+						id: "cobblemon:coba_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "767502D5692273A6"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "5F88D8B0B64D7569"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "19ABD5522F66A765"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_coba"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "6D2AC51000165C26"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "411E695205AED066"
+			x: 4.0d
+			y: 6.8d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "59E8DBF40E1F76EB"
+					type: "item"
+					item: {
+						id: "cobblemon:payapa_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "A6E45D84F4E42737"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "D95B6EAD3FEDF9E5"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "40C81C6C4F8A7448"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_payapa"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "7B4C5C3CC063D2B0"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "C870C11ECE4B7D5D"
+			x: 4.0d
+			y: 8.5d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "64E88FDBA423B188"
+					type: "item"
+					item: {
+						id: "cobblemon:tanga_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "EF0D6EE6557E3B6B"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "628D56D9D45A8B8C"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "4925200DBDD5EAF6"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_tanga"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "C91AA3D7ADC728B0"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "7CA3098B29D6F30E"
+			x: 6.0d
+			y: 0.0d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "DC22FF2BDAF05612"
+					type: "item"
+					item: {
+						id: "cobblemon:charti_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "1AAC4D018113B179"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "1FCB9CC062B8E28D"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "03E5E400FC4A9C2A"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_charti"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "3E3E1672964BC245"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "C7D0AD42E5E600EC"
+			x: 6.0d
+			y: 1.7d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "D932CE2B9C88FBD6"
+					type: "item"
+					item: {
+						id: "cobblemon:kasib_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "C2FD7A7C712A673E"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "34CC002A1DE1594A"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "C39875C9F6B1FA75"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_kasib"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "B3DF070CFBBEC00B"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "825F0A1373EA6F6B"
+			x: 6.0d
+			y: 3.4d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "69E0C755A423E027"
+					type: "item"
+					item: {
+						id: "cobblemon:haban_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "D38E7AEF2A56D061"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "E6E4210C7154D6E1"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "B06A0CD71E3143FD"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_haban"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "1AD7638BCC6EFF39"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "590B86544EBFFCE0"
+			x: 6.0d
+			y: 5.1d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "F00AA068EC07C360"
+					type: "item"
+					item: {
+						id: "cobblemon:colbur_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "B299482E3332542E"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "C740F7779F7F72D9"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "966C9DBC366B66BE"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_colbur"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "6E240202D7068F60"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "EF36E5C0A142F103"
+			x: 6.0d
+			y: 6.8d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "DE37EB488D1FB7CF"
+					type: "item"
+					item: {
+						id: "cobblemon:babiri_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "0BD81639D3718F7D"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "844FE3E7C4D583BA"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "766DE8CE2664A71A"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_babiri"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "0D6C947805455F2C"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "E55419EAED51D49E"
+			x: 6.0d
+			y: 8.5d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "3C70717AC7905936"
+					type: "item"
+					item: {
+						id: "cobblemon:roseli_berry"
+						count: 1
+					}
+					count: 2L
+					consume_items: false
+				}
+				{
+					id: "14323237837DBD17"
+					type: "item"
+					item: {
+						id: "farmersdelight:cooked_rice"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "4421018F0A045BE0"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "A02E8260FF83AC0F"
+					type: "advancement"
+					advancement: "emicocina:comer/curry_baya_roseli"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "F9231BA7AA27AD95"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "D7C351CE4F3FCCDE"
+			x: 8.0d
+			y: 0.0d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "26D4125A246A3077"
+					type: "item"
+					item: {
+						id: "cobblemon:oran_berry"
+						count: 1
+					}
+					count: 3L
+					consume_items: false
+				}
+				{
+					id: "E0706E8D2FCEA2C7"
+					type: "item"
+					item: {
+						id: "minecraft:potato"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "399CBE0093A5EEB4"
+					type: "item"
+					item: {
+						id: "minecraft:carrot"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "67269714B1FED7CC"
+					type: "advancement"
+					advancement: "emicocina:comer/estofado_bayas_oran"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "1DDBCC085721E75E"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "962B5DC6ACD24430"
+			x: 8.0d
+			y: 1.7d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "9A014EC9605AAB0E"
+					type: "item"
+					item: {
+						id: "cobblemon:sitrus_berry"
+						count: 1
+					}
+					count: 3L
+					consume_items: false
+				}
+				{
+					id: "2B7ECBC59FF5440C"
+					type: "item"
+					item: {
+						id: "minecraft:chicken"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "9B6833723E351D1E"
+					type: "item"
+					item: {
+						id: "minecraft:potato"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "8A74A41516CEABA9"
+					type: "advancement"
+					advancement: "emicocina:comer/sopa_bayas_sitrus"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "863F2013747381F3"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "D1021BD276860A0E"
+			x: 8.0d
+			y: 3.4d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "F9464A63ADD225B2"
+					type: "item"
+					item: {
+						id: "cobblemon:cheri_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "92EB3626CF0C7B04"
+					type: "item"
+					item: {
+						id: "cobblemon:chesto_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "C38AF6190EF3157D"
+					type: "item"
+					item: {
+						id: "cobblemon:pecha_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "41742477EF28CB1C"
+					type: "item"
+					item: {
+						id: "cobblemon:rawst_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "91BA4B01AF33D6D6"
+					type: "item"
+					item: {
+						id: "cobblemon:aspear_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "E875C99F60604598"
+					type: "item"
+					item: {
+						id: "cobblemon:leppa_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "E0588B6FD6DD529D"
+					type: "advancement"
+					advancement: "emicocina:comer/ensalada_bayas_mixtas"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "0299EB2818152394"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "4F5A5B7EF3E5600F"
+			x: 8.0d
+			y: 5.1d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "23B4C46338EEDEA0"
+					type: "item"
+					item: {
+						id: "cobblemon:yellow_apricorn"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "C016877FA5E17909"
+					type: "item"
+					item: {
+						id: "cobblemon:pink_apricorn"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "D2073CD7CDDFBCEE"
+					type: "item"
+					item: {
+						id: "minecraft:wheat"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "63907271809C4E18"
+					type: "item"
+					item: {
+						id: "minecraft:sugar"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "F3F64A765244D986"
+					type: "advancement"
+					advancement: "emicocina:comer/galletas_aprilima"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "555BEBFBD5CA10B4"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "510F7BE7D98B5364"
+			x: 8.0d
+			y: 6.8d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "77E009FC0871D06F"
+					type: "item"
+					item: {
+						id: "cobblemon:revival_herb"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "8A8FBF4F4A5D3414"
+					type: "item"
+					item: {
+						id: "cobblemon:medicinal_leek"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "E8032E35DED89E10"
+					type: "item"
+					item: {
+						id: "minecraft:sugar"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "08205588A0D00B43"
+					type: "item"
+					item: {
+						id: "minecraft:apple"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "283E3FAE781B3F2B"
+					type: "advancement"
+					advancement: "emicocina:comer/infusion_hierbas"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "4CDB69B810F0D1D2"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "8209B34BB57DC885"
+			x: 8.0d
+			y: 8.5d
+			dependencies: [
+				"08F1296AA1C977F2"
+			]
+			tasks: [
+				{
+					id: "4BBDE2370A33EC71"
+					type: "item"
+					item: {
+						id: "cobblemon:razz_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "0BEDCB5BF0D9DE2C"
+					type: "item"
+					item: {
+						id: "cobblemon:pinap_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "3023465DB157F2A6"
+					type: "item"
+					item: {
+						id: "cobblemon:nanab_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "1F4C4BBDBFE8AFFA"
+					type: "item"
+					item: {
+						id: "minecraft:wheat"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "9BF9E38C4C5D0D90"
+					type: "item"
+					item: {
+						id: "minecraft:sugar"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "7BEB9BC9436DDE3B"
+					type: "item"
+					item: {
+						id: "minecraft:egg"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "58D20AF8985752AF"
+					type: "advancement"
+					advancement: "emicocina:comer/tarta_bayas_dulces"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "3B0DC97A5553952F"
+					type: "xp"
+					xp: 20
+				}
+			]
+		}
+		{
+			id: "1504C07FBC99967F"
+			x: 10.0d
+			y: 4.25d
+			dependencies: [
+				"08F1296AA1C977F2"
+				"8209B34BB57DC885"
+			]
+			tasks: [
+				{
+					id: "C80EB8DB6368EEA5"
+					type: "item"
+					item: {
+						id: "minecraft:diamond"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "FC96E64217019B28"
+					type: "item"
+					item: {
+						id: "minecraft:golden_apple"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "571EF71938CCB9A2"
+					type: "item"
+					item: {
+						id: "cobblemon:enigma_berry"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "4FB5DC59B17E121E"
+					type: "item"
+					item: {
+						id: "cobblemon:revival_herb"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "D8908D26520A2C20"
+					type: "item"
+					item: {
+						id: "cobblemon:rare_candy"
+						count: 1
+					}
+					consume_items: false
+				}
+				{
+					id: "60FCB99AB534AEC2"
+					type: "advancement"
+					advancement: "emicocina:comer/festin_directo"
+					criterion: "eat"
+				}
+			]
+			rewards: [
+				{
+					id: "6E11B39E5A518B05"
+					type: "xp"
+					xp: 40
+				}
+			]
+		}
+	]
+}

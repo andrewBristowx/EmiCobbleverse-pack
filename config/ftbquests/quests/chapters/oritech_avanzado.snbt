@@ -1,0 +1,565 @@
+{
+	id: "2C4AF6671CD9A901"
+	group: "8FD05755043B163E"
+	order_index: 5
+	filename: "oritech_avanzado"
+	icon: {
+		id: "oritech:reactor_controller"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "0BFE4ECDB86F1F25"
+			x: 0.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "993ED62A615CEAA0"
+					type: "item"
+					item: {
+						id: "oritech:machine_speed_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "707BFB1E58DDAAE9"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2397A1E9E3CD950F"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "664E33738DD23D43"
+					type: "item"
+					item: {
+						id: "oritech:machine_efficiency_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E3FE96801144B85B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "A2747E923B22783B"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "5D0EE6A349D6192C"
+					type: "item"
+					item: {
+						id: "oritech:machine_yield_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0179ADD22C7FB11E"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "C253264F16AD6D6D"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "3A52F7363A9AEACD"
+					type: "item"
+					item: {
+						id: "oritech:machine_capacitor_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "452C13510AF7A557"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "B8DE70626F1FBAB4"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "512A8D54BB0ED8F0"
+					type: "item"
+					item: {
+						id: "oritech:machine_fluid_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "B41AD76E60E7DC30"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "9C7DB43A7DE4535F"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "B37694654E67129F"
+					type: "item"
+					item: {
+						id: "oritech:machine_burst_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "DF4C458CDAEC40E4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3E52C96B6D7FEC49"
+			x: 2.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "7C9D4BDA9E88DDCE"
+					type: "item"
+					item: {
+						id: "oritech:machine_processing_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6B95C2249385DFDB"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "28C2768B1AFC295D"
+			x: 2.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "6B3D5292273E81AE"
+					type: "item"
+					item: {
+						id: "oritech:machine_silk_touch_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6FC82F9483CE40B2"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "C06C51DF7F7A7BBD"
+			x: 2.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "308BF769D0E2A17F"
+					type: "item"
+					item: {
+						id: "oritech:machine_redstone_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "48D41B94C6A58A3E"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "DDC27E79BA35EAE9"
+			x: 2.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "E3EF07264777F3DD"
+					type: "item"
+					item: {
+						id: "oritech:machine_inventory_proxy_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "FFA073362E63B63A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "8C15308FD2FBE8F9"
+			x: 2.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "8248C4C46AD2259B"
+					type: "item"
+					item: {
+						id: "oritech:machine_acceptor_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E23A838464B63982"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2F2DBE54CD2A3C1D"
+			x: 2.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "CC5A7AD4FFC688E3"
+					type: "item"
+					item: {
+						id: "oritech:machine_extender"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "2C7D9B3394A463BC"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "A798830D7EA88C59"
+			x: 4.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "F86380610C9FE2B8"
+					type: "item"
+					item: {
+						id: "oritech:shrinker_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "632C9D87748F2F60"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "8B5837605D6B8915"
+			x: 4.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "143F06CCFE08A33E"
+					type: "item"
+					item: {
+						id: "oritech:reactor_controller"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "432A357DDBA2D2A2"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "86FD605830D09501"
+			x: 4.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "FD3DE97BEA785822"
+					type: "item"
+					item: {
+						id: "oritech:reactor_rod"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "375CAEBC1859925B"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "70587A9474D1F86C"
+			x: 4.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "8606ED16843ADEAA"
+					type: "item"
+					item: {
+						id: "oritech:accelerator_controller"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "329EF9EADE078598"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "62628D14D61E8841"
+			x: 4.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "823E9F2A025A4815"
+					type: "item"
+					item: {
+						id: "oritech:particle_collector_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "F2C682D6D14621A3"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "6AD2FCC5452F37DF"
+			x: 4.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "B0FDD686BD609B62"
+					type: "item"
+					item: {
+						id: "oritech:jetpack"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5337A08D742DCE78"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "62B149F37E3F0C22"
+			x: 6.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "D778934CFA097312"
+					type: "item"
+					item: {
+						id: "oritech:hand_drill"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "AAFE9C1FD957AAD9"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1C92341FBE048CDE"
+			x: 6.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "2A88C60519AB0A82"
+					type: "item"
+					item: {
+						id: "oritech:chainsaw"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "623870296D776313"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "8B269200150AE19C"
+			x: 6.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "687CA528C6138949"
+					type: "item"
+					item: {
+						id: "oritech:exo_helmet"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "4ACC1D9B62C463E7"
+					type: "xp"
+					xp: 25
+				}
+			]
+		}
+		{
+			id: "C1AE6E790411F7C1"
+			x: 6.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "5045DC7B5E656377"
+					type: "item"
+					item: {
+						id: "oritech:exo_chestplate"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "9866F18947540CEB"
+					type: "xp"
+					xp: 25
+				}
+			]
+		}
+		{
+			id: "1BD2D5BADF0039E7"
+			x: 6.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "C771AD970D8F170F"
+					type: "item"
+					item: {
+						id: "oritech:exo_leggings"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E77CFBC4A968E8F7"
+					type: "xp"
+					xp: 25
+				}
+			]
+		}
+		{
+			id: "D4E59BAD0E5999F8"
+			x: 6.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "2141FC107142E2C2"
+					type: "item"
+					item: {
+						id: "oritech:exo_boots"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6661F9EED436EAFA"
+					type: "xp"
+					xp: 25
+				}
+			]
+		}
+	]
+}
