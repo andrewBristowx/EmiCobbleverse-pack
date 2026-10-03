@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Genera config/emipokemon/shop/extra/mt-movimientos.json: 4 pestanas de la tienda (MT, huevo, estrella, tutor) con TODOS los
-movimientos de TMCraft, a precio segun su utilidad (puntuacion 1-100 calculada por score.js a partir de los datos de Showdown).
+"""Genera config/emipokemon/shop/extra/mt-movimientos.json: 4 pestanas de la tienda (MT, huevo, estrella, tutor) con los
+movimientos de TMCraft (menos los movimientos Z y Max/G-Max, que no se pueden usar), a precio segun su utilidad (puntuacion 1-100 calculada por score.js a partir de los datos de Showdown).
 
   node score.js <showdown_dir> <tmcraft models/item dir> > moves_scored.json     (ya incluido)
   python3 build_moves_catalog.py moves_scored.json <salida.json>
@@ -32,6 +32,8 @@ def main(src, dest):
     for prefix, cid, title, mult in CATEGORIES:
         products = []
         for move_id, m in sorted(moves.items(), key=lambda kv: ((kv[1] or {}).get("name") or kv[0]).lower()):
+            if m is not None and (m.get("isZ") or m.get("isMax")):  # movimientos Z y Max/G-Max: no se venden
+                continue
             if m is None:  # sin datos en Showdown: nivel medio
                 score, detail = 50, "Sin datos"
             else:

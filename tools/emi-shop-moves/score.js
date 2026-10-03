@@ -32,5 +32,5 @@ function score(m){
   return Math.max(1,Math.min(100,Math.round(s)));
 }
 const out={};
-for(const id of tm){ const m=Moves[id]; if(!m){out[id]=null;continue;} out[id]={name:m.name,type:m.type,cat:m.category,bp:m.basePower,acc:m.accuracy,pri:m.priority,score:score(m),nonstd:m.isNonstandard||''}; }
+for(const id of tm){ const m=Moves[id]; if(!m){out[id]=null;continue;} out[id]={name:m.name,type:m.type,cat:m.category,bp:m.basePower,acc:m.accuracy,pri:m.priority,score:score(m),nonstd:m.isNonstandard||'',isZ:!!m.isZ,isMax:!!m.isMax}; }
 console.log(JSON.stringify(out));

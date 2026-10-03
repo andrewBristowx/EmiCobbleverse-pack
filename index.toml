@@ -407,7 +407,7 @@ hash = "76f7de4a21d1ff2699fad245e370dc2d4a86e5d49e5597e82483d536f2cc353d"
 
 [[files]]
 file = "config/emipokemon/shop/extra/mt-movimientos.json"
-hash = "347ff3f9448a850bb76907a2c0d31739a6d7790e8eef5f2fe10d28718d6115b9"
+hash = "52ad07863e91d2284b8a021e2ef793b22563d8b2d16a0c008268b293332deb0c"
 
 [[files]]
 file = "config/emiprogresion.json"
