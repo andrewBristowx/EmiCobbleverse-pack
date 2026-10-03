@@ -2,6 +2,7 @@ hash-format = "sha256"
 
 
 
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -403,6 +404,10 @@ metafile = true
 [[files]]
 file = "config/emimobcontrol.json"
 hash = "76f7de4a21d1ff2699fad245e370dc2d4a86e5d49e5597e82483d536f2cc353d"
+
+[[files]]
+file = "config/emipokemon/shop/extra/mt-movimientos.json"
+hash = "347ff3f9448a850bb76907a2c0d31739a6d7790e8eef5f2fe10d28718d6115b9"
 
 [[files]]
 file = "config/emiprogresion.json"
@@ -1319,7 +1324,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "b1e874ca58ec179f32d3ac8c183f9eddddef243de78904eef95db7194de394d4"
+hash = "cc902e40c551ad51cbe548453b3e3e3ffa189d94a86452ab3dd0e0ce255e5460"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
