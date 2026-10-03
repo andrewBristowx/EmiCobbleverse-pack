@@ -10,11 +10,55 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "22B951B55F1212F3"
+			id: "61E63BA1D26C21A8"
 			x: 0.0d
-			y: 0.0d
+			y: 5.5249999999999995d
+			tasks: [
+				{
+					id: "3EFB0CEA018A188C"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "716BF7702B9DBB4F"
+					type: "xp"
+					xp: 5
+				}
+			]
+		}
+		{
+			id: "16DD1A8C58DE6A43"
+			x: 2.0d
+			y: 3.4d
 			dependencies: [
-				"486D2844E3A68BBA"
+				"61E63BA1D26C21A8"
+			]
+			tasks: [
+				{
+					id: "3FB696D264A163E0"
+					type: "item"
+					item: {
+						id: "oritech:item_pipe"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3E9D6FFCC1D661B4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "22B951B55F1212F3"
+			x: 2.0d
+			y: 5.1d
+			dependencies: [
+				"61E63BA1D26C21A8"
 			]
 			tasks: [
 				{
@@ -36,34 +80,11 @@
 			]
 		}
 		{
-			id: "16DD1A8C58DE6A43"
-			x: 0.0d
-			y: 1.7d
-			tasks: [
-				{
-					id: "3FB696D264A163E0"
-					type: "item"
-					item: {
-						id: "oritech:item_pipe"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "3E9D6FFCC1D661B4"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "6327C6331BA5E151"
-			x: 0.0d
-			y: 3.4d
+			x: 2.0d
+			y: 0.85d
 			dependencies: [
-				"5C8E39CE82317FD7"
+				"61E63BA1D26C21A8"
 			]
 			tasks: [
 				{
@@ -85,38 +106,11 @@
 			]
 		}
 		{
-			id: "41ABF10B0F9E4618"
-			x: 0.0d
-			y: 5.1d
-			dependencies: [
-				"3227C83D5405F354"
-			]
-			tasks: [
-				{
-					id: "5E89F0D8DBB0D475"
-					type: "item"
-					item: {
-						id: "oritech:superconductor"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "27C9F02CED7E243E"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "570DE642270CB82A"
-			x: 0.0d
+			x: 2.0d
 			y: 6.8d
 			dependencies: [
-				"2C745C74481A2E9C"
-				"66A35F66C2B8A3AC"
+				"61E63BA1D26C21A8"
 			]
 			tasks: [
 				{
@@ -138,13 +132,63 @@
 			]
 		}
 		{
-			id: "1F531D9A3C2E5C60"
-			x: 2.0d
-			y: 3.4d
+			id: "1F2A204152311664"
+			x: 4.0d
+			y: 0.0d
 			dependencies: [
-				"16DD1A8C58DE6A43"
 				"6327C6331BA5E151"
-				"69489883301E1920"
+			]
+			tasks: [
+				{
+					id: "20585B32D90593B2"
+					type: "item"
+					item: {
+						id: "oritech:small_tank_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "05D46D5BF3D4AC7C"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "41ABF10B0F9E4618"
+			x: 2.0d
+			y: 8.5d
+			dependencies: [
+				"61E63BA1D26C21A8"
+			]
+			tasks: [
+				{
+					id: "5E89F0D8DBB0D475"
+					type: "item"
+					item: {
+						id: "oritech:superconductor"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "27C9F02CED7E243E"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1F531D9A3C2E5C60"
+			x: 4.0d
+			y: 1.7d
+			dependencies: [
+				"6327C6331BA5E151"
 			]
 			tasks: [
 				{
@@ -167,13 +211,10 @@
 		}
 		{
 			id: "57EA34FD88FABD17"
-			x: 0.0d
-			y: 8.5d
+			x: 2.0d
+			y: 10.2d
 			dependencies: [
-				"2744788513F1E053"
-				"486D2844E3A68BBA"
-				"36CC12C53F8626A2"
-				"0AF41D4956274A11"
+				"61E63BA1D26C21A8"
 			]
 			tasks: [
 				{
@@ -189,32 +230,6 @@
 			rewards: [
 				{
 					id: "658A7B710055DC41"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "1F2A204152311664"
-			x: 2.0d
-			y: 5.1d
-			dependencies: [
-				"6327C6331BA5E151"
-			]
-			tasks: [
-				{
-					id: "20585B32D90593B2"
-					type: "item"
-					item: {
-						id: "oritech:small_tank_block"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "05D46D5BF3D4AC7C"
 					type: "xp"
 					xp: 15
 				}

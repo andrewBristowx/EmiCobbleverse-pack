@@ -499,6 +499,64 @@ def break_cycles():
 for _loop in break_cycles():
     print("Ciclo roto:", _loop)
 
+# ============================================================ ORDEN Y CONEXIONES DEL ARBOL
+# FTB Quests solo dibuja lineas entre misiones del MISMO capitulo, y un grafo con todas las dependencias de las recetas es una maraña.
+# Cada misión cuelga de UNA misión de su capitulo: la dependencia real mas avanzada si la hay; si no, una misión del nivel anterior
+# (el nivel es la profundidad en el grafo completo de recetas). Todo lo que pide su receta (tambien de otros capitulos) se lista en el
+# texto como "Antes necesitas". Asi las lineas muestran un orden recomendado limpio y no se bloquean misiones por otros capitulos.
+_gdepth = {}
+
+
+def gdepth(k, stack=()):
+    if k in _gdepth:
+        return _gdepth[k]
+    q = _by[k]
+    ds = [_norm(_chapter_of[k], d) for d in q.deps]
+    _gdepth[k] = 0 if not ds else 1 + max(gdepth(d, stack + (k,)) for d in ds)
+    return _gdepth[k]
+
+
+_title_of = {(c.key, q.key): (c.title, q.title) for c in _chs for q in c.quests}
+INTRO = {
+    "oritech_inicio": "Materiales básicos y piezas de partida de Oritech: níquel, acero, electrum, adamantio, núcleos de máquina y marco. " + f"{R}Recuerda:{W} los minerales de Oritech solo aparecen en chunks nuevos.",
+    "oritech_componentes": "Piezas intermedias que piden las recetas de las máquinas (motores, bobinas, chips, cristales...). Cada misión dice cómo se hace y qué necesitas antes.",
+    "oritech_procesar": "Máquinas que transforman materiales: pulverizar, triturar, ensamblar, fundir, centrifugar, refinar, enfriar y bombear.",
+    "oritech_energia": "Generadores, baterías y almacenes de energía: lo que mueve a todas las máquinas.",
+    "oritech_logistica": "Tuberías y transporte de energía, objetos y fluidos entre tus máquinas.",
+    "oritech_auto": "Máquinas que trabajan por ti: romper y colocar bloques, láser, taladro de roca base, drones, generador de mobs y encantador.",
+    "oritech_avanzado": "Complementos para mejorar las máquinas, reactor nuclear, acelerador de partículas, herramientas y equipo exo.",
+    "toms_storage": "Conecta tus cofres en una sola red de inventarios y accede a todo desde una terminal. Empieza por el conector de inventarios.",
+}
+for _k in list(_by):  # profundidades con las dependencias reales, antes de reescribirlas
+    gdepth(_k)
+TIDY = [oritech1, oritech0, oritech2, oritech3, oritech4, oritech5, oritech6, tom]
+for ch in TIDY:
+    allreq = {q.key: [_norm(ch, d) for d in q.deps] for q in ch.quests}
+    same = {q.key: [d[1] for d in allreq[q.key] if d[0] == ch.key] for q in ch.quests}
+    idx = {q.key: i for i, q in enumerate(ch.quests)}
+    roots = [q for q in ch.quests if not same[q.key]]
+    hub = None
+    if len(roots) > 1:  # varias raices: una misión de "Empieza aquí" de la que cuelgan, para que todo quede conectado
+        hub = Quest("intro", "Empieza aquí: " + ch.title, [INTRO[ch.key]], [("check",)], [], 5, subtitle="Introducción del capítulo")
+    for q in ch.quests:
+        s_ = same[q.key]
+        if s_:  # la dependencia real mas avanzada del capitulo
+            q.deps = [max(s_, key=lambda k: (gdepth((ch.key, k)), -idx[k]))]
+        else:
+            q.deps = [hub.key] if hub else []
+    for q in ch.quests:  # texto "Antes necesitas"
+        reqs = allreq[q.key]
+        if reqs:
+            names = []
+            for d in reqs:
+                ct, qt = _title_of[d]
+                names.append(qt if d[0] == ch.key else f"{qt} ({ct})")
+            q.desc = list(q.desc) + ["", head("Antes necesitas") + ": " + ", ".join(names) + "."]
+    if hub:
+        ch.quests.insert(0, hub)
+    # hijos en orden de progresion (profundidad en el grafo de recetas)
+    ch.quests.sort(key=lambda q: (-1, 0) if q is hub else (gdepth((ch.key, q.key)), idx[q.key]))
+
 # ============================================================ ESCRIBIR
 if os.path.isdir(out):
     shutil.rmtree(out)

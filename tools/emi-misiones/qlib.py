@@ -84,37 +84,51 @@ def task_nbt(chapter_key, q, i, t):
 
 
 def layout(quests):
-    """Coloca las misiones en columnas segun su profundidad de dependencias."""
+    """Coloca las misiones como un arbol: cada una cuelga de su (unica) dependencia del capitulo. x = profundidad, y = hojas en orden,
+    y cada padre queda centrado entre sus hijos. Los arboles sueltos se apilan."""
     byk = {q.key: q for q in quests}
-    depth = {}
-
-    def dp(k, stack=()):
-        if k in depth:
-            return depth[k]
-        if k in stack:
-            raise ValueError("ciclo " + k)
-        q = byk[k]
-        local = [d for d in q.deps if isinstance(d, str)]  # las dependencias de otros capitulos (tuplas) no cuentan para la colocacion
-        depth[k] = 0 if not local else 1 + max(dp(d, stack + (k,)) for d in local)
-        return depth[k]
-
+    parent = {q.key: next((d for d in q.deps if isinstance(d, str)), None) for q in quests}
+    kids = {}
     for q in quests:
-        dp(q.key)
-    cols = {}
-    for q in quests:
-        cols.setdefault(depth[q.key], []).append(q)
-    MAXROWS = 6  # las columnas altas se parten en varias para que quepan en pantalla
-    height = min(MAXROWS, max(len(v) for v in cols.values()))
+        if parent[q.key]:
+            kids.setdefault(parent[q.key], []).append(q.key)
     pos = {}
-    x = 0.0
-    for c in sorted(cols):
-        qs = cols[c]
-        for i in range(0, len(qs), MAXROWS):
-            chunk = qs[i:i + MAXROWS]
-            off = (height - len(chunk)) / 2.0
-            for r, q in enumerate(chunk):
-                pos[q.key] = (x, (off + r) * 1.7)
-            x += 2.0
+    cursor = [0.0]
+    STEP_X, STEP_Y = 2.0, 1.7
+
+    ROWS = 5  # las hojas sueltas (muchas misiones sin hijos) se colocan en una cuadricula de ROWS filas
+
+    def place(k, depth):
+        ch = kids.get(k, [])
+        inner = [c for c in ch if c in kids]
+        leaves = [c for c in ch if c not in kids]
+        ys = [place(c, depth + 1) for c in inner]
+        if len(leaves) > 4:
+            y0 = cursor[0]
+            for i, c in enumerate(leaves):
+                pos[c] = ((depth + 1 + i // ROWS) * STEP_X, y0 + (i % ROWS) * STEP_Y)
+            used = min(ROWS, len(leaves))
+            ys += [y0, y0 + (used - 1) * STEP_Y]
+            cursor[0] = y0 + used * STEP_Y
+        else:
+            for c in leaves:
+                pos[c] = ((depth + 1) * STEP_X, cursor[0])
+                ys.append(cursor[0])
+                cursor[0] += STEP_Y
+        if not ys:
+            y = cursor[0]
+            cursor[0] += STEP_Y
+        else:
+            y = (min(ys) + max(ys)) / 2.0
+        pos[k] = (depth * STEP_X, y)
+        return y
+
+    for q in quests:
+        if parent[q.key] is None:
+            place(q.key, 0)
+            cursor[0] += STEP_Y * 0.5
+    if len(pos) != len(quests):
+        raise ValueError("misiones sin colocar (ciclo?)")
     return pos
 
 

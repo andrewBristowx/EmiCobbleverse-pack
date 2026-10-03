@@ -10,12 +10,55 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "59734076AAAD8EAF"
+			id: "0487B23F511643C3"
 			x: 0.0d
-			y: 1.7d
+			y: 5.949999999999999d
+			tasks: [
+				{
+					id: "43CE901317659771"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "46C2BBCB8797C8F0"
+					type: "xp"
+					xp: 5
+				}
+			]
+		}
+		{
+			id: "331381C44FFD9C92"
+			x: 2.0d
+			y: 0.0d
 			dependencies: [
-				"1ED5C9694AF9CA1E"
-				"2744788513F1E053"
+				"0487B23F511643C3"
+			]
+			tasks: [
+				{
+					id: "59661C5221453944"
+					type: "item"
+					item: {
+						id: "oritech:basic_battery"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "7B17DA2E63DD3784"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "59734076AAAD8EAF"
+			x: 2.0d
+			y: 5.1d
+			dependencies: [
+				"0487B23F511643C3"
 			]
 			tasks: [
 				{
@@ -37,13 +80,62 @@
 			]
 		}
 		{
-			id: "59D5D106632B1A25"
-			x: 2.0d
+			id: "36CC12C53F8626A2"
+			x: 4.0d
 			y: 0.0d
 			dependencies: [
-				"6E8747B38228F402"
-				"17F6F3E181F74E52"
-				"2744788513F1E053"
+				"331381C44FFD9C92"
+			]
+			tasks: [
+				{
+					id: "2DB2BF38F3DEF5FB"
+					type: "item"
+					item: {
+						id: "oritech:small_storage_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1DC8B87711CC34A4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "5569CA0A0064B911"
+			x: 2.0d
+			y: 10.2d
+			dependencies: [
+				"0487B23F511643C3"
+			]
+			tasks: [
+				{
+					id: "2DF01D1556733154"
+					type: "item"
+					item: {
+						id: "oritech:charger_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3B7F03D565174F43"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "59D5D106632B1A25"
+			x: 4.0d
+			y: 1.7d
+			dependencies: [
 				"59734076AAAD8EAF"
 			]
 			tasks: [
@@ -67,13 +159,10 @@
 		}
 		{
 			id: "2C5D27D76E7FBEAF"
-			x: 2.0d
-			y: 1.7d
+			x: 4.0d
+			y: 3.4d
 			dependencies: [
-				"77E3C6E392DFC7B2"
-				"580DC7AD8CFC5090"
 				"59734076AAAD8EAF"
-				"66A35F66C2B8A3AC"
 			]
 			tasks: [
 				{
@@ -96,12 +185,9 @@
 		}
 		{
 			id: "4141418D6FEB25A6"
-			x: 2.0d
-			y: 3.4d
+			x: 4.0d
+			y: 5.1d
 			dependencies: [
-				"486D2844E3A68BBA"
-				"2744788513F1E053"
-				"66A35F66C2B8A3AC"
 				"59734076AAAD8EAF"
 			]
 			tasks: [
@@ -125,11 +211,9 @@
 		}
 		{
 			id: "04079A9FEE94BB05"
-			x: 2.0d
-			y: 5.1d
+			x: 4.0d
+			y: 6.8d
 			dependencies: [
-				"486D2844E3A68BBA"
-				"2744788513F1E053"
 				"59734076AAAD8EAF"
 			]
 			tasks: [
@@ -153,12 +237,9 @@
 		}
 		{
 			id: "1A065B23954C06D4"
-			x: 2.0d
-			y: 6.8d
+			x: 4.0d
+			y: 8.5d
 			dependencies: [
-				"45A30A85AB95E755"
-				"1AC0366DAB53F317"
-				"17F6F3E181F74E52"
 				"59734076AAAD8EAF"
 			]
 			tasks: [
@@ -181,44 +262,11 @@
 			]
 		}
 		{
-			id: "36CC12C53F8626A2"
-			x: 2.0d
-			y: 8.5d
-			dependencies: [
-				"1ED5C9694AF9CA1E"
-				"5C8E39CE82317FD7"
-				"2744788513F1E053"
-				"331381C44FFD9C92"
-			]
-			tasks: [
-				{
-					id: "2DB2BF38F3DEF5FB"
-					type: "item"
-					item: {
-						id: "oritech:small_storage_block"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "1DC8B87711CC34A4"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "2C6B01EEF2F11D41"
-			x: 0.0d
-			y: 3.4d
+			x: 2.0d
+			y: 11.899999999999999d
 			dependencies: [
-				"2744788513F1E053"
-				"17F6F3E181F74E52"
-				"77E3C6E392DFC7B2"
-				"115AD32A882AE4AC"
-				"1AC0366DAB53F317"
+				"0487B23F511643C3"
 			]
 			tasks: [
 				{
@@ -234,61 +282,6 @@
 			rewards: [
 				{
 					id: "0A6C7A2FA8C1913B"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "5569CA0A0064B911"
-			x: 0.0d
-			y: 5.1d
-			dependencies: [
-				"77E3C6E392DFC7B2"
-				"22B951B55F1212F3"
-			]
-			tasks: [
-				{
-					id: "2DF01D1556733154"
-					type: "item"
-					item: {
-						id: "oritech:charger_block"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "3B7F03D565174F43"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "331381C44FFD9C92"
-			x: 0.0d
-			y: 6.8d
-			dependencies: [
-				"77E3C6E392DFC7B2"
-				"21048343E7F1DB32"
-				"486D2844E3A68BBA"
-			]
-			tasks: [
-				{
-					id: "59661C5221453944"
-					type: "item"
-					item: {
-						id: "oritech:basic_battery"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "7B17DA2E63DD3784"
 					type: "xp"
 					xp: 15
 				}
