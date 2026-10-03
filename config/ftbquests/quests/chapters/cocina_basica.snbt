@@ -26,14 +26,14 @@
 			]
 			rewards: [
 				{
-					id: "A022060944266E5F"
+					id: "2022060944266E5F"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "F05148564D2D5AA5"
+			id: "705148564D2D5AA5"
 			x: 2.0d
 			y: 0.0d
 			dependencies: [
@@ -52,7 +52,7 @@
 			]
 			rewards: [
 				{
-					id: "E6A1A056735ADBF1"
+					id: "66A1A056735ADBF1"
 					type: "xp"
 					xp: 15
 				}
@@ -75,7 +75,7 @@
 			]
 			rewards: [
 				{
-					id: "BAC481331B237AE9"
+					id: "3AC481331B237AE9"
 					type: "xp"
 					xp: 15
 				}
@@ -90,7 +90,7 @@
 			]
 			tasks: [
 				{
-					id: "E6069F8C5D1D3849"
+					id: "66069F8C5D1D3849"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooking_pot"
@@ -108,7 +108,7 @@
 			]
 		}
 		{
-			id: "9B993C9E7C9D6C84"
+			id: "1B993C9E7C9D6C84"
 			x: 2.0d
 			y: 3.4d
 			dependencies: [
@@ -116,7 +116,7 @@
 			]
 			tasks: [
 				{
-					id: "88E5F653E4C84DCB"
+					id: "08E5F653E4C84DCB"
 					type: "item"
 					item: {
 						id: "farmersdelight:skillet"
@@ -134,7 +134,7 @@
 			]
 		}
 		{
-			id: "C30C33CCAE96354E"
+			id: "430C33CCAE96354E"
 			x: 4.0d
 			y: 0.85d
 			dependencies: [
@@ -160,11 +160,11 @@
 			]
 		}
 		{
-			id: "99D01C0EA298D419"
+			id: "19D01C0EA298D419"
 			x: 6.0d
 			y: 1.7d
 			dependencies: [
-				"C30C33CCAE96354E"
+				"430C33CCAE96354E"
 			]
 			tasks: [
 				{
@@ -179,7 +179,7 @@
 			]
 			rewards: [
 				{
-					id: "B28BC15001FFDF1B"
+					id: "328BC15001FFDF1B"
 					type: "xp"
 					xp: 20
 				}
@@ -191,8 +191,8 @@
 			y: 2.55d
 			dependencies: [
 				"323D9D47A93925AA"
-				"9B993C9E7C9D6C84"
-				"F05148564D2D5AA5"
+				"1B993C9E7C9D6C84"
+				"705148564D2D5AA5"
 			]
 			tasks: [
 				{

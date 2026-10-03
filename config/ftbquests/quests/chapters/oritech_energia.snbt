@@ -1,7 +1,7 @@
 {
 	id: "44E0CAD72B506065"
-	group: "8FD05755043B163E"
-	order_index: 2
+	group: "0FD05755043B163E"
+	order_index: 3
 	filename: "oritech_energia"
 	icon: {
 		id: "oritech:basic_generator_block"
@@ -10,12 +10,16 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "D9734076AAAD8EAF"
+			id: "59734076AAAD8EAF"
 			x: 0.0d
 			y: 1.7d
+			dependencies: [
+				"1ED5C9694AF9CA1E"
+				"2744788513F1E053"
+			]
 			tasks: [
 				{
-					id: "C06FC376DB5B3E7B"
+					id: "406FC376DB5B3E7B"
 					type: "item"
 					item: {
 						id: "oritech:basic_generator_block"
@@ -26,7 +30,7 @@
 			]
 			rewards: [
 				{
-					id: "E477FACD7AD15CAD"
+					id: "6477FACD7AD15CAD"
 					type: "xp"
 					xp: 15
 				}
@@ -37,7 +41,10 @@
 			x: 2.0d
 			y: 0.0d
 			dependencies: [
-				"D9734076AAAD8EAF"
+				"6E8747B38228F402"
+				"17F6F3E181F74E52"
+				"2744788513F1E053"
+				"59734076AAAD8EAF"
 			]
 			tasks: [
 				{
@@ -59,11 +66,14 @@
 			]
 		}
 		{
-			id: "AC5D27D76E7FBEAF"
+			id: "2C5D27D76E7FBEAF"
 			x: 2.0d
 			y: 1.7d
 			dependencies: [
-				"D9734076AAAD8EAF"
+				"77E3C6E392DFC7B2"
+				"580DC7AD8CFC5090"
+				"59734076AAAD8EAF"
+				"66A35F66C2B8A3AC"
 			]
 			tasks: [
 				{
@@ -85,15 +95,18 @@
 			]
 		}
 		{
-			id: "C141418D6FEB25A6"
+			id: "4141418D6FEB25A6"
 			x: 2.0d
 			y: 3.4d
 			dependencies: [
-				"D9734076AAAD8EAF"
+				"486D2844E3A68BBA"
+				"2744788513F1E053"
+				"66A35F66C2B8A3AC"
+				"59734076AAAD8EAF"
 			]
 			tasks: [
 				{
-					id: "D2FD16F1FE306720"
+					id: "52FD16F1FE306720"
 					type: "item"
 					item: {
 						id: "oritech:lava_generator_block"
@@ -104,7 +117,7 @@
 			]
 			rewards: [
 				{
-					id: "F8F3721AB7705D18"
+					id: "78F3721AB7705D18"
 					type: "xp"
 					xp: 15
 				}
@@ -115,11 +128,13 @@
 			x: 2.0d
 			y: 5.1d
 			dependencies: [
-				"D9734076AAAD8EAF"
+				"486D2844E3A68BBA"
+				"2744788513F1E053"
+				"59734076AAAD8EAF"
 			]
 			tasks: [
 				{
-					id: "D1CB6601F759F250"
+					id: "51CB6601F759F250"
 					type: "item"
 					item: {
 						id: "oritech:steam_engine_block"
@@ -130,18 +145,21 @@
 			]
 			rewards: [
 				{
-					id: "C0C7574F0F00A478"
+					id: "40C7574F0F00A478"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "9A065B23954C06D4"
+			id: "1A065B23954C06D4"
 			x: 2.0d
 			y: 6.8d
 			dependencies: [
-				"D9734076AAAD8EAF"
+				"45A30A85AB95E755"
+				"1AC0366DAB53F317"
+				"17F6F3E181F74E52"
+				"59734076AAAD8EAF"
 			]
 			tasks: [
 				{
@@ -163,15 +181,18 @@
 			]
 		}
 		{
-			id: "B6CC12C53F8626A2"
+			id: "36CC12C53F8626A2"
 			x: 2.0d
 			y: 8.5d
 			dependencies: [
-				"B31381C44FFD9C92"
+				"1ED5C9694AF9CA1E"
+				"5C8E39CE82317FD7"
+				"2744788513F1E053"
+				"331381C44FFD9C92"
 			]
 			tasks: [
 				{
-					id: "ADB2BF38F3DEF5FB"
+					id: "2DB2BF38F3DEF5FB"
 					type: "item"
 					item: {
 						id: "oritech:small_storage_block"
@@ -182,19 +203,26 @@
 			]
 			rewards: [
 				{
-					id: "9DC8B87711CC34A4"
+					id: "1DC8B87711CC34A4"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "AC6B01EEF2F11D41"
+			id: "2C6B01EEF2F11D41"
 			x: 0.0d
 			y: 3.4d
+			dependencies: [
+				"2744788513F1E053"
+				"17F6F3E181F74E52"
+				"77E3C6E392DFC7B2"
+				"115AD32A882AE4AC"
+				"1AC0366DAB53F317"
+			]
 			tasks: [
 				{
-					id: "A4D52737895C8F62"
+					id: "24D52737895C8F62"
 					type: "item"
 					item: {
 						id: "oritech:large_storage_block"
@@ -212,12 +240,16 @@
 			]
 		}
 		{
-			id: "D569CA0A0064B911"
+			id: "5569CA0A0064B911"
 			x: 0.0d
 			y: 5.1d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+				"22B951B55F1212F3"
+			]
 			tasks: [
 				{
-					id: "ADF01D1556733154"
+					id: "2DF01D1556733154"
 					type: "item"
 					item: {
 						id: "oritech:charger_block"
@@ -228,16 +260,21 @@
 			]
 			rewards: [
 				{
-					id: "BB7F03D565174F43"
+					id: "3B7F03D565174F43"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "B31381C44FFD9C92"
+			id: "331381C44FFD9C92"
 			x: 0.0d
 			y: 6.8d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+				"21048343E7F1DB32"
+				"486D2844E3A68BBA"
+			]
 			tasks: [
 				{
 					id: "59661C5221453944"
@@ -251,7 +288,7 @@
 			]
 			rewards: [
 				{
-					id: "FB17DA2E63DD3784"
+					id: "7B17DA2E63DD3784"
 					type: "xp"
 					xp: 15
 				}

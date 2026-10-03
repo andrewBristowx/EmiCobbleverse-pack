@@ -1,6 +1,6 @@
 {
 	id: "2E0C38B4EE1CB054"
-	group: "9936984355C6AD67"
+	group: "1936984355C6AD67"
 	order_index: 0
 	filename: "toms_storage"
 	icon: {
@@ -52,7 +52,7 @@
 			]
 			rewards: [
 				{
-					id: "CF54D2130E2C6EA1"
+					id: "4F54D2130E2C6EA1"
 					type: "xp"
 					xp: 15
 				}
@@ -104,7 +104,7 @@
 			]
 			rewards: [
 				{
-					id: "FEE397F57C9ADE69"
+					id: "7EE397F57C9ADE69"
 					type: "xp"
 					xp: 15
 				}
@@ -130,14 +130,14 @@
 			]
 			rewards: [
 				{
-					id: "D03E10888034BE6A"
+					id: "503E10888034BE6A"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "BBACC719F0505F60"
+			id: "3BACC719F0505F60"
 			x: 6.0d
 			y: 3.4d
 			dependencies: [
@@ -145,7 +145,7 @@
 			]
 			tasks: [
 				{
-					id: "B5D188C1A38DAAA0"
+					id: "35D188C1A38DAAA0"
 					type: "item"
 					item: {
 						id: "toms_storage:inventory_cable_connector"
@@ -179,7 +179,7 @@
 			]
 			rewards: [
 				{
-					id: "F376D20A470E8A92"
+					id: "7376D20A470E8A92"
 					type: "xp"
 					xp: 15
 				}
@@ -194,7 +194,7 @@
 			]
 			tasks: [
 				{
-					id: "B3184640C343C064"
+					id: "33184640C343C064"
 					type: "item"
 					item: {
 						id: "toms_storage:inventory_interface"
@@ -205,7 +205,7 @@
 			]
 			rewards: [
 				{
-					id: "D030F5F396D2E3C6"
+					id: "5030F5F396D2E3C6"
 					type: "xp"
 					xp: 15
 				}
@@ -239,7 +239,7 @@
 			]
 		}
 		{
-			id: "B6794FB63D577D5F"
+			id: "36794FB63D577D5F"
 			x: 6.0d
 			y: 6.8d
 			dependencies: [
@@ -266,7 +266,7 @@
 			]
 		}
 		{
-			id: "9618E23C4DA323C4"
+			id: "1618E23C4DA323C4"
 			x: 2.0d
 			y: 6.8d
 			dependencies: [
@@ -292,12 +292,12 @@
 			]
 		}
 		{
-			id: "81643C13F9E29435"
+			id: "01643C13F9E29435"
 			x: 0.0d
 			y: 3.4d
 			tasks: [
 				{
-					id: "C3B987AFEDB4D529"
+					id: "43B987AFEDB4D529"
 					type: "item"
 					item: {
 						id: "toms_storage:open_crate"
@@ -308,14 +308,14 @@
 			]
 			rewards: [
 				{
-					id: "897C18F10D291E22"
+					id: "097C18F10D291E22"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "CF4D1AB1D639D80C"
+			id: "4F4D1AB1D639D80C"
 			x: 0.0d
 			y: 5.1d
 			tasks: [
@@ -338,15 +338,15 @@
 			]
 		}
 		{
-			id: "B9439ABA1F6104B2"
+			id: "39439ABA1F6104B2"
 			x: 2.0d
 			y: 8.5d
 			dependencies: [
-				"CF4D1AB1D639D80C"
+				"4F4D1AB1D639D80C"
 			]
 			tasks: [
 				{
-					id: "CE7D4EA65182465A"
+					id: "4E7D4EA65182465A"
 					type: "item"
 					item: {
 						id: "toms_storage:polymorphic_item_filter"
@@ -357,7 +357,7 @@
 			]
 			rewards: [
 				{
-					id: "DAF0AA6BE1F5871D"
+					id: "5AF0AA6BE1F5871D"
 					type: "xp"
 					xp: 15
 				}
@@ -368,7 +368,7 @@
 			x: 4.0d
 			y: 2.55d
 			dependencies: [
-				"CF4D1AB1D639D80C"
+				"4F4D1AB1D639D80C"
 			]
 			tasks: [
 				{
@@ -383,7 +383,7 @@
 			]
 			rewards: [
 				{
-					id: "CC2728C4BDFAE986"
+					id: "4C2728C4BDFAE986"
 					type: "xp"
 					xp: 15
 				}
@@ -398,7 +398,7 @@
 			]
 			tasks: [
 				{
-					id: "ED9CBA453116C977"
+					id: "6D9CBA453116C977"
 					type: "item"
 					item: {
 						id: "toms_storage:inventory_configurator"
@@ -421,7 +421,7 @@
 			y: 6.8d
 			tasks: [
 				{
-					id: "9E755060D72F3610"
+					id: "1E755060D72F3610"
 					type: "item"
 					item: {
 						id: "toms_storage:paint_kit"
@@ -458,19 +458,19 @@
 			]
 			rewards: [
 				{
-					id: "EBE000064D186F3E"
+					id: "6BE000064D186F3E"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "E1E7A6C129F03946"
+			id: "61E7A6C129F03946"
 			x: 0.0d
 			y: 8.5d
 			tasks: [
 				{
-					id: "B5CA5F169FD8B7A5"
+					id: "35CA5F169FD8B7A5"
 					type: "item"
 					item: {
 						id: "toms_storage:adv_wireless_terminal"

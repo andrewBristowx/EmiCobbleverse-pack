@@ -21,7 +21,7 @@
 			]
 			rewards: [
 				{
-					id: "8C5DC99C8EE35CE9"
+					id: "0C5DC99C8EE35CE9"
 					type: "xp"
 					xp: 10
 				}
@@ -36,7 +36,7 @@
 			]
 			tasks: [
 				{
-					id: "EDD00F8A84B66FB0"
+					id: "6DD00F8A84B66FB0"
 					type: "checkmark"
 				}
 			]
@@ -49,7 +49,7 @@
 			]
 		}
 		{
-			id: "94A79E536B40F774"
+			id: "14A79E536B40F774"
 			x: 2.0d
 			y: 1.7d
 			dependencies: [
@@ -57,13 +57,13 @@
 			]
 			tasks: [
 				{
-					id: "C39E3168F4D3D137"
+					id: "439E3168F4D3D137"
 					type: "checkmark"
 				}
 			]
 			rewards: [
 				{
-					id: "D9D27C49B689BE50"
+					id: "59D27C49B689BE50"
 					type: "xp"
 					xp: 10
 				}
@@ -78,7 +78,7 @@
 			]
 			tasks: [
 				{
-					id: "BEDBE6D603AE3C2C"
+					id: "3EDBE6D603AE3C2C"
 					type: "checkmark"
 				}
 			]

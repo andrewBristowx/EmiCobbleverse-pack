@@ -45,9 +45,13 @@ def snbt(o, ind=0):
 
 
 def hid(*parts):
-    """id hexadecimal de 16 digitos, estable (no cambia entre ejecuciones, asi no se pierde el progreso de los jugadores)."""
+    """id hexadecimal de 16 digitos, estable (no cambia entre ejecuciones, asi no se pierde el progreso de los jugadores).
+
+    FTB Quests lee los ids con Long.parseLong(hex, 16), que falla si el primer digito es 8-F (numero negativo): el capitulo salia
+    "Sin nombre" y las dependencias con esos ids se perdian. Por eso el primer digito se limita a 0-7.
+    """
     h = hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:16].upper()
-    return "0" + h[1:] if h[0] == "0" and False else h
+    return format(int(h[0], 16) & 7, "X") + h[1:]
 
 
 class Quest:
@@ -90,7 +94,8 @@ def layout(quests):
         if k in stack:
             raise ValueError("ciclo " + k)
         q = byk[k]
-        depth[k] = 0 if not q.deps else 1 + max(dp(d, stack + (k,)) for d in q.deps)
+        local = [d for d in q.deps if isinstance(d, str)]  # las dependencias de otros capitulos (tuplas) no cuentan para la colocacion
+        depth[k] = 0 if not local else 1 + max(dp(d, stack + (k,)) for d in local)
         return depth[k]
 
     for q in quests:
@@ -156,7 +161,7 @@ def write_book(out, groups, chapters):
             if q.size != 1.0:
                 d["size"] = D(q.size)
             if q.deps:
-                d["dependencies"] = [hid("quest", ch.key, k) for k in q.deps]
+                d["dependencies"] = [hid("quest", *((ch.key, k) if isinstance(k, str) else k)) for k in q.deps]
             if q.optional:
                 d["optional"] = True
             d["tasks"] = [task_nbt(ch.key, q, i, t) for i, t in enumerate(q.tasks)]

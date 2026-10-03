@@ -208,7 +208,6 @@ oq(o1, ORI + "steel_ingot", "El acero es un material básico de Oritech: se hace
 oq(o1, ORI + "electrum_ingot", "El electrum se hace con lingotes de oro y polvo de redstone. Lo usan, por ejemplo, las baterías.")
 oq(o1, ORI + "adamant_ingot", "El adamantio es un metal avanzado. También se puede obtener en la fundición con una gema de diamante y un lingote de níquel.")
 oq(o1, ORI + "wrench", "Llave para tuberías (Pipe Wrench). Se hace con lingotes de acero y de níquel.")
-auto_deps(o1)
 oritech1 = Chapter("oritech_inicio", "Primeros pasos", ORI + "machine_frame_block", o1,
                    subtitle=["Núcleos, aleaciones y herramientas"], group="oritech")
 
@@ -225,7 +224,6 @@ oq(o2, ORI + "refinery_block", "Refina fluidos: del biocombustible obtiene diés
 oq(o2, ORI + "refinery_module_block", "Módulo de cámara de refinería: amplía la refinería.")
 oq(o2, ORI + "cooler_block", "Enfría fluidos y los convierte en bloques: agua → hielo, lava → obsidiana, vapor → nieve.", extra=ex_block("cooler"))
 oq(o2, ORI + "pump_block", "Bomba: extrae fluidos para llevarlos por tuberías a otras máquinas.")
-auto_deps(o2)
 oritech2 = Chapter("oritech_procesar", "Procesamiento", ORI + "pulverizer_block", o2,
                    subtitle=["Máquinas que transforman materiales"], group="oritech")
 
@@ -242,7 +240,6 @@ oq(o3, ORI + "large_storage_block", "Gran almacén de energía.")
 oq(o3, ORI + "charger_block", "Se usa para cargar y llenar equipamiento.")
 oq(o3, ORI + "basic_battery", "La batería almacena energía en un objeto que puedes llevar.", craft=False,
    extra=["", head("Cómo se hace") + " En el ensamblador: placa de plástico + 2 lingotes de electrum + 1 lingote de acero."])
-auto_deps(o3)
 oritech3 = Chapter("oritech_energia", "Energía", ORI + "basic_generator_block", o3,
                    subtitle=["Generadores, almacenes y cargadores"], group="oritech")
 
@@ -257,7 +254,6 @@ oq(o4, ORI + "item_filter_block", "Filtro de objetos: decide qué objetos pueden
 oq(o4, ORI + "pipe_booster_block", "Impulsor de tuberías (Pipe Booster): se coloca en una tubería para impulsar lo que transporta.")
 oq(o4, ORI + "power_pole_block", "Poste de transmisión de energía.")
 oq(o4, ORI + "small_tank_block", "Tanque portátil para fluidos.")
-auto_deps(o4)
 oritech4 = Chapter("oritech_logistica", "Logística", ORI + "energy_pipe", o4,
                    subtitle=["Tuberías y transporte"], group="oritech")
 
@@ -274,7 +270,6 @@ oq(o5, ORI + "spawner_controller_block", "Controlador de generador: atrapa al pr
 oq(o5, ORI + "spawner_cage_block", "Jaula de generador: se usa para construir una jaula del tamaño que necesites bajo el controlador de generador.")
 oq(o5, ORI + "enchanter_block", "Encantador estabilizado: aplica encantamientos usando energía y las almas de los catalizadores cercanos.")
 oq(o5, ORI + "enchantment_catalyst_block", "Catalizador arcano: almacena almas de las entidades que mueren cerca y puede aplicar encantamientos de libros. " + f"{R}Advertencia del mod:{W} experimentar con lo arcano puede tener consecuencias peligrosas.")
-auto_deps(o5)
 oritech5 = Chapter("oritech_auto", "Automatización", ORI + "destroyer_block", o5,
                    subtitle=["Máquinas que trabajan por ti"], group="oritech")
 
@@ -311,9 +306,114 @@ oq(o6, ORI + "exo_boots", "Botas exo.", xp=25)
 for q in o6:
     if q.key.startswith("exo_"):
         pass
-auto_deps(o6)
 oritech6 = Chapter("oritech_avanzado", "Avanzado", ORI + "reactor_controller", o6,
                    subtitle=["Complementos, reactor, acelerador y equipo"], group="oritech")
+
+# ---- Minerales basicos (primeros pasos)
+NI = ORI + "nickel_ingot"
+PT = ORI + "platinum_ingot"
+oq(o1, NI, "El níquel es un metal básico de Oritech (marcos, bobinas, tuberías...). Se obtiene fundiendo níquel en bruto, que sale de las menas de níquel. " + f"{R}Recuerda:{W} los minerales de Oritech solo aparecen en chunks nuevos.", craft=False)
+oq(o1, PT, "El platino se usa en piezas avanzadas (compuertas de flujo, duratio...). Se obtiene fundiendo platino en bruto, de las menas de platino. " + f"{R}Recuerda:{W} solo en chunks nuevos.", craft=False)
+
+# ---- Dependencias entre misiones de Oritech (segun las recetas) y capitulo de componentes
+TAGMAP = {"c:ingots/steel": ORI + "steel_ingot", "c:ingots/electrum": ORI + "electrum_ingot", "c:ingots/adamant": ORI + "adamant_ingot",
+          "c:ingots/duratium": ORI + "duratium_ingot", "c:plates/plastic": ORI + "plastic_sheet", "c:silicon": ORI + "silicon",
+          "c:carbon_fibre": ORI + "carbon_fibre_strands", "oritech:plating": ORI + "machine_plating_block",
+          "c:ingots/nickel": NI, "c:ingots/platinum": PT}
+MACH_ES = {"pulverizer": "Pulverizador", "grinder": "Forja de fragmentos", "assembler": "Ensamblador", "atomicforge": "Atomic Forge",
+           "centrifuge": "Centrifugadora", "foundry": "Fundición", "refinery": "Refinería", "laser": "Láser endérico",
+           "cooler": "Industrial Chiller", "deepdrill": "Extractor de roca base"}
+MACH_RECIPES = {}
+for folder in MACH_ES:
+    for pth in sorted(jars.names(f"data/oritech/recipe/{folder}/")):
+        if "compat" in pth:
+            continue
+        rr = jars.json(pth)
+        for res in rr.get("results", []):
+            MACH_RECIPES.setdefault(res["id"], []).append((folder, rr))
+
+
+def ing_ids(item):
+    """Objetos (los de las etiquetas conocidas, tambien) que pide la receta de `item`: crafteo y, si no hay, la de maquina."""
+    r = crafting_recipe(jars, "oritech", item)
+    out = []
+    if r:
+        if r["type"].endswith("shaped"):
+            vals = [r["key"][c] for row in r["pattern"] for c in row if c != " "]
+        else:
+            vals = list(r["ingredients"])
+    elif MACH_RECIPES.get(item):
+        vals = list(MACH_RECIPES[item][0][1]["ingredients"])
+    else:
+        vals = []
+    for v in vals:
+        if isinstance(v, list):
+            v = v[0]
+        i = v.get("item") or TAGMAP.get(v.get("tag"))
+        if i and i not in out:
+            out.append(i)
+    return out
+
+
+def how_made(item):
+    lines = []
+    r = crafting_recipe(jars, "oritech", item)
+    if r:
+        lines += ["", head("Receta de crafteo") + f" {GR}(en REI pulsa R sobre el objeto){W}", recipe_line(r, N)]
+    if MACH_RECIPES.get(item):
+        folder, rr = MACH_RECIPES[item][0]
+        ing = " + ".join(N.ing(i) for i in rr["ingredients"]) or "(solo fluidos)"
+        res = next(x for x in rr["results"] if x["id"] == item)
+        lines += ["", head(f"En: {MACH_ES[folder]}"), f"{ing} → {res.get('count', 1)}× {N.item(item)}"]
+    return lines
+
+
+oritech_chs = [o1, o2, o3, o4, o5, o6]
+have = {q.tasks[0][1] for lst in oritech_chs for q in lst}
+comp = []  # (item) en orden de descubrimiento
+seen = set(have)
+frontier = [q.tasks[0][1] for lst in oritech_chs for q in lst]
+for _ in range(3):
+    nxt = []
+    for it in frontier:
+        for i in ing_ids(it):
+            if i.startswith(ORI) and i not in seen and exists(i):
+                seen.add(i)
+                comp.append(i)
+                nxt.append(i)
+    frontier = nxt
+o0 = []
+for it in comp:
+    if not (crafting_recipe(jars, "oritech", it) or MACH_RECIPES.get(it)):
+        continue
+    need(it)
+    o0.append(Quest(it.split(":")[1], N.item(it), ["Pieza intermedia de Oritech: la piden las recetas de varias máquinas."] + how_made(it), [("item", it)], [], 15))
+oritech0 = Chapter("oritech_componentes", "Componentes", ORI + "motor", o0,
+                   subtitle=["Motores, bobinas, chips y otras piezas intermedias"], group="oritech")
+for lst in oritech_chs:  # las recetas de maquina de los objetos de los capitulos
+    for q in lst:
+        if "Cómo se hace" not in " ".join(q.desc) and not any("Receta de crafteo" in d for d in q.desc):
+            q.desc += how_made(q.tasks[0][1])
+
+where = {}
+for lst, chap in zip([o1, o2, o3, o4, o5, o6, o0], ["oritech_inicio", "oritech_procesar", "oritech_energia", "oritech_logistica", "oritech_auto", "oritech_avanzado", "oritech_componentes"]):
+    for q in lst:
+        where[q.tasks[0][1]] = (chap, q.key)
+for lst, chap in zip([o1, o2, o3, o4, o5, o6, o0], ["oritech_inicio", "oritech_procesar", "oritech_energia", "oritech_logistica", "oritech_auto", "oritech_avanzado", "oritech_componentes"]):
+    for q in lst:
+        me = q.tasks[0][1]
+        for i in ing_ids(me):
+            tgt = where.get(i)
+            if not tgt or tgt == (chap, q.key):
+                continue
+            dep = tgt[1] if tgt[0] == chap else tgt
+            if dep not in q.deps:
+                q.deps.append(dep)
+# niveles de nucleo en orden
+for n in range(2, 8):
+    cur = next(q for q in o1 if q.key == f"machine_core_{n}")
+    if f"machine_core_{n-1}" not in cur.deps:
+        cur.deps.append(f"machine_core_{n-1}")
 
 # ============================================================ TOM'S STORAGE
 TS = "toms_storage:"
@@ -360,9 +460,15 @@ tom = Chapter("toms_storage", "Tom's Storage", TS + "storage_terminal", t1, subt
 if os.path.isdir(out):
     shutil.rmtree(out)
 groups = [("cocina", "Cocina", FD + "cooking_pot"), ("oritech", "Oritech", ORI + "machine_frame_block"), ("almacen", "Almacenamiento", TS + "storage_terminal")]
-chapters = [bienvenida, cocina_basica, platos, oritech1, oritech2, oritech3, oritech4, oritech5, oritech6, tom]
+chapters = [bienvenida, cocina_basica, platos, oritech1, oritech0, oritech2, oritech3, oritech4, oritech5, oritech6, tom]
 n = write_book(out, [(k, t, i) for k, t, i in groups], chapters)
 print(f"{len(chapters)} capitulos, {n} misiones -> {out}")
 if MISSING:
     print("OBJETOS QUE NO EXISTEN:", sorted(set(MISSING)))
     sys.exit(1)
+
+if os.environ.get("OUTLINE"):
+    for ch in chapters:
+        print(f"\n== {ch.key} ({len(ch.quests)})")
+        for q in ch.quests:
+            print(f"  {q.key:34s} <- {', '.join(d if isinstance(d, str) else d[0][8:] + '/' + d[1] for d in q.deps) or '-'}")

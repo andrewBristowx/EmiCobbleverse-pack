@@ -1,6 +1,6 @@
 {
 	id: "5C24E530ED45FBBD"
-	group: "8FD05755043B163E"
+	group: "0FD05755043B163E"
 	order_index: 0
 	filename: "oritech_inicio"
 	icon: {
@@ -10,9 +10,12 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "80BECF0C271ABC12"
-			x: 0.0d
-			y: 0.0d
+			id: "00BECF0C271ABC12"
+			x: 2.0d
+			y: 2.55d
+			dependencies: [
+				"1ED5C9694AF9CA1E"
+			]
 			tasks: [
 				{
 					id: "02109D78F6A5D85D"
@@ -35,10 +38,10 @@
 		{
 			id: "7D528301F64A154E"
 			x: 0.0d
-			y: 1.7d
+			y: 0.0d
 			tasks: [
 				{
-					id: "C171D8793FC93D0D"
+					id: "4171D8793FC93D0D"
 					type: "item"
 					item: {
 						id: "oritech:machine_core_1"
@@ -49,19 +52,22 @@
 			]
 			rewards: [
 				{
-					id: "9990EC878A0F67BE"
+					id: "1990EC878A0F67BE"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "D330BDDABE581643"
-			x: 0.0d
-			y: 3.4d
+			id: "5330BDDABE581643"
+			x: 2.0d
+			y: 4.25d
+			dependencies: [
+				"7D528301F64A154E"
+			]
 			tasks: [
 				{
-					id: "B6869C002F4980D7"
+					id: "36869C002F4980D7"
 					type: "item"
 					item: {
 						id: "oritech:machine_core_2"
@@ -72,7 +78,7 @@
 			]
 			rewards: [
 				{
-					id: "D56D9BA35CC7A307"
+					id: "556D9BA35CC7A307"
 					type: "xp"
 					xp: 15
 				}
@@ -80,11 +86,15 @@
 		}
 		{
 			id: "798A237E59AF7DFE"
-			x: 0.0d
-			y: 5.1d
+			x: 4.0d
+			y: 4.25d
+			dependencies: [
+				"0AF41D4956274A11"
+				"5330BDDABE581643"
+			]
 			tasks: [
 				{
-					id: "DB9EF881493A8F93"
+					id: "5B9EF881493A8F93"
 					type: "item"
 					item: {
 						id: "oritech:machine_core_3"
@@ -95,19 +105,24 @@
 			]
 			rewards: [
 				{
-					id: "8CFFF8A5F5A1AEC4"
+					id: "0CFFF8A5F5A1AEC4"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "F07DAB56034C547D"
-			x: 0.0d
-			y: 6.8d
+			id: "707DAB56034C547D"
+			x: 6.0d
+			y: 4.25d
+			dependencies: [
+				"66A35F66C2B8A3AC"
+				"3ABF76CB7D428A1A"
+				"798A237E59AF7DFE"
+			]
 			tasks: [
 				{
-					id: "EA4822B1ABBDC892"
+					id: "6A4822B1ABBDC892"
 					type: "item"
 					item: {
 						id: "oritech:machine_core_4"
@@ -118,7 +133,7 @@
 			]
 			rewards: [
 				{
-					id: "E5AC36F52E14C33A"
+					id: "65AC36F52E14C33A"
 					type: "xp"
 					xp: 15
 				}
@@ -126,14 +141,16 @@
 		}
 		{
 			id: "47E091EB7EDF3348"
-			x: 4.0d
+			x: 8.0d
 			y: 4.25d
 			dependencies: [
 				"5DF7002A0B1098A5"
+				"3C9A091F6CC05AA9"
+				"707DAB56034C547D"
 			]
 			tasks: [
 				{
-					id: "D27D3F1571980938"
+					id: "527D3F1571980938"
 					type: "item"
 					item: {
 						id: "oritech:machine_core_5"
@@ -144,16 +161,21 @@
 			]
 			rewards: [
 				{
-					id: "BA625C5A7A0291EA"
+					id: "3A625C5A7A0291EA"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "EAD1E72BDDCD9319"
-			x: 0.0d
-			y: 8.5d
+			id: "6AD1E72BDDCD9319"
+			x: 10.0d
+			y: 4.25d
+			dependencies: [
+				"3BBDA12D97134A48"
+				"115AD32A882AE4AC"
+				"47E091EB7EDF3348"
+			]
 			tasks: [
 				{
 					id: "2CE847028FB2B712"
@@ -174,9 +196,14 @@
 			]
 		}
 		{
-			id: "BCA5C3C1EF70B9E4"
-			x: 2.0d
-			y: 0.85d
+			id: "3CA5C3C1EF70B9E4"
+			x: 12.0d
+			y: 4.25d
+			dependencies: [
+				"1E0557B18805BE63"
+				"41ABF10B0F9E4618"
+				"6AD1E72BDDCD9319"
+			]
 			tasks: [
 				{
 					id: "32F4F8FCDB74AC9E"
@@ -190,7 +217,7 @@
 			]
 			rewards: [
 				{
-					id: "941D7262B15438D0"
+					id: "141D7262B15438D0"
 					type: "xp"
 					xp: 15
 				}
@@ -198,8 +225,8 @@
 		}
 		{
 			id: "77E3C6E392DFC7B2"
-			x: 2.0d
-			y: 2.55d
+			x: 0.0d
+			y: 1.7d
 			tasks: [
 				{
 					id: "3A7CAC4D3324B482"
@@ -213,7 +240,7 @@
 			]
 			rewards: [
 				{
-					id: "CF80077370DA1CFD"
+					id: "4F80077370DA1CFD"
 					type: "xp"
 					xp: 15
 				}
@@ -221,11 +248,11 @@
 		}
 		{
 			id: "486D2844E3A68BBA"
-			x: 2.0d
-			y: 4.25d
+			x: 0.0d
+			y: 3.4d
 			tasks: [
 				{
-					id: "83FCC9123F3D2CE0"
+					id: "03FCC9123F3D2CE0"
 					type: "item"
 					item: {
 						id: "oritech:electrum_ingot"
@@ -236,7 +263,7 @@
 			]
 			rewards: [
 				{
-					id: "AF0F2F825D3ADA39"
+					id: "2F0F2F825D3ADA39"
 					type: "xp"
 					xp: 15
 				}
@@ -244,11 +271,11 @@
 		}
 		{
 			id: "5DF7002A0B1098A5"
-			x: 2.0d
-			y: 5.95d
+			x: 0.0d
+			y: 5.1d
 			tasks: [
 				{
-					id: "C76469251AD1DF2F"
+					id: "476469251AD1DF2F"
 					type: "item"
 					item: {
 						id: "oritech:adamant_ingot"
@@ -268,7 +295,11 @@
 		{
 			id: "7D9BFF8F6D222F12"
 			x: 2.0d
-			y: 7.6499999999999995d
+			y: 5.95d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+				"1ED5C9694AF9CA1E"
+			]
 			tasks: [
 				{
 					id: "3E4ACF8F6C9C0853"
@@ -283,6 +314,52 @@
 			rewards: [
 				{
 					id: "5446B5FB77665B14"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1ED5C9694AF9CA1E"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "72C0AD7B72C3DEC0"
+					type: "item"
+					item: {
+						id: "oritech:nickel_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "68DE0D7B199F75F4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "6ED72E5609C10122"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "284B8BE2D7849394"
+					type: "item"
+					item: {
+						id: "oritech:platinum_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "54AF835DC35F6693"
 					type: "xp"
 					xp: 15
 				}
