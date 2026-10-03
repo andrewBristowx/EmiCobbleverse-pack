@@ -206,6 +206,16 @@ REFUND = {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [{
     "type": "minecraft:item", "name": FESTIN["id"],
     "functions": [{"function": "minecraft:set_components", "components": FESTIN["components"]}]}]}]}
 
+def plato_loot(result):
+    """Loot table que da el plato exacto de la receta (para /loot give, sin pasar por la olla)."""
+    entry = {"type": "minecraft:item", "name": result["id"]}
+    functions = []
+    if result.get("count", 1) != 1:
+        functions.append({"function": "minecraft:set_count", "count": result["count"]})
+    functions.append({"function": "minecraft:set_components", "components": result["components"]})
+    entry["functions"] = functions
+    return {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [entry]}]}
+
 def main(dest, md):
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
         def add(name, data):
@@ -214,6 +224,9 @@ def main(dest, md):
         add("pack.mcmeta", json.dumps({"pack": {"pack_format": 48, "description": "EmiCobbleverse: platos de bayas y Festín del Directo (Farmer's Delight + CobbleCuisine)"}}, indent=2, ensure_ascii=False))
         for rid, (rec, _) in DISHES.items():
             add(f"data/emicocina/recipe/cooking/{rid}.json", json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
+        for rid, (rec, _) in DISHES.items():
+            add(f"data/emicocina/loot_table/plato/{rid}.json", json.dumps(plato_loot(rec["result"]), indent=2, ensure_ascii=False) + "\n")
+        add("data/emicocina/function/dar_todos.mcfunction", "".join(f"loot give @s loot emicocina:plato/{rid}\n" for rid in DISHES))
         add("data/emicocina/advancement/festin_directo.json", json.dumps(ADVANCEMENT, indent=2) + "\n")
         add("data/emicocina/loot_table/festin_directo.json", json.dumps(REFUND, indent=2, ensure_ascii=False) + "\n")
         for fname, body in FUNCTIONS.items():
@@ -226,6 +239,11 @@ def main(dest, md):
              "| Plato | Ingredientes | Efectos |", "|---|---|---|"]
     for rid, (_, (name, ing, effects)) in DISHES.items():
         lines.append(f"| {name} | {ing} | {effects} |")
+    lines += ["", "## Obtenerlos sin cocinar (OP, para pruebas o eventos)", "",
+              "No salen en el inventario creativo (son platos con datos sobre objetos normales). Con el datapack puestos:", "",
+              "- `/function emicocina:dar_todos` — te da un plato de cada tipo.",
+              "- `/loot give @s loot emicocina:plato/<id>` — uno concreto, por ejemplo `/loot give @s loot emicocina:plato/festin_directo`.",
+              "", "Ids: " + ", ".join(f"`{rid}`" for rid in DISHES) + ".", ""]
     open(md, "w", encoding="utf-8", newline="\n").write("\n".join(lines) + "\n")
     print(f"{len(DISHES)} recetas -> {dest}")
 
