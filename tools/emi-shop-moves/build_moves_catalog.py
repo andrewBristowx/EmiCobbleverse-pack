@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Genera config/emipokemon/shop/extra/mt-movimientos.json: 4 pestanas de la tienda (MT, huevo, estrella, tutor) con los
-movimientos de TMCraft (menos los movimientos Z, Max/G-Max y los de pruebas CAP, que no se pueden usar), a precio segun su utilidad (puntuacion 1-100 calculada por score.js a partir de los datos de Showdown).
+movimientos de TMCraft (menos los movimientos Z, Max/G-Max y los de pruebas CAP, que no se pueden usar), a precio en fichas del casino segun su utilidad (puntuacion 1-100 calculada por score.js a partir de los datos de Showdown).
 
   node score.js <showdown_dir> <tmcraft models/item dir> > moves_scored.json     (ya incluido)
   python3 build_moves_catalog.py moves_scored.json <salida.json>
 """
 import json, sys
 
-TIERS = [(24, "Común", 400), (39, "Poco común", 1000), (54, "Raro", 2500), (69, "Épico", 5000), (100, "Legendario", 10000)]
+TIERS = [(24, "Común", 4), (39, "Poco común", 10), (54, "Raro", 25), (69, "Épico", 50), (100, "Legendario", 100)]  # precio en FICHAS del casino (1 ficha = 100 Michicoins al canjearla)
 CATEGORIES = [  # prefijo del item de TMCraft, id de categoria, titulo, multiplicador de precio
     ("tm", "tm_moves", "MT Movimientos", 1.0),
     ("egg", "egg_moves", "Mov. Huevo", 1.5),

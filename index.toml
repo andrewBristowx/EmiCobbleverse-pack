@@ -410,7 +410,7 @@ hash = "76f7de4a21d1ff2699fad245e370dc2d4a86e5d49e5597e82483d536f2cc353d"
 
 [[files]]
 file = "config/emipokemon/shop/extra/mt-movimientos.json"
-hash = "b8c35d63e79d5eb05135a7b7e3e090f5587a4e6c81df2dc87ef01ee8034366ab"
+hash = "6369e0966720805a53c18fe3562e8180101bdcd7ae599e08f988761561e52bbb"
 
 [[files]]
 file = "config/emiprogresion.json"
@@ -1331,7 +1331,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "24185929fb8cd7a1016e98b9c59cb5f78cc09c45723383f6ea53bd25b89a954c"
+hash = "0643a1911eebee07d24914250ee16b117a9a975a91c5adac2fa212c2948b2442"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"

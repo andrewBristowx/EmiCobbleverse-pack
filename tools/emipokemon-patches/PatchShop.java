@@ -7,6 +7,8 @@ import java.nio.file.*;
  *  1) ShopCatalog.reload()/initialize() llaman a MoveShopExtras.merge(...) para cargar config/emipokemon/shop/extra/*.json (en memoria).
  *  2) ShopNetworking.open(...) filtra el catalogo enviado segun la categoria (NPC de movimientos = solo sus 4 pestañas).
  *  3) ServiceNpcEntity$NpcKind.safeCategory() acepta tm_moves, egg_moves, star_moves y tutor_moves (antes solo 9 categorias fijas).
+ *  4) Los movimientos se pagan con fichas del casino: ShopNetworking redirige purchase(...) a MoveShopExtras.purchase(...) y el cliente
+ *     (ShopScreen / ShopProductButton) muestra "fichas" en lugar de "Michicoins" en esos productos (MoveShopExtras.currency).
  * Uso: PatchShop <jar_extraido> <stub_classes> <MoveShopExtras_classes> <salida>
  */
 public class PatchShop {
@@ -14,6 +16,21 @@ public class PatchShop {
     static final String CONFIG = SC + "$Config";
     static final String NK = "com/emipokemon/npc/ServiceNpcEntity$NpcKind";
     static final String EXTRAS = "com/emipokemon/shop/MoveShopExtras";
+    static final String SS = "com/emipokemon/shop/ShopService";
+    static final String SCREEN = "com/emipokemon/client/shop/ShopScreen";
+    static final String BUTTON = "com/emipokemon/client/shop/ShopProductButton";
+
+    /** invokedynamic makeConcatWithConstants cuyo patron contiene "Michicoins" o empieza por "Saldo:" (precio, total, saldo). */
+    static boolean isCurrencyConcat(AbstractInsnNode i) {
+        if (!(i instanceof InvokeDynamicInsnNode d) || !d.name.equals("makeConcatWithConstants") || !d.desc.equals("(J)Ljava/lang/String;")) return false;
+        String recipe = String.valueOf(d.bsmArgs[0]);
+        return recipe.contains("Michicoins") || recipe.startsWith("Saldo:");
+    }
+    static int concatSites(MethodNode m, String... unused) {
+        int n = 0;
+        for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) if (isCurrencyConcat(i)) n++;
+        return n;
+    }
 
     static ClassNode read(Path p) throws Exception {
         ClassNode cn = new ClassNode();
@@ -81,7 +98,8 @@ public class PatchShop {
                 if (i instanceof MethodInsnNode mi && mi.name.equals("snapshotJson")) {
                     InsnList f = new InsnList();
                     f.add(new VarInsnNode(Opcodes.ALOAD, 1)); // category
-                    f.add(new MethodInsnNode(Opcodes.INVOKESTATIC, EXTRAS, "filter", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", false));
+                    f.add(new VarInsnNode(Opcodes.ALOAD, 0)); // player
+                    f.add(new MethodInsnNode(Opcodes.INVOKESTATIC, EXTRAS, "filter", "(Ljava/lang/String;Ljava/lang/String;Lnet/minecraft/class_3222;)Ljava/lang/String;", false));
                     m.instructions.insert(mi, f);
                     hooked++;
                     break;
@@ -89,7 +107,72 @@ public class PatchShop {
             }
         }
         if (hooked != 1) throw new IllegalStateException("ShopNetworking hook count " + hooked);
+        // lambda del receptor: shopService.purchase(player, id, qty) -> MoveShopExtras.purchase(shopService, player, id, qty)
+        int redirected = 0;
+        String purchaseDesc = "(Lnet/minecraft/class_3222;Ljava/lang/String;I)L" + SS + "$PurchaseResult;";
+        for (MethodNode m : sn.methods) {
+            for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
+                if (i instanceof MethodInsnNode mi && mi.owner.equals(SS) && mi.name.equals("purchase") && mi.desc.equals(purchaseDesc)) {
+                    m.instructions.set(mi, new MethodInsnNode(Opcodes.INVOKESTATIC, EXTRAS, "purchase",
+                        "(L" + SS + ";" + purchaseDesc.substring(1), false));
+                    redirected++;
+                }
+            }
+        }
+        if (redirected != 1) throw new IllegalStateException("ShopNetworking purchase redirect count " + redirected);
         write(sn, out.resolve(SN + ".class"));
+
+        // --- cliente: etiquetas de moneda ---
+        String PV = "com/emipokemon/shop/ShopSnapshot$ProductView";
+        String curDesc = "(Ljava/lang/String;L" + PV + ";)Ljava/lang/String;";
+        ClassNode screen = read(jar.resolve(SCREEN + ".class"));
+        MethodNode details = null;
+        for (MethodNode m : screen.methods) {
+            int n = concatSites(m, "Michicoins", "Saldo:");
+            if (n == 0) continue;
+            if (details != null) throw new IllegalStateException("several ShopScreen methods with currency labels");
+            details = m;
+        }
+        if (details == null) throw new IllegalStateException("ShopScreen currency method not found");
+        // drawDetails(context): local 2 = product (ProductView), asignado una sola vez al principio
+        int stores = 0;
+        for (AbstractInsnNode i = details.instructions.getFirst(); i != null; i = i.getNext())
+            if (i instanceof VarInsnNode v && v.var == 2 && v.getOpcode() == Opcodes.ASTORE) stores++;
+        boolean ok = details.name.equals("drawDetails") && Type.getArgumentTypes(details.desc).length == 1 && stores == 1;
+        if (!ok) throw new IllegalStateException("ShopScreen.drawDetails: local 2 layout changed (" + details.desc + ", stores=" + stores + ")");
+        int sites = 0;
+        for (AbstractInsnNode i = details.instructions.getFirst(); i != null; i = i.getNext()) {
+            if (isCurrencyConcat(i)) {
+                InsnList h = new InsnList();
+                h.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                h.add(new MethodInsnNode(Opcodes.INVOKESTATIC, EXTRAS, "currency", curDesc, false));
+                AbstractInsnNode last = h.getLast();
+                details.instructions.insert(i, h);
+                i = last;
+                sites++;
+            }
+        }
+        if (sites != 3) throw new IllegalStateException("ShopScreen currency sites " + sites);
+        write(screen, out.resolve(SCREEN + ".class"));
+
+        ClassNode button = read(jar.resolve(BUTTON + ".class"));
+        sites = 0;
+        for (MethodNode m : button.methods) {
+            for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
+                if (isCurrencyConcat(i)) {
+                    InsnList h = new InsnList();
+                    h.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    h.add(new FieldInsnNode(Opcodes.GETFIELD, BUTTON, "product", "L" + PV + ";"));
+                    h.add(new MethodInsnNode(Opcodes.INVOKESTATIC, EXTRAS, "currency", curDesc, false));
+                    AbstractInsnNode last = h.getLast();
+                    m.instructions.insert(i, h);
+                    i = last;
+                    sites++;
+                }
+            }
+        }
+        if (sites != 1) throw new IllegalStateException("ShopProductButton currency sites " + sites);
+        write(button, out.resolve(BUTTON + ".class"));
 
         // --- NpcKind.safeCategory ---
         ClassNode nk = read(jar.resolve(NK + ".class"));
