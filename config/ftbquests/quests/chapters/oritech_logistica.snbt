@@ -39,9 +39,6 @@
 			id: "16DD1A8C58DE6A43"
 			x: 0.0d
 			y: 1.7d
-			dependencies: [
-				"02B080F997C64089"
-			]
 			tasks: [
 				{
 					id: "3FB696D264A163E0"

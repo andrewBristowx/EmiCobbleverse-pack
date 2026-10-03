@@ -813,7 +813,7 @@ hash = "563d348c4430546eab68804eb909eaae4a320314c2e891a8e88992ffbbb42e8b"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_componentes.snbt"
-hash = "42f89e9f99f614dae107d2803b85c77e8fa57fbfbc5f0b66af76d5e49a570fad"
+hash = "62d101c663fad25f692c94763b54b56236cdf500a2320b4e96c532b859af4fd8"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_energia.snbt"
@@ -825,7 +825,7 @@ hash = "91a6b5e33183625a46b67ab474068bf3abc2b90a415a6bf757a4c5da9c99b006"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_logistica.snbt"
-hash = "be1c76726803125d4a8352daadcebbd414d16afa4b0476e6ebded4ed7ccd06d6"
+hash = "9808b70064a46885f4e4ffd8075628e4522ac80fdfc199ea141d12239077493c"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_procesar.snbt"
