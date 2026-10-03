@@ -1,4 +1,5 @@
-# Recompensas Twitch (ejecutar como OP, una vez; se guardan en el servidor)
+# Recompensas Twitch. Forma facil: /function emipokemon:twitch/setup_recompensas (del datapack).
+# O pega estas lineas una a una como OP; se guardan en el servidor.
 /emi twitch eventos recompensa borrar_todas
 
 /emi twitch eventos recompensa giftsubs 1 donador comando loot give {player} loot emipokemon:twitch/random_tickets_2
