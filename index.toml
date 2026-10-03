@@ -3,6 +3,7 @@ hash-format = "sha256"
 
 
 
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -1230,6 +1231,10 @@ file = "datapacks/COBBLEVERSE-RCT-DP-v20.zip"
 hash = "54f0e8c1b061554bfba3de86dbcd9a6b39da4e8293e2b5141faa4254dc7ae400"
 
 [[files]]
+file = "datapacks/EmiCocina-DP.zip"
+hash = "5070054e50274323977201cdd514d62a3bca56fa6224abd1c42b44851f860f67"
+
+[[files]]
 file = "datapacks/EmiCostumes-DP.zip"
 hash = "387a9bdb9547ebb1b457330b5080e36345dc47aaa8e44a98e550671acef2c3ca"
 
@@ -1324,7 +1329,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "cc902e40c551ad51cbe548453b3e3e3ffa189d94a86452ab3dd0e0ce255e5460"
+hash = "26eb153bec4e5e832a54ff1e28acd8577a4d4caef9e111ac5ea328994ca57bfd"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1563,6 +1568,11 @@ metafile = true
 [[files]]
 file = "mods/cobblemon-exp.-all.pw.toml"
 hash = "acaaeb99fce91a8cee19cc92cac1cf1b723a879915b6dc0d67a79c4f74137f77"
+metafile = true
+
+[[files]]
+file = "mods/cobblemon-farmers-delight-compat.pw.toml"
+hash = "ff1f47ba9f26f4cef29d1ebebd541d81b298fbbf1dcf4ca641aaef7bb960d2da"
 metafile = true
 
 [[files]]
@@ -1806,6 +1816,11 @@ metafile = true
 [[files]]
 file = "mods/fancymenu.pw.toml"
 hash = "64ae365aeafb5c29ee501f84cd11600515fd2ca02e0aa89c0e282f45c53954af"
+metafile = true
+
+[[files]]
+file = "mods/farmers-delight-refabricated.pw.toml"
+hash = "f2dd3bcc1e38d91445004d43d84ed98f1e6c4c7284f0b91a80ca01129740044a"
 metafile = true
 
 [[files]]
