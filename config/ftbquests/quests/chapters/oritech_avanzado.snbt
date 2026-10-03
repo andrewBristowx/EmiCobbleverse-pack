@@ -10,14 +10,55 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "0BFE4ECDB86F1F25"
+			id: "6F067DF29A774674"
 			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "3867368D4C16959B"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "298F205ED34EA2E7"
+					type: "xp"
+					xp: 5
+				}
+			]
+		}
+		{
+			id: "06FD605830D09501"
+			x: 2.0d
 			y: 0.0d
 			dependencies: [
-				"21048343E7F1DB32"
-				"77E3C6E392DFC7B2"
-				"2744788513F1E053"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "7D3DE97BEA785822"
+					type: "item"
+					item: {
+						id: "oritech:reactor_rod"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "375CAEBC1859925B"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "0BFE4ECDB86F1F25"
+			x: 2.0d
+			y: 1.7d
+			dependencies: [
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -40,13 +81,10 @@
 		}
 		{
 			id: "2397A1E9E3CD950F"
-			x: 0.0d
-			y: 1.7d
+			x: 2.0d
+			y: 3.4d
 			dependencies: [
-				"21048343E7F1DB32"
-				"486D2844E3A68BBA"
-				"0AF41D4956274A11"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -69,13 +107,10 @@
 		}
 		{
 			id: "22747E923B22783B"
-			x: 0.0d
-			y: 3.4d
+			x: 2.0d
+			y: 5.1d
 			dependencies: [
-				"21048343E7F1DB32"
-				"580DC7AD8CFC5090"
-				"486D2844E3A68BBA"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -98,13 +133,10 @@
 		}
 		{
 			id: "4253264F16AD6D6D"
-			x: 0.0d
-			y: 5.1d
+			x: 2.0d
+			y: 6.8d
 			dependencies: [
-				"21048343E7F1DB32"
-				"2744788513F1E053"
-				"022C33C205FDF3A0"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -127,13 +159,10 @@
 		}
 		{
 			id: "38DE70626F1FBAB4"
-			x: 0.0d
-			y: 6.8d
+			x: 4.0d
+			y: 0.0d
 			dependencies: [
-				"0AF41D4956274A11"
-				"6327C6331BA5E151"
-				"486D2844E3A68BBA"
-				"5C8E39CE82317FD7"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -156,13 +185,10 @@
 		}
 		{
 			id: "1C7DB43A7DE4535F"
-			x: 0.0d
-			y: 8.5d
+			x: 4.0d
+			y: 1.7d
 			dependencies: [
-				"77E3C6E392DFC7B2"
-				"486D2844E3A68BBA"
-				"2D15C219C7D2D516"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -184,42 +210,11 @@
 			]
 		}
 		{
-			id: "3E52C96B6D7FEC49"
-			x: 2.0d
-			y: 0.0d
-			dependencies: [
-				"69489883301E1920"
-				"6ED72E5609C10122"
-				"50C90A4B5D54FB08"
-				"17F6F3E181F74E52"
-				"66A35F66C2B8A3AC"
-			]
-			tasks: [
-				{
-					id: "7C9D4BDA9E88DDCE"
-					type: "item"
-					item: {
-						id: "oritech:machine_processing_addon"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "6B95C2249385DFDB"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "28C2768B1AFC295D"
-			x: 2.0d
-			y: 1.7d
+			x: 4.0d
+			y: 3.4d
 			dependencies: [
-				"21048343E7F1DB32"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -242,10 +237,10 @@
 		}
 		{
 			id: "406C51DF7F7A7BBD"
-			x: 2.0d
-			y: 3.4d
+			x: 4.0d
+			y: 5.1d
 			dependencies: [
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -267,42 +262,11 @@
 			]
 		}
 		{
-			id: "5DC27E79BA35EAE9"
-			x: 2.0d
-			y: 5.1d
-			dependencies: [
-				"0AF41D4956274A11"
-				"2C745C74481A2E9C"
-				"69489883301E1920"
-			]
-			tasks: [
-				{
-					id: "63EF07264777F3DD"
-					type: "item"
-					item: {
-						id: "oritech:machine_inventory_proxy_addon"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "7FA073362E63B63A"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "0C15308FD2FBE8F9"
-			x: 2.0d
+			x: 4.0d
 			y: 6.8d
 			dependencies: [
-				"21048343E7F1DB32"
-				"022C33C205FDF3A0"
-				"486D2844E3A68BBA"
-				"66A35F66C2B8A3AC"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -325,12 +289,10 @@
 		}
 		{
 			id: "2F2DBE54CD2A3C1D"
-			x: 2.0d
-			y: 8.5d
+			x: 6.0d
+			y: 0.0d
 			dependencies: [
-				"5330BDDABE581643"
-				"66A35F66C2B8A3AC"
-				"3BBDA12D97134A48"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -352,149 +314,11 @@
 			]
 		}
 		{
-			id: "2798830D7EA88C59"
-			x: 4.0d
-			y: 0.0d
-			dependencies: [
-				"115AD32A882AE4AC"
-				"41ABF10B0F9E4618"
-			]
-			tasks: [
-				{
-					id: "786380610C9FE2B8"
-					type: "item"
-					item: {
-						id: "oritech:shrinker_block"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "632C9D87748F2F60"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "0B5837605D6B8915"
-			x: 4.0d
+			id: "6AD2FCC5452F37DF"
+			x: 6.0d
 			y: 1.7d
 			dependencies: [
-				"2C745C74481A2E9C"
-				"036934C06BBD1A88"
-			]
-			tasks: [
-				{
-					id: "143F06CCFE08A33E"
-					type: "item"
-					item: {
-						id: "oritech:reactor_controller"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "432A357DDBA2D2A2"
-					type: "xp"
-					xp: 30
-				}
-			]
-		}
-		{
-			id: "06FD605830D09501"
-			x: 4.0d
-			y: 3.4d
-			dependencies: [
-				"21048343E7F1DB32"
-				"022C33C205FDF3A0"
-			]
-			tasks: [
-				{
-					id: "7D3DE97BEA785822"
-					type: "item"
-					item: {
-						id: "oritech:reactor_rod"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "375CAEBC1859925B"
-					type: "xp"
-					xp: 30
-				}
-			]
-		}
-		{
-			id: "70587A9474D1F86C"
-			x: 4.0d
-			y: 5.1d
-			dependencies: [
-				"3BBDA12D97134A48"
-				"17F6F3E181F74E52"
-				"0797264310904CC6"
-			]
-			tasks: [
-				{
-					id: "0606ED16843ADEAA"
-					type: "item"
-					item: {
-						id: "oritech:accelerator_controller"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "329EF9EADE078598"
-					type: "xp"
-					xp: 30
-				}
-			]
-		}
-		{
-			id: "62628D14D61E8841"
-			x: 4.0d
-			y: 6.8d
-			dependencies: [
-				"41ABF10B0F9E4618"
-				"593AF411FFBD58F1"
-				"1A065B23954C06D4"
-			]
-			tasks: [
-				{
-					id: "023E9F2A025A4815"
-					type: "item"
-					item: {
-						id: "oritech:particle_collector_block"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "72C682D6D14621A3"
-					type: "xp"
-					xp: 30
-				}
-			]
-		}
-		{
-			id: "6AD2FCC5452F37DF"
-			x: 4.0d
-			y: 8.5d
-			dependencies: [
-				"77E3C6E392DFC7B2"
-				"1AC0366DAB53F317"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -516,70 +340,11 @@
 			]
 		}
 		{
-			id: "62B149F37E3F0C22"
-			x: 6.0d
-			y: 0.0d
-			dependencies: [
-				"3ABF76CB7D428A1A"
-				"5DF7002A0B1098A5"
-				"69489883301E1920"
-				"77E3C6E392DFC7B2"
-			]
-			tasks: [
-				{
-					id: "5778934CFA097312"
-					type: "item"
-					item: {
-						id: "oritech:hand_drill"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "2AFE9C1FD957AAD9"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "1C92341FBE048CDE"
-			x: 6.0d
-			y: 1.7d
-			dependencies: [
-				"3ABF76CB7D428A1A"
-				"5DF7002A0B1098A5"
-				"69489883301E1920"
-				"77E3C6E392DFC7B2"
-			]
-			tasks: [
-				{
-					id: "2A88C60519AB0A82"
-					type: "item"
-					item: {
-						id: "oritech:chainsaw"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "623870296D776313"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "0B269200150AE19C"
 			x: 6.0d
 			y: 3.4d
 			dependencies: [
-				"66A35F66C2B8A3AC"
-				"580DC7AD8CFC5090"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -605,8 +370,7 @@
 			x: 6.0d
 			y: 5.1d
 			dependencies: [
-				"66A35F66C2B8A3AC"
-				"1AC0366DAB53F317"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -628,12 +392,141 @@
 			]
 		}
 		{
-			id: "1BD2D5BADF0039E7"
+			id: "54E59BAD0E5999F8"
 			x: 6.0d
 			y: 6.8d
 			dependencies: [
-				"66A35F66C2B8A3AC"
-				"69489883301E1920"
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "2141FC107142E2C2"
+					type: "item"
+					item: {
+						id: "oritech:exo_boots"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6661F9EED436EAFA"
+					type: "xp"
+					xp: 25
+				}
+			]
+		}
+		{
+			id: "5DC27E79BA35EAE9"
+			x: 8.0d
+			y: 0.0d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "63EF07264777F3DD"
+					type: "item"
+					item: {
+						id: "oritech:machine_inventory_proxy_addon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "7FA073362E63B63A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "0B5837605D6B8915"
+			x: 8.0d
+			y: 1.7d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "143F06CCFE08A33E"
+					type: "item"
+					item: {
+						id: "oritech:reactor_controller"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "432A357DDBA2D2A2"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "62B149F37E3F0C22"
+			x: 8.0d
+			y: 3.4d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "5778934CFA097312"
+					type: "item"
+					item: {
+						id: "oritech:hand_drill"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "2AFE9C1FD957AAD9"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1C92341FBE048CDE"
+			x: 8.0d
+			y: 5.1d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "2A88C60519AB0A82"
+					type: "item"
+					item: {
+						id: "oritech:chainsaw"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "623870296D776313"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1BD2D5BADF0039E7"
+			x: 8.0d
+			y: 6.8d
+			dependencies: [
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
@@ -655,19 +548,18 @@
 			]
 		}
 		{
-			id: "54E59BAD0E5999F8"
-			x: 6.0d
-			y: 8.5d
+			id: "3E52C96B6D7FEC49"
+			x: 10.0d
+			y: 0.0d
 			dependencies: [
-				"66A35F66C2B8A3AC"
-				"5C8E39CE82317FD7"
+				"6F067DF29A774674"
 			]
 			tasks: [
 				{
-					id: "2141FC107142E2C2"
+					id: "7C9D4BDA9E88DDCE"
 					type: "item"
 					item: {
-						id: "oritech:exo_boots"
+						id: "oritech:machine_processing_addon"
 						count: 1
 					}
 					consume_items: false
@@ -675,9 +567,87 @@
 			]
 			rewards: [
 				{
-					id: "6661F9EED436EAFA"
+					id: "6B95C2249385DFDB"
 					type: "xp"
-					xp: 25
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2798830D7EA88C59"
+			x: 10.0d
+			y: 1.7d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "786380610C9FE2B8"
+					type: "item"
+					item: {
+						id: "oritech:shrinker_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "632C9D87748F2F60"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "70587A9474D1F86C"
+			x: 10.0d
+			y: 3.4d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "0606ED16843ADEAA"
+					type: "item"
+					item: {
+						id: "oritech:accelerator_controller"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "329EF9EADE078598"
+					type: "xp"
+					xp: 30
+				}
+			]
+		}
+		{
+			id: "62628D14D61E8841"
+			x: 10.0d
+			y: 5.1d
+			dependencies: [
+				"6F067DF29A774674"
+			]
+			tasks: [
+				{
+					id: "023E9F2A025A4815"
+					type: "item"
+					item: {
+						id: "oritech:particle_collector_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "72C682D6D14621A3"
+					type: "xp"
+					xp: 30
 				}
 			]
 		}

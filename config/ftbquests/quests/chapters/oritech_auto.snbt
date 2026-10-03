@@ -10,21 +10,36 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "5FB9A210948B3524"
-			x: 4.0d
-			y: 2.55d
+			id: "1FBC89D14C19580F"
+			x: 0.0d
+			y: 5.949999999999999d
+			tasks: [
+				{
+					id: "585FE0E0D4F82C11"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "15983E3DA46E98BA"
+					type: "xp"
+					xp: 5
+				}
+			]
+		}
+		{
+			id: "341F911BFC312678"
+			x: 2.0d
+			y: 5.1d
 			dependencies: [
-				"69489883301E1920"
-				"7F3EF734B1D0F2FA"
-				"6CA84D02305EBB46"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
-					id: "67F6C92028716B47"
+					id: "1B7F025E4921E6E7"
 					type: "item"
 					item: {
-						id: "oritech:destroyer_block"
+						id: "oritech:spawner_cage_block"
 						count: 1
 					}
 					consume_items: false
@@ -32,7 +47,7 @@
 			]
 			rewards: [
 				{
-					id: "3135A7D6EFC8C43D"
+					id: "5ACF8F724C840F52"
 					type: "xp"
 					xp: 15
 				}
@@ -40,13 +55,10 @@
 		}
 		{
 			id: "57E95C857E4B04AD"
-			x: 0.0d
-			y: 0.0d
+			x: 2.0d
+			y: 6.8d
 			dependencies: [
-				"2C745C74481A2E9C"
-				"00BECF0C271ABC12"
-				"69489883301E1920"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
@@ -69,13 +81,10 @@
 		}
 		{
 			id: "09A35B95D1E9F69E"
-			x: 0.0d
-			y: 1.7d
+			x: 2.0d
+			y: 8.5d
 			dependencies: [
-				"5C8E39CE82317FD7"
-				"2C745C74481A2E9C"
-				"69489883301E1920"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
@@ -98,12 +107,10 @@
 		}
 		{
 			id: "03FF6D19DDDF49CB"
-			x: 0.0d
-			y: 3.4d
+			x: 2.0d
+			y: 10.2d
 			dependencies: [
-				"486D2844E3A68BBA"
-				"69489883301E1920"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
@@ -126,14 +133,10 @@
 		}
 		{
 			id: "7F3EF734B1D0F2FA"
-			x: 0.0d
-			y: 5.1d
+			x: 2.0d
+			y: 0.0d
 			dependencies: [
-				"0AF41D4956274A11"
-				"580DC7AD8CFC5090"
-				"69489883301E1920"
-				"486D2844E3A68BBA"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
@@ -155,22 +158,18 @@
 			]
 		}
 		{
-			id: "64B5FAE9CDD2C611"
-			x: 0.0d
-			y: 6.8d
+			id: "5B3CD58EC16BE03D"
+			x: 2.0d
+			y: 2.55d
 			dependencies: [
-				"3BBDA12D97134A48"
-				"2E75916FC129476E"
-				"69489883301E1920"
-				"593AF411FFBD58F1"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
-					id: "62466D9F06C31C04"
+					id: "060F1D4526BCF779"
 					type: "item"
 					item: {
-						id: "oritech:deep_drill_block"
+						id: "oritech:enchantment_catalyst_block"
 						count: 1
 					}
 					consume_items: false
@@ -178,7 +177,33 @@
 			]
 			rewards: [
 				{
-					id: "4B13F279955E0260"
+					id: "5DFAEE2AACA6D378"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "5FB9A210948B3524"
+			x: 4.0d
+			y: 0.0d
+			dependencies: [
+				"7F3EF734B1D0F2FA"
+			]
+			tasks: [
+				{
+					id: "67F6C92028716B47"
+					type: "item"
+					item: {
+						id: "oritech:destroyer_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3135A7D6EFC8C43D"
 					type: "xp"
 					xp: 15
 				}
@@ -186,14 +211,10 @@
 		}
 		{
 			id: "3F09163706F1DFDE"
-			x: 0.0d
-			y: 8.5d
+			x: 2.0d
+			y: 11.899999999999999d
 			dependencies: [
-				"3C9A091F6CC05AA9"
-				"65FC60EFEDB9E12F"
-				"69489883301E1920"
-				"41ABF10B0F9E4618"
-				"66A35F66C2B8A3AC"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
@@ -217,9 +238,8 @@
 		{
 			id: "2C7D5FA0D5E52975"
 			x: 4.0d
-			y: 4.25d
+			y: 1.7d
 			dependencies: [
-				"341F911BFC312678"
 				"5B3CD58EC16BE03D"
 			]
 			tasks: [
@@ -242,39 +262,11 @@
 			]
 		}
 		{
-			id: "341F911BFC312678"
-			x: 2.0d
-			y: 3.4d
-			dependencies: [
-				"21048343E7F1DB32"
-			]
-			tasks: [
-				{
-					id: "1B7F025E4921E6E7"
-					type: "item"
-					item: {
-						id: "oritech:spawner_cage_block"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "5ACF8F724C840F52"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "6DF2FD62CA2B54F6"
 			x: 4.0d
-			y: 5.95d
+			y: 3.4d
 			dependencies: [
 				"5B3CD58EC16BE03D"
-				"022C33C205FDF3A0"
-				"3BBDA12D97134A48"
 			]
 			tasks: [
 				{
@@ -296,20 +288,18 @@
 			]
 		}
 		{
-			id: "5B3CD58EC16BE03D"
-			x: 2.0d
+			id: "64B5FAE9CDD2C611"
+			x: 4.0d
 			y: 5.1d
 			dependencies: [
-				"45A30A85AB95E755"
-				"65FC60EFEDB9E12F"
-				"5DF7002A0B1098A5"
+				"1FBC89D14C19580F"
 			]
 			tasks: [
 				{
-					id: "060F1D4526BCF779"
+					id: "62466D9F06C31C04"
 					type: "item"
 					item: {
-						id: "oritech:enchantment_catalyst_block"
+						id: "oritech:deep_drill_block"
 						count: 1
 					}
 					consume_items: false
@@ -317,7 +307,7 @@
 			]
 			rewards: [
 				{
-					id: "5DFAEE2AACA6D378"
+					id: "4B13F279955E0260"
 					type: "xp"
 					xp: 15
 				}

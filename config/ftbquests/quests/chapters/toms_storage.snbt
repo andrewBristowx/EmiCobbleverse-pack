@@ -10,9 +10,30 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "1623CAA55A58CA64"
+			id: "3FE9AD8B6B8F7D7D"
 			x: 0.0d
-			y: 0.0d
+			y: 15.299999999999999d
+			tasks: [
+				{
+					id: "5BAF1FC6F265645D"
+					type: "checkmark"
+				}
+			]
+			rewards: [
+				{
+					id: "5BFBD61B7448F38B"
+					type: "xp"
+					xp: 5
+				}
+			]
+		}
+		{
+			id: "1623CAA55A58CA64"
+			x: 2.0d
+			y: 6.8d
+			dependencies: [
+				"3FE9AD8B6B8F7D7D"
+			]
 			tasks: [
 				{
 					id: "16382FDF8F3FBB81"
@@ -33,9 +54,139 @@
 			]
 		}
 		{
-			id: "00D518DFDC305633"
+			id: "3BB470584852F61C"
 			x: 2.0d
-			y: 0.0d
+			y: 18.7d
+			dependencies: [
+				"3FE9AD8B6B8F7D7D"
+			]
+			tasks: [
+				{
+					id: "66EF40CB3E3A3760"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_proxy"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "7376D20A470E8A92"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "01643C13F9E29435"
+			x: 2.0d
+			y: 20.4d
+			dependencies: [
+				"3FE9AD8B6B8F7D7D"
+			]
+			tasks: [
+				{
+					id: "43B987AFEDB4D529"
+					type: "item"
+					item: {
+						id: "toms_storage:open_crate"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "097C18F10D291E22"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "4F4D1AB1D639D80C"
+			x: 2.0d
+			y: 16.15d
+			dependencies: [
+				"3FE9AD8B6B8F7D7D"
+			]
+			tasks: [
+				{
+					id: "08E5597E2A2221E4"
+					type: "item"
+					item: {
+						id: "toms_storage:item_filter"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "4056FB1AFAC1DD6F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3CE76EAE8EE1567A"
+			x: 2.0d
+			y: 22.099999999999998d
+			dependencies: [
+				"3FE9AD8B6B8F7D7D"
+			]
+			tasks: [
+				{
+					id: "1E755060D72F3610"
+					type: "item"
+					item: {
+						id: "toms_storage:paint_kit"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0278D3763D46355B"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "61E7A6C129F03946"
+			x: 2.0d
+			y: 23.799999999999997d
+			dependencies: [
+				"3FE9AD8B6B8F7D7D"
+			]
+			tasks: [
+				{
+					id: "35CA5F169FD8B7A5"
+					type: "item"
+					item: {
+						id: "toms_storage:adv_wireless_terminal"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "199E1F84B64514F3"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "00D518DFDC305633"
+			x: 4.0d
+			y: 6.8d
 			dependencies: [
 				"1623CAA55A58CA64"
 			]
@@ -60,8 +211,8 @@
 		}
 		{
 			id: "60250A560486E6EE"
-			x: 2.0d
-			y: 1.7d
+			x: 4.0d
+			y: 0.0d
 			dependencies: [
 				"1623CAA55A58CA64"
 			]
@@ -85,34 +236,8 @@
 			]
 		}
 		{
-			id: "467E30F951B70460"
-			x: 6.0d
-			y: 1.7d
-			dependencies: [
-				"60250A560486E6EE"
-			]
-			tasks: [
-				{
-					id: "782C1AB3B2519E1B"
-					type: "item"
-					item: {
-						id: "toms_storage:crafting_terminal"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "7EE397F57C9ADE69"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "7E500C9BD2332669"
-			x: 2.0d
+			x: 4.0d
 			y: 3.4d
 			dependencies: [
 				"1623CAA55A58CA64"
@@ -137,58 +262,9 @@
 			]
 		}
 		{
-			id: "3BACC719F0505F60"
-			x: 6.0d
-			y: 3.4d
-			dependencies: [
-				"7E500C9BD2332669"
-			]
-			tasks: [
-				{
-					id: "35D188C1A38DAAA0"
-					type: "item"
-					item: {
-						id: "toms_storage:inventory_cable_connector"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "494AD16D96775109"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "3BB470584852F61C"
-			x: 0.0d
-			y: 1.7d
-			tasks: [
-				{
-					id: "66EF40CB3E3A3760"
-					type: "item"
-					item: {
-						id: "toms_storage:inventory_proxy"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "7376D20A470E8A92"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "7E36529C3946BE82"
-			x: 2.0d
-			y: 5.1d
+			x: 4.0d
+			y: 8.5d
 			dependencies: [
 				"1623CAA55A58CA64"
 			]
@@ -212,63 +288,9 @@
 			]
 		}
 		{
-			id: "1E7776A156B72829"
-			x: 6.0d
-			y: 5.1d
-			dependencies: [
-				"7E500C9BD2332669"
-				"1623CAA55A58CA64"
-			]
-			tasks: [
-				{
-					id: "6975AFF061EC8D87"
-					type: "item"
-					item: {
-						id: "toms_storage:basic_inventory_hopper"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "5C8D500C44B3FA49"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "36794FB63D577D5F"
-			x: 6.0d
-			y: 6.8d
-			dependencies: [
-				"7E500C9BD2332669"
-				"1623CAA55A58CA64"
-			]
-			tasks: [
-				{
-					id: "4D3418A425DD2F7C"
-					type: "item"
-					item: {
-						id: "toms_storage:level_emitter"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "49ACEF74EB07D65B"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "1618E23C4DA323C4"
-			x: 2.0d
-			y: 6.8d
+			x: 4.0d
+			y: 10.2d
 			dependencies: [
 				"1623CAA55A58CA64"
 			]
@@ -292,55 +314,9 @@
 			]
 		}
 		{
-			id: "01643C13F9E29435"
-			x: 0.0d
-			y: 3.4d
-			tasks: [
-				{
-					id: "43B987AFEDB4D529"
-					type: "item"
-					item: {
-						id: "toms_storage:open_crate"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "097C18F10D291E22"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
-			id: "4F4D1AB1D639D80C"
-			x: 0.0d
-			y: 5.1d
-			tasks: [
-				{
-					id: "08E5597E2A2221E4"
-					type: "item"
-					item: {
-						id: "toms_storage:item_filter"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "4056FB1AFAC1DD6F"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "39439ABA1F6104B2"
-			x: 2.0d
-			y: 8.5d
+			x: 4.0d
+			y: 15.3d
 			dependencies: [
 				"4F4D1AB1D639D80C"
 			]
@@ -366,7 +342,7 @@
 		{
 			id: "785E8ACE7CE38A33"
 			x: 4.0d
-			y: 2.55d
+			y: 17.0d
 			dependencies: [
 				"4F4D1AB1D639D80C"
 			]
@@ -392,7 +368,7 @@
 		{
 			id: "4DC2C91440590067"
 			x: 4.0d
-			y: 4.25d
+			y: 11.899999999999999d
 			dependencies: [
 				"1623CAA55A58CA64"
 			]
@@ -416,32 +392,9 @@
 			]
 		}
 		{
-			id: "3CE76EAE8EE1567A"
-			x: 0.0d
-			y: 6.8d
-			tasks: [
-				{
-					id: "1E755060D72F3610"
-					type: "item"
-					item: {
-						id: "toms_storage:paint_kit"
-						count: 1
-					}
-					consume_items: false
-				}
-			]
-			rewards: [
-				{
-					id: "0278D3763D46355B"
-					type: "xp"
-					xp: 15
-				}
-			]
-		}
-		{
 			id: "30FEE0A7A9E3F3E4"
 			x: 4.0d
-			y: 5.95d
+			y: 13.6d
 			dependencies: [
 				"1623CAA55A58CA64"
 			]
@@ -465,15 +418,18 @@
 			]
 		}
 		{
-			id: "61E7A6C129F03946"
-			x: 0.0d
-			y: 8.5d
+			id: "467E30F951B70460"
+			x: 6.0d
+			y: 0.0d
+			dependencies: [
+				"60250A560486E6EE"
+			]
 			tasks: [
 				{
-					id: "35CA5F169FD8B7A5"
+					id: "782C1AB3B2519E1B"
 					type: "item"
 					item: {
-						id: "toms_storage:adv_wireless_terminal"
+						id: "toms_storage:crafting_terminal"
 						count: 1
 					}
 					consume_items: false
@@ -481,7 +437,85 @@
 			]
 			rewards: [
 				{
-					id: "199E1F84B64514F3"
+					id: "7EE397F57C9ADE69"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3BACC719F0505F60"
+			x: 6.0d
+			y: 1.7d
+			dependencies: [
+				"7E500C9BD2332669"
+			]
+			tasks: [
+				{
+					id: "35D188C1A38DAAA0"
+					type: "item"
+					item: {
+						id: "toms_storage:inventory_cable_connector"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "494AD16D96775109"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1E7776A156B72829"
+			x: 6.0d
+			y: 3.4d
+			dependencies: [
+				"7E500C9BD2332669"
+			]
+			tasks: [
+				{
+					id: "6975AFF061EC8D87"
+					type: "item"
+					item: {
+						id: "toms_storage:basic_inventory_hopper"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5C8D500C44B3FA49"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "36794FB63D577D5F"
+			x: 6.0d
+			y: 5.1d
+			dependencies: [
+				"7E500C9BD2332669"
+			]
+			tasks: [
+				{
+					id: "4D3418A425DD2F7C"
+					type: "item"
+					item: {
+						id: "toms_storage:level_emitter"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "49ACEF74EB07D65B"
 					type: "xp"
 					xp: 15
 				}
