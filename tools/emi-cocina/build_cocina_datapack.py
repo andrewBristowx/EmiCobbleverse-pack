@@ -14,14 +14,18 @@ BOWL = {"id": "minecraft:bowl", "count": 1}
 def eff(effect_id, seconds, amplifier=0):
     return {"effect": {"id": effect_id, "duration": int(seconds * TICKS), "amplifier": amplifier, "show_particles": True, "show_icon": True}, "probability": 1.0}
 
+def jtext(component):
+    """Texto de objeto en 1.21.1: los componentes de item (recetas y loot tables) llevan el texto como cadena JSON, no como objeto."""
+    return json.dumps(component, ensure_ascii=False, separators=(",", ":"))
+
 def dish(name, color, base, lore, nutrition, saturation, effects, container=True, rarity=None, glint=False, custom_data=None,
          count=1, stack=16, eat_seconds=1.6):
     food = {"nutrition": nutrition, "saturation": saturation, "can_always_eat": True, "eat_seconds": eat_seconds, "effects": effects}
     if container:
         food["using_converts_to"] = dict(BOWL)
     comp = {
-        "minecraft:custom_name": {"text": name, "italic": False, "color": color},
-        "minecraft:lore": [{"text": l, "italic": False, "color": "gray"} for l in lore],
+        "minecraft:custom_name": jtext({"text": name, "italic": False, "color": color}),
+        "minecraft:lore": [jtext({"text": l, "italic": False, "color": "gray"}) for l in lore],
         "minecraft:food": food,
         "minecraft:max_stack_size": stack,
     }
