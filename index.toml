@@ -1734,9 +1734,8 @@ hash = "3e1c0b09e95b7f03d678877aad15abb9a12f9e3427e35c93a25d074ee188b794"
 metafile = true
 
 [[files]]
-file = "mods/cobblemorph.pw.toml"
-hash = "4847a3520cf45cf784041d3bb4e05f4bbbd3cfce00a5cdfa84c20fa7761807df"
-metafile = true
+file = "mods/cobblemorph-1.0.5.jar"
+hash = "8b9ac6dbe0e3b1d127d54c42dd9ffa45cfbc2546818bc2bcbb8ceaac438afc1e"
 
 [[files]]
 file = "mods/cobblepastureoptimizer-0.1.0-alpha.6+1.21.1.jar"
