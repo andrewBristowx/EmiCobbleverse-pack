@@ -1,0 +1,1009 @@
+{
+	"chapter_group.4BD0F4C4DA544665.title": "Cocina"
+	"chapter_group.8FD05755043B163E.title": "Oritech"
+	"chapter_group.9936984355C6AD67.title": "Almacenamiento"
+	"quest.2F03AC2F0B579310.title": "¡Bienvenido a EmiCobbleverse!"
+	"quest.2F03AC2F0B579310.quest_subtitle": "Empieza aquí"
+	"quest.2F03AC2F0B579310.quest_desc": [
+		"&6Esta guía te enseña, paso a paso, los mods de &fcocina&6, &ftecnología (Oritech)&6 y &falmacenamiento (Tom's Storage)&6."
+		""
+		"• Cada capítulo (a la izquierda) es un mod. Las misiones se desbloquean en orden: las flechas muestran qué necesitas antes."
+		"• Las misiones de objetos se completan solas al tener el objeto en el inventario; no se gasta."
+		"• Para ver cómo se fabrica algo, pasa el ratón sobre el objeto en el inventario y pulsa &eR&f (recetas) o &eU&f (usos) en REI."
+		"• Cada misión da un poco de experiencia al completarla."
+	]
+	"quest.54B0369E539A1087.title": "Cocina Pokémon"
+	"quest.54B0369E539A1087.quest_desc": [
+		"Cocina con la olla de Farmer's Delight y descubre los platos con bayas que dan efectos de Pokémon y de Minecraft."
+		""
+		"Capítulos: &eCocina básica&f y &ePlatos Pokémon&f."
+	]
+	"quest.94A79E536B40F774.title": "Tecnología: Oritech"
+	"quest.94A79E536B40F774.quest_desc": [
+		"Máquinas, energía y automatización. Con la integración de Cobblemon también fabrica objetos de Pokémon."
+		""
+		"Capítulos: &ePrimeros pasos&f, &eProcesamiento&f, &eEnergía&f, &eLogística&f, &eAutomatización&f y &eAvanzado&f."
+		""
+		"&aAviso:&f los minerales de Oritech solo aparecen en chunks nuevos; explora la zona nueva del mapa."
+	]
+	"quest.7D6FE158E67C868C.title": "Almacenamiento: Tom's Storage"
+	"quest.7D6FE158E67C868C.quest_desc": [
+		"Conecta tus cofres en una sola red y accede a todo desde una terminal."
+		""
+		"Capítulo: &eTom's Storage&f."
+	]
+	"chapter.329CA985584961E8.title": "Bienvenida"
+	"quest.126108D94C5FFB3F.title": "Cuchillo de hierro"
+	"quest.126108D94C5FFB3F.quest_desc": [
+		"El cuchillo se usa sobre la tabla de picar para cortar ingredientes y obtener más cosas de los alimentos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"Palo, lingote de hierro"
+	]
+	"quest.F05148564D2D5AA5.title": "Tabla de picar"
+	"quest.F05148564D2D5AA5.quest_desc": [
+		"Coloca la tabla en el suelo, pon un objeto encima y úsala con la herramienta adecuada (el cuchillo, por ejemplo)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× tablones, 2× Palo"
+	]
+	"quest.3771D5B76E52960B.title": "Parrilla"
+	"quest.3771D5B76E52960B.quest_desc": [
+		"La parrilla es una fuente de calor. La olla necesita una fuente de calor justo debajo para cocinar."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× Ladrillos, 3× lingote de hierro, Hoguera"
+	]
+	"quest.323D9D47A93925AA.title": "Olla"
+	"quest.323D9D47A93925AA.quest_desc": [
+		"La olla es el centro de la cocina: pon hasta 6 ingredientes y, si el plato lo pide, un cuenco como recipiente. Debajo necesita calor (parrilla, hoguera, lava...)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de hierro, 2× Ladrillo, Pala de madera, cubo de agua"
+		""
+		"&aTruco:&f al sacar un plato de cuenco hay que tener un cuenco en la mano."
+	]
+	"quest.9B993C9E7C9D6C84.title": "Sartén"
+	"quest.9B993C9E7C9D6C84.quest_desc": [
+		"La sartén cocina alimentos sobre la parrilla o una hoguera, sin necesidad de olla."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× lingote de hierro, Ladrillo"
+	]
+	"quest.C30C33CCAE96354E.title": "Arroz"
+	"quest.C30C33CCAE96354E.quest_desc": [
+		"El arroz crece en el agua. Cocínalo en la olla para obtener arroz cocido, base de los curris."
+		""
+		"&6Receta de crafteo&r &7(sin forma; en REI pulsa R sobre el objeto para verla)&f"
+		"Panícula de arroz"
+		""
+		"&7Plántalo en tierra con agua encima (tierra de cultivo con una capa de agua).&f"
+	]
+	"quest.99D01C0EA298D419.title": "Arroz cocido"
+	"quest.99D01C0EA298D419.quest_desc": [
+		"Pon arroz en la olla (con calor debajo) y obtendrás arroz cocido. Lo necesitan los 18 curris de baya."
+	]
+	"quest.353B6CF3F27545D9.title": "Consejos de cocina"
+	"quest.353B6CF3F27545D9.quest_desc": [
+		"&6Antes de cocinar:&f"
+		"• Usa la parrilla (o una hoguera) debajo de la olla."
+		"• Los platos que se sirven en cuenco necesitan un cuenco en la mano al sacarlos de la olla."
+		"• Mira la receta de cada plato en REI (R sobre el plato)."
+		"• Los platos de EmiCobbleverse dan efectos de Minecraft y de Pokémon (CobbleCuisine)."
+	]
+	"chapter.74FDBFB9ADDE62C1.title": "Cocina básica"
+	"chapter.74FDBFB9ADDE62C1.chapter_subtitle": [
+		"Las herramientas de Farmer's Delight"
+	]
+	"quest.08F1296AA1C977F2.title": "Tu primer plato"
+	"quest.08F1296AA1C977F2.quest_desc": [
+		"Con la olla lista y arroz cocido, ya puedes preparar los platos de EmiCobbleverse."
+		""
+		"Cada plato se prepara en la olla y se completa al &ecomerlo&f."
+		""
+		"&aConsejo:&f las bayas se encuentran en los árboles de bayas de Cobblemon."
+	]
+	"quest.62F605F14A7D1083.title": "Curry de Baya Chilan (Normal)"
+	"quest.62F605F14A7D1083.quest_desc": [
+		"&6Ingredientes:&f 2× baya Chilan, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Normal 5 min + Saturación 5 s."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.38792654DAB76830.title": "Curry de Baya Occa (Fuego)"
+	"quest.38792654DAB76830.quest_desc": [
+		"&6Ingredientes:&f 2× baya Occa, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Fuego 5 min + Resistencia al fuego 3 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.E1597F1607A22C7B.title": "Curry de Baya Passho (Agua)"
+	"quest.E1597F1607A22C7B.quest_desc": [
+		"&6Ingredientes:&f 2× baya Passho, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Agua 5 min + Respiración acuática 3 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.C4742CABFD86EDA5.title": "Curry de Baya Wacan (Eléctrico)"
+	"quest.C4742CABFD86EDA5.quest_desc": [
+		"&6Ingredientes:&f 2× baya Wacan, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Eléctrico 5 min + Velocidad II 2 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.4F89382F37C7AB29.title": "Curry de Baya Rindo (Planta)"
+	"quest.4F89382F37C7AB29.quest_desc": [
+		"&6Ingredientes:&f 2× baya Rindo, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Planta 5 min + Regeneración 30 s."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.DC1E736F5D6675B2.title": "Curry de Baya Yache (Hielo)"
+	"quest.DC1E736F5D6675B2.quest_desc": [
+		"&6Ingredientes:&f 2× baya Yache, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Hielo 5 min + Resistencia 90 s."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.70F7723114096CAD.title": "Curry de Baya Chople (Lucha)"
+	"quest.70F7723114096CAD.quest_desc": [
+		"&6Ingredientes:&f 2× baya Chople, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Lucha 5 min + Fuerza 90 s."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.B8033ACE8E0A0032.title": "Curry de Baya Kebia (Veneno)"
+	"quest.B8033ACE8E0A0032.quest_desc": [
+		"&6Ingredientes:&f 2× baya Kebia, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Veneno 5 min + Absorción II 2 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.328DD7C939B34635.title": "Curry de Baya Shuca (Tierra)"
+	"quest.328DD7C939B34635.quest_desc": [
+		"&6Ingredientes:&f 2× baya Shuca, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Tierra 5 min + Prisa II 2 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.03F87B2C072FEDF8.title": "Curry de Baya Coba (Volador)"
+	"quest.03F87B2C072FEDF8.quest_desc": [
+		"&6Ingredientes:&f 2× baya Coba, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Volador 5 min + Caída lenta 3 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.411E695205AED066.title": "Curry de Baya Payapa (Psíquico)"
+	"quest.411E695205AED066.quest_desc": [
+		"&6Ingredientes:&f 2× baya Payapa, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Psíquico 5 min + Visión nocturna 5 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.C870C11ECE4B7D5D.title": "Curry de Baya Tanga (Bicho)"
+	"quest.C870C11ECE4B7D5D.quest_desc": [
+		"&6Ingredientes:&f 2× baya Tanga, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Bicho 5 min + Suerte 5 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.7CA3098B29D6F30E.title": "Curry de Baya Charti (Roca)"
+	"quest.7CA3098B29D6F30E.quest_desc": [
+		"&6Ingredientes:&f 2× baya Charti, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Roca 5 min + Salud extra II 3 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.C7D0AD42E5E600EC.title": "Curry de Baya Kasib (Fantasma)"
+	"quest.C7D0AD42E5E600EC.quest_desc": [
+		"&6Ingredientes:&f 2× baya Kasib, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Fantasma 5 min + Invisibilidad 1 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.825F0A1373EA6F6B.title": "Curry de Baya Haban (Dragón)"
+	"quest.825F0A1373EA6F6B.quest_desc": [
+		"&6Ingredientes:&f 2× baya Haban, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Dragón 5 min + Fuerza II 1 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.590B86544EBFFCE0.title": "Curry de Baya Colbur (Siniestro)"
+	"quest.590B86544EBFFCE0.quest_desc": [
+		"&6Ingredientes:&f 2× baya Colbur, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Siniestro 5 min + Salto mejorado II 2 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.EF36E5C0A142F103.title": "Curry de Baya Babiri (Acero)"
+	"quest.EF36E5C0A142F103.quest_desc": [
+		"&6Ingredientes:&f 2× baya Babiri, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Acero 5 min + Resistencia II 90 s."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.E55419EAED51D49E.title": "Curry de Baya Roseli (Hada)"
+	"quest.E55419EAED51D49E.quest_desc": [
+		"&6Ingredientes:&f 2× baya Roseli, arroz cocido, pollo crudo."
+		"&6Efectos:&f Poder de tipo Hada 5 min + Regeneración II 20 s."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.D7C351CE4F3FCCDE.title": "Estofado de Bayas Oran"
+	"quest.D7C351CE4F3FCCDE.quest_desc": [
+		"&6Ingredientes:&f 3× baya Oran, patata, zanahoria."
+		"&6Efectos:&f Regeneración II 30 s, Absorción II 2 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.962B5DC6ACD24430.title": "Sopa de Bayas Sitrus"
+	"quest.962B5DC6ACD24430.quest_desc": [
+		"&6Ingredientes:&f 3× baya Sitrus, pollo crudo, patata."
+		"&6Efectos:&f Resistencia 90 s, Salud extra II 3 min, Bono de EXP 5 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.D1021BD276860A0E.title": "Ensalada de Bayas Mixtas"
+	"quest.D1021BD276860A0E.quest_desc": [
+		"&6Ingredientes:&f baya Cheri, baya Chesto, baya Pecha, baya Rawst, baya Aspear, baya Leppa."
+		"&6Efectos:&f Velocidad II + Salto II 2 min, Bono de captura 5 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.4F5A5B7EF3E5600F.title": "Galletas de Aprilima"
+	"quest.4F5A5B7EF3E5600F.quest_desc": [
+		"&6Ingredientes:&f aprilima amarilla, aprilima rosa, trigo, azúcar."
+		"&6Efectos:&f Prisa + Velocidad 90 s (x4 galletas)."
+		""
+		"Cocínalo en la olla de Farmer's Delight."
+	]
+	"quest.510F7BE7D98B5364.title": "Infusión de Hierbas Revividoras"
+	"quest.510F7BE7D98B5364.quest_desc": [
+		"&6Ingredientes:&f hierba revividora, puerro medicinal, azúcar, manzana."
+		"&6Efectos:&f Regeneración III 20 s, Repelente 5 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight con un cuenco."
+	]
+	"quest.8209B34BB57DC885.title": "Tarta de Bayas Dulces"
+	"quest.8209B34BB57DC885.quest_desc": [
+		"&6Ingredientes:&f baya Razz, baya Pinap, baya Nanab, trigo, azúcar, huevo."
+		"&6Efectos:&f Suerte II 5 min, Bono de EXP 5 min."
+		""
+		"Cocínalo en la olla de Farmer's Delight."
+	]
+	"quest.1504C07FBC99967F.title": "Festín del Directo"
+	"quest.1504C07FBC99967F.quest_desc": [
+		"&6Ingredientes:&f diamante, manzana dorada, baya Enigma, hierba revividora, caramelo raro."
+		"&6Efectos:&f Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min. Máx. 3 seguidos y 60 min de enfriamiento."
+		""
+		"Cocínalo en la olla de Farmer's Delight."
+		""
+		"&aFestín del Directo:&f activa un bono aleatorio de servidor de 20 minutos para todos. Máximo 3 seguidos y 60 min de enfriamiento; si está en enfriamiento, el plato se devuelve."
+	]
+	"chapter.8C9996AE72CA0F98.title": "Platos Pokémon"
+	"chapter.8C9996AE72CA0F98.chapter_subtitle": [
+		"Recetas con bayas y efectos de Pokémon"
+	]
+	"quest.80BECF0C271ABC12.title": "Marco de máquina"
+	"quest.80BECF0C271ABC12.quest_desc": [
+		"Pieza estructural de Oritech. &7El mod indica que el tamaño máximo del marco se puede cambiar en su configuración.&f"
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Barrotes de hierro, 2× lingote de níquel"
+	]
+	"quest.7D528301F64A154E.title": "Núcleo de máquina primitivo"
+	"quest.7D528301F64A154E.quest_desc": [
+		"Los núcleos de máquina tienen 7 niveles. Las máquinas multibloque indican qué núcleos necesitan; el nivel 1 es el primitivo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× tablones, Mesa de trabajo"
+	]
+	"quest.D330BDDABE581643.title": "Núcleo de máquina básico"
+	"quest.D330BDDABE581643.quest_desc": [
+		"Núcleo básico: el siguiente nivel de núcleo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× lingote de cobre, gema de lapislázuli"
+	]
+	"quest.798A237E59AF7DFE.title": "Núcleo de máquina mejorado"
+	"quest.798A237E59AF7DFE.quest_desc": [
+		"Núcleo mejorado."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× fibra de carbono, polvo de redstone"
+	]
+	"quest.F07DAB56034C547D.title": "Núcleo de máquina avanzado"
+	"quest.F07DAB56034C547D.quest_desc": [
+		"Núcleo avanzado."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× revestimiento reforzado, Compuesto endérico"
+	]
+	"quest.47E091EB7EDF3348.title": "Núcleo de máquina élite"
+	"quest.47E091EB7EDF3348.quest_desc": [
+		"Núcleo de élite."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× Lingote de adamantio, Motor de computación avanzada"
+	]
+	"quest.EAD1E72BDDCD9319.title": "Núcleo de máquina ultra"
+	"quest.EAD1E72BDDCD9319.quest_desc": [
+		"Núcleo ultra."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× Lingote de duratium, Contenedor dudoso"
+	]
+	"quest.BCA5C3C1EF70B9E4.title": "Núcleo de máquina definitivo"
+	"quest.BCA5C3C1EF70B9E4.quest_desc": [
+		"Núcleo definitivo: el máximo nivel de núcleo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× Prometheum, Superconductor"
+	]
+	"quest.77E3C6E392DFC7B2.title": "Lingote de acero"
+	"quest.77E3C6E392DFC7B2.quest_desc": [
+		"El acero es un material básico de Oritech: se hace con lingotes de hierro y carbón."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× carbón, 2× lingote de hierro"
+	]
+	"quest.486D2844E3A68BBA.title": "Lingote de electrum"
+	"quest.486D2844E3A68BBA.quest_desc": [
+		"El electrum se hace con lingotes de oro y polvo de redstone. Lo usan, por ejemplo, las baterías."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× lingote de oro, 2× polvo de redstone"
+	]
+	"quest.5DF7002A0B1098A5.title": "Lingote de adamantio"
+	"quest.5DF7002A0B1098A5.quest_desc": [
+		"El adamantio es un metal avanzado. También se puede obtener en la fundición con una gema de diamante y un lingote de níquel."
+		""
+		"&6Receta de crafteo&r &7(sin forma; en REI pulsa R sobre el objeto para verla)&f"
+		"bloque de adamantio"
+	]
+	"quest.7D9BFF8F6D222F12.title": "Pipe Wrench"
+	"quest.7D9BFF8F6D222F12.quest_desc": [
+		"Llave para tuberías (Pipe Wrench). Se hace con lingotes de acero y de níquel."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de acero, lingote de níquel"
+	]
+	"chapter.5C24E530ED45FBBD.title": "Primeros pasos"
+	"chapter.5C24E530ED45FBBD.chapter_subtitle": [
+		"Núcleos, aleaciones y herramientas"
+	]
+	"quest.6CA84D02305EBB46.title": "Pulverizador"
+	"quest.6CA84D02305EBB46.quest_desc": [
+		"Muele lingotes y otros materiales y los convierte en polvo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× Lingote de hierro, 2× Motor, bloque de cobre, lingote de níquel"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• Lingote de adamantio → 1× Polvo de adamantio"
+		"• materia orgánica → 1× Biomasa"
+		"• Lingote de biometal → 1× Polvo de biometal"
+	]
+	"quest.DE936D36798FC1BB.title": "Forja de fragmentos"
+	"quest.DE936D36798FC1BB.quest_desc": [
+		"Hace un trabajo parecido al del pulverizador pero más rápido (sus recetas tardan menos). Con el complemento de rendimiento duplica los subproductos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× Motor, Puerta de flujo, revestimiento reforzado"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• Lingote de adamantio → 1× Polvo de adamantio"
+		"• materia orgánica → 1× Biomasa"
+		"• Lingote de biometal → 1× Polvo de biometal"
+	]
+	"quest.12E1AB887ECD125E.title": "Horno eléctrico"
+	"quest.12E1AB887ECD125E.quest_desc": [
+		"Horno eléctrico: funde y cocina objetos usando energía."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de cobre, 2× Bobina magnética, 2× silicio, horno, lingote de electrum"
+	]
+	"quest.1013A25CD9E609CC.title": "Ensamblador"
+	"quest.1013A25CD9E609CC.quest_desc": [
+		"Combina varios ingredientes en un objeto nuevo: baterías, componentes electrónicos, cristales..."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de cobre, 2× Fabricador, 2× Motor, Alto horno, Lingote de adamantio"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• gema de amatista + gema de amatista + Compuesto endérico + Cristal sobrecargado → 1× Brotador de amatista"
+		"• placa de plástico + lingote de electrum + lingote de electrum + lingote de acero → 1× Batería básica"
+		"• placa de plástico + Fluxita + Fluxita + lingote de acero → 2× Batería básica"
+	]
+	"quest.FFCD4E8F80011FEC.title": "Fundición"
+	"quest.FFCD4E8F80011FEC.quest_desc": [
+		"Funde dos materiales en una aleación. Por ejemplo, gema de diamante + lingote de níquel → adamantio; materia biopolimérica + hierro → bioacero."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de cobre, 2× lingote de electrum, Caldero, Motor"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• gema de diamante + lingote de níquel → 1× Lingote de adamantio"
+		"• Biopolímero en bruto + lingote de hierro → 1× Lingote de biometal"
+		"• lingote de platino + lingote de netherita → 1× Lingote de duratium"
+	]
+	"quest.8BCA0799F5A4BA5E.title": "Centrífugadora"
+	"quest.8BCA0799F5A4BA5E.quest_desc": [
+		"Procesa materiales con una centrifugadora. Con el complemento de fluidos admite también líquidos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Frasco de cristal, 2× Motor, 2× Unidad de procesamiento, lingote de acero, revestimiento reforzado"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• polvo de carbón → 1× Hilos de fibra de carbono"
+		"• grumo de cobre → 1× Gema de cobre, 3× Pequeño polvo de oro"
+		"• grumo de oro → 1× Gema de oro, 3× Pequeño polvo de cobre"
+	]
+	"quest.542D0812B8E37420.title": "Atomic Forge"
+	"quest.542D0812B8E37420.quest_desc": [
+		"Fabricación avanzada de componentes: motores de computación, chips de IA y más."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× revestimiento reforzado, 2× Puerta de flujo, 2× placa de plástico, Compuesto endérico, Lingote de duratium"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• Unidad de procesamiento + Oblea de silicio + Oblea de silicio → 1× Motor de computación avanzada"
+		"• Lingote de duratium + Motor de computación avanzada + Motor de computación avanzada → 1× Chip de IA super"
+		"• Chip de IA super + Lingote de adamantio + Lingote de adamantio → 1× Compensador de Heisenberg"
+	]
+	"quest.D5E07DEF490AC4F9.title": "Refinery"
+	"quest.D5E07DEF490AC4F9.quest_desc": [
+		"Refina fluidos: del biocombustible obtiene diésel y nafta; de otros fluidos, ácido sulfúrico y más. Usa módulos de cámara."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Refinery Chamber Module, 2× lingote de acero, Caldero, Motor"
+	]
+	"quest.487E93064D73DA0D.title": "Refinery Chamber Module"
+	"quest.487E93064D73DA0D.quest_desc": [
+		"Módulo de cámara de refinería: amplía la refinería."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de cobre, 2× Bola de slime, Tanque portable, Viga de soporte industrial"
+	]
+	"quest.20CAD65F0245F439.title": "Industrial Chiller"
+	"quest.20CAD65F0245F439.quest_desc": [
+		"Enfría fluidos y los convierte en bloques: agua → hielo, lava → obsidiana, vapor → nieve."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de hierro, 2× Hielo, Caldero, Motor"
+	]
+	"quest.70012C75C7557852.title": "Bomba"
+	"quest.70012C75C7557852.quest_desc": [
+		"Bomba: extrae fluidos para llevarlos por tuberías a otras máquinas."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de cobre, 2× silicio, Motor, revestimiento reforzado"
+	]
+	"chapter.DB8732F685E275AA.title": "Procesamiento"
+	"chapter.DB8732F685E275AA.chapter_subtitle": [
+		"Máquinas que transforman materiales"
+	]
+	"quest.D9734076AAAD8EAF.title": "Generador básico"
+	"quest.D9734076AAAD8EAF.quest_desc": [
+		"Genera energía quemando combustible."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de níquel, 2× Bobina magnética, horno, lingote de cobre"
+	]
+	"quest.59D5D106632B1A25.title": "Generador de biomasa"
+	"quest.59D5D106632B1A25.quest_desc": [
+		"Genera energía quemando combustibles orgánicos: biomasa, trigo empaquetado..."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× Lingote de biometal, 2× Bobina magnética, Generador básico, Puerta de flujo"
+	]
+	"quest.AC5D27D76E7FBEAF.title": "Generador de combustible"
+	"quest.AC5D27D76E7FBEAF.quest_desc": [
+		"Genera energía a partir de combustibles líquidos: petróleo, diésel y turbocombustible (el que más rinde)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de acero, 2× Generador básico, Lente endérica, revestimiento reforzado"
+	]
+	"quest.C141418D6FEB25A6.title": "Generador de lava"
+	"quest.C141418D6FEB25A6.quest_desc": [
+		"Genera energía con lava (o con fuego de Sheol, que rinde mucho más)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de electrum, 2× revestimiento reforzado, Bobina magnética, Generador básico"
+	]
+	"quest.04079A9FEE94BB05.title": "Motor de vapor"
+	"quest.04079A9FEE94BB05.quest_desc": [
+		"Convierte el vapor en energía y agua. Puedes encadenar varios en línea: solo el primero recibe el vapor. &7(Información del propio mod.)&f"
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de electrum, 2× lingote de cobre, Bobina magnética, Generador básico"
+	]
+	"quest.9A065B23954C06D4.title": "Panel solar grande"
+	"quest.9A065B23954C06D4.quest_desc": [
+		"Panel solar grande. Su producción depende de la calidad del núcleo que lleva."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× Fluxita, 2× Puerta de flujo, Batería avanzada, Generador básico"
+	]
+	"quest.B6CC12C53F8626A2.title": "Almacen Portable de Energía"
+	"quest.B6CC12C53F8626A2.quest_desc": [
+		"Almacén de energía portátil."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Batería básica, 3× lingote de níquel, 2× silicio, Bobina magnética"
+	]
+	"quest.AC6B01EEF2F11D41.title": "Gran Almacen de Energía"
+	"quest.AC6B01EEF2F11D41.quest_desc": [
+		"Gran almacén de energía."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Batería avanzada, 2× Bobina magnética, 2× lingote de acero, Contenedor dudoso, Puerta de flujo"
+	]
+	"quest.D569CA0A0064B911.title": "Cargador de Equipamiento"
+	"quest.D569CA0A0064B911.quest_desc": [
+		"Se usa para cargar y llenar equipamiento."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× cofre de madera, 2× Tubería de Energía, 2× lingote de acero, Dispensador, bloque de redstone"
+	]
+	"quest.B31381C44FFD9C92.title": "Batería básica"
+	"quest.B31381C44FFD9C92.quest_desc": [
+		"La batería almacena energía en un objeto que puedes llevar."
+		""
+		"&6Cómo se hace&r En el ensamblador: placa de plástico + 2 lingotes de electrum + 1 lingote de acero."
+	]
+	"chapter.44E0CAD72B506065.title": "Energía"
+	"chapter.44E0CAD72B506065.chapter_subtitle": [
+		"Generadores, almacenes y cargadores"
+	]
+	"quest.A2B951B55F1212F3.title": "Tubería de Energía"
+	"quest.A2B951B55F1212F3.quest_desc": [
+		"Tubería de energía: conecta generadores, máquinas y almacenes."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de electrum"
+	]
+	"quest.16DD1A8C58DE6A43.title": "Opaque Item Pipe"
+	"quest.16DD1A8C58DE6A43.quest_desc": [
+		"Tubería de objetos: mueve objetos entre inventarios y máquinas."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"8× Transparent Item Pipe, tablones"
+	]
+	"quest.E327C6331BA5E151.title": "Tubería de Fluidos"
+	"quest.E327C6331BA5E151.quest_desc": [
+		"Tubería de fluidos: transporta líquidos entre depósitos, bombas y máquinas."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× lingote de cobre, 3× silicio"
+	]
+	"quest.41ABF10B0F9E4618.title": "Superconductor"
+	"quest.41ABF10B0F9E4618.quest_desc": [
+		"Superconductor: transporta energía sin pérdidas. No se conecta a tuberías de energía normales. &7(Información del propio mod.)&f"
+		""
+		"&6Cómo se hace&r Se crea sin forma a partir de un conducto de superconductor."
+	]
+	"quest.D70DE642270CB82A.title": "Filtro de Objetos"
+	"quest.D70DE642270CB82A.quest_desc": [
+		"Filtro de objetos: decide qué objetos pueden entrar en un inventario."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"7× tablones, Unidad de procesamiento, revestimiento reforzado"
+	]
+	"quest.1F531D9A3C2E5C60.title": "Pipe Booster"
+	"quest.1F531D9A3C2E5C60.quest_desc": [
+		"Impulsor de tuberías (Pipe Booster): se coloca en una tubería para impulsar lo que transporta."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× Opaque Item Pipe, 2× Tubería de Fluidos, Motor"
+	]
+	"quest.D7EA34FD88FABD17.title": "Polo de transmisión de energía"
+	"quest.D7EA34FD88FABD17.quest_desc": [
+		"Poste de transmisión de energía."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Hilos de fibra de carbono, 2× Bobina magnética, 2× lingote de electrum, Almacen Portable de Energía"
+	]
+	"quest.1F2A204152311664.title": "Tanque portable"
+	"quest.1F2A204152311664.quest_desc": [
+		"Tanque portátil para fluidos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× lingote de cobre, 2× Tubería de Fluidos, bloque de cristal"
+	]
+	"chapter.9F25BD73A4921CB3.title": "Logística"
+	"chapter.9F25BD73A4921CB3.chapter_subtitle": [
+		"Tuberías y transporte"
+	]
+	"quest.DFB9A210948B3524.title": "Bloque Destructor"
+	"quest.DFB9A210948B3524.quest_desc": [
+		"Rompe bloques automáticamente; con el complemento de toque de seda se llevan intactos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× Motor, 3× revestimiento reforzado, Láser endérico, Pulverizador"
+	]
+	"quest.57E95C857E4B04AD.title": "Bloque Colocador"
+	"quest.57E95C857E4B04AD.quest_desc": [
+		"Coloca bloques automáticamente."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de cobre, 2× Motor, 2× Unidad de procesamiento, Marco de máquina, revestimiento reforzado"
+	]
+	"quest.89A35B95D1E9F69E.title": "Bloque Fertilizador"
+	"quest.89A35B95D1E9F69E.quest_desc": [
+		"Fertiliza los cultivos de su zona automáticamente."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de cobre, 2× Motor, 2× silicio, Unidad de procesamiento, revestimiento reforzado"
+	]
+	"quest.03FF6D19DDDF49CB.title": "Cortador de árboles"
+	"quest.03FF6D19DDDF49CB.quest_desc": [
+		"Corta árboles automáticamente."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× lingote de electrum, 2× Hacha de hierro, Motor, revestimiento reforzado"
+	]
+	"quest.7F3EF734B1D0F2FA.title": "Láser endérico"
+	"quest.7F3EF734B1D0F2FA.quest_desc": [
+		"Láser endérico: rompe bloques a distancia (con el complemento de rendimiento obtienes más y con el de toque de seda, bloques intactos). Algunos bloques, como ciertos paneles, deben alimentarse con él."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× revestimiento reforzado, 2× Motor, 2× fibra de carbono, Lente endérica, lingote de electrum"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• Cúmulo de amatista → 1× Fluxita"
+		"• Uranite Crystal → 1× Plutonium Dust"
+	]
+	"quest.E4B5FAE9CDD2C611.title": "Extractor de Roca Base"
+	"quest.E4B5FAE9CDD2C611.quest_desc": [
+		"Extractor de roca base: extrae recursos de los nodos de recurso que hay bajo el suelo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× revestimiento reforzado, 2× Lingote de duratium, 2× Motor, Compensador de Heisenberg, Cristal sobrecargado"
+		""
+		"&6Ejemplos de lo que hace&r"
+		"• Nodo de recurso de carbón → 1× Carbón"
+		"• Nodo de recurso de cobre → 1× Cobre en bruto"
+		"• Nodo de recurso de diamante → 1× Diamante"
+		"• Nodo de recurso de esmeralda → 1× Esmeralda"
+	]
+	"quest.BF09163706F1DFDE.title": "Puerto de Drones"
+	"quest.BF09163706F1DFDE.quest_desc": [
+		"Puerto de drones: gestiona drones que transportan objetos (y fluidos con el complemento de fluidos)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× revestimiento reforzado, 2× Motor, 2× Motor de computación avanzada, Inteligencia impía, Superconductor"
+	]
+	"quest.AC7D5FA0D5E52975.title": "Spawner Controller"
+	"quest.AC7D5FA0D5E52975.quest_desc": [
+		"Controlador de generador: atrapa al primer mob que pasa sobre él en una jaula de debajo y recoge las almas de entidades que mueren cerca. &7(Información del propio mod.)&f"
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× Jaula de generador, 2× Arcane Catalyst, Nexo de reaparición"
+	]
+	"quest.341F911BFC312678.title": "Jaula de generador"
+	"quest.341F911BFC312678.quest_desc": [
+		"Jaula de generador: se usa para construir una jaula del tamaño que necesites bajo el controlador de generador."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× Barrotes de hierro, 3× placa de plástico"
+	]
+	"quest.EDF2FD62CA2B54F6.title": "Stabilized Enchanter"
+	"quest.EDF2FD62CA2B54F6.quest_desc": [
+		"Encantador estabilizado: aplica encantamientos usando energía y las almas de los catalizadores cercanos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× Libro, 2× Lingote de energita, Arcane Catalyst, Lingote de duratium"
+	]
+	"quest.5B3CD58EC16BE03D.title": "Arcane Catalyst"
+	"quest.5B3CD58EC16BE03D.quest_desc": [
+		"Catalizador arcano: almacena almas de las entidades que mueren cerca y puede aplicar encantamientos de libros. &aAdvertencia del mod:&f experimentar con lo arcano puede tener consecuencias peligrosas."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Fluxita, 2× Lingote de adamantio, 2× obsidiana, Inteligencia impía, Mesa de encantamientos"
+	]
+	"chapter.F85747FCF309DCD9.title": "Automatización"
+	"chapter.F85747FCF309DCD9.chapter_subtitle": [
+		"Máquinas que trabajan por ti"
+	]
+	"quest.0BFE4ECDB86F1F25.title": "Speed Addon"
+	"quest.0BFE4ECDB86F1F25.quest_desc": [
+		"Complemento de velocidad: aumenta la velocidad de operación de la máquina."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× Bobina magnética, lingote de acero, revestimiento reforzado"
+	]
+	"quest.2397A1E9E3CD950F.title": "Efficiency Addon"
+	"quest.2397A1E9E3CD950F.quest_desc": [
+		"Complemento de eficiencia: mejora la eficiencia energética."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× fibra de carbono, lingote de electrum, revestimiento reforzado"
+	]
+	"quest.A2747E923B22783B.title": "Yield Addon"
+	"quest.A2747E923B22783B.quest_desc": [
+		"Complemento de rendimiento: duplica los subproductos de la forja de fragmentos y aumenta el rendimiento al romper bloques (destructor, láser endérico)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× lingote de electrum, Lente endérica, revestimiento reforzado"
+	]
+	"quest.C253264F16AD6D6D.title": "Capacitor Addon"
+	"quest.C253264F16AD6D6D.quest_desc": [
+		"Complemento de capacitor: añade almacenamiento de energía a la máquina."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× Lingote de energita, Bobina magnética, revestimiento reforzado"
+	]
+	"quest.B8DE70626F1FBAB4.title": "Fluid Addon"
+	"quest.B8DE70626F1FBAB4.quest_desc": [
+		"Complemento de fluidos: permite procesar fluidos. Se aplica a la centrifugadora y al puerto de drones."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× fibra de carbono, 2× lingote de electrum, Tubería de Fluidos, silicio"
+	]
+	"quest.9C7DB43A7DE4535F.title": "Burst Addon"
+	"quest.9C7DB43A7DE4535F.quest_desc": [
+		"Complemento de ráfaga: permite que la máquina funcione en ráfagas muy rápidas. Se aplica a máquinas de procesamiento."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× revestimiento reforzado, 2× Polvo de redstone, 2× lingote de electrum, Industrial Support Girder, lingote de acero"
+	]
+	"quest.3E52C96B6D7FEC49.title": "Auxiliary Processing Chamber Addon"
+	"quest.3E52C96B6D7FEC49.quest_desc": [
+		"Cámara de procesamiento auxiliar: permite procesar una receta adicional por ciclo (cada cámara extra procesa más objetos por ciclo)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× revestimiento reforzado, 2× Chip de IA super, 2× Motor, Puerta de flujo, lingote de platino"
+	]
+	"quest.28C2768B1AFC295D.title": "Silk Touch Addon"
+	"quest.28C2768B1AFC295D.quest_desc": [
+		"Complemento de toque de seda: aplicable al destructor y al láser endérico."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× lana, Pico de diamante, revestimiento reforzado"
+	]
+	"quest.C06C51DF7F7A7BBD.title": "Control Unit Addon"
+	"quest.C06C51DF7F7A7BBD.quest_desc": [
+		"Unidad de control (Control Unit Addon): complemento de control de la máquina."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× polvo de redstone, 2× Repetidor de redstone, Comparador de redstone, revestimiento reforzado"
+	]
+	"quest.DDC27E79BA35EAE9.title": "Inventory Proxy Addon"
+	"quest.DDC27E79BA35EAE9.quest_desc": [
+		"Proxy de inventario: complemento que da acceso al inventario de la máquina."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× fibra de carbono, 2× cofre, Motor, Unidad de procesamiento"
+	]
+	"quest.8C15308FD2FBE8F9.title": "Acceptor Addon"
+	"quest.8C15308FD2FBE8F9.quest_desc": [
+		"Complemento aceptador (Acceptor Addon)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× placa de plástico, 2× lingote de electrum, Lingote de energita, revestimiento reforzado"
+	]
+	"quest.2F2DBE54CD2A3C1D.title": "Machine Addon Extender"
+	"quest.2F2DBE54CD2A3C1D.quest_desc": [
+		"Extensor de complementos: añade más ranuras de complementos a la máquina."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× Núcleo de máquina básico, 4× revestimiento reforzado, Lingote de duratium"
+	]
+	"quest.A798830D7EA88C59.title": "Addon Splicer"
+	"quest.A798830D7EA88C59.quest_desc": [
+		"Empalmador de complementos (Addon Splicer)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× Contenedor dudoso, 2× Superconductor, Strange Matter Bucket"
+	]
+	"quest.8B5837605D6B8915.title": "Nuclear Reactor Controller"
+	"quest.8B5837605D6B8915.quest_desc": [
+		"Controlador del reactor nuclear: el centro de un reactor multibloque. Es contenido avanzado: necesita paredes, barras de combustible, refrigeración y puertos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× Unidad de procesamiento, Reactor Wall"
+	]
+	"quest.86FD605830D09501.title": "Single Reactor Rod"
+	"quest.86FD605830D09501.quest_desc": [
+		"Barra de reactor simple: el combustible del reactor."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× Lingote de energita, placa de plástico"
+	]
+	"quest.70587A9474D1F86C.title": "Acelerador de partículas"
+	"quest.70587A9474D1F86C.quest_desc": [
+		"Controlador del acelerador de partículas: multibloque avanzado que se construye con anillos guía, motores y sensores."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× Lingote de duratium, 2× Puerta de flujo, Motor lineal de acelerador de partículas, Soltador"
+	]
+	"quest.62628D14D61E8841.title": "Tachyon Absorber"
+	"quest.62628D14D61E8841.quest_desc": [
+		"Colector de taquiones: recoge la energía de los taquiones que emiten las colisiones de partículas. &7(Información del propio mod.)&f"
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× Superconductor, 2× Compensador de Heisenberg, Panel solar grande"
+	]
+	"quest.6AD2FCC5452F37DF.title": "Jetpack"
+	"quest.6AD2FCC5452F37DF.quest_desc": [
+		"El jetpack necesita electricidad o turbocombustible para volar; con turbocombustible es más rápido. &7(Información del propio mod.)&f"
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× lingote de acero, 2× Pólvora, Batería avanzada, cuero"
+	]
+	"quest.62B149F37E3F0C22.title": "Taladro manual"
+	"quest.62B149F37E3F0C22.quest_desc": [
+		"Taladro manual: herramienta eléctrica. Se hace con compuesto enderico, adamantio, un motor y acero."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Compuesto endérico, 2× lingote de acero, Lingote de adamantio, Motor"
+	]
+	"quest.1C92341FBE048CDE.title": "Sierra eléctrica"
+	"quest.1C92341FBE048CDE.quest_desc": [
+		"Sierra eléctrica: herramienta que funciona con energía."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"3× Compuesto endérico, 2× lingote de acero, Lingote de adamantio, Motor"
+	]
+	"quest.8B269200150AE19C.title": "Casco exo"
+	"quest.8B269200150AE19C.quest_desc": [
+		"Casco exo: pieza del conjunto de armadura exo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× revestimiento reforzado, Lente endérica"
+	]
+	"quest.C1AE6E790411F7C1.title": "Peto exo"
+	"quest.C1AE6E790411F7C1.quest_desc": [
+		"Peto exo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"7× revestimiento reforzado, Batería avanzada"
+	]
+	"quest.1BD2D5BADF0039E7.title": "Leotardos exo"
+	"quest.1BD2D5BADF0039E7.quest_desc": [
+		"Leotardos exo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"7× revestimiento reforzado, Motor"
+	]
+	"quest.D4E59BAD0E5999F8.title": "Botas exo"
+	"quest.D4E59BAD0E5999F8.quest_desc": [
+		"Botas exo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× revestimiento reforzado, 2× silicio"
+	]
+	"chapter.2C4AF6671CD9A901.title": "Avanzado"
+	"chapter.2C4AF6671CD9A901.chapter_subtitle": [
+		"Complementos, reactor, acelerador y equipo"
+	]
+	"quest.1623CAA55A58CA64.title": "Conector de inventarios"
+	"quest.1623CAA55A58CA64.quest_desc": [
+		"Conecta entre sí todos los inventarios que lo tocan (cofres, barriles...) en una sola red. Los marcos de inventario rellenan los huecos."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× tablones, 2× cofre, Comparador de redstone, gema de diamante, perla de ender"
+	]
+	"quest.00D518DFDC305633.title": "Marco de inventario"
+	"quest.00D518DFDC305633.quest_desc": [
+		"Los marcos conectan inventarios con el conector de inventarios, aunque haya huecos entre ellos. Se pueden pintar con el kit de pintura."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× palo, 4× tablones, cofre"
+	]
+	"quest.60250A560486E6EE.title": "Terminal de almacenamiento"
+	"quest.60250A560486E6EE.quest_desc": [
+		"Da acceso a todos tus objetos desde un solo lugar. Colócala encima de un inventario conectado."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× tablones, 2× Comparador de redstone, cofre, cristal, polvo de piedra luminosa"
+	]
+	"quest.467E30F951B70460.title": "Terminal de crafteo"
+	"quest.467E30F951B70460.quest_desc": [
+		"Como la terminal de almacenamiento, pero con una mesa de crafteo integrada."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× Mesa de trabajo, 4× gema de diamante, Terminal de almacenamiento"
+	]
+	"quest.7E500C9BD2332669.title": "Cable de inventario"
+	"quest.7E500C9BD2332669.quest_desc": [
+		"Conecta inventarios a larga distancia. Hay que unirlos con conectores de cable de inventario; el cable necesita un conector de inventarios."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× palo, 2× tablones, 2× trampilla, cofre"
+	]
+	"quest.BBACC719F0505F60.title": "Conector de cable de inventario"
+	"quest.BBACC719F0505F60.quest_desc": [
+		"Conecta un inventario a la red del cable. Usa el configurador de inventarios para filtrar."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× tablones, Cable de inventario, cofre, gema de cuarzo, gema de diamante, perla de ender"
+	]
+	"quest.3BB470584852F61C.title": "Proxy de inventario"
+	"quest.3BB470584852F61C.quest_desc": [
+		"Extiende la cara del bloque al que apunta."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"5× tablones, 3× trampilla, cofre"
+	]
+	"quest.7E36529C3946BE82.title": "Interfaz de inventario"
+	"quest.7E36529C3946BE82.quest_desc": [
+		"Da acceso al inventario del conector de inventarios al que está conectado (por ejemplo, para usar tolvas o tuberías con la red)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× tablones, 3× trampilla, cofre, perla de ender"
+	]
+	"quest.1E7776A156B72829.title": "Tolva de inventario básica"
+	"quest.1E7776A156B72829.quest_desc": [
+		"Importa o exporta objetos de la red de inventarios. Clic derecho con un objeto para ponerle filtro; agáchate con la mano vacía para quitarlo."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× tablones, Cable de inventario, Tolva"
+	]
+	"quest.B6794FB63D577D5F.title": "Emisor de nivel"
+	"quest.B6794FB63D577D5F.quest_desc": [
+		"Emite una señal de redstone según el contenido de la red de inventarios (más o menos de cierta cantidad)."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"2× tablones, Antorcha de redstone, Cable de inventario, Comparador de redstone"
+	]
+	"quest.9618E23C4DA323C4.title": "Archivador"
+	"quest.9618E23C4DA323C4.quest_desc": [
+		"Guarda muchas variantes del mismo objeto."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× Piedra lisa, 3× cofre, 2× lingote de hierro"
+	]
+	"quest.81643C13F9E29435.title": "Caja abierta"
+	"quest.81643C13F9E29435.quest_desc": [
+		"Convierte el bloque que tiene delante en un inventario. &aCuidado:&f crea entidades de objeto."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"6× tablones, cofre, palo, trampilla"
+	]
+	"quest.CF4D1AB1D639D80C.title": "Filtro de objetos"
+	"quest.CF4D1AB1D639D80C.quest_desc": [
+		"Permite filtrar varios objetos, con o sin sus componentes."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× palo, 4× polvo de redstone, lana"
+	]
+	"quest.B9439ABA1F6104B2.title": "Filtro de objetos polimórfico"
+	"quest.B9439ABA1F6104B2.quest_desc": [
+		"Solo deja insertar objetos que ya existen en ese inventario."
+	]
+	"quest.785E8ACE7CE38A33.title": "Filtro de etiquetas"
+	"quest.785E8ACE7CE38A33.quest_desc": [
+		"Filtra usando etiquetas."
+	]
+	"quest.4DC2C91440590067.title": "Configurador de inventarios"
+	"quest.4DC2C91440590067.quest_desc": [
+		"Configura cómo interactúa cada inventario con el conector. Resalta los bloques pintados."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"marco de inventario, palo"
+	]
+	"quest.3CE76EAE8EE1567A.title": "Kit de pintura"
+	"quest.3CE76EAE8EE1567A.quest_desc": [
+		"Pinta los bloques para que combinen con lo que tienen alrededor."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"Cubo, Cubo con agua, dyes black, dyes blue, dyes green, dyes red, lana, palo"
+	]
+	"quest.30FEE0A7A9E3F3E4.title": "Terminal inalámbrica"
+	"quest.30FEE0A7A9E3F3E4.quest_desc": [
+		"Amplía tu alcance a la terminal. Alcance limitado en bloques."
+		""
+		"&6Receta de crafteo&r &7(con forma; en REI pulsa R sobre el objeto para verla)&f"
+		"4× tablones, Catalejo, Comparador de redstone, cristal, perla de ender, polvo de piedra luminosa"
+	]
+	"quest.E1E7A6C129F03946.title": "Terminal inalámbrica avanzada"
+	"quest.E1E7A6C129F03946.quest_desc": [
+		"Agáchate y clic derecho sobre una terminal para vincularla. Un faro cerca de la terminal (radio de 8 bloques) amplía el alcance: con nivel suficiente funciona en toda la dimensión o entre dimensiones."
+	]
+	"chapter.2E0C38B4EE1CB054.title": "Tom's Storage"
+	"chapter.2E0C38B4EE1CB054.chapter_subtitle": [
+		"Una red de inventarios con terminal"
+	]
+}

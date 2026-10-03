@@ -1,0 +1,269 @@
+{
+	id: "DB8732F685E275AA"
+	group: "8FD05755043B163E"
+	order_index: 1
+	filename: "oritech_procesar"
+	icon: {
+		id: "oritech:pulverizer_block"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "6CA84D02305EBB46"
+			x: 0.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "33C7F3DD27AAD049"
+					type: "item"
+					item: {
+						id: "oritech:pulverizer_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "F6C1249ECF256156"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "DE936D36798FC1BB"
+			x: 0.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "AF3FFB03E9A0294D"
+					type: "item"
+					item: {
+						id: "oritech:fragment_forge_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "A0F187AF44DB2B9F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "12E1AB887ECD125E"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "D0D906F82DE91DE9"
+					type: "item"
+					item: {
+						id: "oritech:powered_furnace_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0DFB9C18A0AA304A"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1013A25CD9E609CC"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "F500C949FFD34DBF"
+					type: "item"
+					item: {
+						id: "oritech:assembler_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "15F3CA9FFC16A44E"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "FFCD4E8F80011FEC"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "9ADF86D47D3202CD"
+					type: "item"
+					item: {
+						id: "oritech:foundry_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "94CA4798B923E927"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "8BCA0799F5A4BA5E"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "5EE8CCAC40667568"
+					type: "item"
+					item: {
+						id: "oritech:centrifuge_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "33B39081CF83FFC5"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "542D0812B8E37420"
+			x: 2.0d
+			y: 1.7d
+			tasks: [
+				{
+					id: "E5817F8A1F6ADDA0"
+					type: "item"
+					item: {
+						id: "oritech:atomic_forge_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "E7E1197C7C84B4F8"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "D5E07DEF490AC4F9"
+			x: 4.0d
+			y: 4.25d
+			dependencies: [
+				"487E93064D73DA0D"
+			]
+			tasks: [
+				{
+					id: "B892108DD2B74DB4"
+					type: "item"
+					item: {
+						id: "oritech:refinery_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "4FA07D4950E9B7DC"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "487E93064D73DA0D"
+			x: 2.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "33805A2B413B2F7F"
+					type: "item"
+					item: {
+						id: "oritech:refinery_module_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3B30F9C567DA9E24"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "20CAD65F0245F439"
+			x: 2.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "A3267D2A218B2BCE"
+					type: "item"
+					item: {
+						id: "oritech:cooler_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "2AD367E24F31B5FD"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "70012C75C7557852"
+			x: 2.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "AAE700E0335D8BA2"
+					type: "item"
+					item: {
+						id: "oritech:pump_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "FB37A02D1E273AB0"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+	]
+}
