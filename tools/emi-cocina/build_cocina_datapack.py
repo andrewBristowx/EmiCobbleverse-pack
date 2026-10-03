@@ -14,14 +14,18 @@ BOWL = {"id": "minecraft:bowl", "count": 1}
 def eff(effect_id, seconds, amplifier=0):
     return {"effect": {"id": effect_id, "duration": int(seconds * TICKS), "amplifier": amplifier, "show_particles": True, "show_icon": True}, "probability": 1.0}
 
+def jtext(component):
+    """Texto de objeto en 1.21.1: los componentes de item (recetas y loot tables) llevan el texto como cadena JSON, no como objeto."""
+    return json.dumps(component, ensure_ascii=False, separators=(",", ":"))
+
 def dish(name, color, base, lore, nutrition, saturation, effects, container=True, rarity=None, glint=False, custom_data=None,
          count=1, stack=16, eat_seconds=1.6):
     food = {"nutrition": nutrition, "saturation": saturation, "can_always_eat": True, "eat_seconds": eat_seconds, "effects": effects}
     if container:
         food["using_converts_to"] = dict(BOWL)
     comp = {
-        "minecraft:custom_name": {"text": name, "italic": False, "color": color},
-        "minecraft:lore": [{"text": l, "italic": False, "color": "gray"} for l in lore],
+        "minecraft:custom_name": jtext({"text": name, "italic": False, "color": color}),
+        "minecraft:lore": [jtext({"text": l, "italic": False, "color": "gray"}) for l in lore],
         "minecraft:food": food,
         "minecraft:max_stack_size": stack,
     }
@@ -206,6 +210,16 @@ REFUND = {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [{
     "type": "minecraft:item", "name": FESTIN["id"],
     "functions": [{"function": "minecraft:set_components", "components": FESTIN["components"]}]}]}]}
 
+def plato_loot(result):
+    """Loot table que da el plato exacto de la receta (para /loot give, sin pasar por la olla)."""
+    entry = {"type": "minecraft:item", "name": result["id"]}
+    functions = []
+    if result.get("count", 1) != 1:
+        functions.append({"function": "minecraft:set_count", "count": result["count"]})
+    functions.append({"function": "minecraft:set_components", "components": result["components"]})
+    entry["functions"] = functions
+    return {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [entry]}]}
+
 def main(dest, md):
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
         def add(name, data):
@@ -214,6 +228,9 @@ def main(dest, md):
         add("pack.mcmeta", json.dumps({"pack": {"pack_format": 48, "description": "EmiCobbleverse: platos de bayas y Festín del Directo (Farmer's Delight + CobbleCuisine)"}}, indent=2, ensure_ascii=False))
         for rid, (rec, _) in DISHES.items():
             add(f"data/emicocina/recipe/cooking/{rid}.json", json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
+        for rid, (rec, _) in DISHES.items():
+            add(f"data/emicocina/loot_table/plato/{rid}.json", json.dumps(plato_loot(rec["result"]), indent=2, ensure_ascii=False) + "\n")
+        add("data/emicocina/function/dar_todos.mcfunction", "".join(f"loot give @s loot emicocina:plato/{rid}\n" for rid in DISHES))
         add("data/emicocina/advancement/festin_directo.json", json.dumps(ADVANCEMENT, indent=2) + "\n")
         add("data/emicocina/loot_table/festin_directo.json", json.dumps(REFUND, indent=2, ensure_ascii=False) + "\n")
         for fname, body in FUNCTIONS.items():
@@ -226,6 +243,11 @@ def main(dest, md):
              "| Plato | Ingredientes | Efectos |", "|---|---|---|"]
     for rid, (_, (name, ing, effects)) in DISHES.items():
         lines.append(f"| {name} | {ing} | {effects} |")
+    lines += ["", "## Obtenerlos sin cocinar (OP, para pruebas o eventos)", "",
+              "No salen en el inventario creativo (son platos con datos sobre objetos normales). Con el datapack puestos:", "",
+              "- `/function emicocina:dar_todos` — te da un plato de cada tipo.",
+              "- `/loot give @s loot emicocina:plato/<id>` — uno concreto, por ejemplo `/loot give @s loot emicocina:plato/festin_directo`.",
+              "", "Ids: " + ", ".join(f"`{rid}`" for rid in DISHES) + ".", ""]
     open(md, "w", encoding="utf-8", newline="\n").write("\n".join(lines) + "\n")
     print(f"{len(DISHES)} recetas -> {dest}")
 

@@ -31,3 +31,13 @@ Se cocinan en la **olla de Farmer's Delight** (con un fuego o fogón debajo; los
 | Infusión de Hierbas Revividoras | hierba revividora, puerro medicinal, azúcar, manzana | Regeneración III 20 s, Repelente 5 min |
 | Tarta de Bayas Dulces | baya Razz, baya Pinap, baya Nanab, trigo, azúcar, huevo | Suerte II 5 min, Bono de EXP 5 min |
 | Festín del Directo | diamante, manzana dorada, baya Enigma, hierba revividora, caramelo raro | Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min. Máx. 3 seguidos y 60 min de enfriamiento |
+
+## Obtenerlos sin cocinar (OP, para pruebas o eventos)
+
+No salen en el inventario creativo (son platos con datos sobre objetos normales). Con el datapack puestos:
+
+- `/function emicocina:dar_todos` — te da un plato de cada tipo.
+- `/loot give @s loot emicocina:plato/<id>` — uno concreto, por ejemplo `/loot give @s loot emicocina:plato/festin_directo`.
+
+Ids: `curry_baya_chilan`, `curry_baya_occa`, `curry_baya_passho`, `curry_baya_wacan`, `curry_baya_rindo`, `curry_baya_yache`, `curry_baya_chople`, `curry_baya_kebia`, `curry_baya_shuca`, `curry_baya_coba`, `curry_baya_payapa`, `curry_baya_tanga`, `curry_baya_charti`, `curry_baya_kasib`, `curry_baya_haban`, `curry_baya_colbur`, `curry_baya_babiri`, `curry_baya_roseli`, `estofado_bayas_oran`, `sopa_bayas_sitrus`, `ensalada_bayas_mixtas`, `galletas_aprilima`, `infusion_hierbas`, `tarta_bayas_dulces`, `festin_directo`.
+
