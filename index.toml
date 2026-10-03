@@ -1,6 +1,7 @@
 hash-format = "sha256"
 
 
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -1226,6 +1227,10 @@ hash = "54f0e8c1b061554bfba3de86dbcd9a6b39da4e8293e2b5141faa4254dc7ae400"
 [[files]]
 file = "datapacks/EmiCostumes-DP.zip"
 hash = "387a9bdb9547ebb1b457330b5080e36345dc47aaa8e44a98e550671acef2c3ca"
+
+[[files]]
+file = "datapacks/EmiTwitch-DP.zip"
+hash = "ffb44850f0fc7bdcf3ba77c3daca83518f992e51f05a480c8e60d490a52bbe02"
 
 [[files]]
 file = "datapacks/PokeCenterPCs-DP.zip"

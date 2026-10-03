@@ -1,0 +1,23 @@
+# Recompensas Twitch (ejecutar como OP, una vez; se guardan en el servidor)
+/emi twitch eventos recompensa borrar_todas
+
+/emi twitch eventos recompensa giftsubs 1 donador comando loot give {player} loot emipokemon:twitch/random_tickets_2
+/emi twitch eventos recompensa giftsubs 2 donador comando loot give {player} loot emipokemon:twitch/random_tickets_4
+/emi twitch eventos recompensa giftsubs 4 donador comando loot give {player} loot emipokemon:twitch/random_tickets_8
+/emi twitch eventos recompensa giftsubs 8 donador comando loot give {player} loot emipokemon:twitch/random_tickets_16
+/emi twitch eventos recompensa giftsubs 16 donador comando loot give {player} loot emipokemon:twitch/random_tickets_32
+/emi twitch eventos recompensa giftsubs 32 donador comando loot give {player} loot emipokemon:twitch/random_tickets_64
+/emi twitch eventos recompensa giftsubs 64 donador comando loot give {player} loot emipokemon:twitch/random_tickets_128
+/emi twitch eventos recompensa giftsubs 128 donador comando loot give {player} loot emipokemon:twitch/random_tickets_256
+
+/emi twitch eventos recompensa bits 100 donador comando loot give {player} loot emipokemon:twitch/random_tickets_1
+/emi twitch eventos recompensa bits 200 donador comando loot give {player} loot emipokemon:twitch/random_tickets_2
+/emi twitch eventos recompensa bits 400 donador comando loot give {player} loot emipokemon:twitch/random_tickets_4
+/emi twitch eventos recompensa bits 800 donador comando loot give {player} loot emipokemon:twitch/random_tickets_8
+/emi twitch eventos recompensa bits 1600 donador comando loot give {player} loot emipokemon:twitch/random_tickets_16
+/emi twitch eventos recompensa bits 3200 donador comando loot give {player} loot emipokemon:twitch/random_tickets_32
+/emi twitch eventos recompensa bits 6400 donador comando loot give {player} loot emipokemon:twitch/random_tickets_64
+/emi twitch eventos recompensa bits 12800 donador comando loot give {player} loot emipokemon:twitch/random_tickets_128
+
+/emi twitch eventos recompensa listar
+/emi twitch eventos iniciar
