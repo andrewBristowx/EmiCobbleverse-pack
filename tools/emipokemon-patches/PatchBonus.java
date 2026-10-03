@@ -3,9 +3,10 @@ import org.objectweb.asm.tree.*;
 import java.nio.file.*;
 
 /**
- * Nuevo comando /emi twitch bonus activar (OP nivel 2): activa un bono aleatorio de servidor de 20 min, igual que la Caja Misteriosa del Directo.
- * Lo usa la funcion del datapack EmiCocina al comer el Festin del Directo.
- * Uso: PatchBonus <jar_extraido> <stub_classes> <salida>
+ * Nuevo comando /emi twitch bonus activar (OP nivel 2): activa un bono aleatorio de servidor de 20 min, como la Caja Misteriosa del Directo,
+ * pero con su propio anuncio ("FESTIN DEL DIRECTO") y devolviendo 1/0 (exito) para que lo use la funcion del datapack EmiCocina.
+ * Añade ademas TwitchService.emiActivateBonusQuiet (activa el bono sin el anuncio de Caja Misteriosa).
+ * Uso: PatchBonus <jar_extraido> <stub_classes> <salida>   (el jar extraido debe contener TwitchCommands y TwitchService)
  */
 public class PatchBonus {
     static final String TC = "com/emipokemon/twitch/TwitchCommands";
@@ -85,6 +86,21 @@ public class PatchBonus {
         Path o = out.resolve(TC + ".class");
         Files.createDirectories(o.getParent());
         Files.write(o, cw.toByteArray());
+
+        // TwitchService.emiActivateBonusQuiet (copiado del stub compilado con javac)
+        ClassNode svc = read(jar.resolve(SVC + ".class"));
+        ClassNode stubSvc = read(stub.resolve(SVC + ".class"));
+        MethodNode quiet = null;
+        for (MethodNode m : stubSvc.methods) if (m.name.equals("emiActivateBonusQuiet")) quiet = m;
+        if (quiet == null) throw new IllegalStateException("stub quiet method missing");
+        for (MethodNode m : svc.methods) if (m.name.equals("emiActivateBonusQuiet")) throw new IllegalStateException("already patched");
+        boolean hasField = false;
+        for (FieldNode f : svc.fields) if (f.name.equals("streamBonuses") && f.desc.equals("L" + SVC.replace("TwitchService", "StreamBonusService") + ";")) hasField = true;
+        if (!hasField) throw new IllegalStateException("streamBonuses field not found");
+        svc.methods.add(quiet);
+        ClassWriter cw2 = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        svc.accept(cw2);
+        Files.write(out.resolve(SVC + ".class"), cw2.toByteArray());
         System.out.println("patched OK");
     }
 }

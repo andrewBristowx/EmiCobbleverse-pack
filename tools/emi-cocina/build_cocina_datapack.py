@@ -130,14 +130,19 @@ special("tarta_bayas_dulces", "Tarta de Bayas Dulces", "light_purple", "minecraf
         [eff("minecraft:luck", 300, 1), eff("cobblecuisine:exp_boost", 300)], "Suerte II 5 min, Bono de EXP 5 min", tab="misc", container=False, rarity="rare")
 
 # --- Festin del Directo: caro de cocinar; al comerlo se activa un bono de servidor (/emi twitch bonus activar) ---
+# Limite: MAX_SEGUIDOS festines seguidos; al servir el ultimo hay COOLDOWN_MIN minutos de enfriamiento (para todo el servidor).
+# Mientras haya enfriamiento (o si el bono no se pudo activar) el plato se devuelve. Por eso el item no da hambre ni efectos por si mismo:
+# si no, se podria comer, recibir el plato de vuelta y repetir. Los efectos al jugador los da la funcion al activarse.
+MAX_SEGUIDOS = 3
+COOLDOWN_MIN = 60
 FESTIN = dish("Festín del Directo", "gold", "minecraft:enchanted_golden_apple",
-              ["Al comerlo se activa un bono aleatorio de servidor", "durante 20 minutos para todos los jugadores", "(shiny, tipo, IVs, raros o legendarios)."],
-              10, 1.0, [eff("minecraft:regeneration", 60, 1), eff("minecraft:absorption", 120, 3), eff("cobblecuisine:exp_boost", 600), eff("cobblecuisine:catch_boost", 600)],
-              container=False, rarity="epic", glint=True, custom_data={"emicocina": "festin_directo"}, stack=1, eat_seconds=2.5)
+              ["Al comerlo se activa un bono aleatorio de servidor", "durante 20 minutos para todos los jugadores", "(shiny, tipo, IVs, raros o legendarios).",
+               f"Máximo {MAX_SEGUIDOS} seguidos; después, {COOLDOWN_MIN} min de enfriamiento."],
+              0, 0.0, [], container=False, rarity="epic", glint=True, custom_data={"emicocina": "festin_directo"}, stack=1, eat_seconds=2.5)
 FESTIN_ING = ["minecraft:diamond", "minecraft:golden_apple", "cobblemon:enigma_berry", "cobblemon:revival_herb", "cobblemon:rare_candy"]
 DISHES["festin_directo"] = (recipe(FESTIN_ING, FESTIN, container=False, experience=5.0, cookingtime=600),
                             ("Festín del Directo", "diamante, manzana dorada, baya Enigma, hierba revividora, caramelo raro",
-                             "Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min"))
+                             f"Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min. Máx. {MAX_SEGUIDOS} seguidos y {COOLDOWN_MIN} min de enfriamiento"))
 
 ADVANCEMENT = {
     "criteria": {"eat": {"trigger": "minecraft:consume_item", "conditions": {"item": {"items": "minecraft:enchanted_golden_apple",
@@ -145,13 +150,61 @@ ADVANCEMENT = {
     "requirements": [["eat"]],
     "rewards": {"function": "emicocina:festin_directo"},
 }
-FUNCTION = """# Se ejecuta (como el jugador, nivel 2) al terminar de comer el Festin del Directo.
-advancement revoke @s only emicocina:festin_directo
-emi twitch bonus activar
-tellraw @a [{"selector":"@s","color":"gold"},{"text":" ha servido un ","color":"yellow"},{"text":"Festín del Directo","color":"gold","bold":true},{"text":" para todo el servidor.","color":"yellow"}]
+OBJ = "emicocina_festin"
+TICKS_COOLDOWN = COOLDOWN_MIN * 60 * 20
+FUNCTIONS = {
+    # se ejecuta al cargar/recargar los datapacks
+    "cargar": f"""scoreboard objectives add {OBJ} dummy
+scoreboard players add #count {OBJ} 0
+scoreboard players add #ready {OBJ} 0
+scoreboard players set #cooldown {OBJ} {TICKS_COOLDOWN}
+scoreboard players set #1200 {OBJ} 1200
+""",
+    # se ejecuta (como el jugador, nivel 2) al terminar de comer el Festin del Directo
+    "festin_directo": f"""advancement revoke @s only emicocina:festin_directo
+execute store result score #now {OBJ} run time query gametime
+execute if score #count {OBJ} matches {MAX_SEGUIDOS}.. if score #now {OBJ} >= #ready {OBJ} run scoreboard players set #count {OBJ} 0
+execute if score #count {OBJ} matches {MAX_SEGUIDOS}.. run function emicocina:festin_bloqueado
+execute unless score #count {OBJ} matches {MAX_SEGUIDOS}.. run function emicocina:festin_activar
+""",
+    "festin_activar": f"""scoreboard players set #ok {OBJ} 0
+execute store success score #ok {OBJ} run emi twitch bonus activar
+execute if score #ok {OBJ} matches 0 run function emicocina:festin_fallo
+execute if score #ok {OBJ} matches 1 run function emicocina:festin_servido
+""",
+    "festin_servido": f"""scoreboard players add #count {OBJ} 1
+effect give @s minecraft:regeneration 60 1
+effect give @s minecraft:absorption 120 3
+effect give @s cobblecuisine:exp_boost 600 0
+effect give @s cobblecuisine:catch_boost 600 0
+tellraw @a [{{"selector":"@s","color":"gold"}},{{"text":" ha servido un ","color":"yellow"}},{{"text":"Festín del Directo","color":"gold","bold":true}},{{"text":" para todo el servidor.","color":"yellow"}}]
 playsound minecraft:ui.toast.challenge_complete master @a ~ ~ ~ 1 1
 particle minecraft:totem_of_undying ~ ~1 ~ 0.5 0.8 0.5 0.3 60
-"""
+execute if score #count {OBJ} matches {MAX_SEGUIDOS}.. run function emicocina:festin_agotado
+""",
+    "festin_agotado": f"""scoreboard players operation #ready {OBJ} = #now {OBJ}
+scoreboard players operation #ready {OBJ} += #cooldown {OBJ}
+scoreboard players operation #cdmin {OBJ} = #cooldown {OBJ}
+scoreboard players operation #cdmin {OBJ} /= #1200 {OBJ}
+tellraw @a [{{"text":"⏳ Se agotaron los Festines del Directo. Podrán servirse otra vez en ","color":"gray"}},{{"score":{{"name":"#cdmin","objective":"{OBJ}"}},"color":"yellow"}},{{"text":" min.","color":"gray"}}]
+""",
+    "festin_bloqueado": f"""loot give @s loot emicocina:festin_directo
+scoreboard players operation #left {OBJ} = #ready {OBJ}
+scoreboard players operation #left {OBJ} -= #now {OBJ}
+scoreboard players add #left {OBJ} 1199
+scoreboard players operation #left {OBJ} /= #1200 {OBJ}
+tellraw @s [{{"text":"⏳ Los Festines del Directo están en enfriamiento. Faltan ","color":"red"}},{{"score":{{"name":"#left","objective":"{OBJ}"}},"color":"yellow"}},{{"text":" min. Te devolvimos el plato.","color":"red"}}]
+playsound minecraft:entity.villager.no master @s ~ ~ ~ 1 1
+""",
+    "festin_fallo": """loot give @s loot emicocina:festin_directo
+tellraw @s {"text":"No se pudo activar el bono ahora mismo. Te devolvimos el plato.","color":"red"}
+playsound minecraft:entity.villager.no master @s ~ ~ ~ 1 1
+""",
+}
+# loot table que devuelve el plato exacto (mismos componentes que la receta)
+REFUND = {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [{
+    "type": "minecraft:item", "name": FESTIN["id"],
+    "functions": [{"function": "minecraft:set_components", "components": FESTIN["components"]}]}]}]}
 
 def main(dest, md):
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
@@ -162,9 +215,14 @@ def main(dest, md):
         for rid, (rec, _) in DISHES.items():
             add(f"data/emicocina/recipe/cooking/{rid}.json", json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
         add("data/emicocina/advancement/festin_directo.json", json.dumps(ADVANCEMENT, indent=2) + "\n")
-        add("data/emicocina/function/festin_directo.mcfunction", FUNCTION)
+        add("data/emicocina/loot_table/festin_directo.json", json.dumps(REFUND, indent=2, ensure_ascii=False) + "\n")
+        for fname, body in FUNCTIONS.items():
+            add(f"data/emicocina/function/{fname}.mcfunction", body)
+        add("data/minecraft/tags/function/load.json", json.dumps({"values": ["emicocina:cargar"]}, indent=2) + "\n")
     lines = ["# Platos de cocina de Emi (Farmer's Delight + Cobblemon)", "",
              "Se cocinan en la **olla de Farmer's Delight** (con un fuego o fogón debajo; los platos de cuenco necesitan un cuenco en la mano al sacarlos).", "",
+             f"**Festín del Directo:** se pueden servir **{MAX_SEGUIDOS} seguidos** en todo el servidor; al servir el último hay **{COOLDOWN_MIN} min de enfriamiento** (para todos). "
+             "Durante el enfriamiento, el plato se devuelve y no pasa nada. Al servirlo se anuncia a todo el servidor y se activa el bono aleatorio de 20 min.", "",
              "| Plato | Ingredientes | Efectos |", "|---|---|---|"]
     for rid, (_, (name, ing, effects)) in DISHES.items():
         lines.append(f"| {name} | {ing} | {effects} |")

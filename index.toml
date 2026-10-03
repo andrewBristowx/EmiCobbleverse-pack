@@ -4,6 +4,7 @@ hash-format = "sha256"
 
 
 
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -1232,7 +1233,7 @@ hash = "54f0e8c1b061554bfba3de86dbcd9a6b39da4e8293e2b5141faa4254dc7ae400"
 
 [[files]]
 file = "datapacks/EmiCocina-DP.zip"
-hash = "5070054e50274323977201cdd514d62a3bca56fa6224abd1c42b44851f860f67"
+hash = "5e974523af60d5e1ccf09c0899fb2ba5cf0fe24851530ccac0c740e05c6e3123"
 
 [[files]]
 file = "datapacks/EmiCostumes-DP.zip"
@@ -1329,7 +1330,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "26eb153bec4e5e832a54ff1e28acd8577a4d4caef9e111ac5ea328994ca57bfd"
+hash = "24185929fb8cd7a1016e98b9c59cb5f78cc09c45723383f6ea53bd25b89a954c"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"

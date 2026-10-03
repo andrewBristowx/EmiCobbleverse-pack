@@ -2,6 +2,8 @@
 
 Se cocinan en la **olla de Farmer's Delight** (con un fuego o fogón debajo; los platos de cuenco necesitan un cuenco en la mano al sacarlos).
 
+**Festín del Directo:** se pueden servir **3 seguidos** en todo el servidor; al servir el último hay **60 min de enfriamiento** (para todos). Durante el enfriamiento, el plato se devuelve y no pasa nada. Al servirlo se anuncia a todo el servidor y se activa el bono aleatorio de 20 min.
+
 | Plato | Ingredientes | Efectos |
 |---|---|---|
 | Curry de Baya Chilan (Normal) | 2× baya Chilan, arroz cocido, pollo crudo | Poder de tipo Normal 5 min + Saturación 5 s |
@@ -28,4 +30,4 @@ Se cocinan en la **olla de Farmer's Delight** (con un fuego o fogón debajo; los
 | Galletas de Aprilima | aprilima amarilla, aprilima rosa, trigo, azúcar | Prisa + Velocidad 90 s (x4 galletas) |
 | Infusión de Hierbas Revividoras | hierba revividora, puerro medicinal, azúcar, manzana | Regeneración III 20 s, Repelente 5 min |
 | Tarta de Bayas Dulces | baya Razz, baya Pinap, baya Nanab, trigo, azúcar, huevo | Suerte II 5 min, Bono de EXP 5 min |
-| Festín del Directo | diamante, manzana dorada, baya Enigma, hierba revividora, caramelo raro | Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min |
+| Festín del Directo | diamante, manzana dorada, baya Enigma, hierba revividora, caramelo raro | Bono aleatorio de servidor 20 min (para todos) + Regeneración II, Absorción IV, EXP y captura 10 min. Máx. 3 seguidos y 60 min de enfriamiento |

@@ -1,7 +1,7 @@
 # Parches de bytecode para Emipokemon-0.6.0-alpha.1.jar
 
 El codigo fuente de Emipokemon 0.6.0 no esta en GitHub, asi que los arreglos se aplicaron directamente sobre el jar
-(pack 1.0.29, 1.0.30, 1.0.32, 1.0.35 y 1.0.38). Estos scripts permiten **reaplicarlos** sobre una copia sin parchear del mismo jar
+(pack 1.0.29, 1.0.30, 1.0.32, 1.0.35 y 1.0.39). Estos scripts permiten **reaplicarlos** sobre una copia sin parchear del mismo jar
 (hash original `f6298c511ce42848ff6a1eecaeb5536fbccc9d8156cd28f96c42c5cb92c7c2e2`). Si las clases no coinciden, fallan con un error claro
 en vez de dejar el jar a medias.
 
@@ -11,7 +11,7 @@ en vez de dejar el jar a medias.
   Toca `TreasureHuntService` y `NpcBattleService`.
 - `PatchTwitch`: `/twitch eventos ...` (los avisos del mod lo anuncian asi, pero solo existia `/emi twitch eventos ...`). Toca `TwitchCommands`.
 - `PatchShop` (+ `shop/`): tienda de movimientos. `ShopCatalog` carga `config/emipokemon/shop/extra/*.json` en memoria (clase nueva `MoveShopExtras`); `ShopNetworking` envia solo las 4 pestañas de movimientos cuando el NPC abre en `tm_moves|egg_moves|star_moves|tutor_moves` (y las omite en la tienda normal); `NpcKind.safeCategory` acepta esas 4 categorias. El catalogo sale de `tools/emi-shop-moves/`.
-- `PatchBonus` (+ `bonus/stub/`): nuevo comando `/emi twitch bonus activar` (OP nivel 2) que activa un bono aleatorio de servidor de 20 min, como la Caja Misteriosa del Directo (`TwitchService.activateRandomRelicBonus`). Lo usa el Festín del Directo del datapack `EmiCocina-DP` (`tools/emi-cocina/`).
+- `PatchBonus` (+ `bonus/stub/`): nuevo comando `/emi twitch bonus activar` (OP nivel 2) que activa un bono aleatorio de servidor de 20 min, como la Caja Misteriosa del Directo, pero **con su propio anuncio** ("FESTÍN DEL DIRECTO") y devolviendo 1/0 según haya funcionado. Añade `TwitchService.emiActivateBonusQuiet` (el bono sin el anuncio de Caja Misteriosa, que sigue intacto para la caja real). Lo usa el Festín del Directo del datapack `EmiCocina-DP` (`tools/emi-cocina/`), que además controla el límite de 3 y el enfriamiento.
 
 ## Uso (Java 21, ASM 9.7: asm, asm-tree)
 
@@ -35,4 +35,4 @@ Nota: `PatchTwitch jar out3` (lee del jar original, escribe en `out3`); sustituy
 
 `PatchShop <jar_extraido> <stub_classes> <MoveShopExtras_classes> <salida>`: compila `shop/com/emipokemon/shop/MoveShopExtras.java` con `javac --release 21 -cp <jar_extraido>:gson:slf4j-api` y `shop/stub/.../ServiceNpcEntity.java` (stub de `safeCategory`).
 
-`PatchBonus <jar_extraido> <stub_classes> <salida>`: compila `bonus/stub/**` con `javac --release 21 -cp brigadier.jar` y parchea `TwitchCommands` (ejecutar despues de `PatchTwitch`, sobre el jar que ya lo incluye).
+`PatchBonus <jar_extraido> <stub_classes> <salida>`: compila `bonus/stub/**` con `javac -encoding UTF-8 --release 21 -cp brigadier.jar` y parchea `TwitchCommands` y `TwitchService` (ejecutar despues de `PatchTwitch`, sobre el jar que ya lo incluye).
