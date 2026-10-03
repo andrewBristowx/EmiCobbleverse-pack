@@ -1,6 +1,11 @@
 hash-format = "sha256"
 
 
+
+
+
+
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -402,6 +407,10 @@ metafile = true
 [[files]]
 file = "config/emimobcontrol.json"
 hash = "76f7de4a21d1ff2699fad245e370dc2d4a86e5d49e5597e82483d536f2cc353d"
+
+[[files]]
+file = "config/emipokemon/shop/extra/mt-movimientos.json"
+hash = "6369e0966720805a53c18fe3562e8180101bdcd7ae599e08f988761561e52bbb"
 
 [[files]]
 file = "config/emiprogresion.json"
@@ -1224,8 +1233,16 @@ file = "datapacks/COBBLEVERSE-RCT-DP-v20.zip"
 hash = "54f0e8c1b061554bfba3de86dbcd9a6b39da4e8293e2b5141faa4254dc7ae400"
 
 [[files]]
+file = "datapacks/EmiCocina-DP.zip"
+hash = "5e974523af60d5e1ccf09c0899fb2ba5cf0fe24851530ccac0c740e05c6e3123"
+
+[[files]]
 file = "datapacks/EmiCostumes-DP.zip"
 hash = "387a9bdb9547ebb1b457330b5080e36345dc47aaa8e44a98e550671acef2c3ca"
+
+[[files]]
+file = "datapacks/EmiTwitch-DP.zip"
+hash = "1002e6995100148306c291b397374df415d3a44a23e4c4dad3b1b4ec3e786a8b"
 
 [[files]]
 file = "datapacks/PokeCenterPCs-DP.zip"
@@ -1314,7 +1331,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "dd1cc78f2ed433ba737fa07ea38f8798a3081921581f6259bb823c5e80ee5709"
+hash = "0643a1911eebee07d24914250ee16b117a9a975a91c5adac2fa212c2948b2442"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1556,6 +1573,11 @@ hash = "acaaeb99fce91a8cee19cc92cac1cf1b723a879915b6dc0d67a79c4f74137f77"
 metafile = true
 
 [[files]]
+file = "mods/cobblemon-farmers-delight-compat.pw.toml"
+hash = "ff1f47ba9f26f4cef29d1ebebd541d81b298fbbf1dcf4ca641aaef7bb960d2da"
+metafile = true
+
+[[files]]
 file = "mods/cobblemon-fight-or-flight-reborn.pw.toml"
 hash = "6a34a8ad211f4ff8a2718bb8251007b33ae47ba95c88571d6b4eab48624c5c7b"
 metafile = true
@@ -1628,6 +1650,11 @@ metafile = true
 [[files]]
 file = "mods/cobblemon-tim-core.pw.toml"
 hash = "82cbfd5cf3bcf0bec02ae7ec5b182981561aa566df61683358e5612dae083fdb"
+metafile = true
+
+[[files]]
+file = "mods/cobblemon-x-oritech-compat.pw.toml"
+hash = "1fdab0ebd14a9b2e752e536befd0dc5e386a03197f3895732e0faf5d091cb9df"
 metafile = true
 
 [[files]]
@@ -1796,6 +1823,11 @@ metafile = true
 [[files]]
 file = "mods/fancymenu.pw.toml"
 hash = "64ae365aeafb5c29ee501f84cd11600515fd2ca02e0aa89c0e282f45c53954af"
+metafile = true
+
+[[files]]
+file = "mods/farmers-delight-refabricated.pw.toml"
+hash = "f2dd3bcc1e38d91445004d43d84ed98f1e6c4c7284f0b91a80ca01129740044a"
 metafile = true
 
 [[files]]
@@ -2081,6 +2113,11 @@ metafile = true
 [[files]]
 file = "mods/only-bottle-caps.pw.toml"
 hash = "42c1811f092c74fd774379e7499851eb548902ace77a8838b17cc22d20c2d855"
+metafile = true
+
+[[files]]
+file = "mods/oritech.pw.toml"
+hash = "44ec48148845a0246c1983ddd3bebbecc378709e0663d16139d80e749c7f3fe8"
 metafile = true
 
 [[files]]
