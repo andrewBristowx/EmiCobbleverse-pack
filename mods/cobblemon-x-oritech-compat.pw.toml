@@ -1,0 +1,13 @@
+name = "Cobblemon x Oritech Compat"
+filename = "cobbletech-fabric-1.21.1-1.0.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/9aM5Liw0/versions/9WwTyvc3/cobbletech-fabric-1.21.1-1.0.0.jar"
+hash-format = "sha512"
+hash = "5bc545e91da5151ac103b0ef5d83224dc22f4238130eace1b4a391bf23103d232c098a927d05471252b80b8f229afdeb1c7bce23c421c9d1ec97a4d4db183c93"
+
+[update]
+[update.modrinth]
+mod-id = "9aM5Liw0"
+version = "9WwTyvc3"

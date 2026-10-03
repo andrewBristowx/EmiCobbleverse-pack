@@ -5,6 +5,7 @@ hash-format = "sha256"
 
 
 
+
 [[files]]
 file = "config/DistantHorizons.toml"
 hash = "acc030ddefa09c402abcfcdfe3e0cd36781023f62bf8d1e2f94283b9c509e3f0"
@@ -1652,6 +1653,11 @@ hash = "82cbfd5cf3bcf0bec02ae7ec5b182981561aa566df61683358e5612dae083fdb"
 metafile = true
 
 [[files]]
+file = "mods/cobblemon-x-oritech-compat.pw.toml"
+hash = "1fdab0ebd14a9b2e752e536befd0dc5e386a03197f3895732e0faf5d091cb9df"
+metafile = true
+
+[[files]]
 file = "mods/cobblemon.pw.toml"
 hash = "6413f6c6bef7abc5a808a54111f093a17daf4471e89d8535840f2a24966bdcd4"
 metafile = true
@@ -2107,6 +2113,11 @@ metafile = true
 [[files]]
 file = "mods/only-bottle-caps.pw.toml"
 hash = "42c1811f092c74fd774379e7499851eb548902ace77a8838b17cc22d20c2d855"
+metafile = true
+
+[[files]]
+file = "mods/oritech.pw.toml"
+hash = "44ec48148845a0246c1983ddd3bebbecc378709e0663d16139d80e749c7f3fe8"
 metafile = true
 
 [[files]]
