@@ -1,7 +1,7 @@
 {
-	id: "9F25BD73A4921CB3"
-	group: "8FD05755043B163E"
-	order_index: 3
+	id: "1F25BD73A4921CB3"
+	group: "0FD05755043B163E"
+	order_index: 4
 	filename: "oritech_logistica"
 	icon: {
 		id: "oritech:energy_pipe"
@@ -10,9 +10,12 @@
 	default_quest_shape: "rsquare"
 	quests: [
 		{
-			id: "A2B951B55F1212F3"
+			id: "22B951B55F1212F3"
 			x: 0.0d
 			y: 0.0d
+			dependencies: [
+				"486D2844E3A68BBA"
+			]
 			tasks: [
 				{
 					id: "4B345A803DDDBC62"
@@ -26,7 +29,7 @@
 			]
 			rewards: [
 				{
-					id: "B3E1043E1C8F5781"
+					id: "33E1043E1C8F5781"
 					type: "xp"
 					xp: 15
 				}
@@ -36,9 +39,12 @@
 			id: "16DD1A8C58DE6A43"
 			x: 0.0d
 			y: 1.7d
+			dependencies: [
+				"02B080F997C64089"
+			]
 			tasks: [
 				{
-					id: "BFB696D264A163E0"
+					id: "3FB696D264A163E0"
 					type: "item"
 					item: {
 						id: "oritech:item_pipe"
@@ -49,19 +55,22 @@
 			]
 			rewards: [
 				{
-					id: "BE9D6FFCC1D661B4"
+					id: "3E9D6FFCC1D661B4"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "E327C6331BA5E151"
+			id: "6327C6331BA5E151"
 			x: 0.0d
 			y: 3.4d
+			dependencies: [
+				"5C8E39CE82317FD7"
+			]
 			tasks: [
 				{
-					id: "8138E76AA87D1AF9"
+					id: "0138E76AA87D1AF9"
 					type: "item"
 					item: {
 						id: "oritech:fluid_pipe"
@@ -72,7 +81,7 @@
 			]
 			rewards: [
 				{
-					id: "E3C5364A7BD586D9"
+					id: "63C5364A7BD586D9"
 					type: "xp"
 					xp: 15
 				}
@@ -82,9 +91,12 @@
 			id: "41ABF10B0F9E4618"
 			x: 0.0d
 			y: 5.1d
+			dependencies: [
+				"3227C83D5405F354"
+			]
 			tasks: [
 				{
-					id: "DE89F0D8DBB0D475"
+					id: "5E89F0D8DBB0D475"
 					type: "item"
 					item: {
 						id: "oritech:superconductor"
@@ -95,16 +107,20 @@
 			]
 			rewards: [
 				{
-					id: "A7C9F02CED7E243E"
+					id: "27C9F02CED7E243E"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "D70DE642270CB82A"
+			id: "570DE642270CB82A"
 			x: 0.0d
 			y: 6.8d
+			dependencies: [
+				"2C745C74481A2E9C"
+				"66A35F66C2B8A3AC"
+			]
 			tasks: [
 				{
 					id: "082A9BB64B55C8E4"
@@ -130,7 +146,8 @@
 			y: 3.4d
 			dependencies: [
 				"16DD1A8C58DE6A43"
-				"E327C6331BA5E151"
+				"6327C6331BA5E151"
+				"69489883301E1920"
 			]
 			tasks: [
 				{
@@ -145,19 +162,25 @@
 			]
 			rewards: [
 				{
-					id: "E37EFB7B3EFE5369"
+					id: "637EFB7B3EFE5369"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "D7EA34FD88FABD17"
+			id: "57EA34FD88FABD17"
 			x: 0.0d
 			y: 8.5d
+			dependencies: [
+				"2744788513F1E053"
+				"486D2844E3A68BBA"
+				"36CC12C53F8626A2"
+				"0AF41D4956274A11"
+			]
 			tasks: [
 				{
-					id: "A2D1A09BFFFEC643"
+					id: "22D1A09BFFFEC643"
 					type: "item"
 					item: {
 						id: "oritech:power_pole_block"
@@ -168,7 +191,7 @@
 			]
 			rewards: [
 				{
-					id: "E58A7B710055DC41"
+					id: "658A7B710055DC41"
 					type: "xp"
 					xp: 15
 				}
@@ -179,7 +202,7 @@
 			x: 2.0d
 			y: 5.1d
 			dependencies: [
-				"E327C6331BA5E151"
+				"6327C6331BA5E151"
 			]
 			tasks: [
 				{

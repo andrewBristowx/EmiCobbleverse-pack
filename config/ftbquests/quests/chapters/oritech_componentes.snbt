@@ -1,0 +1,824 @@
+{
+	id: "53AC673AADC76DA2"
+	group: "0FD05755043B163E"
+	order_index: 1
+	filename: "oritech_componentes"
+	icon: {
+		id: "oritech:motor"
+		count: 1
+	}
+	default_quest_shape: "rsquare"
+	quests: [
+		{
+			id: "0AF41D4956274A11"
+			x: 0.0d
+			y: 0.0d
+			tasks: [
+				{
+					id: "10260546ED5B9F54"
+					type: "item"
+					item: {
+						id: "oritech:carbon_fibre_strands"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5FB2C53BA26CF740"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "66A35F66C2B8A3AC"
+			x: 0.0d
+			y: 1.7d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+			]
+			tasks: [
+				{
+					id: "0F2F523CAB7A5154"
+					type: "item"
+					item: {
+						id: "oritech:machine_plating_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "7A562BD7EE78057F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3ABF76CB7D428A1A"
+			x: 0.0d
+			y: 3.4d
+			tasks: [
+				{
+					id: "5FB469ABC754E8E6"
+					type: "item"
+					item: {
+						id: "oritech:enderic_compound"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "7A8C45CFCF503442"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3C9A091F6CC05AA9"
+			x: 8.0d
+			y: 1.7d
+			dependencies: [
+				"2C745C74481A2E9C"
+				"25D098546D88153D"
+			]
+			tasks: [
+				{
+					id: "604F9956E1672CBE"
+					type: "item"
+					item: {
+						id: "oritech:advanced_computing_engine"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "19F8ABECBD8361A4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3BBDA12D97134A48"
+			x: 0.0d
+			y: 5.1d
+			tasks: [
+				{
+					id: "5119F59CBC766170"
+					type: "item"
+					item: {
+						id: "oritech:duratium_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "731F1CC94572DEB3"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "115AD32A882AE4AC"
+			x: 4.0d
+			y: 0.0d
+			dependencies: [
+				"21048343E7F1DB32"
+				"3ABF76CB7D428A1A"
+				"5DF7002A0B1098A5"
+			]
+			tasks: [
+				{
+					id: "4F9AD7D5C55605C4"
+					type: "item"
+					item: {
+						id: "oritech:dubios_container"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "571C2FC6F8B71AC0"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1E0557B18805BE63"
+			x: 14.0d
+			y: 4.25d
+			dependencies: [
+				"593AF411FFBD58F1"
+				"2E75916FC129476E"
+			]
+			tasks: [
+				{
+					id: "28DC746794471C8C"
+					type: "item"
+					item: {
+						id: "oritech:prometheum_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "704E7E75DFA1958F"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "69489883301E1920"
+			x: 4.0d
+			y: 1.7d
+			dependencies: [
+				"1ED5C9694AF9CA1E"
+				"77E3C6E392DFC7B2"
+				"2744788513F1E053"
+			]
+			tasks: [
+				{
+					id: "2F4D257CF827DF11"
+					type: "item"
+					item: {
+						id: "oritech:motor"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "10001FC3A144BCB8"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "21048343E7F1DB32"
+			x: 0.0d
+			y: 6.8d
+			tasks: [
+				{
+					id: "27816C88371709D1"
+					type: "item"
+					item: {
+						id: "oritech:plastic_sheet"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3C5BBD7AC0030CE1"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "17F6F3E181F74E52"
+			x: 8.0d
+			y: 3.4d
+			dependencies: [
+				"2C745C74481A2E9C"
+				"45A30A85AB95E755"
+				"6ED72E5609C10122"
+			]
+			tasks: [
+				{
+					id: "5298273646AB5358"
+					type: "item"
+					item: {
+						id: "oritech:flux_gate"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "60AFFD8F1BF9AF2C"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "5C8E39CE82317FD7"
+			x: 0.0d
+			y: 8.5d
+			tasks: [
+				{
+					id: "7954371F69D25F35"
+					type: "item"
+					item: {
+						id: "oritech:silicon"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3587EC567E930D37"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2744788513F1E053"
+			x: 2.0d
+			y: 0.85d
+			dependencies: [
+				"1ED5C9694AF9CA1E"
+				"77E3C6E392DFC7B2"
+			]
+			tasks: [
+				{
+					id: "2DC95233F5EDF82D"
+					type: "item"
+					item: {
+						id: "oritech:magnetic_coil"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3A068E4C24D068A7"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2C745C74481A2E9C"
+			x: 4.0d
+			y: 3.4d
+			dependencies: [
+				"21048343E7F1DB32"
+				"0AF41D4956274A11"
+				"486D2844E3A68BBA"
+			]
+			tasks: [
+				{
+					id: "71F6FC36D1EA16B1"
+					type: "item"
+					item: {
+						id: "oritech:processing_unit"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "070409004BA835D5"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1E6AA2C23B0846BA"
+			x: 4.0d
+			y: 5.1d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+				"0AF41D4956274A11"
+			]
+			tasks: [
+				{
+					id: "70103C5E250A8D28"
+					type: "item"
+					item: {
+						id: "oritech:metal_beam_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1D15D3C45BF10729"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "6E8747B38228F402"
+			x: 2.0d
+			y: 2.55d
+			tasks: [
+				{
+					id: "179D3D4281BBDF3A"
+					type: "item"
+					item: {
+						id: "oritech:biosteel_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "58A3C1EDD513E231"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "580DC7AD8CFC5090"
+			x: 4.0d
+			y: 6.8d
+			dependencies: [
+				"5DF7002A0B1098A5"
+				"0AF41D4956274A11"
+				"3ABF76CB7D428A1A"
+			]
+			tasks: [
+				{
+					id: "5B3500267B162BA2"
+					type: "item"
+					item: {
+						id: "oritech:enderic_lens"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3A18ABA4B5D72D60"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "45A30A85AB95E755"
+			x: 2.0d
+			y: 4.25d
+			tasks: [
+				{
+					id: "3C8ACAC154C3CA8A"
+					type: "item"
+					item: {
+						id: "oritech:fluxite"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1D54F520831A9FB0"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1AC0366DAB53F317"
+			x: 4.0d
+			y: 8.5d
+			dependencies: [
+				"486D2844E3A68BBA"
+				"77E3C6E392DFC7B2"
+				"022C33C205FDF3A0"
+			]
+			tasks: [
+				{
+					id: "7AB8986DE1D6CFBF"
+					type: "item"
+					item: {
+						id: "oritech:advanced_battery"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "09E23C87B50234D4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "02B080F997C64089"
+			x: 2.0d
+			y: 5.95d
+			dependencies: [
+				"16DD1A8C58DE6A43"
+			]
+			tasks: [
+				{
+					id: "050CD1790AB60262"
+					type: "item"
+					item: {
+						id: "oritech:transparent_item_pipe"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0B9E3B1807C918F0"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "3227C83D5405F354"
+			x: 6.0d
+			y: 0.85d
+			dependencies: [
+				"41ABF10B0F9E4618"
+				"66A35F66C2B8A3AC"
+			]
+			tasks: [
+				{
+					id: "749699D4DD421CA5"
+					type: "item"
+					item: {
+						id: "oritech:superconductor_duct_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6AF6D9D9F0D952C3"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2E75916FC129476E"
+			x: 8.0d
+			y: 5.1d
+			dependencies: [
+				"41ABF10B0F9E4618"
+				"1AC0366DAB53F317"
+			]
+			tasks: [
+				{
+					id: "60556D3FA804EDFF"
+					type: "item"
+					item: {
+						id: "oritech:overcharged_crystal"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "030C6FFE8DAB945D"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "593AF411FFBD58F1"
+			x: 12.0d
+			y: 3.4d
+			dependencies: [
+				"50C90A4B5D54FB08"
+				"5DF7002A0B1098A5"
+			]
+			tasks: [
+				{
+					id: "75A2B9F862114E01"
+					type: "item"
+					item: {
+						id: "oritech:heisenberg_compensator"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1F398E75D22B38A4"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "65FC60EFEDB9E12F"
+			x: 8.0d
+			y: 6.8d
+			dependencies: [
+				"115AD32A882AE4AC"
+			]
+			tasks: [
+				{
+					id: "39DC555FB71E7127"
+					type: "item"
+					item: {
+						id: "oritech:unholy_intelligence"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "3F62B3F0D234D940"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "022C33C205FDF3A0"
+			x: 2.0d
+			y: 7.6499999999999995d
+			tasks: [
+				{
+					id: "45163962562443F8"
+					type: "item"
+					item: {
+						id: "oritech:energite_ingot"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "0B0DE0AD7EABED47"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "2D15C219C7D2D516"
+			x: 6.0d
+			y: 2.55d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+				"0AF41D4956274A11"
+			]
+			tasks: [
+				{
+					id: "0158D758C4596D2E"
+					type: "item"
+					item: {
+						id: "oritech:metal_girder_block"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "781356A0D7E671FB"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "50C90A4B5D54FB08"
+			x: 10.0d
+			y: 3.4d
+			dependencies: [
+				"3BBDA12D97134A48"
+				"3C9A091F6CC05AA9"
+			]
+			tasks: [
+				{
+					id: "1F473D1CCEDCDD95"
+					type: "item"
+					item: {
+						id: "oritech:super_ai_chip"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5118BB96595AD064"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "036934C06BBD1A88"
+			x: 6.0d
+			y: 4.25d
+			dependencies: [
+				"77E3C6E392DFC7B2"
+				"66A35F66C2B8A3AC"
+				"1ED5C9694AF9CA1E"
+			]
+			tasks: [
+				{
+					id: "18B06BC0C668CD75"
+					type: "item"
+					item: {
+						id: "oritech:reactor_wall"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1AA1ED6DD9ECDF30"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "0797264310904CC6"
+			x: 12.0d
+			y: 5.1d
+			dependencies: [
+				"41ABF10B0F9E4618"
+				"486D2844E3A68BBA"
+				"1065BC79F3A08215"
+				"3BBDA12D97134A48"
+			]
+			tasks: [
+				{
+					id: "7F34721B53964EC4"
+					type: "item"
+					item: {
+						id: "oritech:accelerator_motor"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "6F10BF6D5A6EAAEC"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "25D098546D88153D"
+			x: 6.0d
+			y: 5.95d
+			dependencies: [
+				"0AF41D4956274A11"
+				"5C8E39CE82317FD7"
+			]
+			tasks: [
+				{
+					id: "62E190744B0F5DE9"
+					type: "item"
+					item: {
+						id: "oritech:silicon_wafer"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "5EFE88E9CECF81BB"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "1065BC79F3A08215"
+			x: 10.0d
+			y: 5.1d
+			dependencies: [
+				"76AFDF01A271B878"
+				"1AC0366DAB53F317"
+				"17F6F3E181F74E52"
+			]
+			tasks: [
+				{
+					id: "19A0138E2A126519"
+					type: "item"
+					item: {
+						id: "oritech:ion_thruster"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "1788EA490AA1CF26"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+		{
+			id: "76AFDF01A271B878"
+			x: 6.0d
+			y: 7.6499999999999995d
+			dependencies: [
+				"0AF41D4956274A11"
+			]
+			tasks: [
+				{
+					id: "04BEDE855F815499"
+					type: "item"
+					item: {
+						id: "oritech:reinforced_carbon_sheet"
+						count: 1
+					}
+					consume_items: false
+				}
+			]
+			rewards: [
+				{
+					id: "22CAE3D1DC50B240"
+					type: "xp"
+					xp: 15
+				}
+			]
+		}
+	]
+}

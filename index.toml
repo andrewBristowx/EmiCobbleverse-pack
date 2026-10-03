@@ -372,8 +372,7 @@ hash = "829ec0bf5e127cfe4534864f285163d6a585d05cc0539884b053fd04fbc66232"
 
 [[files]]
 file = "config/defaultoptions/keybindings.txt"
-hash = "2a9dac5b9b37ce7decda324ddc30893079e9db78708189a267d7884d11496abe"
-preserve = true
+hash = "13ec35241934a0561658f9e929f3114e78e4c17b78f227dcc42edafce825b323"
 
 [[files]]
 file = "config/defaultoptions/options.txt"
@@ -794,47 +793,51 @@ hash = "b5ec902f480d0237607e75a469fa700594296045d89f9ddef790c54783b070e7"
 
 [[files]]
 file = "config/ftbquests/quests/chapter_groups.snbt"
-hash = "6b8b9ebd3d4a662037f370a6707ba69e55ce1ccb363b86b2479e312e096512d6"
+hash = "f67bfae0b6bbe4ee3041cdfe352e41bb4a42fcf417138fe68bca69a29924ff42"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/bienvenida.snbt"
-hash = "b95f715104724072c0384679eb7f9c038b108f1609c710841951cb671e38a417"
+hash = "d0d938e944a0510a741f76bf6280757e14faef3bfebfb674893b9f89108e7591"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/cocina_basica.snbt"
-hash = "6cf97f440b7dc99e1b5935139f82f853a9cacaf7c7a78663ffe129f80b3619ba"
+hash = "9c3ffa121f46a28cd78f51c613936d73e945ff9ce33708d71c7cc1791b2f382c"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_auto.snbt"
-hash = "33ae53005bd2abcc033e114d8b66563ba7d60979506b649ff40d7c655bddea01"
+hash = "b37c7536d1fc27bb468e350d8d3f87507bd20100936679ebf06a95b157d1ce34"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_avanzado.snbt"
-hash = "879158e5ba39340d5bf52e0e868ec8f63e1a58c640681165e03ba1a2b612a3ac"
+hash = "563d348c4430546eab68804eb909eaae4a320314c2e891a8e88992ffbbb42e8b"
+
+[[files]]
+file = "config/ftbquests/quests/chapters/oritech_componentes.snbt"
+hash = "42f89e9f99f614dae107d2803b85c77e8fa57fbfbc5f0b66af76d5e49a570fad"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_energia.snbt"
-hash = "0013a92940f4bc5c2f2ecaf9a013aed1714dea0ed1a15a83a0772e00ec46b753"
+hash = "d210fec826d10b2f011b6f8e40485f0c33d674c8fce35e9fe0ae933b5f2edcf4"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_inicio.snbt"
-hash = "a50be80e96cbbfe0a99aa92af74adbe9ff8fb1733882d5a855f03f48e87f5eb7"
+hash = "91a6b5e33183625a46b67ab474068bf3abc2b90a415a6bf757a4c5da9c99b006"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_logistica.snbt"
-hash = "692003fa36dc7e74f3d74cc942f264e027e4a2b47fc3a29acc4dd81ef79df99a"
+hash = "be1c76726803125d4a8352daadcebbd414d16afa4b0476e6ebded4ed7ccd06d6"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/oritech_procesar.snbt"
-hash = "72b2fc87825f7c78ac0eb165a4205a3e742dc987e871a7080dc018c3f25fb4c9"
+hash = "653f83ec9f988edbab692ad132ea3ff4202de1e9aa7057d408454b5bf8bebdcd"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/platos_pokemon.snbt"
-hash = "d260e07653052dd9d3c7e81e3f47c4120d7e5ec9b7df7cc51112d438d328efc1"
+hash = "93769a0a2778201184a1733eb73d71b1153df875675dc6d7362c5a3fa9fb864d"
 
 [[files]]
 file = "config/ftbquests/quests/chapters/toms_storage.snbt"
-hash = "01d25112de2afd788017cde43491af28903db112f1dbbddd554eaff5016a5844"
+hash = "27d5b3ed4f4d6b89280d9a651625586d0778aa5550d887ffe87d29edfa19a4b7"
 
 [[files]]
 file = "config/ftbquests/quests/data.snbt"
@@ -842,11 +845,11 @@ hash = "78f6a71a853fca566cfc06e17c355596d2f003a62f8535138560f700ad140fb3"
 
 [[files]]
 file = "config/ftbquests/quests/lang/en_us.snbt"
-hash = "1ec1705c15842443ec1dd7224fc8ec9fc940aca1f29eb9543fa339b075935934"
+hash = "ba96d709b6cf4b0a4343cb6e1bdd1f0feb5ebb021450bf173693e07ac0fe1910"
 
 [[files]]
 file = "config/ftbquests/quests/lang/es_es.snbt"
-hash = "1ec1705c15842443ec1dd7224fc8ec9fc940aca1f29eb9543fa339b075935934"
+hash = "ba96d709b6cf4b0a4343cb6e1bdd1f0feb5ebb021450bf173693e07ac0fe1910"
 
 [[files]]
 file = "config/fzzy_config/keybinds.toml"

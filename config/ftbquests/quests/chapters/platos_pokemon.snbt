@@ -1,5 +1,5 @@
 {
-	id: "8C9996AE72CA0F98"
+	id: "0C9996AE72CA0F98"
 	group: "4BD0F4C4DA544665"
 	order_index: 1
 	filename: "platos_pokemon"
@@ -42,7 +42,7 @@
 			]
 			tasks: [
 				{
-					id: "88C842525BF292A8"
+					id: "08C842525BF292A8"
 					type: "item"
 					item: {
 						id: "cobblemon:chilan_berry"
@@ -61,7 +61,7 @@
 					consume_items: false
 				}
 				{
-					id: "DEA0F7A6E42C577E"
+					id: "5EA0F7A6E42C577E"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -78,7 +78,7 @@
 			]
 			rewards: [
 				{
-					id: "CD096A4416BB429E"
+					id: "4D096A4416BB429E"
 					type: "xp"
 					xp: 20
 				}
@@ -93,7 +93,7 @@
 			]
 			tasks: [
 				{
-					id: "DF2437A804C6F03C"
+					id: "5F2437A804C6F03C"
 					type: "item"
 					item: {
 						id: "cobblemon:occa_berry"
@@ -112,7 +112,7 @@
 					consume_items: false
 				}
 				{
-					id: "FB944BD75483415F"
+					id: "7B944BD75483415F"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -136,7 +136,7 @@
 			]
 		}
 		{
-			id: "E1597F1607A22C7B"
+			id: "61597F1607A22C7B"
 			x: 2.0d
 			y: 3.4d
 			dependencies: [
@@ -144,7 +144,7 @@
 			]
 			tasks: [
 				{
-					id: "A4CEEE472BEE476D"
+					id: "24CEEE472BEE476D"
 					type: "item"
 					item: {
 						id: "cobblemon:passho_berry"
@@ -163,7 +163,7 @@
 					consume_items: false
 				}
 				{
-					id: "B45DB1D91473CF86"
+					id: "345DB1D91473CF86"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -180,14 +180,14 @@
 			]
 			rewards: [
 				{
-					id: "81C4AED1AAFE444E"
+					id: "01C4AED1AAFE444E"
 					type: "xp"
 					xp: 20
 				}
 			]
 		}
 		{
-			id: "C4742CABFD86EDA5"
+			id: "44742CABFD86EDA5"
 			x: 2.0d
 			y: 5.1d
 			dependencies: [
@@ -195,7 +195,7 @@
 			]
 			tasks: [
 				{
-					id: "DA00B522555BA909"
+					id: "5A00B522555BA909"
 					type: "item"
 					item: {
 						id: "cobblemon:wacan_berry"
@@ -223,7 +223,7 @@
 					consume_items: false
 				}
 				{
-					id: "A6CA42E5744A7291"
+					id: "26CA42E5744A7291"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_wacan"
 					criterion: "eat"
@@ -231,7 +231,7 @@
 			]
 			rewards: [
 				{
-					id: "A7A58A1CD6BDB896"
+					id: "27A58A1CD6BDB896"
 					type: "xp"
 					xp: 20
 				}
@@ -246,7 +246,7 @@
 			]
 			tasks: [
 				{
-					id: "88B160FE91008A6B"
+					id: "08B160FE91008A6B"
 					type: "item"
 					item: {
 						id: "cobblemon:rindo_berry"
@@ -256,7 +256,7 @@
 					consume_items: false
 				}
 				{
-					id: "E19D0CC3A413C256"
+					id: "619D0CC3A413C256"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -265,7 +265,7 @@
 					consume_items: false
 				}
 				{
-					id: "97E6C8231B38967B"
+					id: "17E6C8231B38967B"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -289,7 +289,7 @@
 			]
 		}
 		{
-			id: "DC1E736F5D6675B2"
+			id: "5C1E736F5D6675B2"
 			x: 2.0d
 			y: 8.5d
 			dependencies: [
@@ -316,7 +316,7 @@
 					consume_items: false
 				}
 				{
-					id: "A410A9DA79C27915"
+					id: "2410A9DA79C27915"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -325,7 +325,7 @@
 					consume_items: false
 				}
 				{
-					id: "CEBAAB93AEA643FB"
+					id: "4EBAAB93AEA643FB"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_yache"
 					criterion: "eat"
@@ -333,7 +333,7 @@
 			]
 			rewards: [
 				{
-					id: "BAAB686DFE5F6ACB"
+					id: "3AAB686DFE5F6ACB"
 					type: "xp"
 					xp: 20
 				}
@@ -348,7 +348,7 @@
 			]
 			tasks: [
 				{
-					id: "F9627FABD0CD2E3D"
+					id: "79627FABD0CD2E3D"
 					type: "item"
 					item: {
 						id: "cobblemon:chople_berry"
@@ -367,7 +367,7 @@
 					consume_items: false
 				}
 				{
-					id: "E69DB15E1813791D"
+					id: "669DB15E1813791D"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -376,7 +376,7 @@
 					consume_items: false
 				}
 				{
-					id: "BC985869288D9308"
+					id: "3C985869288D9308"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_chople"
 					criterion: "eat"
@@ -384,14 +384,14 @@
 			]
 			rewards: [
 				{
-					id: "F0B91A82BDC8725E"
+					id: "70B91A82BDC8725E"
 					type: "xp"
 					xp: 20
 				}
 			]
 		}
 		{
-			id: "B8033ACE8E0A0032"
+			id: "38033ACE8E0A0032"
 			x: 4.0d
 			y: 1.7d
 			dependencies: [
@@ -409,7 +409,7 @@
 					consume_items: false
 				}
 				{
-					id: "A90D9B17EE824EF6"
+					id: "290D9B17EE824EF6"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -427,7 +427,7 @@
 					consume_items: false
 				}
 				{
-					id: "9A56EA500D9827BD"
+					id: "1A56EA500D9827BD"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_kebia"
 					criterion: "eat"
@@ -460,7 +460,7 @@
 					consume_items: false
 				}
 				{
-					id: "F0AC6C7BA26A08C1"
+					id: "70AC6C7BA26A08C1"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -486,7 +486,7 @@
 			]
 			rewards: [
 				{
-					id: "B714208ED03024BB"
+					id: "3714208ED03024BB"
 					type: "xp"
 					xp: 20
 				}
@@ -562,7 +562,7 @@
 					consume_items: false
 				}
 				{
-					id: "A6E45D84F4E42737"
+					id: "26E45D84F4E42737"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -571,7 +571,7 @@
 					consume_items: false
 				}
 				{
-					id: "D95B6EAD3FEDF9E5"
+					id: "595B6EAD3FEDF9E5"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -595,7 +595,7 @@
 			]
 		}
 		{
-			id: "C870C11ECE4B7D5D"
+			id: "4870C11ECE4B7D5D"
 			x: 4.0d
 			y: 8.5d
 			dependencies: [
@@ -613,7 +613,7 @@
 					consume_items: false
 				}
 				{
-					id: "EF0D6EE6557E3B6B"
+					id: "6F0D6EE6557E3B6B"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -639,7 +639,7 @@
 			]
 			rewards: [
 				{
-					id: "C91AA3D7ADC728B0"
+					id: "491AA3D7ADC728B0"
 					type: "xp"
 					xp: 20
 				}
@@ -654,7 +654,7 @@
 			]
 			tasks: [
 				{
-					id: "DC22FF2BDAF05612"
+					id: "5C22FF2BDAF05612"
 					type: "item"
 					item: {
 						id: "cobblemon:charti_berry"
@@ -697,7 +697,7 @@
 			]
 		}
 		{
-			id: "C7D0AD42E5E600EC"
+			id: "47D0AD42E5E600EC"
 			x: 6.0d
 			y: 1.7d
 			dependencies: [
@@ -705,7 +705,7 @@
 			]
 			tasks: [
 				{
-					id: "D932CE2B9C88FBD6"
+					id: "5932CE2B9C88FBD6"
 					type: "item"
 					item: {
 						id: "cobblemon:kasib_berry"
@@ -715,7 +715,7 @@
 					consume_items: false
 				}
 				{
-					id: "C2FD7A7C712A673E"
+					id: "42FD7A7C712A673E"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -733,7 +733,7 @@
 					consume_items: false
 				}
 				{
-					id: "C39875C9F6B1FA75"
+					id: "439875C9F6B1FA75"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_kasib"
 					criterion: "eat"
@@ -741,14 +741,14 @@
 			]
 			rewards: [
 				{
-					id: "B3DF070CFBBEC00B"
+					id: "33DF070CFBBEC00B"
 					type: "xp"
 					xp: 20
 				}
 			]
 		}
 		{
-			id: "825F0A1373EA6F6B"
+			id: "025F0A1373EA6F6B"
 			x: 6.0d
 			y: 3.4d
 			dependencies: [
@@ -766,7 +766,7 @@
 					consume_items: false
 				}
 				{
-					id: "D38E7AEF2A56D061"
+					id: "538E7AEF2A56D061"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -775,7 +775,7 @@
 					consume_items: false
 				}
 				{
-					id: "E6E4210C7154D6E1"
+					id: "66E4210C7154D6E1"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -784,7 +784,7 @@
 					consume_items: false
 				}
 				{
-					id: "B06A0CD71E3143FD"
+					id: "306A0CD71E3143FD"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_haban"
 					criterion: "eat"
@@ -807,7 +807,7 @@
 			]
 			tasks: [
 				{
-					id: "F00AA068EC07C360"
+					id: "700AA068EC07C360"
 					type: "item"
 					item: {
 						id: "cobblemon:colbur_berry"
@@ -817,7 +817,7 @@
 					consume_items: false
 				}
 				{
-					id: "B299482E3332542E"
+					id: "3299482E3332542E"
 					type: "item"
 					item: {
 						id: "farmersdelight:cooked_rice"
@@ -826,7 +826,7 @@
 					consume_items: false
 				}
 				{
-					id: "C740F7779F7F72D9"
+					id: "4740F7779F7F72D9"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -835,7 +835,7 @@
 					consume_items: false
 				}
 				{
-					id: "966C9DBC366B66BE"
+					id: "166C9DBC366B66BE"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_colbur"
 					criterion: "eat"
@@ -850,7 +850,7 @@
 			]
 		}
 		{
-			id: "EF36E5C0A142F103"
+			id: "6F36E5C0A142F103"
 			x: 6.0d
 			y: 6.8d
 			dependencies: [
@@ -858,7 +858,7 @@
 			]
 			tasks: [
 				{
-					id: "DE37EB488D1FB7CF"
+					id: "5E37EB488D1FB7CF"
 					type: "item"
 					item: {
 						id: "cobblemon:babiri_berry"
@@ -877,7 +877,7 @@
 					consume_items: false
 				}
 				{
-					id: "844FE3E7C4D583BA"
+					id: "044FE3E7C4D583BA"
 					type: "item"
 					item: {
 						id: "minecraft:chicken"
@@ -901,7 +901,7 @@
 			]
 		}
 		{
-			id: "E55419EAED51D49E"
+			id: "655419EAED51D49E"
 			x: 6.0d
 			y: 8.5d
 			dependencies: [
@@ -937,7 +937,7 @@
 					consume_items: false
 				}
 				{
-					id: "A02E8260FF83AC0F"
+					id: "202E8260FF83AC0F"
 					type: "advancement"
 					advancement: "emicocina:comer/curry_baya_roseli"
 					criterion: "eat"
@@ -945,14 +945,14 @@
 			]
 			rewards: [
 				{
-					id: "F9231BA7AA27AD95"
+					id: "79231BA7AA27AD95"
 					type: "xp"
 					xp: 20
 				}
 			]
 		}
 		{
-			id: "D7C351CE4F3FCCDE"
+			id: "57C351CE4F3FCCDE"
 			x: 8.0d
 			y: 0.0d
 			dependencies: [
@@ -970,7 +970,7 @@
 					consume_items: false
 				}
 				{
-					id: "E0706E8D2FCEA2C7"
+					id: "60706E8D2FCEA2C7"
 					type: "item"
 					item: {
 						id: "minecraft:potato"
@@ -1003,7 +1003,7 @@
 			]
 		}
 		{
-			id: "962B5DC6ACD24430"
+			id: "162B5DC6ACD24430"
 			x: 8.0d
 			y: 1.7d
 			dependencies: [
@@ -1011,7 +1011,7 @@
 			]
 			tasks: [
 				{
-					id: "9A014EC9605AAB0E"
+					id: "1A014EC9605AAB0E"
 					type: "item"
 					item: {
 						id: "cobblemon:sitrus_berry"
@@ -1030,7 +1030,7 @@
 					consume_items: false
 				}
 				{
-					id: "9B6833723E351D1E"
+					id: "1B6833723E351D1E"
 					type: "item"
 					item: {
 						id: "minecraft:potato"
@@ -1039,7 +1039,7 @@
 					consume_items: false
 				}
 				{
-					id: "8A74A41516CEABA9"
+					id: "0A74A41516CEABA9"
 					type: "advancement"
 					advancement: "emicocina:comer/sopa_bayas_sitrus"
 					criterion: "eat"
@@ -1047,14 +1047,14 @@
 			]
 			rewards: [
 				{
-					id: "863F2013747381F3"
+					id: "063F2013747381F3"
 					type: "xp"
 					xp: 20
 				}
 			]
 		}
 		{
-			id: "D1021BD276860A0E"
+			id: "51021BD276860A0E"
 			x: 8.0d
 			y: 3.4d
 			dependencies: [
@@ -1062,7 +1062,7 @@
 			]
 			tasks: [
 				{
-					id: "F9464A63ADD225B2"
+					id: "79464A63ADD225B2"
 					type: "item"
 					item: {
 						id: "cobblemon:cheri_berry"
@@ -1071,7 +1071,7 @@
 					consume_items: false
 				}
 				{
-					id: "92EB3626CF0C7B04"
+					id: "12EB3626CF0C7B04"
 					type: "item"
 					item: {
 						id: "cobblemon:chesto_berry"
@@ -1080,7 +1080,7 @@
 					consume_items: false
 				}
 				{
-					id: "C38AF6190EF3157D"
+					id: "438AF6190EF3157D"
 					type: "item"
 					item: {
 						id: "cobblemon:pecha_berry"
@@ -1098,7 +1098,7 @@
 					consume_items: false
 				}
 				{
-					id: "91BA4B01AF33D6D6"
+					id: "11BA4B01AF33D6D6"
 					type: "item"
 					item: {
 						id: "cobblemon:aspear_berry"
@@ -1107,7 +1107,7 @@
 					consume_items: false
 				}
 				{
-					id: "E875C99F60604598"
+					id: "6875C99F60604598"
 					type: "item"
 					item: {
 						id: "cobblemon:leppa_berry"
@@ -1116,7 +1116,7 @@
 					consume_items: false
 				}
 				{
-					id: "E0588B6FD6DD529D"
+					id: "60588B6FD6DD529D"
 					type: "advancement"
 					advancement: "emicocina:comer/ensalada_bayas_mixtas"
 					criterion: "eat"
@@ -1148,7 +1148,7 @@
 					consume_items: false
 				}
 				{
-					id: "C016877FA5E17909"
+					id: "4016877FA5E17909"
 					type: "item"
 					item: {
 						id: "cobblemon:pink_apricorn"
@@ -1157,7 +1157,7 @@
 					consume_items: false
 				}
 				{
-					id: "D2073CD7CDDFBCEE"
+					id: "52073CD7CDDFBCEE"
 					type: "item"
 					item: {
 						id: "minecraft:wheat"
@@ -1175,7 +1175,7 @@
 					consume_items: false
 				}
 				{
-					id: "F3F64A765244D986"
+					id: "73F64A765244D986"
 					type: "advancement"
 					advancement: "emicocina:comer/galletas_aprilima"
 					criterion: "eat"
@@ -1207,7 +1207,7 @@
 					consume_items: false
 				}
 				{
-					id: "8A8FBF4F4A5D3414"
+					id: "0A8FBF4F4A5D3414"
 					type: "item"
 					item: {
 						id: "cobblemon:medicinal_leek"
@@ -1216,7 +1216,7 @@
 					consume_items: false
 				}
 				{
-					id: "E8032E35DED89E10"
+					id: "68032E35DED89E10"
 					type: "item"
 					item: {
 						id: "minecraft:sugar"
@@ -1249,7 +1249,7 @@
 			]
 		}
 		{
-			id: "8209B34BB57DC885"
+			id: "0209B34BB57DC885"
 			x: 8.0d
 			y: 8.5d
 			dependencies: [
@@ -1293,7 +1293,7 @@
 					consume_items: false
 				}
 				{
-					id: "9BF9E38C4C5D0D90"
+					id: "1BF9E38C4C5D0D90"
 					type: "item"
 					item: {
 						id: "minecraft:sugar"
@@ -1331,11 +1331,11 @@
 			y: 4.25d
 			dependencies: [
 				"08F1296AA1C977F2"
-				"8209B34BB57DC885"
+				"0209B34BB57DC885"
 			]
 			tasks: [
 				{
-					id: "C80EB8DB6368EEA5"
+					id: "480EB8DB6368EEA5"
 					type: "item"
 					item: {
 						id: "minecraft:diamond"
@@ -1344,7 +1344,7 @@
 					consume_items: false
 				}
 				{
-					id: "FC96E64217019B28"
+					id: "7C96E64217019B28"
 					type: "item"
 					item: {
 						id: "minecraft:golden_apple"
@@ -1371,7 +1371,7 @@
 					consume_items: false
 				}
 				{
-					id: "D8908D26520A2C20"
+					id: "58908D26520A2C20"
 					type: "item"
 					item: {
 						id: "cobblemon:rare_candy"

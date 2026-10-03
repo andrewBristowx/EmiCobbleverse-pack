@@ -1,7 +1,7 @@
 {
-	id: "DB8732F685E275AA"
-	group: "8FD05755043B163E"
-	order_index: 1
+	id: "5B8732F685E275AA"
+	group: "0FD05755043B163E"
+	order_index: 2
 	filename: "oritech_procesar"
 	icon: {
 		id: "oritech:pulverizer_block"
@@ -13,6 +13,10 @@
 			id: "6CA84D02305EBB46"
 			x: 0.0d
 			y: 0.0d
+			dependencies: [
+				"1ED5C9694AF9CA1E"
+				"69489883301E1920"
+			]
 			tasks: [
 				{
 					id: "33C7F3DD27AAD049"
@@ -26,19 +30,25 @@
 			]
 			rewards: [
 				{
-					id: "F6C1249ECF256156"
+					id: "76C1249ECF256156"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "DE936D36798FC1BB"
+			id: "5E936D36798FC1BB"
 			x: 0.0d
 			y: 1.7d
+			dependencies: [
+				"21048343E7F1DB32"
+				"17F6F3E181F74E52"
+				"69489883301E1920"
+				"66A35F66C2B8A3AC"
+			]
 			tasks: [
 				{
-					id: "AF3FFB03E9A0294D"
+					id: "2F3FFB03E9A0294D"
 					type: "item"
 					item: {
 						id: "oritech:fragment_forge_block"
@@ -49,7 +59,7 @@
 			]
 			rewards: [
 				{
-					id: "A0F187AF44DB2B9F"
+					id: "20F187AF44DB2B9F"
 					type: "xp"
 					xp: 15
 				}
@@ -59,9 +69,14 @@
 			id: "12E1AB887ECD125E"
 			x: 0.0d
 			y: 3.4d
+			dependencies: [
+				"5C8E39CE82317FD7"
+				"486D2844E3A68BBA"
+				"2744788513F1E053"
+			]
 			tasks: [
 				{
-					id: "D0D906F82DE91DE9"
+					id: "50D906F82DE91DE9"
 					type: "item"
 					item: {
 						id: "oritech:powered_furnace_block"
@@ -82,9 +97,13 @@
 			id: "1013A25CD9E609CC"
 			x: 0.0d
 			y: 5.1d
+			dependencies: [
+				"5DF7002A0B1098A5"
+				"69489883301E1920"
+			]
 			tasks: [
 				{
-					id: "F500C949FFD34DBF"
+					id: "7500C949FFD34DBF"
 					type: "item"
 					item: {
 						id: "oritech:assembler_block"
@@ -102,12 +121,16 @@
 			]
 		}
 		{
-			id: "FFCD4E8F80011FEC"
+			id: "7FCD4E8F80011FEC"
 			x: 0.0d
 			y: 6.8d
+			dependencies: [
+				"69489883301E1920"
+				"486D2844E3A68BBA"
+			]
 			tasks: [
 				{
-					id: "9ADF86D47D3202CD"
+					id: "1ADF86D47D3202CD"
 					type: "item"
 					item: {
 						id: "oritech:foundry_block"
@@ -118,16 +141,22 @@
 			]
 			rewards: [
 				{
-					id: "94CA4798B923E927"
+					id: "14CA4798B923E927"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "8BCA0799F5A4BA5E"
+			id: "0BCA0799F5A4BA5E"
 			x: 0.0d
 			y: 8.5d
+			dependencies: [
+				"69489883301E1920"
+				"77E3C6E392DFC7B2"
+				"2C745C74481A2E9C"
+				"66A35F66C2B8A3AC"
+			]
 			tasks: [
 				{
 					id: "5EE8CCAC40667568"
@@ -151,9 +180,16 @@
 			id: "542D0812B8E37420"
 			x: 2.0d
 			y: 1.7d
+			dependencies: [
+				"17F6F3E181F74E52"
+				"3BBDA12D97134A48"
+				"21048343E7F1DB32"
+				"3ABF76CB7D428A1A"
+				"66A35F66C2B8A3AC"
+			]
 			tasks: [
 				{
-					id: "E5817F8A1F6ADDA0"
+					id: "65817F8A1F6ADDA0"
 					type: "item"
 					item: {
 						id: "oritech:atomic_forge_block"
@@ -164,22 +200,24 @@
 			]
 			rewards: [
 				{
-					id: "E7E1197C7C84B4F8"
+					id: "67E1197C7C84B4F8"
 					type: "xp"
 					xp: 15
 				}
 			]
 		}
 		{
-			id: "D5E07DEF490AC4F9"
+			id: "55E07DEF490AC4F9"
 			x: 4.0d
 			y: 4.25d
 			dependencies: [
+				"69489883301E1920"
 				"487E93064D73DA0D"
+				"77E3C6E392DFC7B2"
 			]
 			tasks: [
 				{
-					id: "B892108DD2B74DB4"
+					id: "3892108DD2B74DB4"
 					type: "item"
 					item: {
 						id: "oritech:refinery_block"
@@ -200,6 +238,10 @@
 			id: "487E93064D73DA0D"
 			x: 2.0d
 			y: 3.4d
+			dependencies: [
+				"1E6AA2C23B0846BA"
+				"1F2A204152311664"
+			]
 			tasks: [
 				{
 					id: "33805A2B413B2F7F"
@@ -223,9 +265,12 @@
 			id: "20CAD65F0245F439"
 			x: 2.0d
 			y: 5.1d
+			dependencies: [
+				"69489883301E1920"
+			]
 			tasks: [
 				{
-					id: "A3267D2A218B2BCE"
+					id: "23267D2A218B2BCE"
 					type: "item"
 					item: {
 						id: "oritech:cooler_block"
@@ -246,9 +291,14 @@
 			id: "70012C75C7557852"
 			x: 2.0d
 			y: 6.8d
+			dependencies: [
+				"69489883301E1920"
+				"5C8E39CE82317FD7"
+				"66A35F66C2B8A3AC"
+			]
 			tasks: [
 				{
-					id: "AAE700E0335D8BA2"
+					id: "2AE700E0335D8BA2"
 					type: "item"
 					item: {
 						id: "oritech:pump_block"
@@ -259,7 +309,7 @@
 			]
 			rewards: [
 				{
-					id: "FB37A02D1E273AB0"
+					id: "7B37A02D1E273AB0"
 					type: "xp"
 					xp: 15
 				}
