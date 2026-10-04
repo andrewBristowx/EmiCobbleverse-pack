@@ -32,18 +32,24 @@ OBJ = "emitwitch_don"
 STEPS = [256, 256, 256, 256, 128, 64, 32, 16, 8, 4, 2, 1]  # 1 tirada por dolar (descomposicion binaria); tope 1279 USD por llamada
 
 def donacion_function():
-    """Funcion con macros: /function emipokemon:twitch/donacion {jugador:"Nombre",dolares:5}  -> 1 tirada (ticket de gacha aleatorio) por dolar."""
+    """Funcion con macros: /function emipokemon:twitch/donacion {jugador:"Nombre",dolares:5}  -> 1 tirada (ticket de gacha aleatorio) por dolar.
+    Devuelve (return) los dolares entregados, o 0 si no se entrego nada: asi RCON/el script saben el resultado ("Function ... returned N")."""
+    msg_off = '[{"text":"Donacion NO entregada: ","color":"red"},{"text":"$(jugador)","color":"yellow"},{"text":" no esta conectado.","color":"red"}]'
     L = ["# Donaciones (Streamlabs u otras): 1 tirada por dolar entero. Uso (como OP):",
          '#   /function emipokemon:twitch/donacion {jugador:"NombreDeMinecraft",dolares:5}',
          "# El jugador debe estar conectado. Los dolares son un numero entero (5, no 5.5). Maximo 1279 por llamada.",
-         '$execute unless entity @a[name="$(jugador)"] run return run tellraw @s [{"text":"Donacion NO entregada: ","color":"red"},{"text":"$(jugador)","color":"yellow"},{"text":" no esta conectado.","color":"red"}]',
+         "# Devuelve los dolares entregados (\"returned 5\") o 0 si no se entrego (jugador desconectado o menos de 1 dolar).",
+         f'$execute unless entity @a[name="$(jugador)"] run tellraw @s {msg_off}',
+         '$execute unless entity @a[name="$(jugador)"] run return fail',
          f"$scoreboard players set #usd {OBJ} $(dolares)",
-         f"scoreboard players operation #total {OBJ} = #usd {OBJ}"]
+         f"scoreboard players operation #total {OBJ} = #usd {OBJ}",
+         f'execute if score #total {OBJ} matches ..0 run tellraw @s [{{"text":"Donacion sin tiradas: minimo 1 USD.","color":"red"}}]',
+         f"execute if score #total {OBJ} matches ..0 run return fail"]
     for n in STEPS:
         L.append(f"$execute if score #usd {OBJ} matches {n}.. run loot give $(jugador) loot emipokemon:twitch/random_tickets_{n}")
         L.append(f"execute if score #usd {OBJ} matches {n}.. run scoreboard players remove #usd {OBJ} {n}")
-    L.append(f'$execute if score #total {OBJ} matches 1.. run tellraw @a [{{"text":"\u2726 ","color":"light_purple"}},{{"text":"$(jugador)","color":"gold","bold":true}},{{"text":" don\u00f3 ","color":"yellow"}},{{"text":"$(dolares) USD","color":"green"}},{{"text":" y recibe sus tiradas de gacha. \u00a1Gracias!","color":"yellow"}}]')
-    L.append(f'$execute if score #total {OBJ} matches ..0 run tellraw @s [{{"text":"Donacion sin tiradas: ","color":"red"}},{{"text":"$(dolares)","color":"yellow"}},{{"text":" USD (minimo 1).","color":"red"}}]')
+    L.append(f'$tellraw @a [{{"text":"\\u2726 ","color":"light_purple"}},{{"text":"$(jugador)","color":"gold","bold":true}},{{"text":" don\\u00f3 ","color":"yellow"}},{{"text":"$(dolares) USD","color":"green"}},{{"text":" y recibe sus tiradas de gacha. \\u00a1Gracias!","color":"yellow"}}]')
+    L.append("$return $(dolares)")
     return "\n".join(L) + "\n"
 
 def main(dest, cmds):

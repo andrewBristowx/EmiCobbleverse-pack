@@ -1,0 +1,18 @@
+{
+  "streamlabsToken": "PEGA_AQUI_TU_SOCKET_API_TOKEN",
+  "streamlabsUrl": "https://sockets.streamlabs.com",
+
+  "rcon": { "host": "127.0.0.1", "port": 25575, "password": "TU_CONTRASENA_RCON" },
+
+  "jugadores": {
+    "nombre_de_twitch_en_minusculas": "NombreDeMinecraft"
+  },
+
+  "monedas": { "USD": 1, "EUR": 1.08, "MXN": 0.055, "ARS": 0.001, "CLP": 0.001, "COP": 0.00025, "PEN": 0.27, "GBP": 1.27, "CAD": 0.73, "BRL": 0.18 },
+
+  "minimoDolares": 1,
+  "maximoDolares": 1279,
+  "reintentoSegundos": 60,
+  "horasMaximasPendiente": 72,
+  "aceptarPruebasDeStreamlabs": false
+}
