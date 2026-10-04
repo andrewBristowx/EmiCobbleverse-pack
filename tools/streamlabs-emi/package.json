@@ -1,0 +1,10 @@
+{
+  "name": "streamlabs-emi",
+  "version": "1.0.0",
+  "description": "Convierte las donaciones de Streamlabs en tiradas de gacha de EmiCobbleverse (1 por dolar) usando RCON.",
+  "license": "CC0-1.0",
+  "private": true,
+  "main": "streamlabs-emi.js",
+  "scripts": { "start": "node streamlabs-emi.js" },
+  "dependencies": { "rcon-client": "^4.2.5", "socket.io-client": "^2.5.0" }
+}
