@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_ftb_keys",
+  "version": "1.0.0",
+  "name": "Emi FTB Keys",
+  "description": "Deja sin tecla las teclas de FTB Quests y FTB Teams una sola vez (para que no choquen con las de otros mods).",
+  "license": "CC0-1.0",
+  "environment": "client",
+  "entrypoints": { "client": [ "emi.ftbkeys.EmiFtbKeys" ] },
+  "depends": { "fabricloader": ">=0.15.0", "minecraft": "~1.21.1", "fabric-lifecycle-events-v1": "*" }
+}

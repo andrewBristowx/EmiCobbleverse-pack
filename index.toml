@@ -1829,6 +1829,10 @@ hash = "9bef602ef888f741dbd48091fe188697619acb29b9f57cadb9a0dc5b3fe55529"
 metafile = true
 
 [[files]]
+file = "mods/emi-ftb-keys-1.0.0.jar"
+hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
+
+[[files]]
 file = "mods/enchantment-descriptions.pw.toml"
 hash = "9473554d1bd68148f23f4f0f09023cd44a85eed6b639c812eab7759110ac1e81"
 metafile = true
