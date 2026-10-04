@@ -1,5 +1,8 @@
 # Donaciones de Streamlabs -> tiradas de gacha
 
+> **Alternativa recomendada:** el mod `tools/emi-streamlabs-mod` hace lo mismo dentro del servidor (sin RCON, sin puertos y sin PC encendido). Este script queda solo como respaldo.
+
+
 Cada dólar donado por Streamlabs da **1 tirada** (1 ticket de gacha aleatorio, de los 6 tipos) al jugador que corresponda.
 Un programa pequeño (Node.js) escucha las donaciones de tu canal y se las pide al servidor por **RCON** con el comando
 `function emipokemon:twitch/donacion {jugador:"Nombre",dolares:5}` (del datapack `EmiTwitch-DP`).
