@@ -22,3 +22,6 @@
 
 /emi twitch eventos recompensa listar
 /emi twitch eventos iniciar
+
+# Donaciones (Streamlabs u otras), 1 tirada por dolar entero; el jugador debe estar conectado:
+# /function emipokemon:twitch/donacion {jugador:"NombreDeMinecraft",dolares:5}

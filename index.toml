@@ -1301,7 +1301,7 @@ hash = "387a9bdb9547ebb1b457330b5080e36345dc47aaa8e44a98e550671acef2c3ca"
 
 [[files]]
 file = "datapacks/EmiTwitch-DP.zip"
-hash = "1002e6995100148306c291b397374df415d3a44a23e4c4dad3b1b4ec3e786a8b"
+hash = "825ab3c904d843c60d1b9abafc653084f252b2c578661d79fffd44e171ee7b62"
 
 [[files]]
 file = "datapacks/PokeCenterPCs-DP.zip"
@@ -1827,6 +1827,10 @@ metafile = true
 file = "mods/elevatormod.pw.toml"
 hash = "9bef602ef888f741dbd48091fe188697619acb29b9f57cadb9a0dc5b3fe55529"
 metafile = true
+
+[[files]]
+file = "mods/emi-ftb-keys-1.0.0.jar"
+hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"
