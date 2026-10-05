@@ -1833,8 +1833,8 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-streamlabs-1.0.0.jar"
-hash = "85d81cc607b03dcd9e318e6f87dda717737d0eec790f38b90195f4ec7c721c69"
+file = "mods/emi-streamlabs-1.1.0.jar"
+hash = "a05d0f8d68dace0bdbcf83bb2ce41a855e71efa01939b2628a8bf120ca6ec66f"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"

@@ -48,7 +48,8 @@ public final class EmiStreamlabs implements DedicatedServerModInitializer {
                 return;
             }
             server = s;
-            DonationService service = new DonationService(cfg, dir.resolve("emi-streamlabs-estado.json"), this::entregar, EmiStreamlabs::log);
+            DonationService service = new DonationService(cfg, dir.resolve("emi-streamlabs-estado.json"),
+                    new VinculosTwitch(dir.resolve("emipokemon").resolve("twitch_profiles.json")), this::entregar, EmiStreamlabs::log);
             socket = new StreamlabsSocket(cfg.streamlabsUrl, cfg.streamlabsToken, service::onStreamlabsEvent, EmiStreamlabs::log);
             socket.start();
             timer = Executors.newSingleThreadScheduledExecutor(r -> {
