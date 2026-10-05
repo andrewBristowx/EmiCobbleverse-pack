@@ -46,24 +46,31 @@ public final class DonationService {
     private final Path estadoFile;
     private final Entregador entregador;
     private final Consumer<String> log;
+    private final VinculosTwitch vinculos;
     private final Set<String> procesadas = new LinkedHashSet<>();
     private final List<Pendiente> pendientes = new ArrayList<>();
 
-    public DonationService(Config cfg, Path estadoFile, Entregador entregador, Consumer<String> log) {
+    public DonationService(Config cfg, Path estadoFile, VinculosTwitch vinculos, Entregador entregador, Consumer<String> log) {
         this.cfg = cfg;
+        this.vinculos = vinculos;
         this.estadoFile = estadoFile;
         this.entregador = entregador;
         this.log = log;
         cargar();
     }
 
-    /** A que jugador de Minecraft va la donacion (o null). */
-    public static String resolverJugador(Config cfg, String donador, String mensaje) {
+    /**
+     * A que jugador de Minecraft va la donacion (o null). Orden: 1) mc:Nombre en el mensaje; 2) mapa "jugadores" del config;
+     * 3) quien vinculo ese nombre de Twitch en Emipokemon; 4) el propio nombre del donador si es un nombre valido de Minecraft.
+     */
+    public static String resolverJugador(Config cfg, VinculosTwitch vinculos, String donador, String mensaje) {
         Matcher m = MC_TAG.matcher(mensaje == null ? "" : mensaje);
         if (m.find()) return m.group(1);
         String d = donador == null ? "" : donador;
         String mapeado = cfg.jugadores.get(d.toLowerCase(Locale.ROOT));
         if (mapeado != null && MC_NAME.matcher(mapeado).matches()) return mapeado;
+        String vinculado = vinculos == null ? null : vinculos.minecraftDe(d);
+        if (vinculado != null && MC_NAME.matcher(vinculado).matches()) return vinculado;
         String limpio = d.replaceAll("\\s+", "");
         return MC_NAME.matcher(limpio).matches() ? limpio : null;
     }
@@ -128,9 +135,9 @@ public final class DonationService {
             guardar();
             return;
         }
-        String jugador = resolverJugador(cfg, donador, mensaje);
+        String jugador = resolverJugador(cfg, vinculos, donador, mensaje);
         if (jugador == null) {
-            log.accept("AVISO: no se a que jugador dar la donacion " + id + " de \"" + donador + "\" (" + dolares + " USD). Pide que ponga mc:NombreMinecraft en el mensaje o anadelo a \"jugadores\".");
+            log.accept("AVISO: no se a que jugador dar la donacion " + id + " de \"" + donador + "\" (" + dolares + " USD). Pide que ponga mc:NombreMinecraft en el mensaje o que vincule su Twitch con Emipokemon, o anadelo a \"jugadores\".");
             guardar();
             return;
         }

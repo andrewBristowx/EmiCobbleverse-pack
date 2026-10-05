@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "emi_streamlabs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "Emi Streamlabs",
   "description": "Escucha las donaciones de Streamlabs desde el servidor y da 1 tirada de gacha por dolar (datapack EmiTwitch-DP).",
   "license": "CC0-1.0",

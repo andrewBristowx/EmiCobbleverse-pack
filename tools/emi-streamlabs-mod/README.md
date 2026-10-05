@@ -10,9 +10,12 @@ un programa abierto en un PC: solo conexión de **salida** a `sockets.streamlabs
 - Estado: `config/emi-streamlabs-estado.json` (donaciones ya procesadas y pendientes); sobrevive a reinicios.
 
 ## A quién le toca
+En este orden:
 1. `mc:NombreMinecraft` en el mensaje de la donación.
-2. El mapa `"jugadores"` (`"nombre_de_twitch_en_minusculas": "NombreMinecraft"`).
-3. El propio nombre del donador, si es un nombre válido de Minecraft.
+2. El mapa `"jugadores"` del config (`"nombre_de_twitch_en_minusculas": "NombreMinecraft"`), para casos especiales.
+3. **Quien vinculó ese nombre de Twitch en Emipokemon**: se lee `config/emipokemon/twitch_profiles.json` (solo lectura, se recarga si cambia;
+   cuenta solo si `linked` es true). Así no hay que rellenar el mapa a mano: basta con que el donador ponga su nombre de Twitch como nombre de la donación.
+4. El propio nombre del donador, si es un nombre válido de Minecraft.
 
 Si no se sabe a quién, se anota en el log (`AVISO ...`) y no se entrega nada.
 
@@ -29,13 +32,13 @@ El log del servidor muestra `[emi_streamlabs] Conectado a Streamlabs. Esperando 
 ```
 javac -d stubc $(find stub -name '*.java')
 javac --release 21 -cp stubc:fabric-loader.jar:gson.jar:fabric-lifecycle-events-v1.jar:fabric-api-base.jar -d cls $(find src -name '*.java')
-cp fabric.mod.json cls/ && (cd cls && jar --create --file ../emi-streamlabs-1.0.0.jar fabric.mod.json emi)
+cp fabric.mod.json cls/ && (cd cls && jar --create --file ../emi-streamlabs-1.1.0.jar fabric.mod.json emi)
 ```
 Compilado contra nombres intermediary ya usados por Emipokemon en producción (`MinecraftServer.method_3734/method_3739/method_3760`,
 `class_2170.method_44252`, `class_2168.method_9217`, `class_3324.method_14571`, `class_3222.method_7334`).
 
 ## Probado
 Servidor Fabric 1.21.1 con todos los mods del pack y un Streamlabs simulado (Socket.IO v2): entrega a un jugador conectado (5+3+10 = 18 tiradas
-comprobadas en su inventario), `mc:` en el mensaje, mapa de jugadores con conversión EUR→USD, id repetido, alerta de prueba, menos de 1 USD,
+comprobadas en su inventario), `mc:` en el mensaje, mapa de jugadores con conversión EUR→USD, vínculo de Twitch de Emipokemon (con el mapa vacío), id repetido, alerta de prueba, menos de 1 USD,
 moneda desconocida, jugador desconectado (pendiente que se entrega al entrar), y reinicio del servidor sin duplicar. Conexión con un token real
 comprobada (solo conectar, sin enviar nada). **No probado: una donación real de Streamlabs ni un cliente real.**
