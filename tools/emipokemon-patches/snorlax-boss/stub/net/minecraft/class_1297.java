@@ -1,0 +1,1 @@
+package net.minecraft; public class class_1297 { public java.util.UUID method_5667() { return null; } public double method_23317() { return 0; } public double method_23318() { return 0; } public double method_23321() { return 0; } public double method_5858(class_1297 o) { return 0; } public class_1937 method_37908() { return null; } public boolean method_5805() { return true; } }
