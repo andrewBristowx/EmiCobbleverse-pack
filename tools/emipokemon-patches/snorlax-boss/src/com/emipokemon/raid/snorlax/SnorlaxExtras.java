@@ -1,16 +1,24 @@
 package com.emipokemon.raid.snorlax;
 
 import com.emipokemon.config.EmipokemonConfig;
+import com.mojang.brigadier.CommandDispatcher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.class_1297;
 import net.minecraft.class_1308;
 import net.minecraft.class_1309;
+import net.minecraft.class_2168;
+import net.minecraft.class_2170;
+import net.minecraft.class_2561;
 import net.minecraft.class_3218;
 import net.minecraft.class_3222;
 import net.minecraft.server.MinecraftServer;
@@ -34,6 +42,12 @@ public final class SnorlaxExtras {
     private static final double ARENA_RADIUS = 40.0;
     private static double arenaX, arenaY, arenaZ;
     private static int sweepTicks;
+    /** Musica de fondo de la pelea (assets/emipokemon/sounds/snorlax_emi_musica.ogg, 4:44), a media voz. */
+    private static final String MUSICA = "emipokemon:snorlax_emi_musica";
+    private static final int MUSICA_TICKS = 5700 + 40;
+    private static final Map<UUID, Long> musica = new HashMap<>();
+    private static long reloj;
+    private static boolean arenaFijada;
     private static UUID bossId;
     private static int mode = IDLE;
     private static int ticks;
@@ -51,6 +65,7 @@ public final class SnorlaxExtras {
             arenaX = entity.method_23317();
             arenaY = entity.method_23318();
             arenaZ = entity.method_23321();
+            arenaFijada = true;
             sweepTicks = 0;
         }
         try {
@@ -103,6 +118,108 @@ public final class SnorlaxExtras {
         for (String name : new String[]{"\u2726 Snorlax Emi", "\u2726 Snorlax Emi Furioso", "\u2605 Snorlax Emi Desatado"}) {
             run(server, "kill @e[type=cobblemon:pokemon,tag=!emi_snorlax_actual,name=\"" + name + "\",nbt={Pokemon:{Species:\"emipokemon:snorlax_emi\"}}]");
         }
+    }
+
+    /** Se llama una vez desde SnorlaxBossCommands.register(): comando /emipokemon snorlax traer y la musica de fondo. */
+    public static void init() {
+        try {
+            ServerTickEvents.END_SERVER_TICK.register(SnorlaxExtras::onServerTick);
+            CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> registrarComandos(dispatcher));
+        } catch (Throwable error) {
+            System.err.println("[snorlax_emi] no se pudo registrar el comando ni la musica: " + error);
+        }
+    }
+
+    private static void registrarComandos(CommandDispatcher<class_2168> dispatcher) {
+        dispatcher.register(class_2170.method_9247("emipokemon").then(class_2170.method_9247("snorlax").requires(s -> s.method_9259(4))
+                .then(class_2170.method_9247("traer").requires(s -> s.method_9259(4)).executes(ctx -> traer(ctx.getSource())))));
+    }
+
+    /** /emipokemon snorlax traer: lleva al jefe activo a donde esta el administrador (y esa posicion pasa a ser el centro de la arena). */
+    private static int traer(class_2168 source) {
+        class_3222 player = source.method_44023();
+        if (player == null) {
+            source.method_9226(() -> class_2561.method_43470("\u00a7cEjecuta este comando como jugador, en el sitio al que quieres traer al jefe."), false);
+            return 0;
+        }
+        SnorlaxRaidService.ActiveRaid raid = SnorlaxRaidService.active;
+        MinecraftServer server = source.method_9211();
+        class_3218 world = raid == null || server == null ? null : server.method_3847(raid.worldKey);
+        class_1297 boss = world == null ? null : world.method_14190(raid.entityId);
+        if (boss == null || !boss.method_5805()) {
+            source.method_9226(() -> class_2561.method_43470("\u00a7cNo hay ning\u00fan Snorlax Emi activo."), false);
+            return 0;
+        }
+        class_3218 here = (class_3218) player.method_37908();
+        String tp = "execute in " + dim(here) + " run tp " + uuid(boss) + " " + num(player.method_23317()) + " " + num(player.method_23318()) + " " + num(player.method_23321());
+        System.out.println("[snorlax_emi] traer: " + tp);
+        server.method_3734().method_44252(source, tp);
+        arenaX = player.method_23317();
+        arenaY = player.method_23318();
+        arenaZ = player.method_23321();
+        arenaFijada = true;
+        if (boss instanceof class_1308 mob) {
+            mob.method_5980(null);
+        }
+        source.method_9226(() -> class_2561.method_43470("\u00a7aSnorlax Emi traido a tu posici\u00f3n. \u00a77(la arena ahora esta aqu\u00ed)"), false);
+        return 1;
+    }
+
+    // ---------- musica de fondo ----------
+    private static void onServerTick(MinecraftServer server) {
+        reloj++;
+        if (reloj % 20 != 0) {
+            return;
+        }
+        try {
+            SnorlaxRaidService.ActiveRaid raid = SnorlaxRaidService.active;
+            if (raid == null || !arenaFijada) {
+                if (!musica.isEmpty()) {
+                    pararMusica(server);
+                }
+                return;
+            }
+            class_3218 world = server.method_3847(raid.worldKey);
+            if (world == null) {
+                return;
+            }
+            Set<UUID> oyen = new HashSet<>();
+            for (class_3222 p : server.method_3760().method_14571()) {
+                if (p.method_37908() == world && p.method_5805() && (raid.participants.contains(p.method_5667()) || cerca(p, 60.0))) {
+                    oyen.add(p.method_5667());
+                }
+            }
+            long ahora = reloj;
+            for (UUID id : oyen) {
+                Long inicio = musica.get(id);
+                if (inicio == null || ahora - inicio >= MUSICA_TICKS) {
+                    run(server, "execute at " + id + " run playsound " + MUSICA + " record " + id + " ~ ~ ~ 0.5 1 0");
+                    musica.put(id, ahora);
+                    System.out.println("[snorlax_emi] musica de fondo -> " + id);
+                }
+            }
+            for (UUID id : new ArrayList<>(musica.keySet())) {
+                if (!oyen.contains(id)) {
+                    run(server, "stopsound " + id + " record " + MUSICA);
+                    musica.remove(id);
+                }
+            }
+        } catch (Throwable error) {
+            System.err.println("[snorlax_emi] error en la musica de fondo: " + error);
+        }
+    }
+
+    private static boolean cerca(class_1297 e, double radio) {
+        double dx = e.method_23317() - arenaX, dz = e.method_23321() - arenaZ;
+        return dx * dx + dz * dz <= radio * radio;
+    }
+
+    private static void pararMusica(MinecraftServer server) {
+        System.out.println("[snorlax_emi] musica de fondo detenida");
+        for (UUID id : new ArrayList<>(musica.keySet())) {
+            run(server, "stopsound " + id + " record " + MUSICA);
+        }
+        musica.clear();
     }
 
     private static boolean inArena(class_1297 e) {
