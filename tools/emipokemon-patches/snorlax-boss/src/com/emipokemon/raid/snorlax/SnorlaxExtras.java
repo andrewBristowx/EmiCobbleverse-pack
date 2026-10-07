@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import net.minecraft.class_1297;
+import net.minecraft.class_1308;
 import net.minecraft.class_1309;
 import net.minecraft.class_3218;
 import net.minecraft.class_3222;
@@ -29,6 +30,10 @@ public final class SnorlaxExtras {
     private static int debugTicks;
     private static int debugCalls;
 
+    /** Radio de la arena (bloques) alrededor de donde aparece el jefe: de ahi no sale, y los jugadores mas lejos no cuentan en la pelea. */
+    private static final double ARENA_RADIUS = 40.0;
+    private static double arenaX, arenaY, arenaZ;
+    private static int sweepTicks;
     private static UUID bossId;
     private static int mode = IDLE;
     private static int ticks;
@@ -42,16 +47,82 @@ public final class SnorlaxExtras {
 
     /** Sustituye a SnorlaxRaidService.resolveCombat (misma firma). */
     public static void resolve(MinecraftServer server, class_3218 world, class_1297 entity, class_1309 living, SnorlaxRaidService.ActiveRaid raid, EmipokemonConfig.SnorlaxBossSettings config) {
-        boolean handled = false;
-        try {
-            handled = tick(server, world, entity, raid, config);
-        } catch (Throwable error) {
-            System.err.println("[snorlax_emi] error en los ataques extra: " + error);
-            reset();
-            gap = 200;
+        if (!entity.method_5667().equals(bossId)) {
+            arenaX = entity.method_23317();
+            arenaY = entity.method_23318();
+            arenaZ = entity.method_23321();
+            sweepTicks = 0;
         }
-        if (!handled) {
-            SnorlaxRaidService.resolveCombat(server, world, entity, living, raid, config);
+        try {
+            if (sweepTicks-- <= 0) {
+                sweepTicks = 100;
+                removePreviousBosses(server, entity);
+            }
+            leash(server, world, entity, living);
+        } catch (Throwable error) {
+            System.err.println("[snorlax_emi] error en la correa de la arena: " + error);
+        }
+        // los participantes que estan fuera de la arena (p. ej. reaparecieron en su casa) no cuentan para el combate de este tick
+        List<UUID> fuera = new ArrayList<>();
+        try {
+            for (UUID id : raid.participants) {
+                class_3222 p = server.method_3760().method_14602(id);
+                if (p != null && p.method_37908() == world && !inArena(p)) {
+                    fuera.add(id);
+                }
+            }
+        } catch (Throwable error) {
+            System.err.println("[snorlax_emi] error al filtrar participantes: " + error);
+            fuera.clear();
+        }
+        raid.participants.removeAll(fuera);
+        try {
+            boolean handled = false;
+            try {
+                handled = tick(server, world, entity, raid, config);
+            } catch (Throwable error) {
+                System.err.println("[snorlax_emi] error en los ataques extra: " + error);
+                reset();
+                gap = 200;
+            }
+            if (!handled) {
+                SnorlaxRaidService.resolveCombat(server, world, entity, living, raid, config);
+            }
+        } finally {
+            raid.participants.addAll(fuera);
+        }
+    }
+
+    /**
+     * Cuando sale un jefe nuevo, desaparecen los anteriores: los que quedaron sueltos (reinicio del servidor, fallo del evento...).
+     * Se reconocen por su nombre de jefe y su especie; el actual se marca con una etiqueta para no tocarlo. Se repite cada 5 s mientras dura el
+     * jefe por si algun anterior estaba en un chunk sin cargar y aparece despues.
+     */
+    private static void removePreviousBosses(MinecraftServer server, class_1297 current) {
+        run(server, "tag " + uuid(current) + " add emi_snorlax_actual");
+        for (String name : new String[]{"\u2726 Snorlax Emi", "\u2726 Snorlax Emi Furioso", "\u2605 Snorlax Emi Desatado"}) {
+            run(server, "kill @e[type=cobblemon:pokemon,tag=!emi_snorlax_actual,name=\"" + name + "\",nbt={Pokemon:{Species:\"emipokemon:snorlax_emi\"}}]");
+        }
+    }
+
+    private static boolean inArena(class_1297 e) {
+        double dx = e.method_23317() - arenaX, dz = e.method_23321() - arenaZ;
+        double r = ARENA_RADIUS + 8.0;
+        return dx * dx + dz * dz <= r * r && Math.abs(e.method_23318() - arenaY) <= 48.0;
+    }
+
+    /** El jefe no sale de la arena: si se aleja de mas, vuelve al centro; y no persigue a quien esta fuera de ella. */
+    private static void leash(MinecraftServer server, class_3218 world, class_1297 entity, class_1309 living) {
+        if (living instanceof class_1308 mob) {
+            class_1309 target = mob.method_5968();
+            if (target != null && !inArena(target)) {
+                mob.method_5980(null);
+            }
+        }
+        double dx = entity.method_23317() - arenaX, dz = entity.method_23321() - arenaZ;
+        if (dx * dx + dz * dz > ARENA_RADIUS * ARENA_RADIUS) {
+            run(server, "execute in " + dim(world) + " run tp " + uuid(entity) + " " + num(arenaX) + " " + num(arenaY) + " " + num(arenaZ));
+            System.out.println("[snorlax_emi] el jefe se salia de la arena; devuelto al centro");
         }
     }
 
