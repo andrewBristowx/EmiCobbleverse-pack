@@ -1,0 +1,16 @@
+package emi.plush;
+
+import dev.mrshawn.pokeblocks.block.client.PokedollBlockRenderer;
+import dev.mrshawn.pokeblocks.block.entity.PokedollBlockEntity;
+import net.minecraft.class_5614;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
+
+public class EmiPlushClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        MichiBlockModel model = new MichiBlockModel();
+        class_5614<PokedollBlockEntity> factory = ctx -> new PokedollBlockRenderer(ctx, model);
+        BlockEntityRendererRegistry.register(EmiPlush.MICHI_BE, factory);
+    }
+}

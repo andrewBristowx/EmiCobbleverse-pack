@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_plush",
+  "version": "1.0.0",
+  "name": "Emi Plush",
+  "description": "Peluches propios de Emi (Michi Dramatico) hechos con Pokeblocks.",
+  "authors": ["Emi"],
+  "license": "CC0-1.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["emi.plush.EmiPlush"],
+    "client": ["emi.plush.EmiPlushClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "geckolib": ">=4.7.3",
+    "pokeblocks": "*"
+  }
+}
