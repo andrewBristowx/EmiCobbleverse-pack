@@ -76,6 +76,7 @@ def construir(out):
             for j in range(rh):
                 for i in range(rw):
                     a, b = (i + 0.5) / rw, (j + 0.5) / rh
+                    if f in ("north", "south", "east", "west"): a = 1 - a      # el cargador de Cobblemon lee las caras laterales espejadas respecto a GeckoLib
                     p = gm.face_point(origin, size, f, a, b)
                     px[ru + i, rv + j] = gm.pintar(tipo, nombre, f, p[0], p[1], p[2], size, origin, (a, b))
     d = os.path.join(out, "assets/cobblemon/textures/pokemon/michi_dramatico")
