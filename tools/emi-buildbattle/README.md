@@ -25,7 +25,9 @@ Otros: `/bb parar` (cancelar en cualquier momento, devuelve todo), `/bb cerrar` 
 Permisos: los subcomandos del organizador piden ser **operador (nivel 2)** o el permiso **`emi_buildbattle.admin`** de LuckPerms (a un grupo de moderadores, por ejemplo). Los de jugador (`unirse`, `salir`, `bloques`, `buscar`, `estado`, `ayuda`) son para todos.
 
 ## Reglas y protecciones
-- Se juega en **creativo** (romper al instante, volar, copiar bloque) pero cada 0,5 s se borra del inventario todo lo que no esté en el catálogo (TNT, armas, huevos, shulkers con cosas dentro…). Se permiten además cuadros, pinturas, soportes de armadura, cubo, cubo de agua y polvo de hueso (config `extraItems`).
+- Se juega en **supervivencia** (no hay inventario creativo: los bloques salen solo del Constructor y se gastan al colocarlos), pero volando, sin daño ni hambre y con un `Haste` + modificador de velocidad de rotura
+  (temporal, no se guarda) para que romper sea casi instantáneo aun volando. Cada 0,5 s se borra del inventario todo lo que no esté en el catálogo (lo que suelten los bloques al romperse, TNT, armas…). Se permiten además cuadros, pinturas,
+  soportes de armadura, cubo, cubo de agua y polvo de hueso (config `extraItems`).
 - Solo se puede colocar/romper dentro de tu parcela (no el muro ni la base de bedrock); fuera de ella te devuelve el servidor. Si sales de la dimensión por la razón que sea, vuelves a tu parcela.
 - En la arena se borra cada segundo todo lo vivo salvo jugadores, el Constructor y la decoración colocada (incluye los Pokémon que saque un jugador).
 - **Catálogo**: todos los bloques de todos los mods del servidor (≈14 000 en el pack completo) menos una lista negra (`blockedContains`, `blockedItems`, `blockedNamespaces` en `config/emi_buildbattle.json`: bloques de comandos, estructura, jigsaw, spawners, TNT, ancla de reaparición…).

@@ -12,6 +12,10 @@ import net.minecraft.entity.decoration.AbstractDecorationEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.entity.boss.BossBar;
@@ -266,7 +270,7 @@ public final class Game {
         Msg.broadcast(server, Msg.say(Text.literal(ok + " jugadores han entrado a construir").formatted(Formatting.GRAY)));
     }
 
-    /** Teletransporta a la parcela, vacia el inventario y pone creativo. No guarda nada. */
+    /** Teletransporta a la parcela, vacia el inventario y lo prepara para construir. No guarda nada. */
     private static void enterPlot(ServerPlayerEntity p, Plot pl) {
         p.stopRiding();
         p.closeHandledScreen();
@@ -276,9 +280,38 @@ public final class Game {
         p.getHungerManager().setFoodLevel(20);
         Vec3d s = pl.spawn();
         p.teleport(arena(), s.x, s.y, s.z, 0f, 0f);
-        p.changeGameMode(GameMode.CREATIVE);
+        setupBuilder(p);
+    }
+
+    /** Supervivencia (los bloques salen del Constructor, no del inventario creativo) pero volando, sin dano y con rotura casi instantanea. */
+    private static void setupBuilder(ServerPlayerEntity p) {
+        p.changeGameMode(GameMode.SURVIVAL);
+        p.getAbilities().allowFlying = true;
         p.getAbilities().flying = true;
         p.sendAbilitiesUpdate();
+        p.setInvulnerable(true);
+        giveHaste(p);
+        giveFastBreak(p);
+    }
+
+    private static void giveHaste(ServerPlayerEntity p) {
+        StatusEffectInstance cur = p.getStatusEffect(StatusEffects.HASTE);
+        if (cur != null && cur.getAmplifier() >= 120 && cur.getDuration() > 20000) return;
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 1_000_000, 127, false, false, false));
+    }
+
+    public static final Identifier FAST_BREAK = Identifier.of("emi_buildbattle", "fast_break");
+
+    /** Volando se rompe 5 veces mas despacio; este modificador (temporal, no se guarda) lo compensa de sobra: casi todo sale al instante. */
+    public static void giveFastBreak(ServerPlayerEntity p) {
+        var inst = p.getAttributeInstance(EntityAttributes.PLAYER_BLOCK_BREAK_SPEED);
+        if (inst != null && !inst.hasModifier(FAST_BREAK))
+            inst.addTemporaryModifier(new EntityAttributeModifier(FAST_BREAK, 49.0, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+    }
+
+    public static void removeFastBreak(ServerPlayerEntity p) {
+        var inst = p.getAttributeInstance(EntityAttributes.PLAYER_BLOCK_BREAK_SPEED);
+        if (inst != null) inst.removeModifier(FAST_BREAK);
     }
 
     private static void announceTheme(ServerPlayerEntity p) {
@@ -359,7 +392,7 @@ public final class Game {
     private static void removeLabels() {
         ServerWorld w = arena();
         if (w == null) return;
-        for (Entity e : new ArrayList<>(collect(w))) if (e.getCommandTags().contains(TAG_LABEL)) e.discard();
+        for (Entity e : new ArrayList<>(collect(w))) if (e.getCommandTags().contains(TAG_LABEL) || e.getCommandTags().contains(TAG_NPC)) e.discard();
     }
 
     private static List<Entity> collect(ServerWorld w) {
@@ -457,6 +490,9 @@ public final class Game {
         p.getAbilities().flying = true;
         p.getAbilities().invulnerable = true;
         p.sendAbilitiesUpdate();
+        p.setInvulnerable(true);
+        p.clearStatusEffects();
+        removeFastBreak(p);
         giveVoteItems(p);
     }
 
@@ -697,7 +733,7 @@ public final class Game {
         if (participants.containsKey(p.getUuid()) && phase != Phase.IDLE) {
             Plot pl = participants.get(p.getUuid());
             switch (phase) {
-                case BUILDING -> { p.changeGameMode(GameMode.CREATIVE); p.getAbilities().flying = true; p.sendAbilitiesUpdate(); announceTheme(p); }
+                case BUILDING -> { setupBuilder(p); announceTheme(p); }
                 case VOTING -> { setupVoter(p); showPlot(); }
                 case RESULTS -> { setupVoter(p); p.getInventory().clear(); }
                 default -> { }
@@ -816,6 +852,10 @@ public final class Game {
                     if (!Catalog.isAllowed(st.getItem()) || hasHiddenContents(st)) { inv.setStack(i, ItemStack.EMPTY); changed = true; }
                 }
                 p.getHungerManager().setFoodLevel(20);
+                p.getHungerManager().setSaturationLevel(20f);
+                giveHaste(p);
+                giveFastBreak(p);
+                if (!p.getAbilities().allowFlying) { p.getAbilities().allowFlying = true; p.sendAbilitiesUpdate(); }
             } else {
                 // votacion / resultados: solo las 9 lanas en la barra (o nada)
                 for (int i = 0; i < inv.size(); i++) {

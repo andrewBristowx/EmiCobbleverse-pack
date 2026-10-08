@@ -85,6 +85,9 @@ public final class Saved {
             x = s.getX() + 0.5; y = s.getY(); z = s.getZ() + 0.5;
         }
         p.teleport(w, x, y, z, yaw, pitch);
+        p.setInvulnerable(false);
+        Game.removeFastBreak(p);
+        p.clearStatusEffects();
         p.changeGameMode(GameMode.byId(t.getInt("mode")));
         p.getAbilities().flying = false;
         if (t.contains("spawnPos")) {
