@@ -92,6 +92,21 @@ public class EmiEstructuras implements ModInitializer {
                 return 1;
             })));
         }
+        if (System.getProperty("emi.est.test") != null) raiz.then(CommandManager.literal("_planta").then(CommandManager.argument("a", StringArgumentType.greedyString()).executes(c -> {
+            try {
+                String[] a = StringArgumentType.getString(c, "a").trim().split(" ");
+                int x0 = Integer.parseInt(a[0]), z0 = Integer.parseInt(a[1]), x1 = Integer.parseInt(a[2]), z1 = Integer.parseInt(a[3]), y = Integer.parseInt(a[4]);
+                var w = Generador.mundo();
+                for (int cx = x0 >> 4; cx <= x1 >> 4; cx++) for (int cz = z0 >> 4; cz <= z1 >> 4; cz++) w.getChunk(cx, cz);
+                var img = new java.awt.image.BufferedImage(x1 - x0 + 1, z1 - z0 + 1, java.awt.image.BufferedImage.TYPE_INT_RGB);
+                var m = new net.minecraft.util.math.BlockPos.Mutable();
+                for (int x = x0; x <= x1; x++) for (int z = z0; z <= z1; z++) img.setRGB(x - x0, z - z0, w.getBlockState(m.set(x, y, z)).isAir() ? 0xFFFFFF : 0x303030);
+                var big = new java.awt.image.BufferedImage(img.getWidth() * 4, img.getHeight() * 4, java.awt.image.BufferedImage.TYPE_INT_RGB);
+                for (int i = 0; i < big.getWidth(); i++) for (int j = 0; j < big.getHeight(); j++) big.setRGB(i, j, img.getRGB(i / 4, j / 4));
+                javax.imageio.ImageIO.write(big, "png", new java.io.File(w.getServer().getSavePath(net.minecraft.util.WorldSavePath.ROOT).toFile(), "emi_estructuras/fotos/planta_" + y + ".png"));
+            } catch (Exception e) { LOG.error("planta", e); }
+            return 1;
+        })));
         d.register(raiz);
     }
 }

@@ -208,7 +208,16 @@ public final class Generador {
                     for (int z = bb.getMinZ(); z <= bb.getMaxZ(); z++)
                         if (w.getBlockState(m.set(x, y, z)).isAir()) { techo = y; break; }
             if (techo == Integer.MIN_VALUE || tope - techo <= 2) return;
-            int ty = Math.max(bb.getMinY() + 1, techo - 4), tx = Integer.MAX_VALUE, tz = zc;
+            // capa con mas espacio libre (en las mazmorras es donde estan las salas grandes; un hueco suelto no vale)
+            int ty = techo, mejor = -1;
+            for (int y = techo; y >= Math.max(bb.getMinY() + 1, techo - 24); y--) {
+                int n = 0;
+                for (int x = bb.getMinX(); x <= bb.getMaxX(); x++)
+                    for (int z = bb.getMinZ(); z <= bb.getMaxZ(); z++)
+                        if (w.getBlockState(m.set(x, y, z)).isAir() && w.getBlockState(m.set(x, y + 1, z)).isAir()) n++;
+                if (n > mejor) { mejor = n; ty = y; }
+            }
+            int tx = Integer.MAX_VALUE, tz = zc;
             for (int x = bb.getMinX(); x <= bb.getMaxX() && tx == Integer.MAX_VALUE; x++)
                 for (int z = bb.getMinZ(); z <= bb.getMaxZ(); z++)
                     if (w.getBlockState(m.set(x, ty, z)).isAir() && w.getBlockState(m.set(x, ty + 1, z)).isAir()) {
@@ -219,7 +228,7 @@ public final class Generador {
             BlockState aire = Blocks.AIR.getDefaultState(), ladrillo = Blocks.STONE_BRICKS.getDefaultState();
             BlockState escalon = Blocks.STONE_BRICK_STAIRS.getDefaultState().with(net.minecraft.block.StairsBlock.FACING, net.minecraft.util.math.Direction.WEST);
             int x = bb.getMinX() - 7, piso = tope + 1;
-            while (x <= tx) {                        // tramo en pendiente (baja un bloque por cada bloque hacia dentro)
+            while (x <= tx || (piso > ty && x <= tx + 60)) {   // pendiente: baja 1 bloque por bloque; si la sala queda cerca sigue bajando por dentro
                 boolean cae = piso > ty;
                 for (int zz = zc - 2; zz <= zc + 2; zz++) {
                     for (int y = piso + 1; y <= piso + 4; y++) w.setBlockState(m.set(x, y, zz), aire, flags);
@@ -232,10 +241,24 @@ public final class Generador {
                 for (int zz = zc - 2; zz <= zc + 2; zz++) for (int y = ty; y <= ty + 3; y++) w.setBlockState(m.set(xx, y, zz), aire, flags);
             for (int zz = Math.min(zc, tz); zz <= Math.max(zc, tz); zz++)   // y de lado hasta la z de la sala
                 for (int xx = tx - 2; xx <= tx + 2; xx++) for (int y = ty; y <= ty + 3; y++) w.setBlockState(m.set(xx, y, zz), aire, flags);
-            if (piso > ty) {                         // la pendiente no alcanzo la sala: pozo vertical (caida)
-                for (int zz = zc - 2; zz <= zc + 2; zz++) for (int y = ty; y <= piso + 3; y++) w.setBlockState(m.set(tx, y, zz), aire, flags);
+            for (int zz = Math.min(zc, tz) - 2; zz <= Math.max(zc, tz) + 2; zz++)   // suelo bajo el tramo final (si era hueco de la sala)
+                for (int xx = tx - 2; xx <= tx + 2; xx++) if (w.getBlockState(m.set(xx, ty - 1, zz)).isAir()) w.setBlockState(m, ladrillo, flags);
+            // dentro de la sala sigue bajando con escalones hasta pisar suelo firme (las salas altas, como los santuarios, tienen el suelo mucho mas abajo)
+            int xs = tx + 3, ps = ty, caida = 0;
+            while (caida < 4 && w.getBlockState(m.set(xs, ty - 1 - caida, tz)).isAir()) caida++;
+            boolean entro = false;
+            for (int k = 1; caida >= 4 && k <= 40; k++) {     // si el suelo esta a menos de 4 bloques no hace falta
+                int px2 = xs + k - 1, py = ps - 1 - k;
+                boolean eraAire = w.getBlockState(m.set(px2, py, tz)).isAir();
+                if (!eraAire && (entro || k >= 3)) break;     // salimos de la sala: no seguir picando piedra
+                entro |= eraAire;
+                for (int zz = tz - 2; zz <= tz + 2; zz++) {
+                    for (int y = py + 1; y <= py + 4; y++) w.setBlockState(m.set(px2, y, zz), aire, flags);
+                    w.setBlockState(m.set(px2, py, zz), escalon, flags);
+                }
+                if (eraAire && !w.getBlockState(m.set(px2, py - 1, tz)).isAir()) break;
             }
-            EmiEstructuras.LOG.info("{}: acceso excavado hasta la sala en x={} y={} (techo de la sala y={})", e.id, tx, ty, techo);
+            EmiEstructuras.LOG.info("{}: acceso excavado hasta la sala en x={} y={} z={} (techo de la sala y={})", e.id, tx, ty, tz, techo);
         }
 
         boolean esperando() { return fase == 4 && server.getTicks() < esperaAsentar; }

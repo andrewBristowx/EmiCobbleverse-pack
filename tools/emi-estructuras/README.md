@@ -13,7 +13,7 @@ generado. Emipokemon (`/emipokemon visitar`) manda a los jugadores a esta dimens
 - Cada estructura se registra en Emipokemon (`ImportantLocationService.recordGeneratedLocation`) con una **entrada segura** junto a ella, así `/emipokemon visitar` / `marcar` / el mapa de misiones la encuentran ahí.
 - **Contención de líquidos**: las estructuras de mar (islas, Kyogre, Groudon, Misty…) se colocan sobre una balsa de agua de 28 bloques de margen y la entrada queda fuera, en tierra firme; tras colocar cada una se espera 4 s y
   se borran los líquidos que se hayan escapado por encima del suelo fuera de la estructura (lava de Moltres/Groudon incluida). Medido: 0 fugas en todas.
-- **Estructuras enterradas** (gimnasios de Giovanni y Ángelo, Turnback Cave, santuarios de Legendary Monuments): se abre un pozo con una rampa de escalones de ladrillo y, si la sala queda cerrada bajo piedra, un túnel hasta ella.
+- **Estructuras enterradas** (gimnasios de Giovanni y Ángelo, Turnback Cave, santuarios de Legendary Monuments): se abre un pozo con una rampa de escalones de ladrillo y, si la sala queda cerrada bajo piedra, un túnel hasta la capa con más espacio libre de la estructura (en Turnback Cave, donde están las salas grandes) y escalones hasta el suelo si la sala es alta (santuarios), para no caer.
 - **Estructuras flotantes** (Jardín Secreto, Deoxys, Giratina, portal de distorsión): pilar de ladrillo con una plataforma de 9×9 a media altura de la estructura como entrada.
 
 ## Requisitos importantes
@@ -34,7 +34,7 @@ La dimensión pesa unos 340 MB en disco una vez generada.
 
 ## Probado
 Servidor completo del pack (Fabric 1.21.1 con todos los mods), arranque desde cero: 86/86 estructuras, 69/69 registradas en Emipokemon con dimensión `emi_estructuras:plano`, 0 fallos, 0 fugas de líquido (medido con mapas de colores
-y cortes). **No** se ha probado a entrar con un cliente real a cada una.
+y cortes). Con cliente real: `/emipokemon visitar` (gratis para admin, cobra 5000 Michicoins a los demás), recorrido de rampas y túneles de Giovanni, Ángelo, Turnback Cave y los santuarios, plataformas flotantes y balsas de agua.
 
 ## Compilar
-`gradle --no-daemon build` (Gradle 8.14, Java 21) → `build/libs/emi-estructuras-1.0.0.jar`. Opción de depuración `-Demi.est.test=1` activa `/emiestructuras _foto <id>` (dibuja vistas aérea, lateral y cortes en `world/emi_estructuras/fotos/`).
+`gradle --no-daemon build` (Gradle 8.14, Java 21) → `build/libs/emi-estructuras-1.0.0.jar`. Opción de depuración `-Demi.est.test=1` activa `/emiestructuras _foto <id>` (dibuja vistas aérea, lateral y cortes en `world/emi_estructuras/fotos/`) y `/emiestructuras _planta x0 z0 x1 z1 y` (plano de una capa).
