@@ -124,5 +124,28 @@
       "willDefendOwner": true,
       "willDefendSelf": true
     }
+  },
+  "drops": {
+    "amount": 2,
+    "entries": [
+      {
+        "item": "minecraft:string",
+        "quantityRange": "1-2",
+        "percentage": 70.0
+      },
+      {
+        "item": "minecraft:amethyst_shard",
+        "quantityRange": "1-2",
+        "percentage": 35.0
+      },
+      {
+        "item": "minecraft:purple_dye",
+        "percentage": 20.0
+      },
+      {
+        "item": "cobblemon:fairy_feather",
+        "percentage": 5.0
+      }
+    ]
   }
 }
