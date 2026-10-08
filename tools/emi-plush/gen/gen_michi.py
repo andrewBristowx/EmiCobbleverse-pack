@@ -35,7 +35,7 @@ CUBOS = [
     ("brazoD", (4.4, 2.6, -2.2), (1.6, 2.2, 2.0), (5.0, 3.7, -1.2), (0, 0, 18), 0, "cuerpo"),
     ("pieI", (-4.2, 0.0, -5.3), (2.4, 1.4, 1.7), None, None, 0, "pie"),
     ("pieD", (1.8, 0.0, -5.3), (2.4, 1.4, 1.7), None, None, 0, "pie"),
-    ("barriga", (-2.5, 0.15, -4.62), (5.0, 3.1, 0.24), None, None, 0, "barriga"),
+    ("barriga", (-2.5, 0.15, -4.44), (5.0, 3.1, 0.05), None, None, 0, "barriga"),
     ("colaA", (1.8, 0.6, 4.0), (2.8, 2.8, 2.6), None, None, 0, "cola"),
     ("colaB", (2.3, 3.0, 4.2), (2.6, 2.8, 2.4), (3.6, 3.0, 5.4), (0, 0, -10), 0, "cola"),
     ("colaC", (3.0, 5.5, 4.4), (2.2, 2.6, 2.0), (4.1, 5.5, 5.4), (0, 0, -26), 0, "cola"),
@@ -132,7 +132,7 @@ def pintar(tipo, nombre, face, lx, ly, lz, size, origin, t):
             if not elipse(x, y, cx, cy, 2.45, 1.5): return (0, 0, 0, 0)
             if luna(x, y, cx, cy - 0.02, 0.95, 0.46): return LILA + (255,)
             return NEGRO + (255,)
-        return NEGRO + (255,)
+        return (0, 0, 0, 0)   # los cantos de la placa son transparentes: si no, se ve un marco negro cuadrado alrededor de la barriga
     if tipo == "cola":
         if edge_u < 0.18: base = mezcla(base, SOMBRA, 0.35)
         return base + (255,)
