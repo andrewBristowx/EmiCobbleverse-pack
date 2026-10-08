@@ -21,7 +21,9 @@ HUESO = {"cuerpoA": "head", "cuerpoB": "head", "cuerpoC": "head", "barriga": "he
          "orejaIa": "ear_left", "orejaIb": "ear_left", "orejaDa": "ear_right", "orejaDb": "ear_right",
          "antI": "antenna_left", "bolaI": "antenna_left", "antD": "antenna_right", "bolaD": "antenna_right",
          "brazoI": "arm_left", "brazoD": "arm_right", "pieI": "foot_left", "pieD": "foot_right",
-         "colaA": "tail1", "colaB": "tail2", "colaC": "tail3"}
+         "colaA": "tail1", "colaB": "tail2", "colaC": "tail3",
+         "ojoI": "eye_left", "ojoD": "eye_right", "parpI": "eyelid_left", "parpD": "eyelid_right",
+         "feliI": "happy_left", "feliD": "happy_right", "boca": "mouth", "bocaA": "mouth_open", "bocaB": "mouth_yawn"}
 # (hueso, padre, pivote en unidades del peluche)
 HUESOS = [
     ("michi", None, (0, 0, 0)),
@@ -31,6 +33,10 @@ HUESOS = [
     ("antenna_left", "head", (-1.65, 7.4, -0.4)), ("antenna_right", "head", (1.65, 7.4, -0.4)),
     ("arm_left", "head", (-5.0, 3.7, -1.2)), ("arm_right", "head", (5.0, 3.7, -1.2)),
     ("foot_left", "body", (-3.0, 1.4, -4.4)), ("foot_right", "body", (3.0, 1.4, -4.4)),
+    ("eye_left", "head", (-2.25, 5.25, -4.4)), ("eye_right", "head", (2.25, 5.25, -4.4)),
+    ("eyelid_left", "head", (-2.25, 6.5, -4.4)), ("eyelid_right", "head", (2.25, 6.5, -4.4)),
+    ("happy_left", "head", (-2.25, 5.25, -4.4)), ("happy_right", "head", (2.25, 5.25, -4.4)),
+    ("mouth", "head", (0, 4.0, -4.4)), ("mouth_open", "head", (0, 4.0, -4.4)), ("mouth_yawn", "head", (0, 3.7, -4.4)),
     ("tail1", "body", (3.2, 1.5, 4.9)), ("tail2", "tail1", (3.6, 3.0, 5.4)), ("tail3", "tail2", (4.1, 5.5, 5.4)),
 ]
 
@@ -101,13 +107,13 @@ def muestrear(largo, f, paso=0.05):
     n = int(round(largo / paso))
     return {("%.4f" % (i * paso)).rstrip("0").rstrip("."): [round(v, 4) for v in f(i * paso)] for i in range(n + 1)}
 
-def anim(largo, huesos, bucle=True, sonidos=None):
+def anim(largo, huesos, bucle=True, sonidos=None, paso=0.05):
     """huesos: {hueso: {"rotation": f(t)->[x,y,z], "position": f(t)->[x,y,z], "scale": f(t)->[x,y,z]}}"""
     b = {}
     for h, props in huesos.items():
         b[h] = {}
         for k, f in props.items():
-            kf = muestrear(largo, f)
+            kf = muestrear(largo, f, paso)
             if bucle:   # que el ultimo fotograma coincida con el primero
                 kf[list(kf.keys())[-1]] = kf[list(kf.keys())[0]]
             b[h][k] = kf
@@ -119,6 +125,18 @@ def anim(largo, huesos, bucle=True, sonidos=None):
 def S(t, periodo, fase=0.0): return math.sin(2 * math.pi * (t / periodo) + fase)
 def Z(): return [0, 0, 0]
 E = KU
+
+D = -0.40 * E          # los parpados, ojos felices y bocas abiertas estan escondidos dentro del cuerpo; esto los saca hacia delante
+
+def sacar(f):
+    return {"position": lambda t: [0, 0, D * f(t)]}
+
+def rampa(t, a, b, c, d):
+    """0 antes de a, sube hasta 1 en b, se mantiene hasta c y baja a 0 en d"""
+    if t <= a or t >= d: return 0.0
+    if t < b: return (t - a) / (b - a)
+    if t <= c: return 1.0
+    return (d - t) / (d - c)
 
 def animaciones():
     A = {}
@@ -174,6 +192,7 @@ def animaciones():
         "antenna_left": {"rotation": lambda t: [0, 0, 28]}, "antenna_right": {"rotation": lambda t: [0, 0, -28]},
         "ear_left": {"rotation": lambda t: [0, 0, 14]}, "ear_right": {"rotation": lambda t: [0, 0, -14]},
         "foot_left": {"position": lambda t: [0, 0, 0.5 * E]}, "foot_right": {"position": lambda t: [0, 0, 0.5 * E]},
+        "eyelid_left": sacar(lambda t: 1), "eyelid_right": sacar(lambda t: 1),
         "tail1": {"rotation": lambda t: [0, -30, 0]}, "tail2": {"rotation": lambda t: [0, -30, 0]}, "tail3": {"rotation": lambda t: [0, -25, 0]},
     })
     # grito de gatito (el sonido se lanza a los 0.1 s)
@@ -185,6 +204,7 @@ def animaciones():
         "arm_left": {"rotation": lambda t: [-35 * math.sin(math.pi * min(1, t / 1.0)), 0, 0]},
         "arm_right": {"rotation": lambda t: [-35 * math.sin(math.pi * min(1, t / 1.0)), 0, 0]},
         "tail1": {"rotation": lambda t: [0, 10 * S(t, 0.6), 0]},
+        "mouth_open": sacar(lambda t: rampa(t, 0.05, 0.12, 0.8, 0.95)),
     }, bucle=False, sonidos={"0.1": {"effect": "emi_plush:pokemon.michi_dramatico.cry"}})
     # ataque fisico: se agazapa, salta hacia delante y arana
     L = 0.9
@@ -200,6 +220,7 @@ def animaciones():
         "arm_right": {"rotation": lambda t: [-40 * max(0, -lunge(t)) + 85 * max(0, lunge(t)), 0, 0]},
         "antenna_left": {"rotation": lambda t: [-15 * max(0, lunge(t)), 0, 0]}, "antenna_right": {"rotation": lambda t: [-15 * max(0, lunge(t)), 0, 0]},
         "tail1": {"rotation": lambda t: [0, -25 * max(0, lunge(t)), 0]},
+        "mouth_open": sacar(lambda t: rampa(t, 0.2, 0.28, 0.6, 0.8)),
     }, bucle=False)
     # ataque especial: salta y las antenas lanzan la energia
     L = 1.2
@@ -212,6 +233,8 @@ def animaciones():
         "arm_left": {"rotation": lambda t: [-110 * up(t), 0, 20 * up(t)]}, "arm_right": {"rotation": lambda t: [-110 * up(t), 0, -20 * up(t)]},
         "tail1": {"rotation": lambda t: [-20 * up(t), 0, 0]},
         "ear_left": {"rotation": lambda t: [0, 0, -12 * up(t)]}, "ear_right": {"rotation": lambda t: [0, 0, 12 * up(t)]},
+        "happy_left": sacar(lambda t: rampa(t, 0.15, 0.25, 0.95, 1.1)), "happy_right": sacar(lambda t: rampa(t, 0.15, 0.25, 0.95, 1.1)),
+        "mouth_open": sacar(lambda t: rampa(t, 0.2, 0.3, 0.9, 1.05)),
     }, bucle=False)
     # movimiento de estado: meneo y saltito
     L = 1.0
@@ -221,6 +244,25 @@ def animaciones():
         "antenna_left": {"rotation": lambda t: [0, 0, 14 * S(t, 0.25) * math.sin(math.pi * t / L)]},
         "antenna_right": {"rotation": lambda t: [0, 0, -14 * S(t, 0.25) * math.sin(math.pi * t / L)]},
         "tail1": {"rotation": lambda t: [0, 25 * S(t, 0.5) * math.sin(math.pi * t / L), 0]},
+        "happy_left": sacar(lambda t: rampa(t, 0.05, 0.15, 0.85, 1.0)), "happy_right": sacar(lambda t: rampa(t, 0.05, 0.15, 0.85, 1.0)),
+    }, bucle=False)
+    # ---- gestos sueltos (los usa el poser como "quirks": se disparan solos de vez en cuando) ----
+    A["blink"] = anim(0.2, {"eyelid_left": sacar(lambda t: rampa(t, 0.0, 0.04, 0.12, 0.2)), "eyelid_right": sacar(lambda t: rampa(t, 0.0, 0.04, 0.12, 0.2))}, bucle=False, paso=0.02)
+    A["quirk_ear_left"] = anim(0.5, {"ear_left": {"rotation": lambda t: [0, 0, 14 * math.sin(math.pi * 4 * t) * (1 - t / 0.5)]}}, bucle=False, paso=0.025)
+    A["quirk_ear_right"] = anim(0.5, {"ear_right": {"rotation": lambda t: [0, 0, -14 * math.sin(math.pi * 4 * t) * (1 - t / 0.5)]}}, bucle=False, paso=0.025)
+    A["quirk_tail"] = anim(1.4, {
+        "tail1": {"rotation": lambda t: [0, 35 * math.sin(math.pi * 3 * t) * math.sin(math.pi * t / 1.4), 0]},
+        "tail2": {"rotation": lambda t: [0, 40 * math.sin(math.pi * 3 * t - 0.8) * math.sin(math.pi * t / 1.4), 0]},
+        "tail3": {"rotation": lambda t: [0, 45 * math.sin(math.pi * 3 * t - 1.6) * math.sin(math.pi * t / 1.4), 0]}}, bucle=False)
+    # el bostezo dramatico (su habilidad es Drama): cabeza hacia atras, ojos cerrados y bocaza
+    y_ = lambda t: rampa(t, 0.25, 0.7, 2.0, 2.5)
+    A["quirk_yawn"] = anim(2.8, {
+        "head": {"rotation": lambda t: [-16 * y_(t), 0, 0], "position": lambda t: [0, 0.6 * E * y_(t), 0], "scale": lambda t: [1 + 0.05 * y_(t), 1 + 0.04 * y_(t), 1 + 0.05 * y_(t)]},
+        "eyelid_left": sacar(lambda t: rampa(t, 0.3, 0.6, 2.0, 2.4)), "eyelid_right": sacar(lambda t: rampa(t, 0.3, 0.6, 2.0, 2.4)),
+        "mouth_yawn": sacar(lambda t: rampa(t, 0.35, 0.7, 1.9, 2.3)),
+        "antenna_left": {"rotation": lambda t: [0, 0, 20 * y_(t)]}, "antenna_right": {"rotation": lambda t: [0, 0, -20 * y_(t)]},
+        "arm_left": {"rotation": lambda t: [-70 * y_(t), 0, 0]}, "arm_right": {"rotation": lambda t: [-70 * y_(t), 0, 0]},
+        "tail1": {"rotation": lambda t: [-12 * y_(t), 0, 0]},
     }, bucle=False)
     for a in A.values():       # escrito con "positivo = hacia fuera" en el lado izquierdo; el motor lo da al reves
         for h in ("antenna_left", "antenna_right", "ear_left", "ear_right", "arm_left", "arm_right"):
@@ -235,6 +277,10 @@ def poser():
     n = "michi_dramatico"
     dbg = os.environ.get("MICHI_DEBUG")
     q = lambda a: "q.bedrock('%s', '%s')" % (n, a)
+    blink = "q.bedrock_quirk('%s', 'blink')" % n
+    orejas = "q.bedrock_quirk('%s', q.array('quirk_ear_left', 'quirk_ear_right'), 6, 20, 1)" % n
+    cola = "q.bedrock_quirk('%s', 'quirk_tail', 10, 25, 1)" % n
+    bostezo = "q.bedrock_quirk('%s', 'quirk_yawn', 25, 60, 1)" % n
     return {
         "portraitScale": float(os.environ.get("MICHI_PS", 0.46)), "portraitTranslation": [float(os.environ.get("MICHI_PX", 0)), float(os.environ.get("MICHI_PY", 0.62)), 0],
         "profileScale": float(os.environ.get("MICHI_FS", 0.34)), "profileTranslation": [float(os.environ.get("MICHI_FX", 0.25)), float(os.environ.get("MICHI_FY", 1.0)), 0],
@@ -246,9 +292,9 @@ def poser():
             "status": "q.bedrock_primary('%s', 'status', q.curve('symmetrical_wide'))" % n,
         },
         "poses": {
-            "battle-standing": {"poseTypes": ["STAND"], "isBattle": True, "animations": ["q.look('head')", q("battle_idle")]},
-            "standing": {"poseTypes": ["STAND", "FLOAT", "NONE", "PORTRAIT", "PROFILE"], "isBattle": False, "animations": ["q.look('head')", q(dbg or "ground_idle")]},
-            "walking": {"poseTypes": ["WALK", "SWIM"], "animations": ["q.look('head')", q("ground_walk")]},
+            "battle-standing": {"poseTypes": ["STAND"], "isBattle": True, "animations": ["q.look('head')", q("battle_idle")], "quirks": [blink, orejas]},
+            "standing": {"poseTypes": ["STAND", "FLOAT", "NONE", "PORTRAIT", "PROFILE"], "isBattle": False, "animations": ["q.look('head')", q(dbg or "ground_idle")], "quirks": [blink, orejas, cola, bostezo]},
+            "walking": {"poseTypes": ["WALK", "SWIM"], "animations": ["q.look('head')", q("ground_walk")], "quirks": [blink]},
             "sleep": {"poseTypes": ["SLEEP"], "animations": [q("sleep")]},
         }}
 

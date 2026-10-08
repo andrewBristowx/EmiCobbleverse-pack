@@ -1,0 +1,15 @@
+{
+  "id": "emi_plush:michi_dramatico",
+  "speciesId": "emi_plush:michi_dramatico",
+  "displayAspects": [],
+  "conditionAspects": [],
+  "forms": [
+    {
+      "displayForm": "Normal",
+      "unlockForms": [
+        "Normal"
+      ]
+    }
+  ],
+  "variations": []
+}

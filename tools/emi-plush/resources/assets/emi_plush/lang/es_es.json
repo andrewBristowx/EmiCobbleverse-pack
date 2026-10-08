@@ -1,9 +1,15 @@
 {
   "block.emi_plush.michi_dramatico": "Peluche Michi Dramático",
   "item.emi_plush.michi_dramatico": "Peluche Michi Dramático",
-  "emi_plush.species.michi_dramatico.desc": "Un gatito dramático de Emi. Sus antenas lilas canalizan energía feérica; parece enfadado, pero es puro cariño.",
+  "emi_plush.species.michi_dramatico.desc": "La mascota oficial del canal de Emi. Es muy escandalosa y dramática: maúlla por todo, se desmaya por cualquier cosa y bosteza con tanto teatro que el sueño se contagia.",
   "subtitles.emi_plush.michi_cry": "Michi Dramático maúlla",
   "emi_plush.species.michidramtico.name": "Michi Dramático",
   "emi_plush.species.michidramatico.name": "Michi Dramático",
-  "emi_plush.species.michi_dramatico.name": "Michi Dramático"
+  "emi_plush.species.michi_dramatico.name": "Michi Dramático",
+  "emi_plush.species.michidramatico.desc": "La mascota oficial del canal de Emi. Es muy escandalosa y dramática: maúlla por todo, se desmaya por cualquier cosa y bosteza con tanto teatro que el sueño se contagia.",
+  "emi_plush.species.michidramtico.desc": "La mascota oficial del canal de Emi. Es muy escandalosa y dramática: maúlla por todo, se desmaya por cualquier cosa y bosteza con tanto teatro que el sueño se contagia.",
+  "cobblemon.ability.drama": "Drama",
+  "cobblemon.ability.drama.desc": "Sus bostezos son dobles: Bostezo alcanza a todos los rivales adyacentes y el sueño que provoca dura el doble.",
+  "cobblemon.ui.pokedex.region.emi": "Emi",
+  "emi_plush.ui.pokedex.region.emi": "Emi"
 }
