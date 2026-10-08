@@ -35,7 +35,18 @@ CUBOS = [
     ("brazoD", (4.4, 2.6, -2.2), (1.6, 2.2, 2.0), (5.0, 3.7, -1.2), (0, 0, 18), 0, "cuerpo"),
     ("pieI", (-4.2, 0.0, -5.3), (2.4, 1.4, 1.7), None, None, 0, "pie"),
     ("pieD", (1.8, 0.0, -5.3), (2.4, 1.4, 1.7), None, None, 0, "pie"),
-    ("barriga", (-2.5, 0.15, -4.62), (5.0, 3.1, 0.24), None, None, 0, "barriga"),
+    ("barriga", (-2.5, 0.15, -4.44), (5.0, 3.1, 0.05), None, None, 0, "barriga"),
+    # cara en placas finas: ojos y boca visibles; parpados, ojos felices y bocas abiertas escondidos DENTRO del cuerpo (z=-4.12)
+    # y la animacion los saca hacia delante (position z = -0.40) cuando toca el gesto
+    ("ojoI", (-3.6, 4.0, -4.47), (2.5, 2.9, 0.04), None, None, 0, "ojo"),
+    ("ojoD", (1.1, 4.0, -4.47), (2.5, 2.9, 0.04), None, None, 0, "ojo"),
+    ("parpI", (-3.35, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "parpado"),
+    ("parpD", (1.15, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "parpado"),
+    ("feliI", (-3.35, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "feliz"),
+    ("feliD", (1.15, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "feliz"),
+    ("boca", (-0.85, 3.65, -4.47), (1.7, 0.95, 0.04), None, None, 0, "boca"),
+    ("bocaA", (-0.85, 3.4, -4.12), (1.7, 1.3, 0.04), None, None, 0, "boca_ab"),
+    ("bocaB", (-1.15, 2.95, -4.12), (2.3, 2.0, 0.04), None, None, 0, "boca_bos"),
     ("colaA", (1.8, 0.6, 4.0), (2.8, 2.8, 2.6), None, None, 0, "cola"),
     ("colaB", (2.3, 3.0, 4.2), (2.6, 2.8, 2.4), (3.6, 3.0, 5.4), (0, 0, -10), 0, "cola"),
     ("colaC", (3.0, 5.5, 4.4), (2.2, 2.6, 2.0), (4.1, 5.5, 5.4), (0, 0, -26), 0, "cola"),
@@ -87,6 +98,49 @@ def luna(x, y, cx, cy, r, off):
     """media luna: circulo menos otro desplazado hacia arriba-derecha"""
     return ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) and not ((x - cx - off) ** 2 + (y - cy - off * 0.8) ** 2 <= (r * 0.88) ** 2)
 
+TRANSP = (0, 0, 0, 0)
+BOCA_ROJA = (96, 30, 52)
+LENGUA = (255, 138, 160)
+
+def cara(tipo, nombre, x, y):
+    """pinta las placas de la cara en coordenadas del modelo (x, y); fuera de la forma = transparente"""
+    sx = -1 if nombre.endswith("I") else 1
+    ex, ey = sx * 2.25, 5.25
+    if tipo == "ojo":
+        # ojo ovalado cortado por una ceja inclinada (enfadado: la ceja baja hacia el centro) + ceja
+        if elipse(x, y, ex, ey, 0.85, 1.1):
+            u = (-sx) * (x - ex)           # positivo hacia el centro
+            lim = ey + 0.75 - 0.55 * (u / 0.85)
+            if y <= lim:
+                if elipse(x, y, ex - sx * 0.25, ey - 0.15, 0.2, 0.28): return (235, 226, 252, 255)   # brillo
+                return TINTA + (255,)
+        if linea(x, y, sx * 3.25, 6.55, sx * 1.4, 5.85, 0.36): return TINTA + (255,)
+        return TRANSP
+    if tipo in ("parpado", "feliz"):
+        if not elipse(x, y, ex, ey, 1.0, 1.25): return TRANSP
+        d = (x - ex) / 0.85
+        if abs(d) <= 1:
+            if tipo == "parpado": y0 = 5.0 - 0.28 * (1 - d * d)      # ojo cerrado: sonrisa hacia abajo
+            else: y0 = 4.95 + 0.34 * (1 - d * d)                      # ojo feliz ^
+            if abs(y - y0) < 0.13: return TINTA + (255,)
+        return BLANCO + (255,)
+    if tipo == "boca":
+        for k in (-1, 1):
+            if elipse(x, y, k * 0.34, 4.12, 0.36, 0.3) and y <= 4.14 and not elipse(x, y, k * 0.34, 4.12, 0.22, 0.16): return TINTA + (255,)
+        if linea(x, y, 0.0, 4.32, 0.0, 4.15, 0.12): return TINTA + (255,)
+        return TRANSP
+    if tipo == "boca_ab":
+        if elipse(x, y, 0.0, 4.0, 0.8, 0.55):
+            if elipse(x, y, 0.0, 3.7, 0.4, 0.22): return LENGUA + (255,)
+            return BOCA_ROJA + (255,)
+        return TRANSP
+    if tipo == "boca_bos":
+        if elipse(x, y, 0.0, 3.75, 1.05, 0.95):
+            if elipse(x, y, 0.0, 3.2, 0.62, 0.38): return LENGUA + (255,)
+            return BOCA_ROJA + (255,)
+        return TRANSP
+    return TRANSP
+
 def pintar(tipo, nombre, face, lx, ly, lz, size, origin, t):
     """(lx,ly,lz): punto en el espacio del modelo (sin rotar el cubo). t: (a,b) en la cara. Devuelve RGBA."""
     x, y, z = lx, ly, lz
@@ -105,6 +159,9 @@ def pintar(tipo, nombre, face, lx, ly, lz, size, origin, t):
     edge_u = edge * min(w, h)
     if edge_u < 0.18: base = mezcla(base, SOMBRA, 0.45)
 
+    if tipo in ("ojo", "parpado", "feliz", "boca", "boca_ab", "boca_bos"):
+        if face != "north": return (0, 0, 0, 0)
+        return cara(tipo, nombre, x, y)
     if tipo == "oreja":
         if face == "north":
             return (mezcla(LILA, (232, 205, 250), 0.0) if edge_u > 0.28 else base) + (255,)
@@ -132,26 +189,11 @@ def pintar(tipo, nombre, face, lx, ly, lz, size, origin, t):
             if not elipse(x, y, cx, cy, 2.45, 1.5): return (0, 0, 0, 0)
             if luna(x, y, cx, cy - 0.02, 0.95, 0.46): return LILA + (255,)
             return NEGRO + (255,)
-        return NEGRO + (255,)
+        return (0, 0, 0, 0)   # los cantos de la placa son transparentes: si no, se ve un marco negro cuadrado alrededor de la barriga
     if tipo == "cola":
         if edge_u < 0.18: base = mezcla(base, SOMBRA, 0.35)
         return base + (255,)
     # cuerpo
-    if nombre == "cuerpoC" and face == "north":
-        # cara: ojos ovalados cortados por una ceja inclinada (enfadado: la ceja baja hacia el centro)
-        for sx in (-1, 1):
-            ex, ey = sx * 2.25, 5.25
-            if elipse(x, y, ex, ey, 0.85, 1.1):
-                u = (-sx) * (x - ex)           # positivo hacia el centro
-                lim = ey + 0.75 - 0.55 * (u / 0.85)
-                if y <= lim:
-                    if elipse(x, y, ex - sx * 0.25, ey - 0.15, 0.2, 0.28): return (235, 226, 252, 255)  # brillo
-                    return TINTA + (255,)
-            if linea(x, y, sx * 3.25, 6.55, sx * 1.4, 5.85, 0.36): return TINTA + (255,)
-        # boquita :3
-        for sx in (-1, 1):
-            if elipse(x, y, sx * 0.34, 4.12, 0.36, 0.3) and y <= 4.14 and not elipse(x, y, sx * 0.34, 4.12, 0.22, 0.16): return TINTA + (255,)
-        if linea(x, y, 0.0, 4.32, 0.0, 4.15, 0.12): return TINTA + (255,)
     if face == "south" and nombre == "cuerpoC":
         # X lila en el trasero
         if linea(x, y, -0.9, 3.0, 0.9, 1.6, 0.34) or linea(x, y, -0.9, 1.6, 0.9, 3.0, 0.34): return LILA + (255,)

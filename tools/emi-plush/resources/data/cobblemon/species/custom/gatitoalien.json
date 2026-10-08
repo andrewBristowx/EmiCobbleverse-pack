@@ -1,0 +1,164 @@
+{
+  "implemented": true,
+  "nationalPokedexNumber": 10013,
+  "name": "GatitoAlien",
+  "primaryType": "fairy",
+  "maleRatio": 0.5,
+  "height": 9,
+  "weight": 120,
+  "pokedex": [
+    "emi_plush.species.gatitoalien.desc"
+  ],
+  "labels": [
+    "emipokemon",
+    "custom"
+  ],
+  "aspects": [],
+  "abilities": [
+    "drama",
+    "h:cutecharm"
+  ],
+  "eggGroups": [
+    "field",
+    "fairy"
+  ],
+  "baseStats": {
+    "hp": 70,
+    "attack": 90,
+    "defence": 60,
+    "special_attack": 80,
+    "special_defence": 65,
+    "speed": 105
+  },
+  "evYield": {
+    "hp": 0,
+    "attack": 1,
+    "defence": 0,
+    "special_attack": 0,
+    "special_defence": 0,
+    "speed": 1
+  },
+  "baseExperienceYield": 170,
+  "experienceGroup": "medium_fast",
+  "catchRate": 60,
+  "eggCycles": 25,
+  "baseFriendship": 70,
+  "baseScale": 0.325,
+  "hitbox": {
+    "width": 2.92,
+    "height": 3.38,
+    "fixed": false
+  },
+  "moves": [
+    "1:scratch",
+    "1:growl",
+    "1:charm",
+    "1:tackle",
+    "5:babydolleyes",
+    "9:fairywind",
+    "13:bite",
+    "17:disarmingvoice",
+    "21:swift",
+    "25:drainingkiss",
+    "29:slash",
+    "33:playrough",
+    "37:dazzlinggleam",
+    "41:crunch",
+    "45:hypervoice",
+    "50:moonblast",
+    "55:mistyterrain",
+    "tm:alluringvoice",
+    "tm:babydolleyes",
+    "tm:bite",
+    "tm:charm",
+    "tm:crunch",
+    "tm:dazzlinggleam",
+    "tm:disarmingvoice",
+    "tm:drainingkiss",
+    "tm:endure",
+    "tm:facade",
+    "tm:fakeout",
+    "tm:helpinghand",
+    "tm:hypervoice",
+    "tm:irontail",
+    "tm:mistyexplosion",
+    "tm:mistyterrain",
+    "tm:playrough",
+    "tm:protect",
+    "tm:rest",
+    "tm:shadowclaw",
+    "tm:sleeptalk",
+    "tm:substitute",
+    "tm:swift",
+    "tm:thunderwave",
+    "tutor:dazzlinggleam",
+    "tutor:helpinghand",
+    "tutor:hypervoice",
+    "tutor:playrough"
+  ],
+  "evolutions": [],
+  "behaviour": {
+    "resting": {
+      "canSleep": true,
+      "light": "0-15",
+      "times": [
+        "night"
+      ],
+      "willSleepOnBed": true,
+      "drowsyChance": 0.0033,
+      "rouseChance": 0.0042
+    },
+    "entityInteract": {
+      "avoidedByCreeper": true,
+      "avoidedByPhantom": true
+    },
+    "moving": {
+      "walk": {
+        "walkSpeed": 0.3
+      },
+      "swim": {
+        "avoidsWater": true
+      }
+    },
+    "combat": {
+      "willDefendOwner": true,
+      "willDefendSelf": true
+    }
+  },
+  "drops": {
+    "amount": 3,
+    "entries": [
+      {
+        "item": "minecraft:string",
+        "quantityRange": "1-2",
+        "percentage": 70.0
+      },
+      {
+        "item": "minecraft:amethyst_shard",
+        "quantityRange": "1-2",
+        "percentage": 35.0
+      },
+      {
+        "item": "minecraft:purple_dye",
+        "percentage": 20.0
+      },
+      {
+        "item": "cobblemon:fairy_feather",
+        "percentage": 5.0
+      },
+      {
+        "item": "cobblemon:exp_candy_xl",
+        "percentage": 10.0
+      },
+      {
+        "item": "minecraft:nether_star",
+        "percentage": 2.0
+      },
+      {
+        "item": "emipokemon:casino_chip",
+        "quantityRange": "1-2",
+        "percentage": 30.0
+      }
+    ]
+  }
+}

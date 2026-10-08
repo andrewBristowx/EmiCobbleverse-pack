@@ -1,0 +1,32 @@
+{
+  "pokemon.michi_dramatico.cry": {
+    "sounds": [
+      {
+        "name": "minecraft:mob/cat/meow1",
+        "pitch": 1.45,
+        "volume": 0.9
+      },
+      {
+        "name": "minecraft:mob/cat/meow2",
+        "pitch": 1.5,
+        "volume": 0.9
+      },
+      {
+        "name": "minecraft:mob/cat/meow3",
+        "pitch": 1.4,
+        "volume": 0.9
+      },
+      {
+        "name": "minecraft:mob/cat/meow4",
+        "pitch": 1.55,
+        "volume": 0.9
+      },
+      {
+        "name": "minecraft:mob/cat/purreow1",
+        "pitch": 1.5,
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.emi_plush.michi_cry"
+  }
+}
