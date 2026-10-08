@@ -1,13 +1,13 @@
 {
   "implemented": true,
   "nationalPokedexNumber": 10013,
-  "name": "Michi Dramatico",
+  "name": "GatitoAlien",
   "primaryType": "fairy",
   "maleRatio": 0.5,
   "height": 9,
   "weight": 120,
   "pokedex": [
-    "emi_plush.species.michi_dramatico.desc"
+    "emi_plush.species.gatitoalien.desc"
   ],
   "labels": [
     "emipokemon",
