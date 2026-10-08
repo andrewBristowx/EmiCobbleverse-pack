@@ -17,7 +17,7 @@ distribuye igual porque el cliente lo ignora (`"environment": "server"`).
    Todos son teletransportados a una construcción (orden aleatorio) y no pueden votar la suya. Los organizadores ven en la barra de acción cuántos han votado y un aviso con botón [SIGUIENTE] cuando han votado todos.
 7. **`/bb siguiente`** pasa a la siguiente construcción (`/bb anterior` vuelve atrás). En la última, **`/bb siguiente`** revela el top: título + chat de 3.º a 1.º con pausas, fuegos artificiales sobre la construcción ganadora y clasificación completa
    (media, total y nº de votos; los empates comparten puesto, **el desempate y el premio los decide el organizador**). `/bb top` repite la clasificación.
-8. **`/bb terminar`**: todos recuperan sus cosas (inventario, posición, modo, spawn) y se limpia la arena (por tandas, sin congelar el servidor).
+8. **`/bb terminar`**: todos recuperan sus cosas (inventario, posición, modo, spawn) y se limpia la arena (por tandas, sin congelar el servidor). **Antes de limpiar, la construcción de cada jugador se guarda como schematic de WorldEdit**: `config/worldedit/schematics/bb-<jugador>.schem` (se carga con `//schem load bb-<jugador>` y `//paste`). Se guardan los bloques y los datos de cofres, carteles, etc.; no se guardan el suelo de la parcela sin tocar, el muro, las barreras de la jaula ni las entidades (cuadros, soportes de armadura, objetos en marcos). Quien no construyó nada no genera archivo. Si ya existía uno con ese nombre, el viejo pasa a `bb-<jugador>-<fecha>.schem` (no se pisa). También se guarda con `/bb parar`.
 
 Otros: `/bb parar` (cancelar en cualquier momento, devuelve todo), `/bb cerrar` (cerrar la cola sin empezar), `/bb expulsar <jugador>`, `/bb espectar <jugador>` + `/bb volver` (mirar una parcela en espectador sin tocar tu inventario),
 `/bb estado`, `/bb ayuda`, `/bb recargar` (relee la config).
@@ -37,7 +37,7 @@ Permisos: los subcomandos del organizador piden ser **operador (nivel 2)** o el 
 - Si `spawn-npcs=false` en `server.properties` el aldeano no puede existir y el Constructor es un soporte de armadura (funciona igual).
 
 ## Configuración (`config/emi_buildbattle.json`, se crea sola)
-`plotSize` (64), `plotHeight` (64), `plotSpacing` (96), `plotsPerRow` (6), `floorY`, `wallHeight`, `floorBlock`, `wallBlock`, `minPlayers` (2), `maxPlayers` (24), `queueReminderSeconds` (60), `viewMargin`, `topSize` (3),
+`saveSchematics` (true), `schematicDir` (`config/worldedit/schematics`), `schematicPrefix` (`bb-`), `plotSize` (64), `plotHeight` (64), `plotSpacing` (96), `plotsPerRow` (6), `floorY`, `wallHeight`, `floorBlock`, `wallBlock`, `minPlayers` (2), `maxPlayers` (24), `queueReminderSeconds` (60), `viewMargin`, `topSize` (3),
 `revealSeconds` (6), `stackSize` (64), `blockQuestItems`, listas negras y `extraItems`.
 
 ## Compilar

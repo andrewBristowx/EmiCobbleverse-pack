@@ -30,6 +30,9 @@ public final class Cfg {
     public int topSize = 3;                 // cuantos puestos se revelan con ceremonia
     public int revealSeconds = 6;           // pausa entre puesto y puesto
     public boolean blockQuestItems = true;   // no ofrecer objetos que sean tarea de una mision de FTB Quests (para que no se completen gratis)
+    public boolean saveSchematics = true;   // al terminar la partida, guardar la construccion de cada jugador como schematic de WorldEdit
+    public String schematicDir = "config/worldedit/schematics";   // relativo a la carpeta del servidor
+    public String schematicPrefix = "bb-";   // el archivo es <prefijo><jugador>.schem
     public int stackSize = 64;              // bloques que da el NPC por clic (como mucho el maximo del objeto)
 
     /** Un bloque no se ofrece si su id contiene alguno de estos trozos. */
