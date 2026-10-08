@@ -36,18 +36,15 @@ CUBOS = [
     ("pieI", (-4.2, 0.0, -5.3), (2.4, 1.4, 1.7), None, None, 0, "pie"),
     ("pieD", (1.8, 0.0, -5.3), (2.4, 1.4, 1.7), None, None, 0, "pie"),
     ("barriga", (-2.5, 0.15, -4.44), (5.0, 3.1, 0.05), None, None, 0, "barriga"),
-    # cara en placas finas: ojos y boca visibles; parpados, ojos felices y bocas abiertas escondidos DENTRO del cuerpo (z=-4.12)
+    # la cara base (ojos enfadados y boquita :3) esta pintada en el cuerpo; parpados, ojos felices y bocas abiertas son placas escondidas DENTRO del cuerpo (z=-4.12)
     # y la animacion los saca hacia delante (position z = -0.40) cuando toca el gesto
-    ("ojoI", (-3.6, 4.0, -4.47), (2.5, 2.9, 0.04), None, None, 0, "ojo"),
-    ("ojoD", (1.1, 4.0, -4.47), (2.5, 2.9, 0.04), None, None, 0, "ojo"),
     ("parpI", (-3.35, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "parpado"),
     ("parpD", (1.15, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "parpado"),
     ("feliI", (-3.35, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "feliz"),
     ("feliD", (1.15, 4.0, -4.12), (2.2, 2.6, 0.04), None, None, 0, "feliz"),
-    ("boca", (-0.85, 3.65, -4.47), (1.7, 0.95, 0.04), None, None, 0, "boca"),
     ("bocaA", (-0.85, 3.4, -4.12), (1.7, 1.3, 0.04), None, None, 0, "boca_ab"),
     ("bocaB", (-1.15, 2.95, -4.12), (2.3, 2.0, 0.04), None, None, 0, "boca_bos"),
-    ("colaA", (1.8, 0.6, 4.0), (2.8, 2.8, 2.6), None, None, 0, "cola"),
+    ("colaA", (1.8, 0.6, 3.0), (2.8, 2.8, 3.6), None, None, 0, "cola"),
     ("colaB", (2.3, 3.0, 4.2), (2.6, 2.8, 2.4), (3.6, 3.0, 5.4), (0, 0, -10), 0, "cola"),
     ("colaC", (3.0, 5.5, 4.4), (2.2, 2.6, 2.0), (4.1, 5.5, 5.4), (0, 0, -26), 0, "cola"),
 ]
@@ -102,12 +99,12 @@ TRANSP = (0, 0, 0, 0)
 BOCA_ROJA = (96, 30, 52)
 LENGUA = (255, 138, 160)
 
-def cara(tipo, nombre, x, y):
-    """pinta las placas de la cara en coordenadas del modelo (x, y); fuera de la forma = transparente"""
-    sx = -1 if nombre.endswith("I") else 1
-    ex, ey = sx * 2.25, 5.25
-    if tipo == "ojo":
-        # ojo ovalado cortado por una ceja inclinada (enfadado: la ceja baja hacia el centro) + ceja
+GROSOR_BOCA = 1.0      # gen_pokemon lo sube: con menos pixeles por unidad la boquita se perderia
+
+def cara_base(x, y):
+    """cara original del peluche, pintada en el frente del cuerpo: ojos ovalados cortados por una ceja inclinada (enfadado) + boquita :3; None si no toca"""
+    for sx in (-1, 1):
+        ex, ey = sx * 2.25, 5.25
         if elipse(x, y, ex, ey, 0.85, 1.1):
             u = (-sx) * (x - ex)           # positivo hacia el centro
             lim = ey + 0.75 - 0.55 * (u / 0.85)
@@ -115,20 +112,23 @@ def cara(tipo, nombre, x, y):
                 if elipse(x, y, ex - sx * 0.25, ey - 0.15, 0.2, 0.28): return (235, 226, 252, 255)   # brillo
                 return TINTA + (255,)
         if linea(x, y, sx * 3.25, 6.55, sx * 1.4, 5.85, 0.36): return TINTA + (255,)
-        return TRANSP
+        if elipse(x, y, sx * 0.34, 4.12, 0.36, 0.3) and y <= 4.14 and not elipse(x, y, sx * 0.34, 4.12, 0.36 - 0.14 * GROSOR_BOCA, 0.3 - 0.14 * GROSOR_BOCA): return TINTA + (255,)
+    if linea(x, y, 0.0, 4.32, 0.0, 4.15, 0.12 * GROSOR_BOCA): return TINTA + (255,)
+    return None
+
+def cara(tipo, nombre, x, y):
+    """pinta las placas de la cara en coordenadas del modelo (x, y); fuera de la forma = transparente"""
+    sx = -1 if nombre.endswith("I") else 1
+    ex, ey = sx * 2.25, 5.25
     if tipo in ("parpado", "feliz"):
         if not elipse(x, y, ex, ey, 1.0, 1.25): return TRANSP
+        if linea(x, y, sx * 3.25, 6.55, sx * 1.4, 5.85, 0.36): return TINTA + (255,)    # la ceja sigue ahi
         d = (x - ex) / 0.85
         if abs(d) <= 1:
             if tipo == "parpado": y0 = 5.0 - 0.28 * (1 - d * d)      # ojo cerrado: sonrisa hacia abajo
             else: y0 = 4.95 + 0.34 * (1 - d * d)                      # ojo feliz ^
             if abs(y - y0) < 0.13: return TINTA + (255,)
         return BLANCO + (255,)
-    if tipo == "boca":
-        for k in (-1, 1):
-            if elipse(x, y, k * 0.34, 4.12, 0.36, 0.3) and y <= 4.14 and not elipse(x, y, k * 0.34, 4.12, 0.22, 0.16): return TINTA + (255,)
-        if linea(x, y, 0.0, 4.32, 0.0, 4.15, 0.12): return TINTA + (255,)
-        return TRANSP
     if tipo == "boca_ab":
         if elipse(x, y, 0.0, 4.0, 0.8, 0.55):
             if elipse(x, y, 0.0, 3.7, 0.4, 0.22): return LENGUA + (255,)
@@ -159,7 +159,7 @@ def pintar(tipo, nombre, face, lx, ly, lz, size, origin, t):
     edge_u = edge * min(w, h)
     if edge_u < 0.18: base = mezcla(base, SOMBRA, 0.45)
 
-    if tipo in ("ojo", "parpado", "feliz", "boca", "boca_ab", "boca_bos"):
+    if tipo in ("parpado", "feliz", "boca_ab", "boca_bos"):
         if face != "north": return (0, 0, 0, 0)
         return cara(tipo, nombre, x, y)
     if tipo == "oreja":
@@ -194,6 +194,9 @@ def pintar(tipo, nombre, face, lx, ly, lz, size, origin, t):
         if edge_u < 0.18: base = mezcla(base, SOMBRA, 0.35)
         return base + (255,)
     # cuerpo
+    if face == "north" and nombre == "cuerpoC":
+        c = cara_base(x, y)
+        if c: return c
     if face == "south" and nombre == "cuerpoC":
         # X lila en el trasero
         if linea(x, y, -0.9, 3.0, 0.9, 1.6, 0.34) or linea(x, y, -0.9, 1.6, 0.9, 3.0, 0.34): return LILA + (255,)

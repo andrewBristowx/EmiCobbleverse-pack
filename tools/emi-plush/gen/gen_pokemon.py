@@ -14,6 +14,7 @@ import gen_michi as gm
 KU = 4                  # el modelo se dibuja KU veces mas grande (y la especie usa baseScale = ESC / KU): asi la textura tiene KU px por unidad del peluche
 ESC = 1.3               # tamano final respecto al peluche
 ATLAS = 512
+gm.GROSOR_BOCA = 1.7
 
 NOMBRES = ["cuerpoA", "cuerpoB", "cuerpoC", "orejaIa", "orejaIb", "orejaDa", "orejaDb", "antI", "antD", "bolaI", "bolaD",
            "brazoI", "brazoD", "pieI", "pieD", "barriga", "colaA", "colaB", "colaC"]
@@ -22,8 +23,8 @@ HUESO = {"cuerpoA": "head", "cuerpoB": "head", "cuerpoC": "head", "barriga": "he
          "antI": "antenna_left", "bolaI": "antenna_left", "antD": "antenna_right", "bolaD": "antenna_right",
          "brazoI": "arm_left", "brazoD": "arm_right", "pieI": "foot_left", "pieD": "foot_right",
          "colaA": "tail1", "colaB": "tail2", "colaC": "tail3",
-         "ojoI": "eye_left", "ojoD": "eye_right", "parpI": "eyelid_left", "parpD": "eyelid_right",
-         "feliI": "happy_left", "feliD": "happy_right", "boca": "mouth", "bocaA": "mouth_open", "bocaB": "mouth_yawn"}
+         "parpI": "eyelid_left", "parpD": "eyelid_right",
+         "feliI": "happy_left", "feliD": "happy_right", "bocaA": "mouth_open", "bocaB": "mouth_yawn"}
 # (hueso, padre, pivote en unidades del peluche)
 HUESOS = [
     ("michi", None, (0, 0, 0)),
@@ -32,12 +33,11 @@ HUESOS = [
     ("ear_left", "head", (-3.9, 7.2, -0.4)), ("ear_right", "head", (3.9, 7.2, -0.4)),
     ("antenna_left", "head", (-1.65, 7.4, -0.4)), ("antenna_right", "head", (1.65, 7.4, -0.4)),
     ("arm_left", "head", (-5.0, 3.7, -1.2)), ("arm_right", "head", (5.0, 3.7, -1.2)),
-    ("foot_left", "body", (-3.0, 1.4, -4.4)), ("foot_right", "body", (3.0, 1.4, -4.4)),
-    ("eye_left", "head", (-2.25, 5.25, -4.4)), ("eye_right", "head", (2.25, 5.25, -4.4)),
+    ("foot_left", "head", (-3.0, 1.4, -4.4)), ("foot_right", "head", (3.0, 1.4, -4.4)),
     ("eyelid_left", "head", (-2.25, 6.5, -4.4)), ("eyelid_right", "head", (2.25, 6.5, -4.4)),
     ("happy_left", "head", (-2.25, 5.25, -4.4)), ("happy_right", "head", (2.25, 5.25, -4.4)),
-    ("mouth", "head", (0, 4.0, -4.4)), ("mouth_open", "head", (0, 4.0, -4.4)), ("mouth_yawn", "head", (0, 3.7, -4.4)),
-    ("tail1", "body", (3.2, 1.5, 4.9)), ("tail2", "tail1", (3.6, 3.0, 5.4)), ("tail3", "tail2", (4.1, 5.5, 5.4)),
+    ("mouth_open", "head", (0, 4.0, -4.4)), ("mouth_yawn", "head", (0, 3.7, -4.4)),
+    ("tail1", "head", (3.2, 1.5, 4.9)), ("tail2", "tail1", (3.6, 3.0, 5.4)), ("tail3", "tail2", (4.1, 5.5, 5.4)),
 ]
 
 def sc(v): return [round(x * KU, 4) for x in v]
@@ -75,10 +75,16 @@ def construir(out):
         for f, (ru, rv, rw, rh) in rect.items():
             for j in range(rh):
                 for i in range(rw):
-                    a, b = (i + 0.5) / rw, (j + 0.5) / rh
-                    if f in ("north", "south", "east", "west"): a = 1 - a      # el cargador de Cobblemon lee las caras laterales espejadas respecto a GeckoLib
-                    p = gm.face_point(origin, size, f, a, b)
-                    px[ru + i, rv + j] = gm.pintar(tipo, nombre, f, p[0], p[1], p[2], size, origin, (a, b))
+                    # la cara (frente de cuerpoC) se muestrea 4x4 por pixel: con la textura de este tamano la boquita :3 se perderia
+                    n = 4 if (nombre == "cuerpoC" and f == "north") else 1
+                    cols = []
+                    for si in range(n):
+                        for sj in range(n):
+                            a, b = (i + (si + 0.5) / n) / rw, (j + (sj + 0.5) / n) / rh
+                            if f in ("north", "south", "east", "west"): a = 1 - a      # el cargador de Cobblemon lee las caras laterales espejadas respecto a GeckoLib
+                            p = gm.face_point(origin, size, f, a, b)
+                            cols.append(gm.pintar(tipo, nombre, f, p[0], p[1], p[2], size, origin, (a, b)))
+                    px[ru + i, rv + j] = tuple(int(round(sum(c[k] for c in cols) / len(cols))) for k in range(4))
     d = os.path.join(out, "assets/cobblemon/textures/pokemon/michi_dramatico")
     os.makedirs(d, exist_ok=True)
     img.save(os.path.join(d, "michi_dramatico.png"))
@@ -144,7 +150,7 @@ def animaciones():
     # reposo en el suelo
     P = 3.0
     A["ground_idle"] = anim(P, {
-        "head": {"position": lambda t: [0, 0.18 * E * S(t, P), 0], "scale": lambda t: [1 + 0.012 * S(t, P), 1 - 0.018 * S(t, P), 1 + 0.012 * S(t, P)]},
+        "head": {"position": lambda t: [0, -0.018 * 3.5 * E * S(t, P), 0], "scale": lambda t: [1 + 0.012 * S(t, P), 1 - 0.018 * S(t, P), 1 + 0.012 * S(t, P)]},   # respira apoyado en el suelo: la posicion compensa la escala (pivote a 3.5)
         "antenna_left": {"rotation": lambda t: [3 * S(t, P / 2), 0, 5 * S(t, P, 0.5)]},
         "antenna_right": {"rotation": lambda t: [3 * S(t, P / 2, 1), 0, -5 * S(t, P, 0.5)]},
         "ear_left": {"rotation": lambda t: [0, 0, 3 * max(0, S(t, P * 2 / 3))]},
@@ -161,8 +167,8 @@ def animaciones():
     A["ground_walk"] = anim(P, {
         "body": {"position": lambda t: [0, 0.9 * E * hop(t), 0], "rotation": lambda t: [-2 * hop(t), 0, 3 * S(t, P)]},
         "head": {"rotation": lambda t: [3 * S(t, P / 2, 1.2), 0, -3 * S(t, P)]},
-        "foot_left": {"position": lambda t: [0, 0.7 * E * max(0, S(t, P)), -0.9 * E * S(t, P, math.pi / 2)], "rotation": lambda t: [-20 * S(t, P, math.pi / 2), 0, 0]},
-        "foot_right": {"position": lambda t: [0, 0.7 * E * max(0, -S(t, P)), 0.9 * E * S(t, P, math.pi / 2)], "rotation": lambda t: [20 * S(t, P, math.pi / 2), 0, 0]},
+        "foot_left": {"position": lambda t: [0, 0.5 * E * max(0, S(t, P)), -0.5 * E * S(t, P, math.pi / 2)], "rotation": lambda t: [-20 * S(t, P, math.pi / 2), 0, 0]},
+        "foot_right": {"position": lambda t: [0, 0.5 * E * max(0, -S(t, P)), 0.5 * E * S(t, P, math.pi / 2)], "rotation": lambda t: [20 * S(t, P, math.pi / 2), 0, 0]},
         "arm_left": {"rotation": lambda t: [-25 * S(t, P), 0, 0]},
         "arm_right": {"rotation": lambda t: [25 * S(t, P), 0, 0]},
         "antenna_left": {"rotation": lambda t: [10 * S(t, P / 2, -0.9), 0, 6 * S(t, P)]},
@@ -177,7 +183,7 @@ def animaciones():
     P = 2.0
     A["battle_idle"] = anim(P, {
         "body": {"rotation": lambda t: [0, 0, 2.5 * S(t, P)]},
-        "head": {"rotation": lambda t: [7, 0, 0], "position": lambda t: [0, -0.5 * E + 0.15 * E * S(t, P / 2), 0.4 * E]},
+        "head": {"rotation": lambda t: [7, 0, 0], "position": lambda t: [0, -0.2 * E + 0.1 * E * S(t, P / 2), 0.4 * E]},
         "antenna_left": {"rotation": lambda t: [0, 0, 8 + 3 * S(t, 0.5)]},
         "antenna_right": {"rotation": lambda t: [0, 0, -8 - 3 * S(t, 0.5, 1)]},
         "ear_left": {"rotation": lambda t: [0, 0, 6]}, "ear_right": {"rotation": lambda t: [0, 0, -6]},
@@ -189,10 +195,9 @@ def animaciones():
     # dormir: hecho una bolita
     P = 4.0
     A["sleep"] = anim(P, {
-        "head": {"position": lambda t: [0, -1.1 * E, 0.5 * E], "rotation": lambda t: [28, 0, 7], "scale": lambda t: [1.02 + 0.015 * S(t, P), 0.9 + 0.025 * S(t, P), 1.02]},
+        "head": {"position": lambda t: [0, -0.6 * E, 0.5 * E], "rotation": lambda t: [28, 0, 7], "scale": lambda t: [1.02 + 0.015 * S(t, P), 0.9 + 0.025 * S(t, P), 1.02]},
         "antenna_left": {"rotation": lambda t: [0, 0, 28]}, "antenna_right": {"rotation": lambda t: [0, 0, -28]},
         "ear_left": {"rotation": lambda t: [0, 0, 14]}, "ear_right": {"rotation": lambda t: [0, 0, -14]},
-        "foot_left": {"position": lambda t: [0, 0, 0.5 * E]}, "foot_right": {"position": lambda t: [0, 0, 0.5 * E]},
         "eyelid_left": sacar(lambda t: 1), "eyelid_right": sacar(lambda t: 1),
         "tail1": {"rotation": lambda t: [0, -30, 0]}, "tail2": {"rotation": lambda t: [0, -30, 0]}, "tail3": {"rotation": lambda t: [0, -25, 0]},
     })
