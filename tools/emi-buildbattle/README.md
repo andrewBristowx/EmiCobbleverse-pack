@@ -28,7 +28,8 @@ Permisos: los subcomandos del organizador piden ser **operador (nivel 2)** o el 
 - Se juega en **supervivencia** (no hay inventario creativo: los bloques salen solo del Constructor y se gastan al colocarlos), pero volando, sin daño ni hambre y con un `Haste` + modificador de velocidad de rotura
   (temporal, no se guarda) para que romper sea casi instantáneo aun volando. Cada 0,5 s se borra del inventario todo lo que no esté en el catálogo (lo que suelten los bloques al romperse, TNT, armas…). Se permiten además cuadros, pinturas,
   soportes de armadura, cubo, cubo de agua y polvo de hueso (config `extraItems`).
-- Solo se puede colocar/romper dentro de tu parcela (no el muro ni la base de bedrock); fuera de ella te devuelve el servidor. Si sales de la dimensión por la razón que sea, vuelves a tu parcela.
+- **No se puede salir volando**: sobre el muro hay una jaula invisible de bloques barrera hasta el techo (y un techo de barreras a 64 bloques sobre el suelo), que no se pueden romper. Aun así el servidor te devuelve a tu parcela si lo consigues por otro medio.
+- Solo se puede colocar/romper dentro de tu parcela (no el muro, las barreras ni la base de bedrock). Si sales de la dimensión por la razón que sea, vuelves a tu parcela.
 - En la arena se borra cada segundo todo lo vivo salvo jugadores, el Constructor y la decoración colocada (incluye los Pokémon que saque un jugador).
 - **Catálogo**: todos los bloques de todos los mods del servidor (≈14 000 en el pack completo) menos una lista negra (`blockedContains`, `blockedItems`, `blockedNamespaces` en `config/emi_buildbattle.json`: bloques de comandos, estructura, jigsaw, spawners, TNT, ancla de reaparición…).
   **Se excluyen automáticamente los objetos que son tarea de alguna misión de FTB Quests** (se leen de `config/ftbquests/quests`), para que nadie complete misiones pidiéndolos gratis (`blockQuestItems`).

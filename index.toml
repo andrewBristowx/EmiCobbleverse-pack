@@ -1830,7 +1830,7 @@ metafile = true
 
 [[files]]
 file = "mods/emi-buildbattle-1.0.0.jar"
-hash = "65dc7f06713da85a74cb427969230b0f49bf0286d28f2f70fee0ac45d171e388"
+hash = "63c1ef839fd0146b6a0844cf09b127337e85a4a3565e67c87974719b03178c05"
 
 [[files]]
 file = "mods/emi-ftb-keys-1.0.0.jar"
