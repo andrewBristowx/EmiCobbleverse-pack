@@ -126,7 +126,7 @@
     }
   },
   "drops": {
-    "amount": 2,
+    "amount": 3,
     "entries": [
       {
         "item": "minecraft:string",
@@ -145,6 +145,19 @@
       {
         "item": "cobblemon:fairy_feather",
         "percentage": 5.0
+      },
+      {
+        "item": "cobblemon:exp_candy_xl",
+        "percentage": 10.0
+      },
+      {
+        "item": "minecraft:nether_star",
+        "percentage": 2.0
+      },
+      {
+        "item": "emipokemon:casino_chip",
+        "quantityRange": "1-2",
+        "percentage": 30.0
       }
     ]
   }
