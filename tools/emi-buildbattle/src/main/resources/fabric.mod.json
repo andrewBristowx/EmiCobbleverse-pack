@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_buildbattle",
+  "version": "${version}",
+  "name": "Emi BuildBattle",
+  "description": "Minijuego de construccion (build battle) para el servidor de Emi.",
+  "authors": ["SomitadePony"],
+  "license": "All-Rights-Reserved",
+  "environment": "server",
+  "accessWidener": "emi_buildbattle.accesswidener",
+  "entrypoints": { "main": ["emi.buildbattle.EmiBuildBattle"] },
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.1", "fabric-api": "*" }
+}
