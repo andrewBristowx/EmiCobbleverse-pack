@@ -300,7 +300,7 @@ def poser():
         }}
 
 def resolver():
-    return {"species": "emi_plush:gatitoalien", "order": 0, "variations": [
+    return {"species": "cobblemon:gatitoalien", "order": 0, "variations": [
         {"aspects": [], "poser": "cobblemon:michi_dramatico", "model": "cobblemon:michi_dramatico.geo",
          "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico.png", "layers": []},
         {"aspects": ["shiny"], "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_shiny.png"}]}
