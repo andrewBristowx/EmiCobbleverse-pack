@@ -1,4 +1,4 @@
-# Emi Plush (peluches propios, CC0)
+# Emi Plush (peluche y Pokémon propios, CC0)
 
 Mod pequeño que añade **peluches propios** al pack usando las clases de **Pokeblocks** (`PokedollBlock`, `PokedollBlockEntity`, `PokedollBlockItem`
 y el renderizador de GeckoLib), así que se colocan, se ven y se llevan en la mano igual que los pokedolls.
@@ -9,6 +9,17 @@ Peluches:
   No tiene receta ni aparece en cofres: es un objeto de administrador.
 
 Hace falta en **servidor y clientes** (añade un bloque). Depende de `pokeblocks` y `geckolib`, que ya están en el pack.
+
+## Michi Dramático como Pokémon (Cobblemon)
+La misma criatura existe también como **Pokémon** de Cobblemon: `emi_plush:michi_dramatico` (especie `data/emi_plush/species/custom/michi_dramatico.json`).
+- Tipo **Hada**, nº de Pokédex 10013, estadísticas 70/90/60/80/65/105, habilidades Gran Encanto / Compiescudo / (oculta) Piel Feérica, huevo Campo + Hada.
+- Modelo = el del peluche pero **1,3 veces más grande**. Va con UV de caja y dibujado 4 veces más grande, y la especie usa `baseScale` 0,325 (Cobblemon no soporta UV por cara).
+- Animaciones (`gen/gen_pokemon.py`): reposo, caminar a saltitos, reposo de combate, dormir, grito, ataque físico (se agazapa y salta con arañazo), especial (salta y las antenas lanzan la energía) y de estado (meneo).
+- Grito: maullido de gatito, hecho con los maullidos de gato de Minecraft (`mob/cat/meow1-4`, `purreow1`) a tono alto; `assets/emi_plush/sounds.json`.
+- Shiny: lila → turquesa.
+- **No aparece en la naturaleza**: se da con `/givepokemon <jugador> emi_plush:michi_dramatico` (o `/spawnpokemon`). Si se quiere en el mundo hay que añadir un `spawn_pool_world`.
+- Depende de `cobblemon` (>= 1.7).
+- Para probar una animación en bucle: `MICHI_DEBUG=<animacion> ./build.sh`. Retrato y vista de perfil se ajustan con `MICHI_PS/PX/PY` y `MICHI_FS/FX/FY` (ver `poser()`).
 
 ## Cómo se hizo el modelo
 `gen/gen_michi.py` genera el modelo (`assets/emi_plush/geo/michi_dramatico.geo.json`) y la textura (`textures/entity/michi_dramatico.png`) a partir de una lista de cubos:

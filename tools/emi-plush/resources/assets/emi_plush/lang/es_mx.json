@@ -1,4 +1,9 @@
 {
   "block.emi_plush.michi_dramatico": "Peluche Michi Dramático",
-  "item.emi_plush.michi_dramatico": "Peluche Michi Dramático"
+  "item.emi_plush.michi_dramatico": "Peluche Michi Dramático",
+  "emi_plush.species.michi_dramatico.desc": "Un gatito dramático de Emi. Sus antenas lilas canalizan energía feérica; parece enfadado, pero es puro cariño.",
+  "subtitles.emi_plush.michi_cry": "Michi Dramático maúlla",
+  "emi_plush.species.michidramtico.name": "Michi Dramático",
+  "emi_plush.species.michidramatico.name": "Michi Dramático",
+  "emi_plush.species.michi_dramatico.name": "Michi Dramático"
 }

@@ -9,6 +9,7 @@ rm -rf build && mkdir -p build/classes
 CP="$MC:$GECKO:$POKEBLOCKS:$(ls $FAPI/*.jar | tr '\n' ':')$LIBS"
 javac --release 21 -encoding UTF-8 -nowarn -cp "$CP" -d build/classes $(find src -name '*.java')
 python3 gen/gen_michi.py resources
+python3 gen/gen_pokemon.py resources
 cp -r resources/* build/classes/
 (cd build/classes && rm -f "$OUT" && zip -qr "$OUT" .)
 echo "jar: $OUT"

@@ -1,4 +1,9 @@
 {
   "block.emi_plush.michi_dramatico": "Dramatic Kitty Plush",
-  "item.emi_plush.michi_dramatico": "Dramatic Kitty Plush"
+  "item.emi_plush.michi_dramatico": "Dramatic Kitty Plush",
+  "emi_plush.species.michi_dramatico.desc": "A dramatic kitten of Emi's. Its lilac antennae channel fairy energy; it looks angry, but it is pure affection.",
+  "subtitles.emi_plush.michi_cry": "Dramatic Kitty meows",
+  "emi_plush.species.michidramtico.name": "Dramatic Kitty",
+  "emi_plush.species.michidramatico.name": "Dramatic Kitty",
+  "emi_plush.species.michi_dramatico.name": "Dramatic Kitty"
 }
