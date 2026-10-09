@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_estructuras",
+  "version": "${version}",
+  "name": "Emi Estructuras",
+  "description": "Dimension plana con todas las estructuras de Cobbleverse y de Legendary Monuments bien generadas, para /emipokemon visitar.",
+  "authors": ["SomitadePony"],
+  "license": "All-Rights-Reserved",
+  "environment": "server",
+  "entrypoints": { "main": ["emi.estructuras.EmiEstructuras"] },
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.1", "fabric-api": "*" }
+}

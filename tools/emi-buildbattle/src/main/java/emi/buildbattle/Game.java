@@ -716,6 +716,7 @@ public final class Game {
         ServerWorld w = arena();
         if (w != null) {
             for (Entity e : collect(w)) if (!(e instanceof PlayerEntity)) e.discard();
+            Schem.exportAll(w, cfg, new ArrayList<>(plots));   // antes de limpiar: la cola de trabajos es FIFO
             PlotOps.clear(w, new ArrayList<>(plots));
         }
         PlotOps.whenIdle(() -> {

@@ -81,7 +81,19 @@ public final class PlotOps {
                             w.setBlockState(m.set(p.ox + s, y, p.oz + k), st, FLAGS);
                         }
                     }
-                    // marca de entrada: una losa en el suelo donde aparece el jugador
+                    // jaula invisible: barreras sobre el muro hasta el techo, y un techo de barreras. Asi no se puede salir volando
+                    // (el servidor ademas te devuelve si lo consigues por otro medio)
+                    BlockState barrier = Blocks.BARRIER.getDefaultState();
+                    int top = p.floorY + p.height;
+                    for (int y = p.floorY + cfg.wallHeight + 1; y <= top + 1; y++) {
+                        for (int k = -1; k <= s; k++) {
+                            w.setBlockState(m.set(p.ox + k, y, p.oz - 1), barrier, FLAGS);
+                            w.setBlockState(m.set(p.ox + k, y, p.oz + s), barrier, FLAGS);
+                            w.setBlockState(m.set(p.ox - 1, y, p.oz + k), barrier, FLAGS);
+                            w.setBlockState(m.set(p.ox + s, y, p.oz + k), barrier, FLAGS);
+                        }
+                    }
+                    for (int x = p.ox; x < p.ox + s; x++) for (int z = p.oz; z < p.oz + s; z++) w.setBlockState(m.set(x, top + 1, z), barrier, FLAGS);
                     ringDone[0] = true;
                 }
                 return true;
