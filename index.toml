@@ -1300,6 +1300,10 @@ file = "datapacks/EmiCostumes-DP.zip"
 hash = "387a9bdb9547ebb1b457330b5080e36345dc47aaa8e44a98e550671acef2c3ca"
 
 [[files]]
+file = "datapacks/EmiLootr-DP.zip"
+hash = "569b64b4ee33deb0e8f43666c0da01513c4878c5132cd8ea9a91066c1a879ece"
+
+[[files]]
 file = "datapacks/EmiTwitch-DP.zip"
 hash = "a43504fe153c86e8e43a89c5aaddecc4fc04f29eb6b0744e9ab002dd5d9cdcf9"
 
