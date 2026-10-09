@@ -10,6 +10,7 @@ generado. Emipokemon (`/emipokemon visitar`) manda a los jugadores a esta dimens
   se puede reanudar). Cuando termina guarda `world/emi_estructuras/progreso.json` con `terminado: true` y nunca vuelve a hacerlo solo.
 - Orden: primero las **69 ubicaciones de Emipokemon** (Kanto 13, Johto 14, Hoenn 18, Sinnoh 24; incluye los lagos, Spear Pillar, Turnback Cave, Newmoon Island, el Templo de Sinnoh…) y después todas las demás estructuras
   registradas en los espacios `cobbleverse` y `legendarymonuments` (ordenadas por nombre).
+- **Ubicaciones extra del menu**: las estructuras que Emipokemon no traia (Torre Team Rocket, Casa de Ash, Isla Giratina, regiones Galar, Paldea y Alola…) tienen hueco gracias al parche `PatchExtraLocations` y a `config/emipokemon/extra-locations.json`, que este mod lee para saber que estructura va en cada hueco (si no existe usa la lista por defecto del jar).
 - Cada estructura se registra en Emipokemon (`ImportantLocationService.recordGeneratedLocation`) con una **entrada segura** junto a ella, así `/emipokemon visitar` / `marcar` / el mapa de misiones la encuentran ahí.
 - **Contención de líquidos**: las estructuras de mar (islas, Kyogre, Groudon, Misty…) se colocan sobre una balsa de agua de 28 bloques de margen y la entrada queda fuera, en tierra firme; tras colocar cada una se espera 4 s y
   se borran los líquidos que se hayan escapado por encima del suelo fuera de la estructura (lava de Moltres/Groudon incluida). Medido: 0 fugas en todas.
@@ -26,6 +27,7 @@ Si faltan, el mod avisa en el log y en el chat de los operadores y **no da por t
 | `/emiestructuras generar` | empieza o reanuda lo que falte |
 | `/emiestructuras generar forzar` | lo rehace todo desde cero |
 | `/emiestructuras parar` | para la generación (se reanuda con `generar`) |
+| `/emiestructuras registrar` | vuelve a decirle a Emipokemon donde esta cada estructura ya generada (para mundos generados antes de las ubicaciones extra); no genera nada. Se hace solo 30 s despues de arrancar. |
 | `/emiestructuras estado` | cuántas hay hechas y si está en marcha |
 | `/emiestructuras ir <estructura>` | te teletransporta a su entrada (autocompleta con las ya generadas) |
 | `/emiestructuras lista` | muestra el catálogo (clave de Emipokemon + estructura) |

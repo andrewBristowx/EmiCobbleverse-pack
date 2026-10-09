@@ -1,0 +1,22 @@
+{
+  "_ayuda": "Cada entrada añade un hueco al menu de ubicaciones. region: Kanto, Johto, Hoenn, Sinnoh o una nueva. structure: id de la estructura (la usa el mod emi_estructuras). aliases: textos para que Emipokemon la reconozca.",
+  "ubicaciones": [
+    {"region": "Kanto", "label": "Torre Team Rocket", "structure": "cobbleverse:team_rocket_tower", "aliases": ["cobbleverse team rocket tower"]},
+    {"region": "Kanto", "label": "Casa de Ash", "structure": "cobbleverse:ash", "aliases": ["cobbleverse ash"]},
+    {"region": "Sinnoh", "label": "Isla Creciente (Crescent Isle)", "structure": "cobbleverse:crescent_isle", "aliases": ["cobbleverse crescent isle"]},
+    {"region": "Sinnoh", "label": "Templo Manaphy", "structure": "cobbleverse:mythical/manaphy", "aliases": ["cobbleverse mythical manaphy"]},
+    {"region": "Sinnoh", "label": "Isla Giratina", "structure": "legendarymonuments:giratina_island", "aliases": ["legendarymonuments giratina island"]},
+    {"region": "Sinnoh", "label": "Portal de la Distorsión", "structure": "legendarymonuments:distortion_portal", "aliases": ["legendarymonuments distortion portal"]},
+    {"region": "Galar", "label": "Torre de la Corona (Calyrex)", "structure": "cobbleverse:crown_spire", "aliases": ["cobbleverse crown spire"]},
+    {"region": "Galar", "label": "Cementerio de la Corona (Spectrier)", "structure": "cobbleverse:crown_cemetery", "aliases": ["cobbleverse crown cemetery"]},
+    {"region": "Galar", "label": "Árbol Dyna (Dynamax)", "structure": "cobbleverse:dyna_tree", "aliases": ["cobbleverse dyna tree"]},
+    {"region": "Galar", "label": "Capullo de Eternatus", "structure": "legendarymonuments:eternatus_cocoon", "aliases": ["legendarymonuments eternatus cocoon"]},
+    {"region": "Paldea", "label": "Santuario Firescourge (Chi-Yu)", "structure": "legendarymonuments:firescourge_shrine", "aliases": ["legendarymonuments firescourge shrine"]},
+    {"region": "Paldea", "label": "Santuario Grasswither (Wo-Chien)", "structure": "legendarymonuments:grasswither_shrine", "aliases": ["legendarymonuments grasswither shrine"]},
+    {"region": "Paldea", "label": "Santuario Groundblight (Ting-Lu)", "structure": "legendarymonuments:groundblight_shrine", "aliases": ["legendarymonuments groundblight shrine"]},
+    {"region": "Paldea", "label": "Santuario Icerend (Chien-Pao)", "structure": "legendarymonuments:icerend_shrine", "aliases": ["legendarymonuments icerend shrine"]},
+    {"region": "Paldea", "label": "Outskirt Stand", "structure": "legendarymonuments:outskirt_stand", "aliases": ["legendarymonuments outskirt stand"]},
+    {"region": "Alola", "label": "Torre del Amanecer", "structure": "cobbleverse:dawn_tower", "aliases": ["cobbleverse dawn tower"]},
+    {"region": "Alola", "label": "Torre del Anochecer", "structure": "cobbleverse:dusk_tower", "aliases": ["cobbleverse dusk tower"]}
+  ]
+}
