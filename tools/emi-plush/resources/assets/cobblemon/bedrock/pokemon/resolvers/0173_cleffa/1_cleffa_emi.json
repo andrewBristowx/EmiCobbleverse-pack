@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:cleffa",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:cleffa_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0173_cleffa/cleffa_emi.png",
+      "layers": [],
+      "poser": "cobblemon:cleffa"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0173_cleffa/cleffa_emi_shiny.png"
+    }
+  ]
+}

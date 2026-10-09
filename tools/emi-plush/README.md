@@ -26,14 +26,26 @@ La misma criatura existe también como **Pokémon** de Cobblemon: `cobblemon:gat
 - Depende de `cobblemon` (>= 1.7).
 - Para probar una animación en bucle: `MICHI_DEBUG=<animacion> ./build.sh`. Retrato y vista de perfil se ajustan con `MICHI_PS/PX/PY` y `MICHI_FS/FX/FY` (ver `poser()`).
 
-## Happiny, Chansey y Blissey de Emi (aspecto `emi`)
-Variante cosmética de la línea **Happiny → Chansey → Blissey** con los colores y el pelo de Emi (no lleva su ropa): melena larga **plateada** con flequillo de raya al medio, mechones a los lados y **puntas rosas**;
-las orejas/lazos de Chansey y Blissey y los brazos quedan **rosas**, los ojos son de **dos colores** (naranja a la izquierda y magenta a la derecha, vistos de frente), los fruncidos, los pies y la bolsa van en **negro** (la bolsa con una luna rosa) y la piel es muy clara.
-Happiny conserva su flequillo y su coletita (ahora plateados) y la diadema es rosa.
-- Se parte de los modelos y texturas de Cobblemon (`gen/gen_emi_poke.py` + `gen/emi_lib.py`, con `COBBLEMON_JAR=<jar de Cobblemon>`; sin esa variable `build.sh` usa lo ya generado en `resources/`). El script copia la geometría, amplía la textura, retiñe por partes conservando el relieve y añade cubos de pelo; el resto (animaciones, hitbox, movimientos, evoluciones) es el de la especie normal.
-- Es un **aspecto** (`data/cobblemon/species_features/emi.json` + `species_feature_assignments/emi.json`, indicador `emi`), no una especie nueva: evoluciona, se cría y combate como cualquier Happiny/Chansey/Blissey. Resolvers en `bedrock/pokemon/resolvers/*/1_*_emi.json`; también hay versión **brillante** (giro leve a violeta).
-- **Cómo conseguirlos** (no salen en la naturaleza): `/givepokemon <jugador> happiny emi=true` (o `chansey`, `blissey`), `/spawnpokemon cobblemon:blissey emi=true` para uno salvaje. Para cambiar uno que ya tiene un jugador: `/pokeedit`/propiedades `emi=true`.
-- Los huesos nuevos (`hair_*`, `bangs`) cuelgan del torso/cabeza y se mueven con ellos; no tienen animación propia.
+## Pokémon de Emi (aspecto `emi`) — 21 especies
+Variante cosmética con los colores y el pelo de Emi (no lleva su ropa): melena **plateada** con flequillo de raya al medio, mechones a los lados y detrás, **puntas rosas**, ojos de **dos colores** (naranja y magenta), negro y rosa en el cuerpo.
+Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/Jigglypuff/Wigglytuff**, **Eevee y sus 8 evoluciones** (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) y **Ralts/Kirlia/Gardevoir**.
+- Happiny, Chansey y Blissey están ajustadas a mano en `gen/gen_emi_poke.py`; el resto las genera el motor de `gen/emi_species.py` (busca la cabeza por los ojos, retiñe con k-means conservando el relieve y añade cubos de pelo; la tabla `CONFIG` fija los colores de cada especie). `gen/gen_all.py` lo lanza todo.
+  Necesita `COBBLEMON_JAR=<jar de Cobblemon>` (y numpy); sin esa variable `build.sh` usa lo ya generado en `resources/`.
+- Es un **aspecto** (`species_features/emi.json` + `species_feature_assignments/emi.json`, indicador `emi`), no una especie nueva: evoluciona, se cría y combate como la normal. Resolvers `bedrock/pokemon/resolvers/*/1_*_emi.json`; también hay versión **brillante**.
+  Al añadir especies nuevas a la lista hay que **reiniciar el servidor** (un `/reload` no recoge las asignaciones de aspectos).
+- **Cómo conseguirlos**: `/givepokemon <jugador> <especie> emi=true`, `/spawnpokemon cobblemon:blissey emi=true` para uno salvaje.
+- Los huesos nuevos (`hair_*`, `bangs`) cuelgan de la cabeza/torso y se mueven con ellos; no tienen animación propia.
+
+## GatitoAlien: shiny dorado y accesorios
+`gen/gen_michi_extras.py` (se ejecuta tras `gen_pokemon.py`):
+- **Shiny dorado**: el pelaje blanco y los lilas pasan a oro (`michi_dramatico_shiny.png`).
+- **Accesorios** (aspecto `accessory`): `sunglasses`, `beach_hat`, `crown`, `bow`, `headphones`, `scarf`. Cada uno es un modelo aparte (copia del base + cubos nuevos en el hueso `head`) que usa la misma textura (los accesorios están pintados en la zona libre de abajo). Se combinan con el shiny.
+  `/givepokemon <jugador> gatitoalien accessory=sunglasses` (añadir `shiny` para la versión dorada). Datos: `species_features/accessory.json`, asignación y resolver `1_michi_dramatico_accessories.json`. Requiere reiniciar el servidor.
+
+## Peluches de todos los Pokémon Emi
+Un bloque de Pokeblocks por cada especie Emi (21) además del GatitoAlien: `/give @s emi_plush:<especie>_emi` (p. ej. `emi_plush:blissey_emi`). Aparecen en la pestaña **Pokeblocks - Misc**; se colocan mirando hacia el jugador y se recogen al romperlos.
+- `gen/gen_dolls.py` los genera a partir de los `*_emi.geo.json`: modelo reducido (sin huesos ocultos como párpados o boca abierta, UV por cara), textura, blockstate, modelos de bloque y objeto, loot table, textos (es/en) y las clases Java (`src/emi/plush/gen/Doll_*.java`, `DollRegistry.java`). Los brazos de la línea Ralts se bajan (`BRAZOS_ABAJO`) porque el modelo base está en T.
+- `EmiDollModel`/`EmiDollItemModel` cargan `geo/<nombre>.geo.json` y `textures/entity/<nombre>.png`. `build.sh` ejecuta todos los generadores antes de compilar.
 
 ## Cómo se hizo el modelo
 `gen/gen_michi.py` genera el modelo (`assets/emi_plush/geo/michi_dramatico.geo.json`) y la textura (`textures/entity/michi_dramatico.png`) a partir de una lista de cubos:

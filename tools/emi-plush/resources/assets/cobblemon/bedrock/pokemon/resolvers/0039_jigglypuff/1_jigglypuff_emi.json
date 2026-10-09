@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:jigglypuff",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:jigglypuff_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0039_jigglypuff/jigglypuff_emi.png",
+      "layers": [],
+      "poser": "cobblemon:jigglypuff"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0039_jigglypuff/jigglypuff_emi_shiny.png"
+    }
+  ]
+}

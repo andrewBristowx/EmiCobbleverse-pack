@@ -1,0 +1,1 @@
+{"type": "choice", "keys": ["accessory"], "default": "none", "choices": ["none", "sunglasses", "beach_hat", "crown", "bow", "headphones", "scarf"], "isAspect": true, "aspectFormat": "{{choice}}-accessory"}

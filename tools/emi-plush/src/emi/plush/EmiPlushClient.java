@@ -12,5 +12,11 @@ public class EmiPlushClient implements ClientModInitializer {
         MichiBlockModel model = new MichiBlockModel();
         class_5614<PokedollBlockEntity> factory = ctx -> new PokedollBlockRenderer(ctx, model);
         BlockEntityRendererRegistry.register(EmiPlush.MICHI_BE, factory);
+        emi.plush.gen.DollRegistry.TIPOS.forEach((nombre, tipo) -> {
+            EmiDollModel m = new EmiDollModel(nombre);
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            net.minecraft.class_2591<PokedollBlockEntity> t = (net.minecraft.class_2591) tipo;
+            BlockEntityRendererRegistry.register(t, (class_5614<PokedollBlockEntity>) ctx -> new PokedollBlockRenderer(ctx, m));
+        });
     }
 }

@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:espeon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:espeon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0196_espeon/espeon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:espeon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0196_espeon/espeon_emi_shiny.png"
+    }
+  ]
+}

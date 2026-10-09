@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:kirlia",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:kirlia_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0281_kirlia/kirlia_emi.png",
+      "layers": [],
+      "poser": "cobblemon:kirlia"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0281_kirlia/kirlia_emi_shiny.png"
+    }
+  ]
+}

@@ -9,7 +9,10 @@ final class EmiPlushTab {
 
     static void register() {
         ItemGroupEvents.MODIFY_ENTRIES_ALL.register((group, entries) -> {
-            if (group == ModItemGroups.MISC) entries.method_45421(EmiPlush.MICHI_ITEM);
+            if (group == ModItemGroups.MISC) {
+                entries.method_45421(EmiPlush.MICHI_ITEM);
+                emi.plush.gen.DollRegistry.OBJETOS.values().forEach(entries::method_45421);
+            }
         });
     }
 }

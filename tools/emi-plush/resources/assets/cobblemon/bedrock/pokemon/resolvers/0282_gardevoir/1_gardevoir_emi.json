@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:gardevoir",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:gardevoir_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0282_gardevoir/gardevoir_emi.png",
+      "layers": [],
+      "poser": "cobblemon:gardevoir"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0282_gardevoir/gardevoir_emi_shiny.png"
+    }
+  ]
+}

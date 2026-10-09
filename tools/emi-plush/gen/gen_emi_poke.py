@@ -2,7 +2,7 @@
 """Genera la variante "Emi" de Happiny, Chansey y Blissey (aspecto `emi`): pelo largo plateado con mechones rosas, ojos de dos colores
 (naranja y magenta), frunces y detalles en negro, luna rosa y toques dorados, como la Emi del canal. Parte de los modelos y texturas de Cobblemon.
 Uso: COBBLEMON_JAR=<jar> gen_emi_poke.py <carpeta resources>"""
-import sys, os, json, math, random
+import sys, os, json, math, random, copy
 from PIL import Image
 from emi_lib import *
 
@@ -22,12 +22,17 @@ SKIN = (250, 224, 232)
 def mix(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 def hair_painter(tip=PINK_L, tip_from=0.78, vertical=True):
-    """Pelo plateado con hebras verticales; la punta se tiñe de rosa."""
+    """Pelo plateado con hebras verticales (claras y oscuras); la punta se tiñe de rosa."""
+    base = (205, 208, 220)
     def f(face, i, j, w, h):
         t = j / max(1, h - 1)
-        k = (i * 7 + (i // 2) * 3) % 5
-        c = mix(SILVER, SILVER_D, 0.18 * k / 4 + 0.10 * (i % 2))
-        if face in ('up', 'down'): c = mix(SILVER, SILVER_L, 0.4)
+        k = (i * 5 + (i // 3) * 7) % 7
+        c = base
+        if k in (0, 3): c = (176, 181, 198)
+        elif k in (1, 5): c = (222, 225, 235)
+        elif k == 6: c = (190, 194, 208)
+        c = mix(c, (236, 238, 245), 0.18 * (1 - t))      # mas claro cerca de la raiz
+        if face in ('up', 'down'): c = mix(c, (236, 238, 245), 0.4)
         if tip and t > tip_from and face not in ('up', 'down'):
             c = mix(c, tip, min(1.0, (t - tip_from) / (1 - tip_from) * 1.6))
         return c + (255,)
@@ -98,6 +103,9 @@ def blissey():
     for sx in (-1, 1):
         x0 = 7.5 if sx > 0 else -10.5
         add_cube(geo, atlas, 'hair_lock_l' if sx > 0 else 'hair_lock_r', 'torso', [0, 24, -10], [x0, 7, -11.5], [3, 21, 1], hair_painter(tip_from=0.7))
+    for sx in (-1, 1):   # pelo a los lados de la cabeza y el cuerpo (debajo de las orejas rosas)
+        x0 = 10 if sx > 0 else -12
+        add_cube(geo, atlas, 'hair_side_l' if sx > 0 else 'hair_side_r', 'torso', [0, 16, 0], [x0, 9, -9], [2, 19, 18], hair_painter(tip_from=0.7))
     return geo, atlas
 
 
@@ -125,6 +133,12 @@ def chansey():
     for sx in (-1, 1):
         x0 = 7.0 if sx > 0 else -10.0
         add_cube(geo, atlas, 'hair_lock_l' if sx > 0 else 'hair_lock_r', 'head', [0, 22, -8], [x0, 6, -9.2], [3, 16, 1], hair_painter(tip_from=0.6))
+    for sx in (-1, 1):
+        xh = 7.5 if sx > 0 else -9.5
+        xt = 9 if sx > 0 else -11
+        nm = 'hair_side_l' if sx > 0 else 'hair_side_r'
+        add_cube(geo, atlas, nm, 'head', [0, 16, 0], [xh, 14, -7], [2, 9, 15], hair_painter(tip=None))
+        add_cube(geo, atlas, nm, 'torso', [0, 16, 0], [xt, 5, -8], [2, 9, 16], hair_painter(tip_from=0.6))
     return geo, atlas
 
 # ------------------------------------------------------------------------------------------------ Happiny
@@ -144,6 +158,9 @@ def happiny():
     for sx in (-1, 1):
         x0 = 4.4 if sx > 0 else -6.4
         add_cube(geo, atlas, 'hair_lock_l' if sx > 0 else 'hair_lock_r', 'head', [0, 13, -3], [x0, 3, -3.6], [2, 9, 1], hair_painter(tip_from=0.6))
+    for sx in (-1, 1):
+        x0 = 4.5 if sx > 0 else -6.5
+        add_cube(geo, atlas, 'hair_side_l' if sx > 0 else 'hair_side_r', 'head', [0, 9, 0], [x0, 3, -3.5], [2, 10, 8], hair_painter(tip_from=0.6))
     return geo, atlas
 
 if __name__ == '__main__':

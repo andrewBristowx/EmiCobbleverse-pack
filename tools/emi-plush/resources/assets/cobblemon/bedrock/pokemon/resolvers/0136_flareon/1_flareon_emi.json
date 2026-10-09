@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:flareon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:flareon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0136_flareon/flareon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:flareon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0136_flareon/flareon_emi_shiny.png"
+    }
+  ]
+}

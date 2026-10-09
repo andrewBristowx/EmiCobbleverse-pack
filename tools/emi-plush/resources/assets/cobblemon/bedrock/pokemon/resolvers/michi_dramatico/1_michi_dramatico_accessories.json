@@ -1,0 +1,42 @@
+{
+  "species": "cobblemon:gatitoalien",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "sunglasses-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_sunglasses.geo"
+    },
+    {
+      "aspects": [
+        "beach_hat-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_beach_hat.geo"
+    },
+    {
+      "aspects": [
+        "crown-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_crown.geo"
+    },
+    {
+      "aspects": [
+        "bow-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_bow.geo"
+    },
+    {
+      "aspects": [
+        "headphones-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_headphones.geo"
+    },
+    {
+      "aspects": [
+        "scarf-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_scarf.geo"
+    }
+  ]
+}

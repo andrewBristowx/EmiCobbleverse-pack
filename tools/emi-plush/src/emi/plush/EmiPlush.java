@@ -34,6 +34,7 @@ public class EmiPlush implements ModInitializer {
         MICHI_BE = class_2378.method_10230(class_7923.field_41181, id,
                 FabricBlockEntityTypeBuilder.create(MichiBlockEntity::new, MICHI).build());
         BlockEntityTypeRegistry.register(MichiBlockEntity.class, MICHI_BE);
+        emi.plush.gen.DollRegistry.registrar();
         EmiPlushTab.register();
     }
 }

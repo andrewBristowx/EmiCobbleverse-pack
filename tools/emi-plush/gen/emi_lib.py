@@ -105,3 +105,60 @@ def finish(geo, atlas, new_id):
     g['description']['identifier'] = new_id
     g['description']['texture_height'] = atlas.img.height
     return geo, atlas.img
+
+# ---------------------------------------------------------------------------------------------- generico (todas las especies)
+import numpy as np, re
+
+def base_for(z, species):
+    """Lee el resolver de la especie y devuelve (carpeta, [(aspectos, modelo, textura, poser)]) de las variantes con modelo."""
+    names = z.namelist()
+    res = [n for n in names if n.endswith('.json') and 'bedrock/pokemon/resolvers/' in n and re.search(r'/\d+_' + species + r'/', n)]
+    folder = re.search(r'/(\d+_' + species + r')/', res[0]).group(1)
+    out = []
+    for r in sorted(res):
+        d = json.loads(z.read(r))
+        for v in d['variations']:
+            if v.get('model'):
+                out.append((v.get('aspects', []), v['model'].split(':')[1][:-4], v['texture'].split(':')[1] if v.get('texture') else None, v.get('poser')))
+    return folder, out
+
+def load_geo_tex(z, folder, model, tex_path):
+    geo = json.loads(z.read(f'assets/cobblemon/bedrock/pokemon/models/{folder}/{model}.geo.json'))
+    tex = Image.open(io.BytesIO(z.read('assets/cobblemon/' + tex_path))).convert('RGBA')
+    return geo, tex
+
+LUM = np.array([0.299, 0.587, 0.114])
+
+def kmeans(img, k, iters=25):
+    a = np.array(img)
+    m = a[:, :, 3] > 0
+    px = a[m][:, :3].astype(float)
+    lum_ = px @ LUM
+    order = np.argsort(lum_)
+    c = px[order[(np.linspace(0.05, 0.95, k) * (len(px) - 1)).astype(int)]]
+    for _ in range(iters):
+        d = ((px[:, None, :] - c[None, :, :]) ** 2).sum(-1)
+        lab = d.argmin(1)
+        for i in range(k):
+            if (lab == i).any(): c[i] = px[lab == i].mean(0)
+    d = ((px[:, None, :] - c[None, :, :]) ** 2).sum(-1); lab = d.argmin(1)
+    cnt = np.bincount(lab, minlength=k)
+    idx = np.argsort(c @ LUM)   # de oscuro a claro
+    return c[idx], cnt[idx] / len(px)
+
+def remap_clusters(img, centers, targets, keep=0.85):
+    """Cada pixel opaco se asigna a su color mas cercano y se pinta con el color objetivo de ese grupo conservando el relieve."""
+    a = np.array(img).astype(float)
+    m = a[:, :, 3] > 0
+    px = a[m][:, :3]
+    d = ((px[:, None, :] - centers[None, :, :]) ** 2).sum(-1)
+    lab = d.argmin(1)
+    cl = centers @ LUM
+    pl = px @ LUM
+    ratio = np.where(cl[lab] > 1, pl / np.maximum(cl[lab], 1), 1.0)
+    ratio = 1.0 + (ratio - 1.0) * keep
+    tg = np.array([targets[i] if targets[i] is not None else centers[i] for i in lab], dtype=float)
+    out = np.clip(tg * ratio[:, None], 0, 255)
+    res = a.copy()
+    res[m, :3] = out
+    return Image.fromarray(res.astype(np.uint8), 'RGBA')
