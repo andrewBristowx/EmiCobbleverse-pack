@@ -27,6 +27,8 @@ public class EmiEstructuras implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Generador.parar());
         ServerTickEvents.END_SERVER_TICK.register(s -> {
             if (arranque > 0 && --arranque == 0) {
+                int n = Generador.sincronizar();
+                if (n > 0) LOG.info("Registradas en Emipokemon {} ubicaciones ya generadas", n);
                 if (!Generador.progreso().terminado && Generador.mundo() != null) {
                     String err = Generador.arrancar(false);
                     if (err != null) LOG.info("Generacion automatica: {}", err);
@@ -54,6 +56,11 @@ public class EmiEstructuras implements ModInitializer {
         raiz.then(CommandManager.literal("parar").executes(c -> {
             Generador.parar();
             c.getSource().sendFeedback(() -> msg("Generacion parada. El progreso queda guardado.", Formatting.YELLOW), true);
+            return 1;
+        }));
+        raiz.then(CommandManager.literal("registrar").executes(c -> {
+            int n = Generador.sincronizar();
+            c.getSource().sendFeedback(() -> msg("Registradas en Emipokemon " + n + " ubicaciones (sin generar nada).", Formatting.GREEN), true);
             return 1;
         }));
         raiz.then(CommandManager.literal("estado").executes(c -> {

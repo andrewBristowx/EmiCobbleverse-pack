@@ -83,10 +83,40 @@ public final class Catalogo {
             vistos.add(id);
             out.add(new Entrada(ident, plantilla, f[0], f[1], OCEANO.contains(id)));
         }
+        añadirExtras(reg, vistos, out);
         TreeSet<String> resto = new TreeSet<>();
         for (Identifier id : reg.getIds()) if (NAMESPACES.contains(id.getNamespace()) && !vistos.contains(id.toString())) resto.add(id.toString());
         for (String id : resto) out.add(new Entrada(Identifier.of(id), false, null, id, OCEANO.contains(id)));
         return out;
+    }
+
+    /**
+     * Las ubicaciones extra del menu (config/emipokemon/extra-locations.json, las crea el parche de Emipokemon; si todavia no existe
+     * se usan las del jar). Cada una va al final de su region: orden = lo que ya tiene la region + su posicion en el archivo.
+     */
+    private static void añadirExtras(Registry<Structure> reg, Set<String> vistos, List<Entrada> out) {
+        try {
+            String texto;
+            java.nio.file.Path f = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("emipokemon").resolve("extra-locations.json");
+            if (java.nio.file.Files.exists(f)) texto = java.nio.file.Files.readString(f);
+            else try (var in = Catalogo.class.getResourceAsStream("/emi_estructuras/extra-locations-default.json")) { texto = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+            com.google.gson.JsonArray lista = com.google.gson.JsonParser.parseString(texto).getAsJsonObject().getAsJsonArray("ubicaciones");
+            Map<String, Integer> contador = new LinkedHashMap<>();
+            for (String[] fila : LAS_69) contador.merge(fila[0].substring(0, fila[0].indexOf(':')), 1, Integer::sum);
+            for (var el : lista) {
+                var o = el.getAsJsonObject();
+                String region = o.get("region").getAsString().trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
+                int orden = contador.merge(region, 1, Integer::sum);
+                String id = o.has("structure") ? o.get("structure").getAsString().trim() : "";
+                if (id.isEmpty() || vistos.contains(id)) continue;
+                Identifier ident = Identifier.tryParse(id);
+                if (ident == null || !reg.containsId(ident)) { EmiEstructuras.LOG.warn("Ubicacion extra {}: la estructura {} no esta registrada; la salto", o.get("label"), id); continue; }
+                vistos.add(id);
+                out.add(new Entrada(ident, false, region + ":" + orden, o.get("label").getAsString(), OCEANO.contains(id)));
+            }
+        } catch (Exception e) {
+            EmiEstructuras.LOG.warn("No pude leer las ubicaciones extra", e);
+        }
     }
 
     public static Map<String, Entrada> porId(List<Entrada> l) {

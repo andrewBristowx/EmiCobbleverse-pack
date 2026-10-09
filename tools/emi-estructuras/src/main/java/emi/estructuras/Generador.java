@@ -449,6 +449,26 @@ public final class Generador {
         }
     }
 
+    /**
+     * Vuelve a decirle a Emipokemon donde esta cada estructura ya generada, con la clave que le toca ahora en el menu (las ubicaciones
+     * extra de extra-locations.json). Sirve para mundos que se generaron antes de que esas ubicaciones existieran: no coloca nada.
+     */
+    public static int sincronizar() {
+        if (server == null || mundo() == null) return 0;
+        List<Entrada> catalogo = Catalogo.construir(server);
+        int n = 0;
+        boolean cambio = false;
+        for (Entrada e : catalogo) {
+            Hecha h = progreso.hechas.get(e.id.toString());
+            if (h == null || !h.ok || e.clave == null) continue;
+            if (!e.clave.equals(h.clave)) { h.clave = e.clave; cambio = true; }
+            registrar(h);
+            n++;
+        }
+        if (cambio) guardar();
+        return n;
+    }
+
     /** Le dice a Emipokemon que esta ubicacion esta aqui, para que /emipokemon visitar mande a la dimension plana. */
     public static void registrar(Hecha h) {
         if (h.clave == null) return;
