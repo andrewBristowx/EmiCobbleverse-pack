@@ -66,6 +66,49 @@ public final class Catalogo {
     /** Cuantas de las 69 ubicaciones de Emipokemon no estan registradas en este mundo (datapacks sin activar): mientras haya alguna, la generacion no se da por terminada. */
     public static int saltadas = 0;
 
+    /** Las estructuras de Dungeons que son de mar: balsa de agua alrededor. */
+    private static final Set<String> OCEANO_DUNGEONS = Set.of("nova_structures:trident_trial_monument", "nova_structures:conduit_ruin");
+
+    public static List<Entrada> construir(MinecraftServer server, Generador.Mundo mundo) {
+        if (mundo.esDungeons()) return construirDungeons(server);
+        return construir(server);
+    }
+
+    /** El mundo de Dungeons y jefes: las entradas de la region "Dungeons" de extra-locations.json, en su orden (esa es la numeracion del menu). */
+    private static List<Entrada> construirDungeons(MinecraftServer server) {
+        Registry<Structure> reg = server.getRegistryManager().get(RegistryKeys.STRUCTURE);
+        List<Entrada> out = new ArrayList<>();
+        Set<String> vistos = new LinkedHashSet<>();
+        try {
+            com.google.gson.JsonArray lista = leerExtras();
+            int orden = 0;
+            for (var el : lista) {
+                var o = el.getAsJsonObject();
+                String region = regionClave(o.get("region").getAsString());
+                if (!region.equals("dungeons")) continue;
+                orden++;
+                String id = o.has("structure") ? o.get("structure").getAsString().trim() : "";
+                Identifier ident = Identifier.tryParse(id);
+                if (ident == null || id.isEmpty() || !vistos.add(id)) continue;
+                if (!reg.containsId(ident)) { EmiEstructuras.LOG.warn("Dungeons: la estructura {} no esta registrada; la salto", id); continue; }
+                out.add(new Entrada(ident, false, "dungeons:" + orden, o.get("label").getAsString(), OCEANO_DUNGEONS.contains(id)));
+            }
+        } catch (Exception e) {
+            EmiEstructuras.LOG.warn("No pude leer las ubicaciones de Dungeons", e);
+        }
+        return out;
+    }
+
+    static String regionClave(String region) { return region.trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", ""); }
+
+    private static com.google.gson.JsonArray leerExtras() throws java.io.IOException {
+        String texto;
+        java.nio.file.Path f = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("emipokemon").resolve("extra-locations.json");
+        if (java.nio.file.Files.exists(f)) texto = java.nio.file.Files.readString(f);
+        else try (var in = Catalogo.class.getResourceAsStream("/emi_estructuras/extra-locations-default.json")) { texto = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+        return com.google.gson.JsonParser.parseString(texto).getAsJsonObject().getAsJsonArray("ubicaciones");
+    }
+
     public static List<Entrada> construir(MinecraftServer server) {
         saltadas = 0;
         Registry<Structure> reg = server.getRegistryManager().get(RegistryKeys.STRUCTURE);
@@ -96,16 +139,13 @@ public final class Catalogo {
      */
     private static void añadirExtras(Registry<Structure> reg, Set<String> vistos, List<Entrada> out) {
         try {
-            String texto;
-            java.nio.file.Path f = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("emipokemon").resolve("extra-locations.json");
-            if (java.nio.file.Files.exists(f)) texto = java.nio.file.Files.readString(f);
-            else try (var in = Catalogo.class.getResourceAsStream("/emi_estructuras/extra-locations-default.json")) { texto = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
-            com.google.gson.JsonArray lista = com.google.gson.JsonParser.parseString(texto).getAsJsonObject().getAsJsonArray("ubicaciones");
+            com.google.gson.JsonArray lista = leerExtras();
             Map<String, Integer> contador = new LinkedHashMap<>();
             for (String[] fila : LAS_69) contador.merge(fila[0].substring(0, fila[0].indexOf(':')), 1, Integer::sum);
             for (var el : lista) {
                 var o = el.getAsJsonObject();
-                String region = o.get("region").getAsString().trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
+                String region = regionClave(o.get("region").getAsString());
+                if (region.equals("dungeons")) continue;      // van al otro mundo
                 int orden = contador.merge(region, 1, Integer::sum);
                 String id = o.has("structure") ? o.get("structure").getAsString().trim() : "";
                 if (id.isEmpty() || vistos.contains(id)) continue;
