@@ -36,17 +36,20 @@ Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/
 - **Cómo conseguirlos**: `/givepokemon <jugador> <especie> emi=true`, `/spawnpokemon cobblemon:blissey emi=true` para uno salvaje.
 - Los huesos nuevos (`hair_*`, `bangs`) cuelgan de la cabeza/torso y se mueven con ellos; no tienen animación propia.
 
-## GatitoAlien: formas Gold y con accesorios, y shiny dorado
-`gen/gen_michi_extras.py` (se ejecuta tras `gen_pokemon.py`) y `data/cobblemon/species/custom/gatitoalien.json` (`forms`):
-- **Formas Pokémon** (salen en el Pokédex y en el nombre, p. ej. "GatitoAlien (Crown)"): `Gold`, `Sunglasses`, `BeachHat`, `Crown`, `Bow`, `Headphones`, `Scarf`. Cada forma se activa con un aspecto: `gold=true` (indicador `gold`) o `accessory=<sunglasses|beach_hat|crown|bow|headphones|scarf>` (elección `accessory`).
-  `/givepokemon <jugador> gatitoalien accessory=sunglasses`, `/givepokemon <jugador> gatitoalien gold=true`. Se pueden combinar con `shiny`; la forma Gold shiny vuelve a los colores normales.
+## GatitoAlien: formas Pokémon (accesorios y dorado)
+`gen/gen_michi_extras.py` (se ejecuta tras `gen_pokemon.py`), `gen/michi_forms.py` (lista de formas) y `data/cobblemon/species/custom/gatitoalien.json` (`forms`, se reescribe al generar).
+- **25 formas** (salen en el Pokédex y en el nombre, p. ej. "GatitoAlien (Crown)"): `Gold`; 12 con accesorio — `Sunglasses`, `BeachHat`, `Crown`, `Bow`, `Headphones`, `Scarf`, `Halo`, `DevilHorns`, `WitchHat`, `SantaHat`, `FlowerCrown`, `Pirate`; y las 12 doradas `Gold<Nombre>` (p. ej. `GoldPirate`).
+  Cobblemon se queda con la ÚLTIMA forma cuyos aspectos estén todos presentes, por eso las combinadas van al final de la lista.
+- Cómo se activan (aspectos): `gold=true` y/o `accessory=<sunglasses|beach_hat|crown|bow|headphones|scarf|halo|devil_horns|witch_hat|santa_hat|flower_crown|pirate>`.
+  `/givepokemon <jugador> gatitoalien accessory=halo gold=true`. Se pueden combinar con `shiny` (la dorada con shiny vuelve a los colores normales; la normal con shiny es dorada).
   OJO: `form=Gold` en `/spawnpokemon` no funciona (Cobblemon solo elige la forma por aspectos); usar los aspectos de arriba.
-- **Shiny dorado** de la forma normal: el pelaje blanco y los lilas pasan a oro (`michi_dramatico_shiny.png`).
 - Cada accesorio es un modelo aparte (copia del base + cubos nuevos en el hueso `head`) que usa la misma textura (los accesorios están pintados en la zona libre de abajo). Datos: `species_features/{accessory,gold}.json`, sus asignaciones y el resolver `1_michi_dramatico_accessories.json`. Requiere reiniciar el servidor.
+- Para añadir otro accesorio: una entrada en `ACCESORIOS` (gen_michi_extras.py) y otra en `ACC` (michi_forms.py); forma, resolver, peluches y textos salen solos.
 
-## Peluches de todos los Pokémon Emi
-Un bloque de Pokeblocks por cada especie Emi (21) además del GatitoAlien: `/give @s emi_plush:<especie>_emi` (p. ej. `emi_plush:blissey_emi`). Aparecen en la pestaña **Pokeblocks - Misc**; se colocan mirando hacia el jugador y se recogen al romperlos.
+## Peluches de todos los Pokémon Emi y de las formas del GatitoAlien
+Un bloque de Pokeblocks por cada especie Emi (21), por cada forma del GatitoAlien (25: `gatitoalien_gold`, `gatitoalien_<accesorio>`, `gatitoalien_gold_<accesorio>`) y el peluche original del GatitoAlien: `/give @s emi_plush:<especie>_emi` (p. ej. `emi_plush:blissey_emi`). Aparecen en la pestaña **Pokeblocks - Misc**; se colocan mirando hacia el jugador y se recogen al romperlos.
 - `gen/gen_dolls.py` los genera a partir de los `*_emi.geo.json`: modelo reducido (sin huesos ocultos como párpados o boca abierta, UV por cara), textura, blockstate, modelos de bloque y objeto, loot table, textos (es/en) y las clases Java (`src/emi/plush/gen/Doll_*.java`, `DollRegistry.java`). Proporciones de peluche (`CHIBI`: cabeza más grande y cuerpo más pequeño) y poses (`BRAZOS_ABAJO`, `POSE_CAIDA`: brazos de la línea Ralts, Clefairy/Clefable/Wigglytuff y las cintas de Sylveon se dejan caer porque el modelo base está en T).
+- Los de las formas del GatitoAlien salen de los modelos de Pokémon `michi_dramatico_<accesorio>.geo.json` reducidos a 1/4 (igual que el peluche original) con la textura normal o la dorada (`build_michi` en gen_dolls.py).
 - `EmiDollModel`/`EmiDollItemModel` cargan `geo/<nombre>.geo.json` y `textures/entity/<nombre>.png`. `build.sh` ejecuta todos los generadores antes de compilar.
 
 ## Cómo se hizo el modelo

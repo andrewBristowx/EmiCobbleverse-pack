@@ -50,6 +50,42 @@
         "scarf-accessory"
       ],
       "model": "cobblemon:michi_dramatico_scarf.geo"
+    },
+    {
+      "aspects": [
+        "halo-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_halo.geo"
+    },
+    {
+      "aspects": [
+        "devil_horns-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_devil_horns.geo"
+    },
+    {
+      "aspects": [
+        "witch_hat-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_witch_hat.geo"
+    },
+    {
+      "aspects": [
+        "santa_hat-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_santa_hat.geo"
+    },
+    {
+      "aspects": [
+        "flower_crown-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_flower_crown.geo"
+    },
+    {
+      "aspects": [
+        "pirate-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_pirate.geo"
     }
   ]
 }

@@ -1,1 +1,1 @@
-{"type": "choice", "keys": ["accessory"], "default": "none", "choices": ["none", "sunglasses", "beach_hat", "crown", "bow", "headphones", "scarf"], "isAspect": true, "aspectFormat": "{{choice}}-accessory"}
+{"type": "choice", "keys": ["accessory"], "default": "none", "choices": ["none", "sunglasses", "beach_hat", "crown", "bow", "headphones", "scarf", "halo", "devil_horns", "witch_hat", "santa_hat", "flower_crown", "pirate"], "isAspect": true, "aspectFormat": "{{choice}}-accessory"}

@@ -7,6 +7,7 @@ import json, os, sys, copy
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emi_lib import box_rects
+from michi_forms import FORMAS
 
 OUT = sys.argv[1]
 B = os.path.join(OUT, 'assets/cobblemon')
@@ -16,6 +17,8 @@ TEX = f'{B}/textures/pokemon/michi_dramatico'
 def mix(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 BLACK = (30, 28, 38); PINK = (240, 98, 156); PINK_L = (250, 170, 205); GOLD = (240, 196, 60); GOLD_D = (190, 140, 30); STRAW = (232, 200, 120); STRAW_D = (205, 170, 90)
 WHITE = (250, 247, 250)
+RED = (214, 52, 62); RED_D = (156, 30, 44); GREEN = (96, 170, 84); GREEN_D = (62, 130, 62); PURPLE = (92, 56, 140); PURPLE_D = (58, 34, 98)
+YELLOW = (252, 218, 84); ORANGE = (244, 150, 52); HALO = (255, 238, 150)
 
 # ---------------------------------------------------------------- shiny dorado
 def gold_shiny(img):
@@ -81,6 +84,21 @@ def golden(face, i, j, w, h):
     if face == 'up': c = mix(c, (255, 240, 150), 0.4)
     return c + (255,)
 
+def fur(base, dark):
+    def f(face, i, j, w, h): return (dark if (i * 3 + j * 5) % 7 == 0 else base) + (255,)
+    return f
+def glow(face, i, j, w, h): return mix(HALO, (255, 255, 235), 0.5 * ((i + j) % 2)) + (255,)
+def flower(petal):
+    def f(face, i, j, w, h):
+        c = YELLOW if (face in ('north', 'up') and 1 <= i < w - 1 and 1 <= j < h - 1 and w > 2 and i in (w // 2 - 1, w // 2) and j in (h // 2 - 1, h // 2)) else petal
+        return c + (255,)
+    return f
+def skull(face, i, j, w, h):
+    c = WHITE
+    if face == 'north' and ((i, j) in ((1, 1), (w - 2, 1)) or (j == h - 1 and i % 2)): c = BLACK
+    return c + (255,)
+def leaves(face, i, j, w, h): return (GREEN_D if (i + 2 * j) % 4 == 0 else GREEN) + (255,)
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -107,6 +125,39 @@ ACCESORIOS = {
     'scarf': lambda g, f: [
         cube(g, f, 'acc_scarf', (-19.5, 8, -18.5), (39, 5, 38), band(PINK, WHITE)),
         cube(g, f, 'acc_scarf', (6, 0.5, -19.5), (7, 11, 2), band(PINK, WHITE))],
+    'halo': lambda g, f: [
+        cube(g, f, 'acc_halo', (-14, 57, -14), (28, 3, 3), glow), cube(g, f, 'acc_halo', (-14, 57, 11), (28, 3, 3), glow),
+        cube(g, f, 'acc_halo', (-14, 57, -11), (3, 3, 22), glow), cube(g, f, 'acc_halo', (11, 57, -11), (3, 3, 22), glow)],
+    'devil_horns': lambda g, f: [
+        cube(g, f, 'acc_devil_horns', (9, 31, -13), (6, 4, 6), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-15, 31, -13), (6, 4, 6), fur(RED, RED_D)),
+        cube(g, f, 'acc_devil_horns', (10, 35, -12), (4, 6, 4), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-14, 35, -12), (4, 6, 4), fur(RED, RED_D)),
+        cube(g, f, 'acc_devil_horns', (11, 41, -11), (2, 5, 2), flat(RED_D)), cube(g, f, 'acc_devil_horns', (-13, 41, -11), (2, 5, 2), flat(RED_D))],
+    'witch_hat': lambda g, f: [
+        cube(g, f, 'acc_witch_hat', (-22, 30, -22), (44, 2, 44), flat(PURPLE_D)),
+        cube(g, f, 'acc_witch_hat', (-12, 32, -12), (24, 6, 24), flat(PURPLE)),
+        cube(g, f, 'acc_witch_hat', (-12.5, 32.5, -12.5), (25, 2, 25), band(PINK, PINK_L)),
+        cube(g, f, 'acc_witch_hat', (-3, 32.5, -13.5), (6, 3, 1), flat(GOLD)),
+        cube(g, f, 'acc_witch_hat', (-9, 38, -9), (18, 6, 18), flat(PURPLE)),
+        cube(g, f, 'acc_witch_hat', (-6, 44, -6), (12, 6, 12), flat(PURPLE)),
+        cube(g, f, 'acc_witch_hat', (-3.5, 50, -3.5), (7, 5, 7), flat(PURPLE_D), rotation=(0, 0, 18), pivot=(0, 50, 0))],
+    'santa_hat': lambda g, f: [
+        cube(g, f, 'acc_santa_hat', (-14, 30, -14), (28, 3, 28), dots(WHITE, (225, 225, 235))),
+        cube(g, f, 'acc_santa_hat', (-11, 33, -11), (22, 6, 22), flat(RED)),
+        cube(g, f, 'acc_santa_hat', (-8, 39, -8), (16, 6, 16), flat(RED)),
+        cube(g, f, 'acc_santa_hat', (-5, 45, -5), (10, 5, 10), flat(RED_D), rotation=(0, 0, -22), pivot=(0, 45, 0)),
+        cube(g, f, 'acc_santa_hat', (-6.5, 48, -3.5), (7, 7, 7), dots(WHITE, (225, 225, 235)), rotation=(0, 0, -22), pivot=(0, 45, 0))],
+    'flower_crown': lambda g, f: [
+        cube(g, f, 'acc_flower_crown', (-14, 31, -13), (28, 2, 26), leaves)] + [
+        cube(g, f, 'acc_flower_crown', pos, (4, 4, 4), flower(col)) for pos, col in (
+            ((-10, 32, -14.5), PINK), ((-2, 32, -15), WHITE), ((6, 32, -14.5), ORANGE), ((-16, 32, -6), WHITE), ((12.5, 32, -6), PINK),
+            ((-16, 32, 3), ORANGE), ((12.5, 32, 3), WHITE), ((-8, 32, 10.5), PINK), ((4, 32, 10.5), ORANGE))],
+    'pirate': lambda g, f: [
+        cube(g, f, 'acc_pirate', (3, 15, -19), (12, 11, 2), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-20.5, 26, -16.5), (41, 2, 33), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-20, 31, -14), (40, 2, 28), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-12, 33, -11), (24, 6, 22), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-5, 33, -14.5), (10, 5, 3), flat((60, 52, 70))),
+        cube(g, f, 'acc_pirate', (-3, 34, -15), (6, 4, 1), skull)],
 }
 
 def main():
@@ -131,6 +182,15 @@ def main():
     json.dump({'pokemon': ['gatitoalien'], 'features': ['accessory']}, open(f'{data}/species_feature_assignments/accessory.json', 'w'))
     json.dump({'keys': ['gold'], 'type': 'flag', 'isAspect': True, 'default': False}, open(f'{data}/species_features/gold.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['gold']}, open(f'{data}/species_feature_assignments/gold.json', 'w'))
+    # formas Pokemon (especie y entrada del Pokedex)
+    sp_path = os.path.join(OUT, 'data/cobblemon/species/custom/gatitoalien.json')
+    sp = json.load(open(sp_path, encoding='utf-8'))
+    sp['forms'] = [{'name': n, 'aspects': asp, 'pokedex': ['emi_plush.species.gatitoalien.desc']} for n, asp, _, _ in FORMAS]
+    json.dump(sp, open(sp_path, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+    dx_path = os.path.join(OUT, 'data/emi_plush/dex_entries/pokemon/gatitoalien.json')
+    dx = json.load(open(dx_path, encoding='utf-8'))
+    dx['forms'] = [{'displayForm': 'Normal', 'unlockForms': ['Normal']}] + [{'displayForm': n, 'unlockForms': [n]} for n, *_ in FORMAS]
+    json.dump(dx, open(dx_path, 'w', encoding='utf-8'), indent=2)
     print('extras de GatitoAlien ok:', ', '.join(ACCESORIOS))
 
 main()

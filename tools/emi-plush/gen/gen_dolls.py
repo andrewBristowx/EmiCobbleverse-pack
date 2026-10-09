@@ -7,6 +7,7 @@ Uso: python3 gen_dolls.py <carpeta resources> <carpeta src/emi/plush/gen>"""
 import json, os, re, sys, copy, shutil
 from PIL import Image
 from emi_lib import box_rects
+from michi_forms import ACC, FORMAS
 
 RES, SRC = sys.argv[1], sys.argv[2]
 B = f'{RES}/assets/cobblemon'
@@ -105,8 +106,46 @@ def build(sp, folder, model, tex, nombre, alto):
     Image.new('RGBA', (16, 16), (240, 200, 215, 255)).save(f'{A}/textures/block/{sp}_emi_particle.png')
     return f
 
-def recursos(sp, nombre):
-    n = f'{sp}_emi'
+# ---- GatitoAlien: peluches de sus formas (modelos de Pokemon / 4, igual que el peluche original; la forma dorada usa la textura dorada)
+MICHI = [('gatitoalien_gold', None, True, 'GatitoAlien Dorado', 'Golden GatitoAlien')]
+for acc, fn, es, en in ACC:
+    sufijo_es = es if es.startswith('con ') else ''
+    nom_es = f'GatitoAlien {es}'; nom_en = f'GatitoAlien {en}'
+    MICHI.append((f'gatitoalien_{acc}', acc, False, nom_es, nom_en))
+for acc, fn, es, en in ACC:
+    MICHI.append((f'gatitoalien_gold_{acc}', acc, True, f'GatitoAlien Dorado {es}' if es.startswith('con ') else f'GatitoAlien {es} Dorado', f'Golden GatitoAlien {en}'))
+MICHI_NOMBRES = [(i, es, en) for i, _, _, es, en in MICHI]
+IDS = [f'{sp}_emi' for sp, *_ in ESPECIES] + [i for i, *_ in MICHI]
+KU = 4
+
+def build_michi(ident, acc, dorado):
+    base = f'{B}/bedrock/pokemon/models/michi_dramatico/michi_dramatico' + (f'_{acc}' if acc else '') + '.geo.json'
+    geo = json.load(open(base))['minecraft:geometry'][0]
+    bs = copy.deepcopy([b for b in geo['bones'] if not OCULTOS.search(b['name'])])
+    names = {b['name'] for b in bs}
+    out = []
+    for b in bs:
+        nb = {'name': b['name']}
+        if b.get('parent') in names: nb['parent'] = b['parent']
+        nb['pivot'] = [round(v / KU, 4) for v in b.get('pivot', [0, 0, 0])]
+        if 'rotation' in b: nb['rotation'] = b['rotation']
+        cs = []
+        for c in b.get('cubes', []):
+            nc = {'origin': [round(v / KU, 4) for v in c['origin']], 'size': [round(v / KU, 4) for v in c['size']], 'uv': per_face(c)}
+            if 'inflate' in c: nc['inflate'] = round(c['inflate'] / KU, 4)
+            if 'pivot' in c: nc['pivot'] = [round(v / KU, 4) for v in c['pivot']]; nc['rotation'] = c['rotation']
+            cs.append(nc)
+        if cs: nb['cubes'] = cs
+        out.append(nb)
+    d = geo['description']
+    ng = {'format_version': '1.12.0', 'minecraft:geometry': [{'description': {'identifier': f'geometry.{ident}_doll', 'texture_width': d['texture_width'], 'texture_height': d['texture_height'], 'visible_bounds_width': 4, 'visible_bounds_height': 4, 'visible_bounds_offset': [0, 1, 0]}, 'bones': out}]}
+    os.makedirs(f'{A}/geo', exist_ok=True); os.makedirs(f'{A}/textures/entity', exist_ok=True); os.makedirs(f'{A}/textures/block', exist_ok=True)
+    json.dump(ng, open(f'{A}/geo/{ident}.geo.json', 'w'), separators=(',', ':'))
+    shutil.copy(f'{B}/textures/pokemon/michi_dramatico/michi_dramatico' + ('_shiny' if dorado else '') + '.png', f'{A}/textures/entity/{ident}.png')
+    Image.new('RGBA', (16, 16), (236, 220, 240, 255)).save(f'{A}/textures/block/{ident}_particle.png')
+
+
+def recursos(n):
     os.makedirs(f'{A}/blockstates', exist_ok=True); os.makedirs(f'{A}/models/block', exist_ok=True); os.makedirs(f'{A}/models/item', exist_ok=True)
     os.makedirs(f'{RES}/data/emi_plush/loot_table/blocks', exist_ok=True)
     json.dump({'variants': {'': {'model': f'emi_plush:block/{n}'}}}, open(f'{A}/blockstates/{n}.json', 'w'), indent=2)
@@ -123,13 +162,16 @@ def lang():
         for sp, folder, model, tex, nombre, alto in ESPECIES:
             t = plantilla.format(n=nombre)
             d[f'block.emi_plush.{sp}_emi'] = t; d[f'item.emi_plush.{sp}_emi'] = t
+        for n, es, en in MICHI_NOMBRES:
+            t = f'{en} Plush' if code == 'en_us' else f'Peluche {es}'
+            d[f'block.emi_plush.{n}'] = t; d[f'item.emi_plush.{n}'] = t
         json.dump(d, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
 
 def java():
     os.makedirs(SRC, exist_ok=True)
     for f in os.listdir(SRC):
         if f.endswith('.java'): os.remove(f'{SRC}/{f}')
-    for sp, *_ in ESPECIES:
+    for sp in IDS:
         cls = 'Doll_' + sp
         open(f'{SRC}/{cls}.java', 'w').write(f'''package emi.plush.gen;
 
@@ -138,14 +180,14 @@ import dev.mrshawn.pokeblocks.block.entity.PokedollBlockEntity;
 import net.minecraft.class_2338;
 import net.minecraft.class_2680;
 
-/** Entidad de bloque del peluche {sp}_emi (generada por gen_dolls.py). */
+/** Entidad de bloque del peluche {sp} (generada por gen_dolls.py). */
 public class {cls} extends PokedollBlockEntity {{
     public {cls}(class_2338 pos, class_2680 state) {{
         super(BlockEntityTypeRegistry.get({cls}.class), pos, state);
     }}
 }}
 ''')
-    regs = '\n'.join(f'        reg("{sp}_emi", Doll_{sp}.class, Doll_{sp}::new);' for sp, *_ in ESPECIES)
+    regs = '\n'.join(f'        reg("{sp}", Doll_{sp}.class, Doll_{sp}::new);' for sp in IDS)
     open(f'{SRC}/DollRegistry.java', 'w').write(f'''package emi.plush.gen;
 
 import dev.mrshawn.pokeblocks.block.custom.PokedollBlock;
@@ -193,7 +235,11 @@ public final class DollRegistry {{
 
 for sp, folder, model, tex, nombre, alto in ESPECIES:
     f = build(sp, folder, model, tex, nombre, alto)
-    recursos(sp, nombre)
+    recursos(f'{sp}_emi')
     print(f'{sp}: escala {f:.2f}')
+for ident, acc, dorado, *_ in MICHI:
+    build_michi(ident, acc, dorado)
+    recursos(ident)
+print(f'{len(MICHI)} peluches de formas del GatitoAlien')
 lang()
 java()

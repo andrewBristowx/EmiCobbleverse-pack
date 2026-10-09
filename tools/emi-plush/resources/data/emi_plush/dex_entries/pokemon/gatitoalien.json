@@ -51,6 +51,114 @@
       "unlockForms": [
         "Scarf"
       ]
+    },
+    {
+      "displayForm": "Halo",
+      "unlockForms": [
+        "Halo"
+      ]
+    },
+    {
+      "displayForm": "DevilHorns",
+      "unlockForms": [
+        "DevilHorns"
+      ]
+    },
+    {
+      "displayForm": "WitchHat",
+      "unlockForms": [
+        "WitchHat"
+      ]
+    },
+    {
+      "displayForm": "SantaHat",
+      "unlockForms": [
+        "SantaHat"
+      ]
+    },
+    {
+      "displayForm": "FlowerCrown",
+      "unlockForms": [
+        "FlowerCrown"
+      ]
+    },
+    {
+      "displayForm": "Pirate",
+      "unlockForms": [
+        "Pirate"
+      ]
+    },
+    {
+      "displayForm": "GoldSunglasses",
+      "unlockForms": [
+        "GoldSunglasses"
+      ]
+    },
+    {
+      "displayForm": "GoldBeachHat",
+      "unlockForms": [
+        "GoldBeachHat"
+      ]
+    },
+    {
+      "displayForm": "GoldCrown",
+      "unlockForms": [
+        "GoldCrown"
+      ]
+    },
+    {
+      "displayForm": "GoldBow",
+      "unlockForms": [
+        "GoldBow"
+      ]
+    },
+    {
+      "displayForm": "GoldHeadphones",
+      "unlockForms": [
+        "GoldHeadphones"
+      ]
+    },
+    {
+      "displayForm": "GoldScarf",
+      "unlockForms": [
+        "GoldScarf"
+      ]
+    },
+    {
+      "displayForm": "GoldHalo",
+      "unlockForms": [
+        "GoldHalo"
+      ]
+    },
+    {
+      "displayForm": "GoldDevilHorns",
+      "unlockForms": [
+        "GoldDevilHorns"
+      ]
+    },
+    {
+      "displayForm": "GoldWitchHat",
+      "unlockForms": [
+        "GoldWitchHat"
+      ]
+    },
+    {
+      "displayForm": "GoldSantaHat",
+      "unlockForms": [
+        "GoldSantaHat"
+      ]
+    },
+    {
+      "displayForm": "GoldFlowerCrown",
+      "unlockForms": [
+        "GoldFlowerCrown"
+      ]
+    },
+    {
+      "displayForm": "GoldPirate",
+      "unlockForms": [
+        "GoldPirate"
+      ]
     }
   ],
   "variations": []
