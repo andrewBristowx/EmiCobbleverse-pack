@@ -38,6 +38,13 @@ def hair_painter(tip=PINK_L, tip_from=0.78, vertical=True):
         return c + (255,)
     return f
 
+def strands(geo, atlas, name, parent, pivot, x, z0, depth, ytop, lens, tip_from=0.6, tip=PINK_L):
+    """Mechones laterales: tiras de 1 de grosor y distinto largo (en vez de un panel liso), de delante hacia atras."""
+    n = len(lens); step = depth / n
+    for i, ln in enumerate(lens):
+        if ln <= 0: continue
+        add_cube(geo, atlas, name, parent, pivot, [x, ytop - ln, z0 + i * step], [1, ln, max(1, int(round(step)))], hair_painter(tip=tip, tip_from=tip_from))
+
 def solid(c): return lambda face, i, j, w, h: c + (255,)
 
 def finish_species(name, folder, geo, atlas, extra_note=''):
@@ -93,9 +100,9 @@ def blissey():
     emi_eyes(geo, img)
     # --- pelo
     # parte de atras: cae por la espalda hasta cerca de los pies
-    add_cube(geo, atlas, 'hair_back', 'torso', [0, 16, 9.5], [-10.5, 4, 9.5], [21, 25, 3], hair_painter())
+    add_cube(geo, atlas, 'hair_back', 'torso', [0, 16, 9.5], [-10.5, 4, 9.5], [21, 25, 2], hair_painter())
     # tapa superior y laterales (el pelo cubre la parte alta de la cabeza)
-    add_cube(geo, atlas, 'hair_top', 'torso', [0, 28, 0], [-10.5, 27.5, -10], [21, 3, 20], hair_painter(tip=None))
+    add_cube(geo, atlas, 'hair_top', 'torso', [0, 28, 0], [-10.5, 28, -10], [21, 2, 20], hair_painter(tip=None))
     # flequillo: mechones que caen sobre la frente con raya al medio
     for (x0, w_, hh) in [(-10.5, 4, 2), (-6.5, 4, 3), (-2.5, 2, 1), (0.5, 2, 1), (2.5, 4, 3), (6.5, 4, 2)]:
         add_cube(geo, atlas, 'bangs', 'torso', [0, 27, -10], [x0, 28 - hh, -11], [w_, hh, 1], hair_painter(tip=None))
@@ -104,8 +111,7 @@ def blissey():
         x0 = 7.5 if sx > 0 else -10.5
         add_cube(geo, atlas, 'hair_lock_l' if sx > 0 else 'hair_lock_r', 'torso', [0, 24, -10], [x0, 7, -11.5], [3, 21, 1], hair_painter(tip_from=0.7))
     for sx in (-1, 1):   # pelo a los lados de la cabeza y el cuerpo (debajo de las orejas rosas)
-        x0 = 10 if sx > 0 else -12
-        add_cube(geo, atlas, 'hair_side_l' if sx > 0 else 'hair_side_r', 'torso', [0, 16, 0], [x0, 9, -9], [2, 19, 18], hair_painter(tip_from=0.7))
+        strands(geo, atlas, 'hair_side_l' if sx > 0 else 'hair_side_r', 'torso', [0, 16, 0], 10 if sx > 0 else -11, -9, 18, 28, [17, 10, 14], 0.55)
     return geo, atlas
 
 
@@ -123,9 +129,9 @@ def chansey():
     pouch_moon(geo, img)
     emi_eyes(geo, img)
     # pelo: tapa, melena por detras (la parte baja con puntas rosas), flequillo y mechones laterales
-    add_cube(geo, atlas, 'hair_top', 'head', [0, 22, 0], [-8, 21.5, -8], [16, 3, 16], hair_painter(tip=None))
-    add_cube(geo, atlas, 'hair_back', 'torso', [0, 15, 8], [-8, 15, 7.5], [16, 8, 3], hair_painter(tip=None))
-    add_cube(geo, atlas, 'hair_back', 'torso', [0, 15, 8], [-8, 6, 8.6], [16, 9, 3], hair_painter(tip_from=0.55))
+    add_cube(geo, atlas, 'hair_top', 'head', [0, 22, 0], [-8, 22, -8], [16, 2, 16], hair_painter(tip=None))
+    add_cube(geo, atlas, 'hair_back', 'torso', [0, 15, 8], [-8, 15, 7.5], [16, 8, 2], hair_painter(tip=None))
+    add_cube(geo, atlas, 'hair_back', 'torso', [0, 15, 8], [-8, 6, 8.6], [16, 9, 2], hair_painter(tip_from=0.55))
     for (x0, w_, hh) in [(-8, 4, 2), (-4, 3, 2), (-1.5, 1, 1), (0.5, 1, 1), (1, 3, 2), (4, 4, 2)]:
         pass
     for (x0, w_, hh) in [(-8, 4, 2), (-4, 3, 2), (-1.5, 1, 1), (0.5, 1, 1), (1.0, 3, 2), (4, 4, 2)]:
@@ -137,8 +143,9 @@ def chansey():
         xh = 7.5 if sx > 0 else -9.5
         xt = 9 if sx > 0 else -11
         nm = 'hair_side_l' if sx > 0 else 'hair_side_r'
-        add_cube(geo, atlas, nm, 'head', [0, 16, 0], [xh, 14, -7], [2, 9, 15], hair_painter(tip=None))
-        add_cube(geo, atlas, nm, 'torso', [0, 16, 0], [xt, 5, -8], [2, 9, 16], hair_painter(tip_from=0.6))
+        xs_ = 7.5 if sx > 0 else -8.5
+        strands(geo, atlas, nm, 'head', [0, 16, 0], xs_, -7, 15, 23, [9, 5, 9], 2.0)
+        strands(geo, atlas, nm, 'torso', [0, 16, 0], xs_, -8, 15, 14, [9, 0, 9], 0.45)
     return geo, atlas
 
 # ------------------------------------------------------------------------------------------------ Happiny
@@ -159,8 +166,7 @@ def happiny():
         x0 = 4.4 if sx > 0 else -6.4
         add_cube(geo, atlas, 'hair_lock_l' if sx > 0 else 'hair_lock_r', 'head', [0, 13, -3], [x0, 3, -3.6], [2, 9, 1], hair_painter(tip_from=0.6))
     for sx in (-1, 1):
-        x0 = 4.5 if sx > 0 else -6.5
-        add_cube(geo, atlas, 'hair_side_l' if sx > 0 else 'hair_side_r', 'head', [0, 9, 0], [x0, 3, -3.5], [2, 10, 8], hair_painter(tip_from=0.6))
+        strands(geo, atlas, 'hair_side_l' if sx > 0 else 'hair_side_r', 'head', [0, 9, 0], 4.5 if sx > 0 else -5.5, -3.5, 8, 13, [10, 6, 9], 0.5)
     return geo, atlas
 
 if __name__ == '__main__':

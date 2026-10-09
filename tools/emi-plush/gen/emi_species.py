@@ -67,40 +67,48 @@ def find_head(geo):
     return b, c
 
 def add_hair(geo, atlas, head, opts):
+    """Pelo de Emi en low-poly: tapa fina, nuca corta, flequillo con raya y mechones sueltos (varios, de distinto largo) a los lados y atras,
+    con las puntas rosas. Nada cierra la cabeza como un casco: la cara queda a la vista.
+    Las medidas salen del tamaño de la cabeza (no del torso, para las especies donde la cabeza es el cuerpo entero)."""
     b, c = head
     x0, y0, z0 = c['origin']; W, H, D = c['size']
     x1, y1, z1 = x0 + W, y0 + H, z0 + D
-    s = opts.get('s', max(0.7, min(W, H) / 12.0))
-    t = max(1, round(1.4 * s))
+    g = opts.get('g', max(0.8, min(W, D) / 8.0))
+    Hs = min(H, W)
     parent = b['name']
     piv = [0, y1, 0]
     eyes = eye_cubes(geo)
     eye_top = max(cc['origin'][1] + cc['size'][1] for _, cc in eyes)
-    room = max(1, int(y1 - eye_top))       # sitio entre los ojos y lo alto de la cabeza para el flequillo
+    room = max(1, int(y1 - eye_top))
     ri = lambda v: max(1, int(round(v)))
     tip = hair_painter(tip=None)
-    # tapa
-    add_cube(geo, atlas, 'emi_hair_top', parent, piv, [x0 - 0.0, y1 - 0.2, z0 - 0.0], [ri(W), t, ri(D)], tip)
-    # flequillo con raya
+    # tapa fina que cubre lo alto y el pelo de la nuca
+    Wc = ri(W)
+    cx = (x0 + x1) / 2
+    add_cube(geo, atlas, 'emi_hair_top', parent, piv, [cx - Wc / 2.0, y1 - 0.1, z0 - 0.1], [Wc, 1, ri(D + 0.2)], tip)
+    Hn = ri(H * 0.5)
+    add_cube(geo, atlas, 'emi_hair_nape', parent, piv, [cx - Wc / 2.0, y1 - Hn, z1 - 0.1], [Wc, Hn, 1], tip)
+    # flequillo con raya al medio
     n = 6
     wseg = max(1, round(W / n))
-    heights = [2, 3, 1, 1, 3, 2]
+    heights = [2, 2, 1, 1, 2, 2]
     for i in range(n):
-        h = min(ri(heights[i] * s), room)
-        xs = x0 + i * W / n
-        add_cube(geo, atlas, 'emi_bangs', parent, piv, [round(xs, 2), y1 - h + 0.3, z0 - 1.0], [wseg, h, 1], tip)
-    # mechones largos a los lados de la cara
-    lw = max(1, round(2.0 * s)); Ltop = y1 - 0.5; Lbot = max(0.5, y0 - H * opts.get('lock', 0.55))
+        h = min(ri(heights[i] * g), room)
+        add_cube(geo, atlas, 'emi_bangs', parent, piv, [round(x0 + i * W / n, 2), y1 - h + 0.3, z0 - 0.9], [wseg, h, 1], tip)
+    # mechones sueltos a cada lado: uno delante (enmarca la cara) y otro mas largo hacia atras
     for sx in (-1, 1):
-        xl = x1 - 0.2 if sx > 0 else x0 - lw + 0.2
-        add_cube(geo, atlas, 'emi_lock_l' if sx > 0 else 'emi_lock_r', parent, piv, [xl, Lbot, z0 - 1.6], [lw, ri(Ltop - Lbot), 1], hair_painter(tip_from=0.7))
-    # paneles laterales
-    for sx in (-1, 1):
-        xs_ = x1 if sx > 0 else x0 - t
-        add_cube(geo, atlas, 'emi_side_l' if sx > 0 else 'emi_side_r', parent, piv, [xs_, max(0.5, y1 - H * 0.8), z0 + D * 0.3], [t, ri(H * 0.8), ri(D * 0.7)], hair_painter(tip_from=0.75))
-    # melena por detras
-    Lbot2 = max(0.5, y0 - H * opts.get('back', 0.8))
-    add_cube(geo, atlas, 'emi_back', parent, piv, [x0, Lbot2, z1 - 0.1], [ri(W), ri(y1 - Lbot2), t], hair_painter(tip_from=0.65))
+        nm = 'emi_lock_l' if sx > 0 else 'emi_lock_r'
+        xo = x1 - 0.1 if sx > 0 else x0 - 0.9
+        for zf, ln, ang in ((0.05, 0.42, -4), (0.55, 0.62, -9)):
+            Lb = y0 - min(Hs * ln, 3.4 * g * (1 + ln))
+            add_cube(geo, atlas, nm, parent, piv, [xo + sx * 0.0, Lb, z0 + D * zf - 0.5], [1, ri(y1 - 0.3 - Lb), 1], hair_painter(tip_from=0.5), rotation=[0, 0, ang * sx])
+    # cola trasera: tres tiras de distinto largo, mas largas en el centro, que se abren hacia atras
+    cw = max(1, round(Wc * 0.8 / 3))
+    xs0 = cx - cw * 1.5
+    y_top = y1 - Hn + 0.4
+    for i, ln in enumerate((0.55, 0.9, 0.55)):
+        Lb = y0 - min(Hs * ln, 5.0 * g * ln / 0.9)
+        add_cube(geo, atlas, 'emi_back', parent, piv, [xs0 + i * cw, Lb, z1 + 0.5], [cw, ri(y_top - Lb), 1], hair_painter(tip_from=0.4), rotation=[6, 0, 0])
 
 def build_variant(Z, sp, folder, model, texp, cfg):
     geo, tex = load_geo_tex(Z, folder, model, texp)
@@ -181,7 +189,7 @@ CONFIG = {
     'leafeon':    dict(map=[BLACK, PINK_H, PINK_L, SILVER_D, SILVER, SILVER_L]),
     'glaceon':    dict(map=[BLACK, PINK_H, PINK_L, SILVER_D, SILVER, SILVER_L]),
     'sylveon':    dict(map=[PINK_H, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
-    'ralts':      dict(map=[PINK_H, BLACK, SILVER_D, BLACK_L, SILVER, SKIN]),
-    'kirlia':     dict(map=[PINK_H, BLACK, SILVER_D, BLACK_L, SILVER, SKIN]),
-    'gardevoir':  dict(map=[PINK_H, BLACK, SILVER_D, BLACK_L, SILVER, SKIN]),
+    'ralts':      dict(map=[PINK_H, SILVER_D, SILVER_D, SILVER, SILVER_L, SKIN]),
+    'kirlia':     dict(map=[PINK_H, SILVER_D, SILVER_D, SILVER, SILVER_L, SKIN]),
+    'gardevoir':  dict(map=[PINK_H, SILVER_D, SILVER_D, SILVER, SILVER_L, SKIN]),
 }

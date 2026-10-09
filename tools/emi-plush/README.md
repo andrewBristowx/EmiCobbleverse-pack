@@ -27,7 +27,7 @@ La misma criatura existe también como **Pokémon** de Cobblemon: `cobblemon:gat
 - Para probar una animación en bucle: `MICHI_DEBUG=<animacion> ./build.sh`. Retrato y vista de perfil se ajustan con `MICHI_PS/PX/PY` y `MICHI_FS/FX/FY` (ver `poser()`).
 
 ## Pokémon de Emi (aspecto `emi`) — 21 especies
-Variante cosmética con los colores y el pelo de Emi (no lleva su ropa): melena **plateada** con flequillo de raya al medio, mechones a los lados y detrás, **puntas rosas**, ojos de **dos colores** (naranja y magenta), negro y rosa en el cuerpo.
+Variante cosmética con los colores y el pelo de Emi (no lleva su ropa): melena **plateada** (tapa fina, flequillo con raya al medio, mechones sueltos de distinto largo a los lados y tres tiras atrás) con **puntas rosas**; la línea Ralts tiene el pelo plateado en lugar de verde, ojos de **dos colores** (naranja y magenta), negro y rosa en el cuerpo.
 Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/Jigglypuff/Wigglytuff**, **Eevee y sus 8 evoluciones** (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) y **Ralts/Kirlia/Gardevoir**.
 - Happiny, Chansey y Blissey están ajustadas a mano en `gen/gen_emi_poke.py`; el resto las genera el motor de `gen/emi_species.py` (busca la cabeza por los ojos, retiñe con k-means conservando el relieve y añade cubos de pelo; la tabla `CONFIG` fija los colores de cada especie). `gen/gen_all.py` lo lanza todo.
   Necesita `COBBLEMON_JAR=<jar de Cobblemon>` (y numpy); sin esa variable `build.sh` usa lo ya generado en `resources/`.
@@ -44,7 +44,7 @@ Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/
 
 ## Peluches de todos los Pokémon Emi
 Un bloque de Pokeblocks por cada especie Emi (21) además del GatitoAlien: `/give @s emi_plush:<especie>_emi` (p. ej. `emi_plush:blissey_emi`). Aparecen en la pestaña **Pokeblocks - Misc**; se colocan mirando hacia el jugador y se recogen al romperlos.
-- `gen/gen_dolls.py` los genera a partir de los `*_emi.geo.json`: modelo reducido (sin huesos ocultos como párpados o boca abierta, UV por cara), textura, blockstate, modelos de bloque y objeto, loot table, textos (es/en) y las clases Java (`src/emi/plush/gen/Doll_*.java`, `DollRegistry.java`). Los brazos de la línea Ralts se bajan (`BRAZOS_ABAJO`) porque el modelo base está en T.
+- `gen/gen_dolls.py` los genera a partir de los `*_emi.geo.json`: modelo reducido (sin huesos ocultos como párpados o boca abierta, UV por cara), textura, blockstate, modelos de bloque y objeto, loot table, textos (es/en) y las clases Java (`src/emi/plush/gen/Doll_*.java`, `DollRegistry.java`). Proporciones de peluche (`CHIBI`: cabeza más grande y cuerpo más pequeño) y poses (`BRAZOS_ABAJO`, `POSE_CAIDA`: brazos de la línea Ralts, Clefairy/Clefable/Wigglytuff y las cintas de Sylveon se dejan caer porque el modelo base está en T).
 - `EmiDollModel`/`EmiDollItemModel` cargan `geo/<nombre>.geo.json` y `textures/entity/<nombre>.png`. `build.sh` ejecuta todos los generadores antes de compilar.
 
 ## Cómo se hizo el modelo

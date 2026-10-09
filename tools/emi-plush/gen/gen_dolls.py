@@ -24,6 +24,13 @@ ESPECIES = [
 ]
 # los brazos de la pose base salen en T: se bajan (grados) para el peluche
 BRAZOS_ABAJO = {'ralts': 65, 'kirlia': 65, 'gardevoir': 55}
+# huesos que se dejan caer (grados, hacia abajo; el signo se saca de la posicion en x del pivote)
+POSE_CAIDA = {'sylveon': [(('ribbon_neck_left', 'ribbon_neck_right'), 28), (('ribbon_ear_left', 'ribbon_ear_right'), 40)],
+              'clefairy': [(('arm_left', 'arm_right'), 32)], 'clefable': [(('arm_left', 'arm_right'), 30)],
+              'wigglytuff': [(('arm_left', 'arm_right'), 30)], 'cleffa': [(('arm_left', 'arm_right'), 28)]}
+# proporciones de peluche: (escala de la cabeza, escala del cuerpo) con el hueso `head` como raiz de la cabeza
+CHIBI = {**{e: (1.4, 0.9) for e in ('eevee', 'vaporeon', 'jolteon', 'flareon', 'espeon', 'umbreon', 'leafeon', 'glaceon', 'sylveon')},
+         'ralts': (1.25, 1.0), 'kirlia': (1.35, 0.9), 'gardevoir': (1.7, 0.8), 'chansey': (1.2, 1.0), 'happiny': (1.25, 1.0)}
 OCULTOS = re.compile(r'lid|closed|expression|locator|mouth_open|yawn|sleep|blink|^stone|stone_|egg_body|egg_torso|egg_pouch|^eyes$|angry|sad|happy_')
 
 def per_face(c):
@@ -51,6 +58,26 @@ def build(sp, folder, model, tex, nombre, alto):
     geo = g['minecraft:geometry'][0]
     bs = [b for b in geo['bones'] if not OCULTOS.search(b['name'])]
     names = {b['name'] for b in bs}
+    bs = copy.deepcopy(bs)
+    for b in bs:
+        for c in b.get('cubes', []): c['uv'] = per_face(c)
+    if sp in CHIBI:
+        hs, bsc = CHIBI[sp]
+        raiz = next(b for b in bs if b['name'] == 'head')
+        grupo = {'head'}
+        while True:
+            nuevos = {b['name'] for b in bs if b.get('parent') in grupo} - grupo
+            if not nuevos: break
+            grupo |= nuevos
+        N = raiz['pivot']; N2 = [v * bsc for v in N]
+        for b in bs:
+            if b['name'] in grupo: m = lambda p, N=N, N2=N2: [N2[i] + hs * (p[i] - N[i]) for i in range(3)]; k = hs
+            else: m = lambda p: [v * bsc for v in p]; k = bsc
+            if 'pivot' in b: b['pivot'] = m(b['pivot'])
+            for c in b.get('cubes', []):
+                c['origin'] = m(c['origin']); c['size'] = [v * k for v in c['size']]
+                if 'pivot' in c: c['pivot'] = m(c['pivot'])
+                if 'inflate' in c: c['inflate'] *= k
     lo, hi = bounds(bs)
     f = min(1.0, alto / (hi - lo))
     out = []
@@ -60,6 +87,8 @@ def build(sp, folder, model, tex, nombre, alto):
         nb['pivot'] = [round(v * f, 4) for v in b.get('pivot', [0, 0, 0])]
         if 'rotation' in b: nb['rotation'] = b['rotation']
         if sp in BRAZOS_ABAJO and b['name'] in ('arm_left', 'arm_right'): nb['rotation'] = [0, 0, BRAZOS_ABAJO[sp] * (1 if b['name'] == 'arm_left' else -1)]
+        for pref, ang in POSE_CAIDA.get(sp, ()):
+            if b['name'] in pref: nb['rotation'] = [0, 0, ang if b['pivot'][0] > 0 else -ang]
         cs = []
         for c in b.get('cubes', []):
             nc = {'origin': [round(v * f, 4) for v in c['origin']], 'size': [round(v * f, 4) for v in c['size']], 'uv': per_face(c)}
