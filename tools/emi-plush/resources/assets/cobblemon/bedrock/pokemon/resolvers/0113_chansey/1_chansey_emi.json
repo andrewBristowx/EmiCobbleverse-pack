@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:chansey",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "poser": "cobblemon:chansey",
+      "model": "cobblemon:chansey_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0113_chansey/chansey_emi.png",
+      "layers": []
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0113_chansey/chansey_emi_shiny.png"
+    }
+  ]
+}

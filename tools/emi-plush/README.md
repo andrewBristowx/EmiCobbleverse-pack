@@ -26,6 +26,15 @@ La misma criatura existe también como **Pokémon** de Cobblemon: `cobblemon:gat
 - Depende de `cobblemon` (>= 1.7).
 - Para probar una animación en bucle: `MICHI_DEBUG=<animacion> ./build.sh`. Retrato y vista de perfil se ajustan con `MICHI_PS/PX/PY` y `MICHI_FS/FX/FY` (ver `poser()`).
 
+## Happiny, Chansey y Blissey de Emi (aspecto `emi`)
+Variante cosmética de la línea **Happiny → Chansey → Blissey** con los colores y el pelo de Emi (no lleva su ropa): melena larga **plateada** con flequillo de raya al medio, mechones a los lados y **puntas rosas**;
+las orejas/lazos de Chansey y Blissey y los brazos quedan **rosas**, los ojos son de **dos colores** (naranja a la izquierda y magenta a la derecha, vistos de frente), los fruncidos, los pies y la bolsa van en **negro** (la bolsa con una luna rosa) y la piel es muy clara.
+Happiny conserva su flequillo y su coletita (ahora plateados) y la diadema es rosa.
+- Se parte de los modelos y texturas de Cobblemon (`gen/gen_emi_poke.py` + `gen/emi_lib.py`, con `COBBLEMON_JAR=<jar de Cobblemon>`; sin esa variable `build.sh` usa lo ya generado en `resources/`). El script copia la geometría, amplía la textura, retiñe por partes conservando el relieve y añade cubos de pelo; el resto (animaciones, hitbox, movimientos, evoluciones) es el de la especie normal.
+- Es un **aspecto** (`data/cobblemon/species_features/emi.json` + `species_feature_assignments/emi.json`, indicador `emi`), no una especie nueva: evoluciona, se cría y combate como cualquier Happiny/Chansey/Blissey. Resolvers en `bedrock/pokemon/resolvers/*/1_*_emi.json`; también hay versión **brillante** (giro leve a violeta).
+- **Cómo conseguirlos** (no salen en la naturaleza): `/givepokemon <jugador> happiny emi=true` (o `chansey`, `blissey`), `/spawnpokemon cobblemon:blissey emi=true` para uno salvaje. Para cambiar uno que ya tiene un jugador: `/pokeedit`/propiedades `emi=true`.
+- Los huesos nuevos (`hair_*`, `bangs`) cuelgan del torso/cabeza y se mueven con ellos; no tienen animación propia.
+
 ## Cómo se hizo el modelo
 `gen/gen_michi.py` genera el modelo (`assets/emi_plush/geo/michi_dramatico.geo.json`) y la textura (`textures/entity/michi_dramatico.png`) a partir de una lista de cubos:
 cada cara tiene su propio rectángulo en el atlas (6 px por unidad) y los colores salen de una función por posición, así que las caras siempre coinciden.
