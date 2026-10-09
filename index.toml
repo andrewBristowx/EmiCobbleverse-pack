@@ -304,7 +304,7 @@ hash = "41abef2f4b9e39d1b307801fc26be821891e258a14d2596fb784363eb6c4b0eb"
 
 [[files]]
 file = "config/cobblemonsizevariation/config.json"
-hash = "b38904f3c04b36b98fb69768403c77014bbc5128ff0beb2a0feb9a910b24e045"
+hash = "075522ae20f98afcc75063f74153ac5e929550dc350601651da10fab0ea97b0e"
 
 [[files]]
 file = "config/cobblemonsizevariation/sizes/basic.json"
