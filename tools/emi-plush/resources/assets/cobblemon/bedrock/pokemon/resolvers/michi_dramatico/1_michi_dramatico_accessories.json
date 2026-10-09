@@ -4,6 +4,19 @@
   "variations": [
     {
       "aspects": [
+        "gold"
+      ],
+      "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_shiny.png"
+    },
+    {
+      "aspects": [
+        "gold",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico.png"
+    },
+    {
+      "aspects": [
         "sunglasses-accessory"
       ],
       "model": "cobblemon:michi_dramatico_sunglasses.geo"

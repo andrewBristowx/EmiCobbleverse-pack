@@ -9,6 +9,48 @@
       "unlockForms": [
         "Normal"
       ]
+    },
+    {
+      "displayForm": "Gold",
+      "unlockForms": [
+        "Gold"
+      ]
+    },
+    {
+      "displayForm": "Sunglasses",
+      "unlockForms": [
+        "Sunglasses"
+      ]
+    },
+    {
+      "displayForm": "BeachHat",
+      "unlockForms": [
+        "BeachHat"
+      ]
+    },
+    {
+      "displayForm": "Crown",
+      "unlockForms": [
+        "Crown"
+      ]
+    },
+    {
+      "displayForm": "Bow",
+      "unlockForms": [
+        "Bow"
+      ]
+    },
+    {
+      "displayForm": "Headphones",
+      "unlockForms": [
+        "Headphones"
+      ]
+    },
+    {
+      "displayForm": "Scarf",
+      "unlockForms": [
+        "Scarf"
+      ]
     }
   ],
   "variations": []

@@ -36,11 +36,13 @@ Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/
 - **Cómo conseguirlos**: `/givepokemon <jugador> <especie> emi=true`, `/spawnpokemon cobblemon:blissey emi=true` para uno salvaje.
 - Los huesos nuevos (`hair_*`, `bangs`) cuelgan de la cabeza/torso y se mueven con ellos; no tienen animación propia.
 
-## GatitoAlien: shiny dorado y accesorios
-`gen/gen_michi_extras.py` (se ejecuta tras `gen_pokemon.py`):
-- **Shiny dorado**: el pelaje blanco y los lilas pasan a oro (`michi_dramatico_shiny.png`).
-- **Accesorios** (aspecto `accessory`): `sunglasses`, `beach_hat`, `crown`, `bow`, `headphones`, `scarf`. Cada uno es un modelo aparte (copia del base + cubos nuevos en el hueso `head`) que usa la misma textura (los accesorios están pintados en la zona libre de abajo). Se combinan con el shiny.
-  `/givepokemon <jugador> gatitoalien accessory=sunglasses` (añadir `shiny` para la versión dorada). Datos: `species_features/accessory.json`, asignación y resolver `1_michi_dramatico_accessories.json`. Requiere reiniciar el servidor.
+## GatitoAlien: formas Gold y con accesorios, y shiny dorado
+`gen/gen_michi_extras.py` (se ejecuta tras `gen_pokemon.py`) y `data/cobblemon/species/custom/gatitoalien.json` (`forms`):
+- **Formas Pokémon** (salen en el Pokédex y en el nombre, p. ej. "GatitoAlien (Crown)"): `Gold`, `Sunglasses`, `BeachHat`, `Crown`, `Bow`, `Headphones`, `Scarf`. Cada forma se activa con un aspecto: `gold=true` (indicador `gold`) o `accessory=<sunglasses|beach_hat|crown|bow|headphones|scarf>` (elección `accessory`).
+  `/givepokemon <jugador> gatitoalien accessory=sunglasses`, `/givepokemon <jugador> gatitoalien gold=true`. Se pueden combinar con `shiny`; la forma Gold shiny vuelve a los colores normales.
+  OJO: `form=Gold` en `/spawnpokemon` no funciona (Cobblemon solo elige la forma por aspectos); usar los aspectos de arriba.
+- **Shiny dorado** de la forma normal: el pelaje blanco y los lilas pasan a oro (`michi_dramatico_shiny.png`).
+- Cada accesorio es un modelo aparte (copia del base + cubos nuevos en el hueso `head`) que usa la misma textura (los accesorios están pintados en la zona libre de abajo). Datos: `species_features/{accessory,gold}.json`, sus asignaciones y el resolver `1_michi_dramatico_accessories.json`. Requiere reiniciar el servidor.
 
 ## Peluches de todos los Pokémon Emi
 Un bloque de Pokeblocks por cada especie Emi (21) además del GatitoAlien: `/give @s emi_plush:<especie>_emi` (p. ej. `emi_plush:blissey_emi`). Aparecen en la pestaña **Pokeblocks - Misc**; se colocan mirando hacia el jugador y se recogen al romperlos.

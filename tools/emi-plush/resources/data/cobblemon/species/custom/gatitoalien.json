@@ -162,5 +162,70 @@
         "percentage": 30.0
       }
     ]
-  }
+  },
+  "forms": [
+    {
+      "name": "Gold",
+      "aspects": [
+        "gold"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Sunglasses",
+      "aspects": [
+        "sunglasses-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "BeachHat",
+      "aspects": [
+        "beach_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Crown",
+      "aspects": [
+        "crown-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Bow",
+      "aspects": [
+        "bow-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Headphones",
+      "aspects": [
+        "headphones-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Scarf",
+      "aspects": [
+        "scarf-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    }
+  ]
 }

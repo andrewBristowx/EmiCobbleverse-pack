@@ -113,7 +113,8 @@ def main():
     geo0 = json.load(open(f'{GEO}/michi_dramatico.geo.json'))
     img = Image.open(f'{TEX}/michi_dramatico.png').convert('RGBA')
     free = Free(img, 112)
-    variantes = []
+    variantes = [{'aspects': ['gold'], 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_shiny.png'},
+                 {'aspects': ['gold', 'shiny'], 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico.png'}]
     for nombre, fn in ACCESORIOS.items():
         g = copy.deepcopy(geo0)
         g['minecraft:geometry'][0]['description']['identifier'] = f'geometry.michi_dramatico_{nombre}'
@@ -128,6 +129,8 @@ def main():
     os.makedirs(f'{data}/species_features', exist_ok=True); os.makedirs(f'{data}/species_feature_assignments', exist_ok=True)
     json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS), 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['accessory']}, open(f'{data}/species_feature_assignments/accessory.json', 'w'))
+    json.dump({'keys': ['gold'], 'type': 'flag', 'isAspect': True, 'default': False}, open(f'{data}/species_features/gold.json', 'w'))
+    json.dump({'pokemon': ['gatitoalien'], 'features': ['gold']}, open(f'{data}/species_feature_assignments/gold.json', 'w'))
     print('extras de GatitoAlien ok:', ', '.join(ACCESORIOS))
 
 main()
