@@ -1,8 +1,8 @@
 {
   "sizeModificationChance": 0.5,
   "preventShoulderMountSize": 1.5,
-  "preventRidingMinSize": 0.3,
-  "preventRidingMaxSize": 1.8,
+  "preventRidingMinSize": 0.0,
+  "preventRidingMaxSize": 1000.0,
   "permissions": [
     {
       "cobblemonsizevariation.command.pokesizer": 2
