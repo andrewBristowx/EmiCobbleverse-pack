@@ -20,7 +20,7 @@ La misma criatura existe también como **Pokémon** de Cobblemon: `cobblemon:gat
 - **Gestos**: la cara base (ojos enfadados con brillo y boquita `:3`) está pintada en el cuerpo, igual que en el peluche; encima van piezas sueltas (párpados, ojos felices `^ ^`, boca abierta y bocaza de bostezo). Parpadea, mueve las orejas y la cola solo, y de vez en cuando suelta un **bostezo dramático** (cabeza atrás, ojos cerrados y bocaza). Pone ojos felices con el ataque especial y los movimientos de estado, abre la boca al gruñir y al gritar, y cierra los ojos al dormir. Los párpados y las bocas abiertas están escondidos dentro del cuerpo y la animación los saca hacia delante (`position z`).
 - Ataques: aprende **Bostezo** (nivel 8) e **Hipnosis** (nivel 20), además de los de Hada.
 - Las patas y la cola cuelgan del hueso `head` (que es el cuerpo entero), así que se mueven con él y no se despegan; `colaA` está metida 0,8 dentro del cuerpo.
-- **Habilidad Drama** (`data/emi_plush/abilities/drama.js`, es la habilidad normal; la oculta es Gran Encanto): los bostezos de este Pokémon son dobles. **Bostezo alcanza a todos los rivales adyacentes** y **el sueño que provoca dura el doble**. Probada con el simulador de combate de Cobblemon (`test/probar_drama.js`). OJO: Cobblemon une las líneas del archivo con espacios, así que el `.js` **no puede llevar comentarios `//`** (un solo `//` impide que arranque el servidor); el script de prueba lo comprueba.
+- **Habilidad Drama** (`data/emi_plush/abilities/drama.js`, es la habilidad normal del GatitoAlien sin accesorio; la oculta es Gran Encanto; en las formas con rol Drama pasa a ser la oculta): los bostezos de este Pokémon son dobles. **Bostezo alcanza a todos los rivales adyacentes** y **el sueño que provoca dura el doble**. Probada con el simulador de combate de Cobblemon (`test/probar_drama.js`). OJO: Cobblemon une las líneas del archivo con espacios, así que el `.js` **no puede llevar comentarios `//`** (un solo `//` impide que arranque el servidor); el script de prueba lo comprueba.
 - Descripción de Pokédex: «la mascota oficial del canal de Emi… muy escandalosa y dramática». Tiene entrada de Pokédex (`dex_entries`, `dexes/emi.json`, añadida a la nacional).
 - **No aparece en la naturaleza**: se da con `/givepokemon <jugador> cobblemon:gatitoalien` (o `/spawnpokemon cobblemon:gatitoalien`). Si se quiere en el mundo hay que añadir un `spawn_pool_world`.
 - Depende de `cobblemon` (>= 1.7).
@@ -44,6 +44,28 @@ Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/
   `/givepokemon <jugador> gatitoalien accessory=halo gold=true`. Se pueden combinar con `shiny` (la dorada con shiny vuelve a los colores normales; la normal con shiny es dorada).
   OJO: `form=Gold` en `/spawnpokemon` no funciona (Cobblemon solo elige la forma por aspectos); usar los aspectos de arriba.
 - Cada accesorio es un modelo aparte (copia del base + cubos nuevos en el hueso `head`) que usa la misma textura (los accesorios están pintados en la zona libre de abajo). Datos: `species_features/{accessory,gold}.json`, sus asignaciones y el resolver `1_michi_dramatico_accessories.json`. Requiere reiniciar el servidor.
+### Roles, tipos y habilidades de las formas (v1.9.0)
+Cada forma es **Hada + otro tipo**, con estadísticas orientadas a un papel (todas suman 470, como el GatitoAlien normal), una **habilidad propia** con su temática y movimientos de su tipo; la habilidad oculta de todas es **Drama**. Las doradas con accesorio (`GoldX`) usan el rol de X. Se definen en `gen/michi_roles.py` (tipos, estadísticas, movimientos, textos y los scripts de Showdown de las habilidades), que `gen_michi_extras.py` vuelca en la especie (`forms`), en `data/emi_plush/abilities/<id>.js` y en los textos.
+
+| Forma | Tipo 2 | Rol | PS/Atq/Def/AtqE/DefE/Vel | Habilidad |
+|---|---|---|---|---|
+| Gold (dorado) | Acero | Muro físico | 85/65/115/55/100/50 | **Toque de Midas**: el contacto baja 1 la Velocidad del atacante; +1 Def al entrar |
+| Sunglasses | Siniestro | Físico veloz | 60/105/55/70/60/120 | **Gafas Chulas**: crítico +1, no se le baja la precisión, ignora la evasión |
+| BeachHat | Agua | Especial de agua | 70/50/65/110/85/90 | **Día de Playa**: Agua +30%; con sol o lluvia cura 1/16 por turno |
+| Crown | Dragón | Mixto robusto | 90/80/80/80/80/60 | **Soberano**: con PS completos recibe -25% de daño; inmune a Mofa, Tormento y Otra Vez |
+| Bow | Normal | Curandero | 100/50/80/70/110/60 | **Cariño**: cura 1/16 de los PS de sí mismo y de sus aliados cada turno |
+| Headphones | Eléctrico | Especial de sonido | 65/50/60/120/80/95 | **Ritmo Eléctrico**: sus movimientos de sonido pasan a Eléctrico y +20% |
+| Scarf | Hielo | Físico robusto | 95/105/90/45/65/70 | **Abrigo**: Fuego e Hielo le hacen la mitad; inmune a quemadura y congelación |
+| Halo | Volador | Muro especial | 80/45/75/105/105/60 | **Bendición**: se cura cualquier estado cada turno; Siniestro y Fantasma le hacen la mitad |
+| DevilHorns | Fuego | Cañón de cristal mixto | 55/115/50/115/50/85 | **Pacto Infernal**: +30% de daño, pero cada ataque le cuesta 1/10 de sus PS |
+| WitchHat | Fantasma | Especial de maleficios | 70/50/60/115/90/85 | **Maleficio**: +40% de daño a objetivos con algún estado alterado |
+| SantaHat | Psíquico | Especial defensivo | 95/50/85/95/95/50 | **Lluvia de Regalos**: cada turno 1/3 de probabilidad de subir 1 una característica al azar |
+| FlowerCrown | Planta | Tanque regenerador | 100/50/100/70/100/50 | **Floración**: cura 1/16 por turno (1/8 con sol); inmune a polvos y esporas |
+| Pirate | Lucha | Físico saqueador | 80/120/80/45/55/90 | **Saqueo**: al derrotar a un Pokémon +1 Ataque y cura 1/4 de sus PS |
+
+- Los textos de cada habilidad y la entrada de Pokédex de cada forma salen de `lang/{en_us,es_es,es_mx}.json` (`cobblemon.ability.<id>`, `emi_plush.species.gatitoalien_<forma>.desc`).
+- Pruebas: `SHOWDOWN=<carpeta showdown del servidor> node test/probar_habilidades.js` ejecuta 36 comprobaciones contra el simulador de Cobblemon (cada habilidad hace lo que dice: +30%, x0,5, curaciones…, y que los `.js` no tengan comentarios `//`). Además, un combate real en el juego con la forma Pirate arrancó con la habilidad `plunder` en el equipo.
+- El GatitoAlien normal (sin accesorio) sigue siendo Hada puro con Drama y 70/90/60/80/65/105.
 - Probado en el juego (v1.8.2): las 25 formas se ven bien, se pueden sacar, combatir (ganó un combate real) y el aspecto `emi` se conserva al evolucionar (Ralts → Kirlia). La corona dorada pasa a plata sobre el pelaje dorado para que se vea.
 - Para añadir otro accesorio: una entrada en `ACCESORIOS` (gen_michi_extras.py) y otra en `ACC` (michi_forms.py); forma, resolver, peluches y textos salen solos.
 

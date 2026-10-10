@@ -8,6 +8,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emi_lib import box_rects
 from michi_forms import FORMAS
+from michi_roles import ROLES, JS
 
 OUT = sys.argv[1]
 B = os.path.join(OUT, 'assets/cobblemon')
@@ -198,12 +199,37 @@ def main():
     # formas Pokemon (especie y entrada del Pokedex)
     sp_path = os.path.join(OUT, 'data/cobblemon/species/custom/gatitoalien.json')
     sp = json.load(open(sp_path, encoding='utf-8'))
-    sp['forms'] = [{'name': n, 'aspects': asp, 'pokedex': ['emi_plush.species.gatitoalien.desc']} for n, asp, _, _ in FORMAS]
+    NOMBRES_STAT = ('hp', 'attack', 'defence', 'special_attack', 'special_defence', 'speed')
+    formas = []
+    for n, asp, acc, dorado in FORMAS:
+        r = ROLES[acc]
+        assert sum(r['stats']) == 470, n
+        moves = list(sp['moves'])
+        for m in r['moves']:
+            if m not in moves: moves.append(m)
+        formas.append({'name': n, 'aspects': asp, 'primaryType': 'fairy', 'secondaryType': r['tipo'],
+                       'baseStats': dict(zip(NOMBRES_STAT, r['stats'])), 'evYield': {k: r['ev'].get(k, 0) for k in NOMBRES_STAT},
+                       'abilities': [r['ab'], 'h:drama'], 'moves': moves,
+                       'pokedex': [f"emi_plush.species.gatitoalien_{acc or 'gold'}.desc"]})
+    sp['forms'] = formas
     json.dump(sp, open(sp_path, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
     dx_path = os.path.join(OUT, 'data/emi_plush/dex_entries/pokemon/gatitoalien.json')
     dx = json.load(open(dx_path, encoding='utf-8'))
     dx['forms'] = [{'displayForm': 'Normal', 'unlockForms': ['Normal']}] + [{'displayForm': n, 'unlockForms': [n]} for n, *_ in FORMAS]
     json.dump(dx, open(dx_path, 'w', encoding='utf-8'), indent=2)
+    # habilidades propias (scripts de Showdown) y textos
+    ab_dir = os.path.join(OUT, 'data/emi_plush/abilities'); os.makedirs(ab_dir, exist_ok=True)
+    for ident, js in JS.items():
+        assert '//' not in js, ident
+        open(f'{ab_dir}/{ident}.js', 'w', encoding='utf-8').write(js + '\n')
+    for code, es in (('en_us', False), ('es_es', True), ('es_mx', True)):
+        p = os.path.join(OUT, f'assets/emi_plush/lang/{code}.json')
+        lang = json.load(open(p, encoding='utf-8'))
+        for acc, r in ROLES.items():
+            lang[f"cobblemon.ability.{r['ab']}"] = r['ab_es'] if es else r['ab_en']
+            lang[f"cobblemon.ability.{r['ab']}.desc"] = r['d_es'] if es else r['d_en']
+            lang[f"emi_plush.species.gatitoalien_{acc or 'gold'}.desc"] = r['dex_es'] if es else r['dex_en']
+        json.dump(lang, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
     print('extras de GatitoAlien ok:', ', '.join(ACCESORIOS))
 
 main()
