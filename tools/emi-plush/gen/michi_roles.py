@@ -4,6 +4,12 @@ La habilidad oculta de todas es Drama (el rasgo de la familia). Cada habilidad e
 (Cobblemon une las lineas con espacios: NO se pueden usar comentarios //).
 Las estadisticas suman 470 como el GatitoAlien normal."""
 
+import re
+
+def abid(rol):
+    """Id de la habilidad = toID(nombre en español) (Showdown deduce el id del nombre, asi que no pueden diferir): sin acentos, ni espacios, ni ñ."""
+    return re.sub(r'[^a-z0-9]', '', rol['ab_es'].lower())
+
 # id del rol -> datos. Estadisticas: hp, attack, defence, special_attack, special_defence, speed
 ROLES = {
     None: dict(  # Gold
@@ -128,7 +134,7 @@ ROLES = {
 # Scripts de Showdown (JS) de cada habilidad. Sin comentarios // (Cobblemon une las lineas con espacios). num: unico y negativo.
 JS = {
 'midas': '''({
-  name: "Midas",
+  name: "Toque de Midas",
   num: -9002,
   rating: 3.5,
   flags: {},
@@ -142,7 +148,7 @@ JS = {
   },
 })''',
 'coolshades': '''({
-  name: "Cool Shades",
+  name: "Gafas Chulas",
   num: -9003,
   rating: 3,
   flags: {},
@@ -154,7 +160,7 @@ JS = {
     if (boost.accuracy && boost.accuracy < 0) {
       delete boost.accuracy;
       if (!effect.secondaries && effect.id !== "octolock") {
-        this.add("-fail", target, "unboost", "accuracy", "[from] ability: Cool Shades", "[of] " + target);
+        this.add("-fail", target, "unboost", "accuracy", "[from] ability: Gafas Chulas", "[of] " + target);
       }
     }
   },
@@ -163,7 +169,7 @@ JS = {
   },
 })''',
 'beachday': '''({
-  name: "Beach Day",
+  name: "Día de Playa",
   num: -9004,
   rating: 3.5,
   flags: {},
@@ -183,7 +189,7 @@ JS = {
   },
 })''',
 'sovereign': '''({
-  name: "Sovereign",
+  name: "Soberano",
   num: -9005,
   rating: 4,
   flags: {},
@@ -195,13 +201,13 @@ JS = {
   },
   onTryAddVolatile(status, pokemon) {
     if (["taunt", "torment", "encore"].includes(status.id)) {
-      this.add("-immune", pokemon, "[from] ability: Sovereign");
+      this.add("-immune", pokemon, "[from] ability: Soberano");
       return null;
     }
   },
 })''',
 'affection': '''({
-  name: "Affection",
+  name: "Cariño",
   num: -9006,
   rating: 3.5,
   flags: {},
@@ -216,7 +222,7 @@ JS = {
   },
 })''',
 'electrobeat': '''({
-  name: "Electro Beat",
+  name: "Ritmo Eléctrico",
   num: -9007,
   rating: 4,
   flags: {},
@@ -233,7 +239,7 @@ JS = {
   },
 })''',
 'snug': '''({
-  name: "Snug",
+  name: "Abrigo",
   num: -9008,
   rating: 3.5,
   flags: {breakable: 1},
@@ -253,20 +259,20 @@ JS = {
   },
   onUpdate(pokemon) {
     if (pokemon.status === "brn" || pokemon.status === "frz") {
-      this.add("-activate", pokemon, "ability: Snug");
+      this.add("-activate", pokemon, "ability: Abrigo");
       pokemon.cureStatus();
     }
   },
   onSetStatus(status, target, source, effect) {
     if (status.id !== "brn" && status.id !== "frz") return;
     if (effect && effect.effectType === "Move" && !effect.secondaries) {
-      this.add("-immune", target, "[from] ability: Snug");
+      this.add("-immune", target, "[from] ability: Abrigo");
     }
     return false;
   },
 })''',
 'blessing': '''({
-  name: "Blessing",
+  name: "Bendición",
   num: -9009,
   rating: 3.5,
   flags: {breakable: 1},
@@ -274,7 +280,7 @@ JS = {
   onResidualSubOrder: 3,
   onResidual(pokemon) {
     if (pokemon.hp && pokemon.status) {
-      this.add("-activate", pokemon, "ability: Blessing");
+      this.add("-activate", pokemon, "ability: Bendición");
       pokemon.cureStatus();
     }
   },
@@ -294,7 +300,7 @@ JS = {
   },
 })''',
 'infernalpact': '''({
-  name: "Infernal Pact",
+  name: "Pacto Infernal",
   num: -9010,
   rating: 3,
   flags: {},
@@ -310,7 +316,7 @@ JS = {
   },
 })''',
 'hexcraft': '''({
-  name: "Hex Craft",
+  name: "Maleficio",
   num: -9011,
   rating: 3.5,
   flags: {},
@@ -323,7 +329,7 @@ JS = {
   },
 })''',
 'giftrain': '''({
-  name: "Gift Rain",
+  name: "Lluvia de Regalos",
   num: -9012,
   rating: 3.5,
   flags: {},
@@ -337,14 +343,14 @@ JS = {
     }
     if (!stats.length) return;
     const stat = this.sample(stats);
-    this.add("-activate", pokemon, "ability: Gift Rain");
+    this.add("-activate", pokemon, "ability: Lluvia de Regalos");
     const boost = {};
     boost[stat] = 1;
     this.boost(boost, pokemon, pokemon);
   },
 })''',
 'bloom': '''({
-  name: "Bloom",
+  name: "Floración",
   num: -9013,
   rating: 3.5,
   flags: {},
@@ -361,19 +367,19 @@ JS = {
   onTryHitPriority: 1,
   onTryHit(target, source, move) {
     if (move.flags["powder"] && target !== source && this.dex.getImmunity("powder", target)) {
-      this.add("-immune", target, "[from] ability: Bloom");
+      this.add("-immune", target, "[from] ability: Floración");
       return null;
     }
   },
 })''',
 'plunder': '''({
-  name: "Plunder",
+  name: "Saqueo",
   num: -9014,
   rating: 3.5,
   flags: {},
   onSourceAfterFaint(length, target, source, effect) {
     if (effect && effect.effectType === "Move") {
-      this.add("-activate", source, "ability: Plunder");
+      this.add("-activate", source, "ability: Saqueo");
       this.boost({atk: length}, source, source);
       this.heal(source.baseMaxhp / 4, source, source);
     }

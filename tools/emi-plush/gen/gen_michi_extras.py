@@ -7,8 +7,8 @@ import json, os, sys, copy
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emi_lib import box_rects
-from michi_forms import FORMAS
-from michi_roles import ROLES, JS
+from michi_forms import FORMAS, ACC
+from michi_roles import ROLES, JS, abid
 
 OUT = sys.argv[1]
 B = os.path.join(OUT, 'assets/cobblemon')
@@ -209,7 +209,7 @@ def main():
             if m not in moves: moves.append(m)
         formas.append({'name': n, 'aspects': asp, 'primaryType': 'fairy', 'secondaryType': r['tipo'],
                        'baseStats': dict(zip(NOMBRES_STAT, r['stats'])), 'evYield': {k: r['ev'].get(k, 0) for k in NOMBRES_STAT},
-                       'abilities': [r['ab'], 'h:drama'], 'moves': moves,
+                       'abilities': [abid(r), 'h:drama'], 'moves': moves,
                        'pokedex': [f"emi_plush.species.gatitoalien_{acc or 'gold'}.desc"]})
     sp['forms'] = formas
     json.dump(sp, open(sp_path, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
@@ -219,16 +219,27 @@ def main():
     json.dump(dx, open(dx_path, 'w', encoding='utf-8'), indent=2)
     # habilidades propias (scripts de Showdown) y textos
     ab_dir = os.path.join(OUT, 'data/emi_plush/abilities'); os.makedirs(ab_dir, exist_ok=True)
-    for ident, js in JS.items():
-        assert '//' not in js, ident
-        open(f'{ab_dir}/{ident}.js', 'w', encoding='utf-8').write(js + '\n')
+    por_clave = {r['ab']: abid(r) for r in ROLES.values()}
+    for f in os.listdir(ab_dir):                       # fuera las habilidades de versiones anteriores (ids en ingles); drama se queda
+        if f.endswith('.js') and f != 'drama.js': os.remove(f'{ab_dir}/{f}')
+    for clave, js in JS.items():
+        assert '//' not in js, clave
+        open(f'{ab_dir}/{por_clave[clave]}.js', 'w', encoding='utf-8').write(js + '\n')
     for code, es in (('en_us', False), ('es_es', True), ('es_mx', True)):
         p = os.path.join(OUT, f'assets/emi_plush/lang/{code}.json')
         lang = json.load(open(p, encoding='utf-8'))
+        for k in [k for k in lang if k.startswith('cobblemon.ability.') and not k.startswith('cobblemon.ability.drama')]: del lang[k]
         for acc, r in ROLES.items():
-            lang[f"cobblemon.ability.{r['ab']}"] = r['ab_es'] if es else r['ab_en']
-            lang[f"cobblemon.ability.{r['ab']}.desc"] = r['d_es'] if es else r['d_en']
+            lang[f"cobblemon.ability.{abid(r)}"] = r['ab_es'] if es else r['ab_en']
+            lang[f"cobblemon.ability.{abid(r)}.desc"] = r['d_es'] if es else r['d_en']
             lang[f"emi_plush.species.gatitoalien_{acc or 'gold'}.desc"] = r['dex_es'] if es else r['dex_en']
+        # nombres de las formas en el Pokedex (clave = nombre de la forma en minusculas)
+        nom = {a: (e if es else n) for a, _f, e, n in ACC}
+        for fn, asp, acc, dorado in FORMAS:
+            base = nom[acc] if acc else ''
+            txt = ((('Dorado ' if es else 'Golden ') if dorado else '') + base).strip()
+            if es and dorado and acc and base.startswith('con '): txt = 'Dorado ' + base
+            lang[f"cobblemon.ui.pokedex.info.form.{fn.lower()}"] = (txt[:1].upper() + txt[1:]) if txt else ('Dorado' if es else 'Golden')
         json.dump(lang, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
     print('extras de GatitoAlien ok:', ', '.join(ACCESORIOS))
 

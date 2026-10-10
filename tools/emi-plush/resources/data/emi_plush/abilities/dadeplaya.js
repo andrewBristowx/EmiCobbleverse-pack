@@ -1,5 +1,5 @@
 ({
-  name: "Beach Day",
+  name: "Día de Playa",
   num: -9004,
   rating: 3.5,
   flags: {},

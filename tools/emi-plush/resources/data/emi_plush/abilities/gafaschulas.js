@@ -1,5 +1,5 @@
 ({
-  name: "Cool Shades",
+  name: "Gafas Chulas",
   num: -9003,
   rating: 3,
   flags: {},
@@ -11,7 +11,7 @@
     if (boost.accuracy && boost.accuracy < 0) {
       delete boost.accuracy;
       if (!effect.secondaries && effect.id !== "octolock") {
-        this.add("-fail", target, "unboost", "accuracy", "[from] ability: Cool Shades", "[of] " + target);
+        this.add("-fail", target, "unboost", "accuracy", "[from] ability: Gafas Chulas", "[of] " + target);
       }
     }
   },

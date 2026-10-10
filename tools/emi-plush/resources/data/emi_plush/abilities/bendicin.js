@@ -1,5 +1,5 @@
 ({
-  name: "Blessing",
+  name: "Bendición",
   num: -9009,
   rating: 3.5,
   flags: {breakable: 1},
@@ -7,7 +7,7 @@
   onResidualSubOrder: 3,
   onResidual(pokemon) {
     if (pokemon.hp && pokemon.status) {
-      this.add("-activate", pokemon, "ability: Blessing");
+      this.add("-activate", pokemon, "ability: Bendición");
       pokemon.cureStatus();
     }
   },

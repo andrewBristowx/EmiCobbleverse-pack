@@ -1,5 +1,5 @@
 ({
-  name: "Affection",
+  name: "Cariño",
   num: -9006,
   rating: 3.5,
   flags: {},

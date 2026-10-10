@@ -1,5 +1,5 @@
 ({
-  name: "Hex Craft",
+  name: "Maleficio",
   num: -9011,
   rating: 3.5,
   flags: {},

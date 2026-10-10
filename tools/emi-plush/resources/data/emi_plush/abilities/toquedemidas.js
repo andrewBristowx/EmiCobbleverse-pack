@@ -1,5 +1,5 @@
 ({
-  name: "Midas",
+  name: "Toque de Midas",
   num: -9002,
   rating: 3.5,
   flags: {},

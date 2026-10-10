@@ -1,5 +1,5 @@
 ({
-  name: "Snug",
+  name: "Abrigo",
   num: -9008,
   rating: 3.5,
   flags: {breakable: 1},
@@ -19,14 +19,14 @@
   },
   onUpdate(pokemon) {
     if (pokemon.status === "brn" || pokemon.status === "frz") {
-      this.add("-activate", pokemon, "ability: Snug");
+      this.add("-activate", pokemon, "ability: Abrigo");
       pokemon.cureStatus();
     }
   },
   onSetStatus(status, target, source, effect) {
     if (status.id !== "brn" && status.id !== "frz") return;
     if (effect && effect.effectType === "Move" && !effect.secondaries) {
-      this.add("-immune", target, "[from] ability: Snug");
+      this.add("-immune", target, "[from] ability: Abrigo");
     }
     return false;
   },

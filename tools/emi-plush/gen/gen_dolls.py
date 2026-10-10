@@ -215,6 +215,9 @@ def lang():
             t = f'{en} Plush' if code == 'en_us' else f'Peluche {es}'
             d[f'block.emi_plush.{n}'] = t; d[f'item.emi_plush.{n}'] = t
         json.dump(d, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+    # el resto de variantes del español (Argentina, Chile, Ecuador, Uruguay, Venezuela) usan los mismos textos que es_mx
+    for v in ('es_ar', 'es_cl', 'es_ec', 'es_uy', 'es_ve'):
+        shutil.copy(f'{A}/lang/es_mx.json', f'{A}/lang/{v}.json')
 
 def java():
     os.makedirs(SRC, exist_ok=True)

@@ -1,5 +1,5 @@
 ({
-  name: "Gift Rain",
+  name: "Lluvia de Regalos",
   num: -9012,
   rating: 3.5,
   flags: {},
@@ -13,7 +13,7 @@
     }
     if (!stats.length) return;
     const stat = this.sample(stats);
-    this.add("-activate", pokemon, "ability: Gift Rain");
+    this.add("-activate", pokemon, "ability: Lluvia de Regalos");
     const boost = {};
     boost[stat] = 1;
     this.boost(boost, pokemon, pokemon);

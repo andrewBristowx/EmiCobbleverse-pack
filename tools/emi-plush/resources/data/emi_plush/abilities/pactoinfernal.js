@@ -1,5 +1,5 @@
 ({
-  name: "Infernal Pact",
+  name: "Pacto Infernal",
   num: -9010,
   rating: 3,
   flags: {},

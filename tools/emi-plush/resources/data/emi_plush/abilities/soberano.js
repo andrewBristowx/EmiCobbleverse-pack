@@ -1,5 +1,5 @@
 ({
-  name: "Sovereign",
+  name: "Soberano",
   num: -9005,
   rating: 4,
   flags: {},
@@ -11,7 +11,7 @@
   },
   onTryAddVolatile(status, pokemon) {
     if (["taunt", "torment", "encore"].includes(status.id)) {
-      this.add("-immune", pokemon, "[from] ability: Sovereign");
+      this.add("-immune", pokemon, "[from] ability: Soberano");
       return null;
     }
   },

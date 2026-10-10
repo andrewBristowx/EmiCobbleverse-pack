@@ -1,5 +1,5 @@
 ({
-  name: "Bloom",
+  name: "Floración",
   num: -9013,
   rating: 3.5,
   flags: {},
@@ -16,7 +16,7 @@
   onTryHitPriority: 1,
   onTryHit(target, source, move) {
     if (move.flags["powder"] && target !== source && this.dex.getImmunity("powder", target)) {
-      this.add("-immune", target, "[from] ability: Bloom");
+      this.add("-immune", target, "[from] ability: Floración");
       return null;
     }
   },

@@ -188,7 +188,7 @@
         "speed": 0
       },
       "abilities": [
-        "midas",
+        "toquedemidas",
         "h:drama"
       ],
       "moves": [
@@ -282,7 +282,7 @@
         "speed": 2
       },
       "abilities": [
-        "coolshades",
+        "gafaschulas",
         "h:drama"
       ],
       "moves": [
@@ -375,7 +375,7 @@
         "speed": 0
       },
       "abilities": [
-        "beachday",
+        "dadeplaya",
         "h:drama"
       ],
       "moves": [
@@ -468,7 +468,7 @@
         "speed": 0
       },
       "abilities": [
-        "sovereign",
+        "soberano",
         "h:drama"
       ],
       "moves": [
@@ -560,7 +560,7 @@
         "speed": 0
       },
       "abilities": [
-        "affection",
+        "cario",
         "h:drama"
       ],
       "moves": [
@@ -651,7 +651,7 @@
         "speed": 1
       },
       "abilities": [
-        "electrobeat",
+        "ritmoelctrico",
         "h:drama"
       ],
       "moves": [
@@ -744,7 +744,7 @@
         "speed": 0
       },
       "abilities": [
-        "snug",
+        "abrigo",
         "h:drama"
       ],
       "moves": [
@@ -837,7 +837,7 @@
         "speed": 0
       },
       "abilities": [
-        "blessing",
+        "bendicin",
         "h:drama"
       ],
       "moves": [
@@ -930,7 +930,7 @@
         "speed": 1
       },
       "abilities": [
-        "infernalpact",
+        "pactoinfernal",
         "h:drama"
       ],
       "moves": [
@@ -1023,7 +1023,7 @@
         "speed": 0
       },
       "abilities": [
-        "hexcraft",
+        "maleficio",
         "h:drama"
       ],
       "moves": [
@@ -1117,7 +1117,7 @@
         "speed": 0
       },
       "abilities": [
-        "giftrain",
+        "lluviaderegalos",
         "h:drama"
       ],
       "moves": [
@@ -1211,7 +1211,7 @@
         "speed": 0
       },
       "abilities": [
-        "bloom",
+        "floracin",
         "h:drama"
       ],
       "moves": [
@@ -1305,7 +1305,7 @@
         "speed": 1
       },
       "abilities": [
-        "plunder",
+        "saqueo",
         "h:drama"
       ],
       "moves": [
@@ -1399,7 +1399,7 @@
         "speed": 2
       },
       "abilities": [
-        "coolshades",
+        "gafaschulas",
         "h:drama"
       ],
       "moves": [
@@ -1493,7 +1493,7 @@
         "speed": 0
       },
       "abilities": [
-        "beachday",
+        "dadeplaya",
         "h:drama"
       ],
       "moves": [
@@ -1587,7 +1587,7 @@
         "speed": 0
       },
       "abilities": [
-        "sovereign",
+        "soberano",
         "h:drama"
       ],
       "moves": [
@@ -1680,7 +1680,7 @@
         "speed": 0
       },
       "abilities": [
-        "affection",
+        "cario",
         "h:drama"
       ],
       "moves": [
@@ -1772,7 +1772,7 @@
         "speed": 1
       },
       "abilities": [
-        "electrobeat",
+        "ritmoelctrico",
         "h:drama"
       ],
       "moves": [
@@ -1866,7 +1866,7 @@
         "speed": 0
       },
       "abilities": [
-        "snug",
+        "abrigo",
         "h:drama"
       ],
       "moves": [
@@ -1960,7 +1960,7 @@
         "speed": 0
       },
       "abilities": [
-        "blessing",
+        "bendicin",
         "h:drama"
       ],
       "moves": [
@@ -2054,7 +2054,7 @@
         "speed": 1
       },
       "abilities": [
-        "infernalpact",
+        "pactoinfernal",
         "h:drama"
       ],
       "moves": [
@@ -2148,7 +2148,7 @@
         "speed": 0
       },
       "abilities": [
-        "hexcraft",
+        "maleficio",
         "h:drama"
       ],
       "moves": [
@@ -2243,7 +2243,7 @@
         "speed": 0
       },
       "abilities": [
-        "giftrain",
+        "lluviaderegalos",
         "h:drama"
       ],
       "moves": [
@@ -2338,7 +2338,7 @@
         "speed": 0
       },
       "abilities": [
-        "bloom",
+        "floracin",
         "h:drama"
       ],
       "moves": [
@@ -2433,7 +2433,7 @@
         "speed": 1
       },
       "abilities": [
-        "plunder",
+        "saqueo",
         "h:drama"
       ],
       "moves": [

@@ -1,5 +1,5 @@
 ({
-  name: "Electro Beat",
+  name: "Ritmo Eléctrico",
   num: -9007,
   rating: 4,
   flags: {},
