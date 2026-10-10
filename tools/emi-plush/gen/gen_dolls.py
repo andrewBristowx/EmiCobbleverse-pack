@@ -31,21 +31,65 @@ POSE_CAIDA = {'sylveon': [(('ribbon_neck_left', 'ribbon_neck_right'), 28), (('ri
               'wigglytuff': [(('arm_left', 'arm_right'), 30)], 'cleffa': [(('arm_left', 'arm_right'), 28)]}
 # proporciones de peluche: (escala de la cabeza, escala del cuerpo) con el hueso `head` como raiz de la cabeza
 CHIBI = {**{e: (1.4, 0.9) for e in ('eevee', 'vaporeon', 'jolteon', 'flareon', 'espeon', 'umbreon', 'leafeon', 'glaceon', 'sylveon')},
-         'ralts': (1.25, 1.0), 'kirlia': (1.35, 0.9), 'gardevoir': (1.7, 0.8), 'chansey': (1.2, 1.0), 'happiny': (1.25, 1.0)}
+         'ralts': (1.25, 1.0), 'kirlia': (1.35, 0.9), 'gardevoir': (1.7, 0.8)}
 OCULTOS = re.compile(r'lid|closed|expression|locator|mouth_open|yawn|sleep|blink|^stone|stone_|egg_body|egg_torso|egg_pouch|^eyes$|angry|sad|happy_')
 
+def sin_ocultos(bones):
+    """Los huesos ocultos (parpados, bocas abiertas, localizadores...) se quedan SIN cubos pero siguen en el arbol: asi no se rompe la jerarquia de
+    sus hijos (p. ej. `eyes` cuelga de la cabeza y de el cuelgan los ojos; si se quitara, los ojos quedarian sueltos y, al agrandar la cabeza, dentro de ella)."""
+    out = copy.deepcopy(bones)
+    for b in out:
+        if OCULTOS.search(b['name']): b.pop('cubes', None)
+    return out
+
+
 def per_face(c):
+    """UV por cara a partir del UV de caja de Bedrock. Con `mirror` (la textura se ve volteada de izquierda a derecha y el este y el oeste se intercambian,
+    como en el motor de Minecraft) se escribe ya volteado: la caja cambia de rectangulo en este/oeste y cada cara lleva `uv_size` con ancho negativo."""
     if isinstance(c['uv'], dict): return c['uv']
     sx, sy, sz = c['size']
     r = box_rects(c['uv'][0], c['uv'][1], sx, sy, sz)
+    mir = bool(c.get('mirror'))
     out = {}
     for f, (x, y, w, h) in r.items():
         if w <= 0 or h <= 0: continue
         if sz == 0 and f != 'north': continue
         if sx == 0 and f not in ('east',): continue
         if sy == 0 and f != 'up': continue
-        out[f] = {'uv': [x, y], 'uv_size': [w, h]}
+        if mir:
+            src = {'east': 'west', 'west': 'east'}.get(f, f)
+            x, y, w, h = r[src]
+            if w <= 0 or h <= 0: continue
+            out[f] = {'uv': [x + w, y], 'uv_size': [-w, h]}
+        else:
+            out[f] = {'uv': [x, y], 'uv_size': [w, h]}
     return out
+
+POSES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'poses')
+
+def aplicar_pose(sp, bs):
+    """Aplica a los huesos la pose de reposo de Cobblemon (gen_poses.py): la rotacion se suma a la del hueso y la posicion mueve el hueso y todo lo que cuelga de el.
+    Devuelve el conjunto de huesos con pose."""
+    f = f'{POSES}/{sp}.json'
+    if not os.path.exists(f): return {}
+    pose = json.load(open(f))
+    por = {b['name']: b for b in bs}
+    hijos = {}
+    for b in bs: hijos.setdefault(b.get('parent'), []).append(b['name'])
+    def desplazar(n, d):
+        b = por[n]
+        if 'pivot' in b: b['pivot'] = [b['pivot'][i] + d[i] for i in range(3)]
+        for c in b.get('cubes', []):
+            c['origin'] = [c['origin'][i] + d[i] for i in range(3)]
+            if 'pivot' in c: c['pivot'] = [c['pivot'][i] + d[i] for i in range(3)]
+        for h in hijos.get(n, []): desplazar(h, d)
+    for n, t in pose.items():
+        if n not in por or OCULTOS.search(n): continue
+        b = por[n]
+        if 'rotation' in t: b['rotation'] = [(b.get('rotation') or [0, 0, 0])[i] + t['rotation'][i] for i in range(3)]
+        if 'position' in t: desplazar(n, t['position'])
+    return pose
+
 
 def bounds(bs):
     ys = []
@@ -57,7 +101,8 @@ def bounds(bs):
 def build(sp, folder, model, tex, nombre, alto):
     g = json.load(open(f'{B}/bedrock/pokemon/models/{folder}/{model}_emi.geo.json'))
     geo = g['minecraft:geometry'][0]
-    bs = [b for b in geo['bones'] if not OCULTOS.search(b['name'])]
+    bs = sin_ocultos(geo['bones'])
+    pose = aplicar_pose(sp, bs)
     names = {b['name'] for b in bs}
     bs = copy.deepcopy(bs)
     for b in bs:
@@ -70,7 +115,11 @@ def build(sp, folder, model, tex, nombre, alto):
             nuevos = {b['name'] for b in bs if b.get('parent') in grupo} - grupo
             if not nuevos: break
             grupo |= nuevos
-        N = raiz['pivot']; N2 = [v * bsc for v in N]
+        # la cabeza crece desde la base de su cubo mas grande (asi no se despega del cuello)
+        grandes = [c for b in bs if b['name'] in grupo for c in b.get('cubes', []) if min(c['size']) > 1.5]
+        cab = max(grandes, key=lambda c: c['size'][0] * c['size'][1] * c['size'][2])
+        N = [cab['origin'][0] + cab['size'][0] / 2, cab['origin'][1], cab['origin'][2] + cab['size'][2] / 2]
+        N2 = [v * bsc for v in N]
         for b in bs:
             if b['name'] in grupo: m = lambda p, N=N, N2=N2: [N2[i] + hs * (p[i] - N[i]) for i in range(3)]; k = hs
             else: m = lambda p: [v * bsc for v in p]; k = bsc
@@ -87,9 +136,9 @@ def build(sp, folder, model, tex, nombre, alto):
         if b.get('parent') in names: nb['parent'] = b['parent']
         nb['pivot'] = [round(v * f, 4) for v in b.get('pivot', [0, 0, 0])]
         if 'rotation' in b: nb['rotation'] = b['rotation']
-        if sp in BRAZOS_ABAJO and b['name'] in ('arm_left', 'arm_right'): nb['rotation'] = [0, 0, BRAZOS_ABAJO[sp] * (1 if b['name'] == 'arm_left' else -1)]
+        if sp in BRAZOS_ABAJO and b['name'] in ('arm_left', 'arm_right') and b['name'] not in pose: nb['rotation'] = [0, 0, BRAZOS_ABAJO[sp] * (1 if b['name'] == 'arm_left' else -1)]
         for pref, ang in POSE_CAIDA.get(sp, ()):
-            if b['name'] in pref: nb['rotation'] = [0, 0, ang if b['pivot'][0] > 0 else -ang]
+            if b['name'] in pref and b['name'] not in pose: nb['rotation'] = [0, 0, ang if b['pivot'][0] > 0 else -ang]
         cs = []
         for c in b.get('cubes', []):
             nc = {'origin': [round(v * f, 4) for v in c['origin']], 'size': [round(v * f, 4) for v in c['size']], 'uv': per_face(c)}
@@ -121,7 +170,7 @@ KU = 4
 def build_michi(ident, acc, dorado):
     base = f'{B}/bedrock/pokemon/models/michi_dramatico/michi_dramatico' + (f'_{acc}' if acc else '') + '.geo.json'
     geo = json.load(open(base))['minecraft:geometry'][0]
-    bs = copy.deepcopy([b for b in geo['bones'] if not OCULTOS.search(b['name'])])
+    bs = sin_ocultos(geo['bones'])
     names = {b['name'] for b in bs}
     out = []
     for b in bs:

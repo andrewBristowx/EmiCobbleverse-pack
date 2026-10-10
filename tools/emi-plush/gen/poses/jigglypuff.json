@@ -1,0 +1,131 @@
+{
+ "body": {
+  "position": [
+   0.0,
+   0.6,
+   0.0
+  ]
+ },
+ "leg_right": {
+  "rotation": [
+   12.5,
+   30.0,
+   0.0
+  ]
+ },
+ "foot_right": {
+  "rotation": [
+   -12.5,
+   0.0,
+   0.0
+  ]
+ },
+ "leg_left": {
+  "rotation": [
+   12.5,
+   -30.0,
+   0.0
+  ]
+ },
+ "foot_left": {
+  "rotation": [
+   -12.5,
+   0.0,
+   0.0
+  ]
+ },
+ "head": {
+  "rotation": [
+   2.5,
+   0.0,
+   0.0
+  ]
+ },
+ "arm_left": {
+  "rotation": [
+   9.2171,
+   -8.4462,
+   -11.3392
+  ]
+ },
+ "arm_right": {
+  "rotation": [
+   9.2171,
+   8.4462,
+   11.3392
+  ],
+  "position": [
+   -0.5,
+   0.0,
+   0.0
+  ]
+ },
+ "ear_right": {
+  "rotation": [
+   15.2519,
+   4.0007,
+   -30.4937
+  ]
+ },
+ "arm_left2": {
+  "rotation": [
+   0.0,
+   67.5,
+   0.0
+  ]
+ },
+ "arm_right2": {
+  "rotation": [
+   0.0,
+   -67.5,
+   0.0
+  ]
+ },
+ "ear_left": {
+  "rotation": [
+   15.2519,
+   -4.0007,
+   30.4937
+  ]
+ },
+ "ear_right2": {
+  "rotation": [
+   7.5,
+   0.0,
+   0.0
+  ]
+ },
+ "ear_left2": {
+  "rotation": [
+   7.5,
+   0.0,
+   0.0
+  ]
+ },
+ "microphone_arm1": {
+  "rotation": [
+   12.068,
+   -19.2765,
+   -3.9624
+  ],
+  "position": [
+   -0.5,
+   0.0,
+   0.0
+  ]
+ },
+ "microphone_arm2": {
+  "rotation": [
+   0.0,
+   -50.0,
+   0.0
+  ]
+ },
+ "microphone": {
+  "rotation": [
+   12.5,
+   0.0,
+   0.0
+  ]
+ }
+}
