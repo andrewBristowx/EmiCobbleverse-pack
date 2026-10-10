@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:ralts",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:ralts_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0280_ralts/ralts_emi.png",
+      "layers": [],
+      "poser": "cobblemon:ralts"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0280_ralts/ralts_emi_shiny.png"
+    }
+  ]
+}

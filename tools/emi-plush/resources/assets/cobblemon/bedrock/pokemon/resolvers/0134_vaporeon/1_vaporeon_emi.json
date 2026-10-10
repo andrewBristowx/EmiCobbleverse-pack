@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:vaporeon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:vaporeon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0134_vaporeon/vaporeon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:vaporeon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0134_vaporeon/vaporeon_emi_shiny.png"
+    }
+  ]
+}

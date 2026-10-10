@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:clefairy",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:clefairy_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0035_clefairy/clefairy_emi.png",
+      "layers": [],
+      "poser": "cobblemon:clefairy"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0035_clefairy/clefairy_emi_shiny.png"
+    }
+  ]
+}

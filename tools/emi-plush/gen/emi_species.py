@@ -1,0 +1,195 @@
+"""Motor generico: convierte cualquier Pokemon de Cobblemon en su variante Emi (aspecto `emi`).
+ 1) retinta la textura por grupos de color (k-means) hacia la paleta de Emi (plata, rosa, negro, piel clara)
+ 2) ojos de dos colores (naranja a la derecha del Pokemon, magenta a la izquierda)
+ 3) pelo plateado con puntas rosas colocado automaticamente alrededor de la cabeza (se detecta por la posicion de los ojos)"""
+import json, os, re, math
+import numpy as np
+from PIL import Image
+from emi_lib import *
+from gen_emi_poke import (SILVER, SILVER_D, SILVER_L, BLACK, BLACK_L, PINK_H, PINK_L, PINK_P, GOLD, SKIN, ORANGE_L, ORANGE, MAGENTA_L, MAGENTA, mix, hair_painter)
+
+WHITE = (250, 247, 250)
+PINKS = (248, 190, 215)
+
+class Overflow(Exception): pass
+
+def eye_cubes(geo):
+    out = []
+    for b in bones(geo):
+        n = b['name']
+        if re.search(r'lid|expression|locator|closed|lines|line_|^eyes$', n): continue
+        if re.search(r'(^|_)eye(s)?(_|$)', n) and ('left' in n or 'right' in n):
+            for c in b.get('cubes', []): out.append((b, c))
+    return out
+
+def paint_eyes(geo, img):
+    px = img.load()
+    for b, c in eye_cubes(geo):
+        cx = c['origin'][0] + c['size'][0] / 2
+        l, d = (MAGENTA_L, MAGENTA) if cx > 0 else (ORANGE_L, ORANGE)   # +x = lado izquierdo del Pokemon (derecha vista de frente)
+        rects = cube_rects(c)
+        for face in ('north', 'south'):
+            if face not in rects: continue
+            x, y, w, h = rects[face]
+            for i in range(w):
+                for j in range(h):
+                    if not (0 <= x + i < img.width and 0 <= y + j < img.height): continue
+                    r, g, bl, a = px[x + i, y + j]
+                    if a == 0: continue
+                    lu = lum((r, g, bl))
+                    if lu > 190: continue                       # reflejos blancos se quedan
+                    t = max(0.0, min(1.0, lu / 120.0))
+                    px[x + i, y + j] = mix(d, l, t) + (255,)
+
+def find_head(geo):
+    """Cubo de la cabeza: el mas pequeño que contiene los ojos (por la cara delantera). Devuelve (hueso, cubo)."""
+    eyes = eye_cubes(geo)
+    if not eyes: return None
+    ex = sum(c['origin'][0] + c['size'][0] / 2 for _, c in eyes) / len(eyes)
+    ey = sum(c['origin'][1] + c['size'][1] / 2 for _, c in eyes) / len(eyes)
+    ez = min(c['origin'][2] for _, c in eyes)
+    best = None
+    for b in bones(geo):
+        for c in b.get('cubes', []):
+            ox, oy, oz = c['origin']; sx, sy, sz = c['size']
+            if min(sx, sy, sz) < 1.5: continue
+            if ox - 0.6 <= ex <= ox + sx + 0.6 and oy - 0.6 <= ey <= oy + sy + 0.6 and abs(oz - ez) <= 1.6:
+                v = sx * sy * sz * (1000 if b['name'].startswith('head') else 1)
+                if best is None or v > best[0]: best = (v, b, c)
+    if not best: return None
+    b, c = best[1], dict(best[2])
+    # si el cubo es mucho mas alto que ancho (cuerpo y cabeza en una pieza) la "cabeza" es la parte alta
+    W, H = c['size'][0], c['size'][1]
+    if H > 1.15 * W:
+        top = c['origin'][1] + H
+        c['origin'] = [c['origin'][0], top - W, c['origin'][2]]
+        c['size'] = [c['size'][0], W, c['size'][2]]
+    return b, c
+
+def add_hair(geo, atlas, head, opts):
+    """Pelo de Emi en low-poly: tapa fina, nuca corta, flequillo con raya y mechones sueltos (varios, de distinto largo) a los lados y atras,
+    con las puntas rosas. Nada cierra la cabeza como un casco: la cara queda a la vista.
+    Las medidas salen del tamaño de la cabeza (no del torso, para las especies donde la cabeza es el cuerpo entero)."""
+    b, c = head
+    x0, y0, z0 = c['origin']; W, H, D = c['size']
+    x1, y1, z1 = x0 + W, y0 + H, z0 + D
+    g = opts.get('g', max(0.8, min(W, D) / 8.0))
+    Hs = min(H, W)
+    parent = b['name']
+    piv = [0, y1, 0]
+    eyes = eye_cubes(geo)
+    eye_top = max(cc['origin'][1] + cc['size'][1] for _, cc in eyes)
+    room = max(1, int(y1 - eye_top))
+    ri = lambda v: max(1, int(round(v)))
+    tip = hair_painter(tip=None)
+    # tapa fina que cubre lo alto y el pelo de la nuca
+    Wc = ri(W)
+    cx = (x0 + x1) / 2
+    add_cube(geo, atlas, 'emi_hair_top', parent, piv, [cx - Wc / 2.0, y1 - 0.1, z0 - 0.1], [Wc, 1, ri(D + 0.2)], tip)
+    Hn = ri(H * 0.5)
+    add_cube(geo, atlas, 'emi_hair_nape', parent, piv, [cx - Wc / 2.0, y1 - Hn, z1 - 0.1], [Wc, Hn, 1], tip)
+    # flequillo con raya al medio
+    n = 6
+    wseg = max(1, round(W / n))
+    heights = [2, 2, 1, 1, 2, 2]
+    for i in range(n):
+        h = min(ri(heights[i] * g), room)
+        add_cube(geo, atlas, 'emi_bangs', parent, piv, [round(x0 + i * W / n, 2), y1 - h + 0.3, z0 - 0.9], [wseg, h, 1], tip)
+    # mechones sueltos a cada lado: uno delante (enmarca la cara) y otro mas largo hacia atras
+    for sx in (-1, 1):
+        nm = 'emi_lock_l' if sx > 0 else 'emi_lock_r'
+        xo = x1 - 0.1 if sx > 0 else x0 - 0.9
+        for zf, ln, ang in ((0.05, 0.42, -4), (0.55, 0.62, -9)):
+            Lb = y0 - min(Hs * ln, 3.4 * g * (1 + ln))
+            add_cube(geo, atlas, nm, parent, piv, [xo + sx * 0.0, Lb, z0 + D * zf - 0.5], [1, ri(y1 - 0.3 - Lb), 1], hair_painter(tip_from=0.5), rotation=[0, 0, ang * sx])
+    # cola trasera: tres tiras de distinto largo, mas largas en el centro, que se abren hacia atras
+    cw = max(1, round(Wc * 0.8 / 3))
+    xs0 = cx - cw * 1.5
+    y_top = y1 - Hn + 0.4
+    for i, ln in enumerate((0.55, 0.9, 0.55)):
+        Lb = y0 - min(Hs * ln, 5.0 * g * ln / 0.9)
+        add_cube(geo, atlas, 'emi_back', parent, piv, [xs0 + i * cw, Lb, z1 + 0.5], [cw, ri(y_top - Lb), 1], hair_painter(tip_from=0.4), rotation=[6, 0, 0])
+
+def build_variant(Z, sp, folder, model, texp, cfg):
+    geo, tex = load_geo_tex(Z, folder, model, texp)
+    desc = geo['minecraft:geometry'][0]['description']
+    if (desc.get('texture_width'), desc.get('texture_height')) != tex.size:
+        print('  AVISO', sp, model, 'descripcion', desc.get('texture_width'), desc.get('texture_height'), 'png', tex.size)
+    k = cfg.get('k', 6)
+    centers, share = kmeans(tex, k)
+    img = remap_clusters(tex, centers, cfg['map'], keep=cfg.get('keep', 0.85))
+    rows = 64
+    while True:
+        try:
+            atlas = Atlas(img, rows)
+            paint_eyes(geo, atlas.img)
+            head = find_head(geo)
+            if head is None:
+                raise SystemExit(f'{sp}: no se encontro la cabeza (ojos)')
+            add_hair(copy.deepcopy(geo) if False else geo, atlas, head, cfg)
+            break
+        except SystemExit as e:
+            if 'Atlas lleno' in str(e):
+                rows *= 2
+                geo, _ = load_geo_tex(Z, folder, model, texp)
+                if rows > 1024: raise
+                continue
+            raise
+    print(f'  {sp}/{model}: cabeza={head[0]["name"]} {head[1]["size"]} atlas+{rows}')
+    return geo, atlas
+
+def write_species(OUT, Z, sp, cfg):
+    folder, variants = base_for(Z, sp)
+    # variantes con modelo propio: la base (sin aspectos) y las que cambian de modelo (p. ej. Eevee hembra)
+    base_tex = [v for v in variants if v[2]][0]
+    mdir = f'{OUT}/assets/cobblemon/bedrock/pokemon/models/{folder}'
+    tdir = f'{OUT}/assets/cobblemon/textures/pokemon/{folder}'
+    rdir = f'{OUT}/assets/cobblemon/bedrock/pokemon/resolvers/{folder}'
+    for d in (mdir, tdir, rdir): os.makedirs(d, exist_ok=True)
+    res_vars = []
+    first = True
+    for (aspects, model, texp, poser) in variants:
+        tex_path = texp or base_tex[2]
+        geo, atlas = build_variant(Z, sp, folder, model, tex_path, cfg)
+        geo, img = finish(geo, atlas, f'geometry.{model}_emi')
+        g = geo['minecraft:geometry'][0]['description']; g['texture_width'] = img.width; g['texture_height'] = img.height
+        json.dump(geo, open(f'{mdir}/{model}_emi.geo.json', 'w'), separators=(',', ':'))
+        tname = os.path.basename(tex_path)[:-4] + '_emi'
+        img.save(f'{tdir}/{tname}.png')
+        v = {'aspects': ['emi'] + [a for a in aspects], 'model': f'cobblemon:{model}_emi.geo', 'texture': f'cobblemon:textures/pokemon/{folder}/{tname}.png', 'layers': []}
+        if poser: v['poser'] = poser
+        res_vars.append(v)
+        if first:
+            sh = img.copy(); sp_ = sh.load()
+            for x in range(sh.width):
+                for y in range(sh.height):
+                    r, gg, b, a = sp_[x, y]
+                    if a: sp_[x, y] = (r, int(gg * 0.85), min(255, int(b * 1.1)), a)
+            sh.save(f'{tdir}/{tname}_shiny.png')
+            res_vars.append({'aspects': ['emi', 'shiny'], 'texture': f'cobblemon:textures/pokemon/{folder}/{tname}_shiny.png'})
+            first = False
+    json.dump({'species': f'cobblemon:{sp}', 'order': 1, 'variations': res_vars}, open(f'{rdir}/1_{sp}_emi.json', 'w'), indent=2)
+
+# ---------------------------------------------------------------------------------------------- configuracion por especie
+# map: color objetivo para cada uno de los 6 grupos de color de la textura original, de oscuro a claro (None = no tocar)
+PINKLAD = [BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]
+CONFIG = {
+    'cleffa':     dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'clefairy':   dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'clefable':   dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'igglybuff':  dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'jigglypuff': dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'wigglytuff': dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'eevee':      dict(map=[BLACK, SILVER_D, SILVER_D, SILVER, SILVER_L, PINK_L]),
+    'vaporeon':   dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'jolteon':    dict(map=[BLACK, SILVER_D, SILVER, SILVER, SILVER_L, WHITE]),
+    'flareon':    dict(map=[PINK_H, PINK_L, SILVER_D, SILVER, SILVER_L, WHITE]),
+    'espeon':     dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'umbreon':    dict(map=[(28, 8, 32), (58, 20, 56), (86, 30, 80), (112, 40, 98), (138, 54, 118), PINK_H]),
+    'leafeon':    dict(map=[BLACK, PINK_H, PINK_L, SILVER_D, SILVER, SILVER_L]),
+    'glaceon':    dict(map=[BLACK, PINK_H, PINK_L, SILVER_D, SILVER, SILVER_L]),
+    'sylveon':    dict(map=[PINK_H, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
+    'ralts':      dict(map=[PINK_H, SILVER_D, SILVER_D, SILVER, SILVER_L, SKIN]),
+    'kirlia':     dict(map=[PINK_H, SILVER_D, SILVER_D, SILVER, SILVER_L, SKIN]),
+    'gardevoir':  dict(map=[PINK_H, SILVER_D, SILVER_D, SILVER, SILVER_L, SKIN]),
+}

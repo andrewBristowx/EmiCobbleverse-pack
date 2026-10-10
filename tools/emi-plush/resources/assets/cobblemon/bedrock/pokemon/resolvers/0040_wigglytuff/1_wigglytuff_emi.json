@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:wigglytuff",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:wigglytuff_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0040_wigglytuff/wigglytuff_emi.png",
+      "layers": [],
+      "poser": "cobblemon:wigglytuff"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0040_wigglytuff/wigglytuff_emi_shiny.png"
+    }
+  ]
+}

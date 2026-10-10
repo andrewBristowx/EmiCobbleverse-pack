@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:clefable",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:clefable_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0036_clefable/clefable_emi.png",
+      "layers": [],
+      "poser": "cobblemon:clefable"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0036_clefable/clefable_emi_shiny.png"
+    }
+  ]
+}

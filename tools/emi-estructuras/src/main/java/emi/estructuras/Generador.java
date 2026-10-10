@@ -41,7 +41,6 @@ import java.util.Optional;
  * Es reanudable: el progreso se guarda en world/emi_estructuras/progreso.json.
  */
 public final class Generador {
-    public static final RegistryKey<World> PLANO = RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_estructuras", "plano"));
     public static final int CELDA = 500;          // separacion entre estructuras (el radio libre de /visitar es 150)
     public static final int COLUMNAS = 10;
     public static final int SUELO = 63;           // y del bloque de cesped
@@ -50,76 +49,136 @@ public final class Generador {
 
     public static final class Hecha {
         public String id; public int x, z; public int minX, minY, minZ, maxX, maxY, maxZ;
-        public int entradaX, entradaY, entradaZ; public String clave; public boolean ok;
+        public int entradaX, entradaY, entradaZ; public String clave; public boolean ok; public String error;
     }
     public static final class Progreso { public boolean terminado; public Map<String, Hecha> hechas = new LinkedHashMap<>(); }
 
+    /** Cada mundo plano: el de las estructuras Pokemon (Cobbleverse y Legendary Monuments) y el de Dungeons y jefes. */
+    public static final class Mundo {
+        public final String nombre;
+        public final RegistryKey<World> dim;
+        final String archivo;
+        public Progreso progreso = new Progreso();
+        public List<Entrada> todas = List.of();
+        public final List<String> fallos = new ArrayList<>();
+        Mundo(String nombre, String dimension, String archivo) {
+            this.nombre = nombre; this.dim = RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_estructuras", dimension)); this.archivo = archivo;
+        }
+        public ServerWorld mundo() { return server == null ? null : server.getWorld(dim); }
+        public boolean esDungeons() { return this == DUNGEONS; }
+    }
+    public static final Mundo POKEMON = new Mundo("pokemon", "plano", "progreso.json");
+    public static final Mundo DUNGEONS = new Mundo("dungeons", "dungeons", "progreso_dungeons.json");
+    public static final List<Mundo> MUNDOS = List.of(POKEMON, DUNGEONS);
+
+    public static Mundo porNombre(String n) { for (Mundo m : MUNDOS) if (m.nombre.equalsIgnoreCase(n)) return m; return null; }
+    /** El mundo donde esta hecha una estructura (null si no esta en ninguno). */
+    public static Mundo mundoDe(String id) { for (Mundo m : MUNDOS) if (m.progreso.hechas.containsKey(id)) return m; return null; }
+
+    private static final class Tarea {
+        final Mundo m; final Entrada e; final boolean limpiar; final boolean fin;
+        Tarea(Mundo m, Entrada e, boolean limpiar, boolean fin) { this.m = m; this.e = e; this.limpiar = limpiar; this.fin = fin; }
+    }
+
     private static MinecraftServer server;
-    private static Progreso progreso = new Progreso();
-    private static List<Entrada> todas = List.of();
-    private static final Deque<Entrada> pendientes = new ArrayDeque<>();
+    private static final Deque<Tarea> cola = new ArrayDeque<>();
     private static Trabajo actual;
     private static boolean enMarcha;
     private static int esperar;
-    private static final List<String> fallos = new ArrayList<>();
 
     public static boolean enMarcha() { return enMarcha; }
-    public static Progreso progreso() { return progreso; }
-    public static List<Entrada> todas() { return todas; }
-    public static String actualNombre() { return actual == null ? "-" : actual.e.id.toString(); }
-    public static int pendientes() { return pendientes.size() + (actual == null ? 0 : 1); }
-    public static List<String> fallos() { return fallos; }
-    public static ServerWorld mundo() { return server == null ? null : server.getWorld(PLANO); }
+    public static String actualNombre() { return actual == null ? "-" : actual.m.nombre + ":" + actual.e.id; }
+    public static int pendientes() { int n = actual == null ? 0 : 1; for (Tarea t : cola) if (!t.fin) n++; return n; }
 
-    private static Path archivo() { return server.getSavePath(WorldSavePath.ROOT).resolve("emi_estructuras").resolve("progreso.json"); }
+    private static Path archivo(Mundo m) { return server.getSavePath(WorldSavePath.ROOT).resolve("emi_estructuras").resolve(m.archivo); }
 
     public static void iniciar(MinecraftServer s) {
         server = s;
-        try {
-            Path f = archivo();
-            if (Files.exists(f)) {
-                Progreso p = GSON.fromJson(Files.readString(f), Progreso.class);
-                if (p != null) progreso = p;
-            }
-        } catch (Exception e) { EmiEstructuras.LOG.warn("No pude leer el progreso", e); }
+        for (Mundo m : MUNDOS) {
+            try {
+                Path f = archivo(m);
+                if (Files.exists(f)) {
+                    Progreso p = GSON.fromJson(Files.readString(f), Progreso.class);
+                    if (p != null) m.progreso = p;
+                }
+            } catch (Exception e) { EmiEstructuras.LOG.warn("No pude leer el progreso de {}", m.nombre, e); }
+        }
     }
 
     public static void parar() {
-        enMarcha = false; pendientes.clear();
+        enMarcha = false; cola.clear();
         if (actual != null) { actual.liberar(); actual = null; }
     }
 
-    private static void guardar() {
+    private static void guardar(Mundo m) {
         try {
-            Path f = archivo();
+            Path f = archivo(m);
             Files.createDirectories(f.getParent());
-            Files.writeString(f, GSON.toJson(progreso));
-        } catch (IOException e) { EmiEstructuras.LOG.warn("No pude guardar el progreso", e); }
+            Files.writeString(f, GSON.toJson(m.progreso));
+        } catch (IOException e) { EmiEstructuras.LOG.warn("No pude guardar el progreso de {}", m.nombre, e); }
     }
 
-    /** Empieza (o reanuda) la generacion. forzar = rehacerlo todo. Devuelve un mensaje de error o null. */
-    public static String arrancar(boolean forzar) {
+    /** Tiene sentido arrancar solo: algun mundo cargado y sin terminar. */
+    public static boolean hayPendiente() { for (Mundo m : MUNDOS) if (m.mundo() != null && !m.progreso.terminado) return true; return false; }
+
+    /**
+     * Empieza (o reanuda) la generacion de los mundos dados. forzar = rehacer TODO: cada estructura ya hecha se limpia (se vuelve al suelo plano
+     * dentro de su zona: lo roto y lo puesto desaparece) y se coloca de nuevo. Devuelve un mensaje de error o null.
+     */
+    public static String arrancar(List<Mundo> ms, boolean forzar) {
         if (enMarcha) return "Ya se esta generando.";
-        if (mundo() == null) return "La dimension emi_estructuras:plano no esta cargada.";
-        if (forzar) { progreso = new Progreso(); fallos.clear(); }
-        else if (progreso.terminado) return "Ya esta generado (usa /emiestructuras generar forzar para rehacerlo).";
-        todas = Catalogo.construir(server);
-        pendientes.clear();
-        for (int i = 0; i < todas.size(); i++) {
-            Entrada e = todas.get(i);
-            Hecha h = progreso.hechas.get(e.id.toString());
-            if (h != null && h.ok) continue;
-            pendientes.add(e);
+        StringBuilder avisos = new StringBuilder();
+        int total = 0;
+        for (Mundo m : ms) {
+            if (m.mundo() == null) { avisos.append("La dimension ").append(m.dim.getValue()).append(" no esta cargada. "); continue; }
+            if (!forzar && m.progreso.terminado) { avisos.append(m.nombre).append(": ya esta generado (usa forzar para rehacerlo). "); continue; }
+            m.todas = Catalogo.construir(server, m);
+            if (forzar) m.fallos.clear();
+            int n = 0;
+            for (Entrada e : m.todas) {
+                Hecha h = m.progreso.hechas.get(e.id.toString());
+                if (!forzar && h != null && h.ok) continue;
+                cola.add(new Tarea(m, e, h != null && tieneZona(h), false)); n++;
+            }
+            if (n == 0) { m.progreso.terminado = true; guardar(m); avisos.append(m.nombre).append(": no queda nada por generar. "); continue; }
+            cola.add(new Tarea(m, null, false, true));
+            total += n;
+            EmiEstructuras.LOG.info("Generando {} estructuras en {}", n, m.dim.getValue());
         }
-        if (pendientes.isEmpty()) { progreso.terminado = true; guardar(); return "No queda nada por generar."; }
+        if (total == 0) return avisos.length() == 0 ? "No hay nada que generar." : avisos.toString().trim();
         enMarcha = true;
-        EmiEstructuras.LOG.info("Generando {} estructuras en emi_estructuras:plano", pendientes.size());
         return null;
     }
 
-    public static int indice(Entrada e) {
-        for (int i = 0; i < todas.size(); i++) if (todas.get(i) == e || todas.get(i).id.equals(e.id)) return i;
-        return 0;
+    /** Rehace un mundo entero o una estructura: limpia su zona (lo roto y lo puesto desaparece) y la coloca otra vez. Devuelve un error o null. */
+    public static String regenerar(Mundo m, String id) {
+        if (enMarcha) return "Ya se esta generando; espera a que termine o usa /emiestructuras parar.";
+        if (m.mundo() == null) return "La dimension " + m.dim.getValue() + " no esta cargada.";
+        m.todas = Catalogo.construir(server, m);
+        int n = 0;
+        for (Entrada e : m.todas) {
+            if (id != null && !e.id.toString().equals(id)) continue;
+            Hecha h = m.progreso.hechas.get(e.id.toString());
+            if (h == null && id == null) continue;       // al regenerar el mundo solo se rehace lo que ya existe
+            cola.add(new Tarea(m, e, h != null && tieneZona(h), false)); n++;
+        }
+        if (n == 0) return id == null ? "Todavia no hay nada generado en " + m.nombre + "." : "No conozco la estructura " + id + " en " + m.nombre + ".";
+        cola.add(new Tarea(m, null, false, true));
+        m.fallos.clear();
+        enMarcha = true;
+        EmiEstructuras.LOG.info("Regenerando {} estructuras en {}", n, m.dim.getValue());
+        return null;
+    }
+
+    static boolean tieneZona(Hecha h) { return h.maxX != h.minX || h.maxZ != h.minZ; }
+
+    /** Primera celda de la rejilla que no usa ninguna estructura de ese mundo. */
+    static int[] celdaLibre(Mundo m) {
+        java.util.Set<Integer> usadas = new java.util.HashSet<>();
+        for (Hecha h : m.progreso.hechas.values()) usadas.add(Math.floorDiv(h.z, CELDA) * COLUMNAS + Math.floorDiv(h.x, CELDA));
+        int i = 0;
+        while (usadas.contains(i)) i++;
+        return new int[]{(i % COLUMNAS) * CELDA, (i / COLUMNAS) * CELDA};
     }
 
     public static void tick() {
@@ -129,33 +188,38 @@ public final class Generador {
         try {
             while (System.nanoTime() - t0 < PRESUPUESTO_NS) {
                 if (actual == null) {
-                    Entrada e = pendientes.poll();
-                    if (e == null) { terminar(); return; }
-                    actual = new Trabajo(e, indice(e));
+                    Tarea t = cola.poll();
+                    if (t == null) { enMarcha = false; return; }
+                    if (t.fin) { terminar(t.m); continue; }
+                    actual = new Trabajo(t);
                 }
-                if (actual.paso(mundo(), t0)) { actual = null; esperar = 10; break; }
+                if (actual.paso(actual.m.mundo(), t0)) { actual = null; esperar = 10; break; }
                 if (actual.esperando()) break;
             }
         } catch (Throwable t) {
             EmiEstructuras.LOG.error("Fallo generando {}", actual == null ? "?" : actual.e.id, t);
-            if (actual != null) { fallos.add(actual.e.id + ": " + t); actual.liberar(); actual = null; }
+            if (actual != null) { actual.fallo(t); actual.liberar(); actual = null; }
             esperar = 20;
         }
     }
 
-    private static void terminar() {
-        enMarcha = false;
-        boolean ok = true;
-        for (Entrada e : todas) { Hecha h = progreso.hechas.get(e.id.toString()); if (h == null || !h.ok) ok = false; }
-        if (Catalogo.saltadas > 0) {
-            ok = false;
-            fallos.add(Catalogo.saltadas + " estructuras de las 69 no estan registradas (activa los datapacks Johto/Hoenn/Sinnoh y Terralith ANTES de arrancar el servidor)");
+    private static void terminar(Mundo m) {
+        boolean ok = true, intentadas = true;
+        for (Entrada e : m.todas) {
+            Hecha h = m.progreso.hechas.get(e.id.toString());
+            if (h == null || !h.ok) ok = false;
+            if (h == null) intentadas = false;
         }
+        if (!m.esDungeons() && Catalogo.saltadas > 0) {
+            ok = false;
+            m.fallos.add(Catalogo.saltadas + " estructuras de las 69 no estan registradas (activa los datapacks Johto/Hoenn/Sinnoh y Terralith ANTES de arrancar el servidor)");
+        }
+        // en Dungeons una estructura que no se pueda generar no impide darlo por terminado (queda en los fallos y se reintenta con /emiestructuras generar dungeons)
         final boolean todoOk = ok;
-        progreso.terminado = todoOk;
-        guardar();
-        String msg = todoOk ? "Generadas todas las estructuras en emi_estructuras:plano (" + todas.size() + ")."
-                : "Generacion terminada con fallos: " + fallos.size() + ". Mira el log y repite /emiestructuras generar.";
+        m.progreso.terminado = m.esDungeons() ? intentadas : ok;
+        guardar(m);
+        String msg = todoOk ? "Listas todas las estructuras de " + m.nombre + " (" + m.todas.size() + ")."
+                : "Terminado " + m.nombre + " con fallos: " + m.fallos.size() + ". Mira /emiestructuras estado y el log.";
         EmiEstructuras.LOG.info(msg);
         server.getPlayerManager().getPlayerList().stream().filter(p -> p.hasPermissionLevel(2))
                 .forEach(p -> p.sendMessage(Text.literal("[Emi Estructuras] " + msg).formatted(todoOk ? Formatting.GREEN : Formatting.GOLD), false));
@@ -164,9 +228,12 @@ public final class Generador {
     // ------------------------------------------------------------------ un trabajo = una estructura
 
     private static final class Trabajo {
+        final Mundo m;
         final Entrada e;
+        final Hecha vieja;                 // lo que habia antes (para limpiar su zona) o null
+        final boolean limpiar;
         final int cx, cz;                  // centro de su celda
-        int fase = 0;
+        int fase = 7;
         StructureStart inicio; StructureTemplate plantilla; BlockBox bb; BlockPos origenPlantilla;
         List<ChunkPos> chunks = new ArrayList<>(); int ci;
         List<ChunkPos> forzados = new ArrayList<>();
@@ -179,15 +246,29 @@ public final class Generador {
         int sx, sz, sy;                     // cursor del barrido de fugas
         int fugasQuitadas;
         int pasoExtra = 0;                  // sub-fase de la preparacion (0 balsa/pozo, 1 rampa, 2 pilar)
+        // limpieza previa
+        int lx0, lx1, lz0, lz1, lci;        // zona (bloques) y cursor de chunks
+        List<ChunkPos> zona = new ArrayList<>();
+        int limpiados;
 
-        Trabajo(Entrada e, int indice) {
-            this.e = e;
-            this.cx = (indice % COLUMNAS) * CELDA;
-            this.cz = (indice / COLUMNAS) * CELDA;
+        Trabajo(Tarea t) {
+            this.m = t.m; this.e = t.e; this.limpiar = t.limpiar;
+            Hecha h = m.progreso.hechas.get(e.id.toString());
+            this.vieja = h;
+            if (h != null) { this.cx = h.x; this.cz = h.z; }       // la misma celda de siempre
+            else { int[] c = celdaLibre(m); this.cx = c[0]; this.cz = c[1]; }
+        }
+
+        void fallo(Throwable t) {
+            m.fallos.add(e.id + ": " + t);
+            Hecha h = vieja != null ? vieja : new Hecha();
+            h.id = e.id.toString(); h.x = cx; h.z = cz; h.clave = e.clave; h.ok = false; h.error = String.valueOf(t);
+            m.progreso.hechas.put(h.id, h);
+            guardar(m);
         }
 
         void liberar() {
-            ServerWorld w = mundo();
+            ServerWorld w = m.mundo();
             if (w != null) for (ChunkPos c : forzados) w.setChunkForced(c.x, c.z, false);
             forzados.clear();
         }
@@ -201,13 +282,13 @@ public final class Generador {
          */
         void abrirAcceso(ServerWorld w) {
             BlockPos.Mutable m = new BlockPos.Mutable();
-            int tope = bb.getMaxY();
+            int tope = enterrada ? bb.getMaxY() : SUELO - 1;     // una estructura "sellada" tiene su salon bajo el suelo aunque la caja salga por arriba
             int techo = Integer.MIN_VALUE;
             for (int y = tope; y >= bb.getMinY() && techo == Integer.MIN_VALUE; y--)
                 for (int x = bb.getMinX(); x <= bb.getMaxX() && techo == Integer.MIN_VALUE; x++)
                     for (int z = bb.getMinZ(); z <= bb.getMaxZ(); z++)
                         if (w.getBlockState(m.set(x, y, z)).isAir()) { techo = y; break; }
-            if (techo == Integer.MIN_VALUE || tope - techo <= 2) return;
+            if (techo == Integer.MIN_VALUE || (enterrada && tope - techo <= 2)) return;
             // capa con mas espacio libre (en las mazmorras es donde estan las salas grandes; un hueco suelto no vale)
             int ty = techo, mejor = -1;
             for (int y = techo; y >= Math.max(bb.getMinY() + 1, techo - 24); y--) {
@@ -261,16 +342,144 @@ public final class Generador {
             EmiEstructuras.LOG.info("{}: acceso excavado hasta la sala en x={} y={} z={} (techo de la sala y={})", e.id, tx, ty, tz, techo);
         }
 
+
+        // ------------------------------------------------------------ limpieza previa (regenerar)
+
+        static final BlockState BEDROCK = Blocks.BEDROCK.getDefaultState(), PIEDRA = Blocks.STONE.getDefaultState(),
+                TIERRA = Blocks.DIRT.getDefaultState(), CESPED = Blocks.GRASS_BLOCK.getDefaultState(), AIRE = Blocks.AIR.getDefaultState();
+
+        /** El bloque que hay en el mundo plano limpio (las capas de la dimension): bedrock, 124 de piedra, 2 de tierra y cesped en y=63. */
+        static BlockState base(int y, int fondo) {
+            if (y == fondo) return BEDROCK;
+            if (y <= SUELO - 3) return PIEDRA;
+            if (y <= SUELO - 1) return TIERRA;
+            if (y == SUELO) return CESPED;
+            return AIRE;
+        }
+
+        /**
+         * Vuelve al suelo plano toda la zona de la estructura anterior (su caja, los 40 bloques de margen, la rampa o el pilar de la entrada):
+         * lo roto y lo puesto desaparece, y tambien las entidades sueltas. Las secciones que ya son exactamente el suelo plano se saltan
+         * comparando solo cuantos bloques de cada tipo tienen, asi que es rapido salvo donde hay algo que borrar.
+         */
+        boolean limpiarZona(ServerWorld w, long t0) {
+            if (!limpiar || vieja == null || !tieneZona(vieja)) return true;
+            if (zona.isEmpty()) {
+                lx0 = Math.min(vieja.minX - 40, vieja.entradaX - 12); lx1 = vieja.maxX + 40;
+                lz0 = vieja.minZ - 40; lz1 = vieja.maxZ + 40;
+                for (int x = lx0 >> 4; x <= lx1 >> 4; x++) for (int z = lz0 >> 4; z <= lz1 >> 4; z++) zona.add(new ChunkPos(x, z));
+                for (ChunkPos c : zona) { w.setChunkForced(c.x, c.z, true); forzados.add(c); }
+                // quien este dentro sale al mundo normal (no se le puede dejar dentro de lo que se va a borrar)
+                net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(lx0, w.getBottomY(), lz0, lx1 + 1, w.getTopY(), lz1 + 1);
+                for (net.minecraft.server.network.ServerPlayerEntity p : new ArrayList<>(w.getPlayers())) {
+                    if (!caja.contains(p.getX(), p.getY(), p.getZ())) continue;
+                    // primero se cierra su visita (si no, Emipokemon lo traeria de vuelta aqui al instante) y vuelve a donde estaba
+                    try { server.getCommandManager().executeWithPrefix(p.getCommandSource().withLevel(2), "emipokemon visitar volver"); } catch (Throwable t) { EmiEstructuras.LOG.warn("visitar volver", t); }
+                    if (p.getServerWorld() == w && caja.contains(p.getX(), p.getY(), p.getZ())) {
+                        ServerWorld ow = server.getOverworld();
+                        BlockPos sp = ow.getSpawnPos();
+                        p.teleport(ow, sp.getX() + 0.5, sp.getY(), sp.getZ() + 0.5, 0f, 0f);
+                    }
+                    p.sendMessage(Text.literal("[Emi Estructuras] Se esta regenerando esta zona; te saque al mundo normal.").formatted(Formatting.GOLD), false);
+                }
+            }
+            BlockPos.Mutable mp = new BlockPos.Mutable();
+            int flags = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;
+            int fondo = w.getBottomY();
+            while (lci < zona.size()) {
+                ChunkPos c = zona.get(lci);
+                net.minecraft.world.chunk.Chunk ch = w.getChunk(c.x, c.z);
+                net.minecraft.world.chunk.ChunkSection[] secs = ch.getSectionArray();
+                for (int i = 0; i < secs.length; i++) {
+                    int y0 = fondo + i * 16;
+                    if (!seccionDistinta(secs[i], y0, fondo)) continue;
+                    int xa = Math.max(c.getStartX(), lx0), xb = Math.min(c.getEndX(), lx1), za = Math.max(c.getStartZ(), lz0), zb = Math.min(c.getEndZ(), lz1);
+                    for (int y = y0; y < y0 + 16; y++) {
+                        BlockState esperado = base(y, fondo);
+                        for (int x = xa; x <= xb; x++) for (int z = za; z <= zb; z++) {
+                            mp.set(x, y, z);
+                            if (ch.getBlockState(mp) != esperado) { w.setBlockState(mp, esperado, flags); limpiados++; }
+                        }
+                    }
+                }
+                lci++;
+                if (agotado(t0)) return lci >= zona.size() && descartarEntidades(w);
+            }
+            return descartarEntidades(w);
+        }
+
+        boolean entidadesHechas;
+        boolean descartarEntidades(ServerWorld w) {
+            if (entidadesHechas) return true;
+            entidadesHechas = true;
+            net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(lx0, w.getBottomY(), lz0, lx1 + 1, w.getTopY(), lz1 + 1);
+            int n = 0;
+            for (net.minecraft.entity.Entity en : w.getEntitiesByClass(net.minecraft.entity.Entity.class, caja, en -> !(en instanceof net.minecraft.entity.player.PlayerEntity))) { en.discard(); n++; }
+            EmiEstructuras.LOG.info("{}: zona limpiada ({} bloques cambiados, {} entidades borradas)", e.id, limpiados, n);
+            return true;
+        }
+
+        /** true si la seccion NO es justo el suelo plano (comparando cuantos bloques hay de cada tipo). */
+        static boolean seccionDistinta(net.minecraft.world.chunk.ChunkSection sec, int y0, int fondo) {
+            Map<BlockState, Integer> hay = new java.util.HashMap<>();
+            sec.getBlockStateContainer().count((st, n) -> hay.merge(st, n, Integer::sum));
+            Map<BlockState, Integer> debe = new java.util.HashMap<>();
+            for (int y = y0; y < y0 + 16; y++) debe.merge(base(y, fondo), 256, Integer::sum);
+            return !hay.equals(debe);
+        }
+
+
+        /**
+         * true si la estructura tiene una cavidad grande bajo el suelo a la que NO se llega andando desde la entrada (p. ej. la caverna del Void Blossom,
+         * enterrada bajo 30 bloques de piedra aunque su caja sobresalga por arriba). Recorre el aire desde la entrada y mira si toca algun hueco profundo.
+         */
+        boolean sellada(ServerWorld w) {
+            if (enterrada || bb.getMinY() >= SUELO - 10) return false;
+            int x0 = Math.min(bb.getMinX(), entX) - 2, x1 = bb.getMaxX() + 2, z0 = bb.getMinZ() - 2, z1 = bb.getMaxZ() + 2;
+            int y0 = Math.max(w.getBottomY(), bb.getMinY() - 1), y1 = Math.min(w.getTopY() - 1, SUELO + 24);
+            int ax = x1 - x0 + 1, az = z1 - z0 + 1, ay = y1 - y0 + 1;
+            long total = (long) ax * az * ay;
+            if (total > 60_000_000L) return false;
+            BlockPos.Mutable m = new BlockPos.Mutable();
+            int hondo = 0;
+            for (int x = bb.getMinX(); x <= bb.getMaxX(); x++) for (int z = bb.getMinZ(); z <= bb.getMaxZ(); z++)
+                for (int y = Math.max(y0, bb.getMinY()); y <= SUELO - 6 && y <= bb.getMaxY(); y++) if (w.getBlockState(m.set(x, y, z)).isAir()) hondo++;
+            if (hondo < 1000) return false;
+            java.util.BitSet vistos = new java.util.BitSet((int) total);
+            int[] pila = new int[1 << 16]; int n = 0;
+            int ini = ((entX - x0) * az + (zc - z0)) * ay + (SUELO + 1 - y0);
+            pila[n++] = ini; vistos.set(ini);
+            int[] d = {1, -1, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 1, -1};   // x, y, z
+            while (n > 0) {
+                int c = pila[--n];
+                int y = c % ay, z = (c / ay) % az + z0, x = c / ay / az + x0; y += y0;
+                if (x >= bb.getMinX() && x <= bb.getMaxX() && z >= bb.getMinZ() && z <= bb.getMaxZ() && y <= SUELO - 6 && y >= bb.getMinY()) return false;   // llega a un hueco profundo: no esta sellada
+                for (int k = 0; k < 6; k++) {
+                    int nx = x + (k < 2 ? d[k] : 0), ny = y + (k >= 2 && k < 4 ? d[k - 2] : 0), nz = z + (k >= 4 ? d[k - 4] : 0);
+                    if (nx < x0 || nx > x1 || nz < z0 || nz > z1 || ny < y0 || ny > y1) continue;
+                    int ci = ((nx - x0) * az + (nz - z0)) * ay + (ny - y0);
+                    if (vistos.get(ci)) continue;
+                    vistos.set(ci);
+                    if (!w.getBlockState(m.set(nx, ny, nz)).isAir()) continue;
+                    if (n == pila.length) pila = java.util.Arrays.copyOf(pila, n * 2);
+                    pila[n++] = ci;
+                }
+            }
+            EmiEstructuras.LOG.info("{}: sellada bajo el suelo ({} bloques de aire hondo sin acceso); se le abre un tunel", e.id, hondo);
+            return true;
+        }
+
         boolean esperando() { return fase == 4 && server.getTicks() < esperaAsentar; }
 
         boolean agotado(long t0) { return System.nanoTime() - t0 >= PRESUPUESTO_NS; }
 
         boolean paso(ServerWorld w, long t0) {
             switch (fase) {
+                case 7 -> { if (!limpiarZona(w, t0)) return false; fase = 0; }
                 case 0 -> inicio(w);
                 case 1 -> { if (!preparar(w, t0)) return false; fase = 2; ci = 0; }
                 case 2 -> { if (!cargar(w, t0)) return false; fase = 3; ci = 0; }
-                case 3 -> { if (!colocar(w, t0)) return false; fase = enterrada ? 6 : 4; if (!enterrada) asentar(); }
+                case 3 -> { if (!colocar(w, t0)) return false; fase = (enterrada || sellada(w)) ? 6 : 4; if (fase == 4) asentar(); }
                 case 6 -> { abrirAcceso(w); fase = 4; asentar(); }
                 case 4 -> { if (server.getTicks() < esperaAsentar) return false; if (!fugas(w, t0)) return false; fase = 5; }
                 case 5 -> { fin(w); return true; }
@@ -301,7 +510,7 @@ public final class Generador {
             }
             zc = (bb.getMinZ() + bb.getMaxZ()) / 2;
             enterrada = bb.getMaxY() < SUELO - 2;
-            flotante = bb.getMinY() > SUELO + 40;
+            flotante = bb.getMinY() > SUELO + 12;
             int margen = e.oceano ? 28 : (enterrada ? 8 : 3);
             if (enterrada) {
                 int prof = SUELO - bb.getMaxY();
@@ -320,7 +529,7 @@ public final class Generador {
             for (ChunkPos c : chunks) { w.setChunkForced(c.x, c.z, true); forzados.add(c); }
             px = balsa == null ? 0 : balsa.getMinX(); pz = balsa == null ? 0 : balsa.getMinZ();
             fase = 1;
-            EmiEstructuras.LOG.info("[{}] {} bb=({},{},{})-({},{},{}) {}", indice(e) + 1, e.id, bb.getMinX(), bb.getMinY(), bb.getMinZ(), bb.getMaxX(), bb.getMaxY(), bb.getMaxZ(), e.oceano ? "OCEANO" : enterrada ? "ENTERRADA" : flotante ? "FLOTANTE" : "");
+            EmiEstructuras.LOG.info("[{}] {} bb=({},{},{})-({},{},{}) {}", m.nombre + "/" + (cx / CELDA + cz / CELDA * COLUMNAS + 1), e.id, bb.getMinX(), bb.getMinY(), bb.getMinZ(), bb.getMaxX(), bb.getMaxY(), bb.getMaxZ(), e.oceano ? "OCEANO" : enterrada ? "ENTERRADA" : flotante ? "FLOTANTE" : "");
         }
 
         /** Prepara el terreno: balsa de agua (oceano), pozo y rampa (enterrada) o pilar con plataforma (flotante). */
@@ -442,9 +651,9 @@ public final class Generador {
             h.id = e.id.toString(); h.x = cx; h.z = cz; h.clave = e.clave; h.ok = true;
             h.minX = bb.getMinX(); h.minY = bb.getMinY(); h.minZ = bb.getMinZ(); h.maxX = bb.getMaxX(); h.maxY = bb.getMaxY(); h.maxZ = bb.getMaxZ();
             h.entradaX = entX; h.entradaZ = entZ; h.entradaY = entY;
-            progreso.hechas.put(h.id, h);
-            guardar();
-            registrar(h);
+            m.progreso.hechas.put(h.id, h);
+            guardar(m);
+            registrar(m, h);
             liberar();
         }
     }
@@ -454,30 +663,33 @@ public final class Generador {
      * extra de extra-locations.json). Sirve para mundos que se generaron antes de que esas ubicaciones existieran: no coloca nada.
      */
     public static int sincronizar() {
-        if (server == null || mundo() == null) return 0;
-        List<Entrada> catalogo = Catalogo.construir(server);
+        if (server == null) return 0;
         int n = 0;
-        boolean cambio = false;
-        for (Entrada e : catalogo) {
-            Hecha h = progreso.hechas.get(e.id.toString());
-            if (h == null || !h.ok || e.clave == null) continue;
-            if (!e.clave.equals(h.clave)) { h.clave = e.clave; cambio = true; }
-            registrar(h);
-            n++;
+        for (Mundo m : MUNDOS) {
+            if (m.mundo() == null) continue;
+            List<Entrada> catalogo = Catalogo.construir(server, m);
+            boolean cambio = false;
+            for (Entrada e : catalogo) {
+                Hecha h = m.progreso.hechas.get(e.id.toString());
+                if (h == null || !h.ok || e.clave == null) continue;
+                if (!e.clave.equals(h.clave)) { h.clave = e.clave; cambio = true; }
+                registrar(m, h);
+                n++;
+            }
+            if (cambio) guardar(m);
         }
-        if (cambio) guardar();
         return n;
     }
 
-    /** Le dice a Emipokemon que esta ubicacion esta aqui, para que /emipokemon visitar mande a la dimension plana. */
-    public static void registrar(Hecha h) {
+    /** Le dice a Emipokemon que esta ubicacion esta aqui, para que /emipokemon visitar mande a la dimension de ese mundo. */
+    public static void registrar(Mundo m, Hecha h) {
         if (h.clave == null) return;
         try {
             Class<?> c = Class.forName("com.emipokemon.admin.ImportantLocationService");
-            Method m = c.getMethod("recordGeneratedLocation", MinecraftServer.class, String.class, String.class, RegistryKey.class, BlockPos.class);
-            Object r = m.invoke(null, server, h.clave, h.id, PLANO, new BlockPos(h.entradaX, h.entradaY, h.entradaZ));
+            Method me = c.getMethod("recordGeneratedLocation", MinecraftServer.class, String.class, String.class, RegistryKey.class, BlockPos.class);
+            Object r = me.invoke(null, server, h.clave, h.id, m.dim, new BlockPos(h.entradaX, h.entradaY, h.entradaZ));
             if (!Boolean.TRUE.equals(r)) EmiEstructuras.LOG.warn("Emipokemon no acepto la ubicacion {} ({})", h.clave, h.id);
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException ex) {
             EmiEstructuras.LOG.warn("Emipokemon no esta instalado: no se registran las ubicaciones de /visitar");
         } catch (Throwable t) {
             EmiEstructuras.LOG.warn("No pude registrar {} en Emipokemon", h.clave, t);

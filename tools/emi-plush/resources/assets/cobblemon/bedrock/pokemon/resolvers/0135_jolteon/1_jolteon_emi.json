@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:jolteon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:jolteon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0135_jolteon/jolteon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:jolteon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0135_jolteon/jolteon_emi_shiny.png"
+    }
+  ]
+}

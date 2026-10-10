@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:leafeon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:leafeon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0470_leafeon/leafeon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:leafeon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0470_leafeon/leafeon_emi_shiny.png"
+    }
+  ]
+}

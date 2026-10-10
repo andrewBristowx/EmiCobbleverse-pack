@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:umbreon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:umbreon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0197_umbreon/umbreon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:umbreon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0197_umbreon/umbreon_emi_shiny.png"
+    }
+  ]
+}

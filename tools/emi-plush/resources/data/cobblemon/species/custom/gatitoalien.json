@@ -162,5 +162,244 @@
         "percentage": 30.0
       }
     ]
-  }
+  },
+  "forms": [
+    {
+      "name": "Gold",
+      "aspects": [
+        "gold"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Sunglasses",
+      "aspects": [
+        "sunglasses-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "BeachHat",
+      "aspects": [
+        "beach_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Crown",
+      "aspects": [
+        "crown-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Bow",
+      "aspects": [
+        "bow-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Headphones",
+      "aspects": [
+        "headphones-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Scarf",
+      "aspects": [
+        "scarf-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Halo",
+      "aspects": [
+        "halo-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "DevilHorns",
+      "aspects": [
+        "devil_horns-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "WitchHat",
+      "aspects": [
+        "witch_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "SantaHat",
+      "aspects": [
+        "santa_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "FlowerCrown",
+      "aspects": [
+        "flower_crown-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "Pirate",
+      "aspects": [
+        "pirate-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldSunglasses",
+      "aspects": [
+        "gold",
+        "sunglasses-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldBeachHat",
+      "aspects": [
+        "gold",
+        "beach_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldCrown",
+      "aspects": [
+        "gold",
+        "crown-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldBow",
+      "aspects": [
+        "gold",
+        "bow-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldHeadphones",
+      "aspects": [
+        "gold",
+        "headphones-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldScarf",
+      "aspects": [
+        "gold",
+        "scarf-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldHalo",
+      "aspects": [
+        "gold",
+        "halo-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldDevilHorns",
+      "aspects": [
+        "gold",
+        "devil_horns-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldWitchHat",
+      "aspects": [
+        "gold",
+        "witch_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldSantaHat",
+      "aspects": [
+        "gold",
+        "santa_hat-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldFlowerCrown",
+      "aspects": [
+        "gold",
+        "flower_crown-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    },
+    {
+      "name": "GoldPirate",
+      "aspects": [
+        "gold",
+        "pirate-accessory"
+      ],
+      "pokedex": [
+        "emi_plush.species.gatitoalien.desc"
+      ]
+    }
+  ]
 }

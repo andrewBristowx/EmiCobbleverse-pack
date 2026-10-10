@@ -1,0 +1,22 @@
+{
+  "species": "cobblemon:sylveon",
+  "order": 1,
+  "variations": [
+    {
+      "aspects": [
+        "emi"
+      ],
+      "model": "cobblemon:sylveon_emi.geo",
+      "texture": "cobblemon:textures/pokemon/0700_sylveon/sylveon_emi.png",
+      "layers": [],
+      "poser": "cobblemon:sylveon"
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny"
+      ],
+      "texture": "cobblemon:textures/pokemon/0700_sylveon/sylveon_emi_shiny.png"
+    }
+  ]
+}
