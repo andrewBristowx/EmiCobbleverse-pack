@@ -106,6 +106,24 @@ def skull(face, i, j, w, h):
     return c + (255,)
 def leaves(face, i, j, w, h): return (GREEN_D if (i + 2 * j) % 4 == 0 else GREEN) + (255,)
 
+def corona(g, f):
+    """Aro dorado alrededor de la parte de arriba de la cabeza (la cabeza mide ±18 arriba y las orejas salen por dentro del aro), con puntas altas por delante y por detras,
+    dos puntas a cada lado y gemas. Todos los tamaños enteros (los UV tienen que ser enteros)."""
+    c = lambda o, sz, p=golden: cube(g, f, 'acc_crown', o, sz, p)
+    out = [c((-18.5, 30, -18), (37, 4, 4)), c((-18.5, 30, 14), (37, 4, 4)),            # delante y detras
+           c((-18.5, 30, -14), (5, 4, 28)), c((13.5, 30, -14), (5, 4, 28))]            # lados
+    for x, alto in ((-15, 3), (-7.5, 3), (0, 5), (7.5, 3), (15, 3)):                    # puntas delanteras (la del medio mas alta)
+        out += [c((x - 2.5, 34, -18), (5, 4, 4)), c((x - 1.5, 38, -17.5), (3, alto, 3))]
+    for x, alto in ((-12, 3), (0, 4), (12, 3)):                                         # puntas traseras
+        out += [c((x - 2.5, 34, 14), (5, 4, 4)), c((x - 1.5, 38, 14.5), (3, alto, 3))]
+    for x0 in (-18.5, 13.5):                                                            # puntas de los lados
+        for z in (-9, 5):
+            out += [c((x0, 34, z), (5, 4, 4)), c((x0 + 1, 38, z + 0.5), (3, 3, 3))]
+    out += [c((-1.5, 33, -18.6), (3, 3, 1), flat(PINK)),                                # gema delantera
+            c((-19.1, 30.5, -2), (1, 3, 3), flat(PINK)), c((18.1, 30.5, -2), (1, 3, 3), flat(PINK)),   # gemas de los lados
+            c((-1.5, 33, 18.6), (3, 3, 1), flat(PINK))]                                 # gema trasera
+    return out
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -115,20 +133,13 @@ ACCESORIOS = {
         cube(g, f, 'acc_beach_hat', (-24, 29, -22), (48, 2, 44), straw),
         cube(g, f, 'acc_beach_hat', (-11, 30, -10), (22, 9, 20), straw),
         cube(g, f, 'acc_beach_hat', (-11.5, 30.5, -10.5), (23, 3, 21), band(PINK, PINK_L))],
-    'crown': lambda g, f: [
-        cube(g, f, 'acc_crown', (-13, 30, -11), (26, 4, 22), golden),
-        cube(g, f, 'acc_crown', (-13, 34, -11), (5, 6, 5), golden), cube(g, f, 'acc_crown', (8, 34, -11), (5, 6, 5), golden),
-        cube(g, f, 'acc_crown', (-13, 34, 6), (5, 6, 5), golden), cube(g, f, 'acc_crown', (8, 34, 6), (5, 6, 5), golden),
-        cube(g, f, 'acc_crown', (-2.5, 34, -11), (5, 7, 5), golden),
-        cube(g, f, 'acc_crown', (-1.5, 31, -11.6), (3, 2, 1), flat(PINK))],
+    'crown': lambda g, f: corona(g, f),
     'bow': lambda g, f: [
         cube(g, f, 'acc_bow', (-3, 30, -12), (6, 6, 5), flat(PINK)),
         cube(g, f, 'acc_bow', (-12, 30, -12), (9, 8, 4), dots(PINK, WHITE)), cube(g, f, 'acc_bow', (3, 30, -12), (9, 8, 4), dots(PINK, WHITE))],
-    'headphones': lambda g, f: [   # la cabeza mide ±20: las almohadillas van por fuera, detras de los brazos, y el arco pasa por encima de las orejas
+    'headphones': lambda g, f: [   # la cabeza mide ±20: las almohadillas van por fuera, detras de los brazos (sin arco por encima)
         cube(g, f, 'acc_headphones', (20.5, 10, 0.5), (5, 15, 12), flat(PINK)), cube(g, f, 'acc_headphones', (-25.5, 10, 0.5), (5, 15, 12), flat(PINK)),
-        cube(g, f, 'acc_headphones', (25.5, 11.5, 2), (2, 12, 9), flat(BLACK)), cube(g, f, 'acc_headphones', (-27.5, 11.5, 2), (2, 12, 9), flat(BLACK)),
-        cube(g, f, 'acc_headphones', (21.5, 25, 5.5), (3, 18, 2), flat(BLACK)), cube(g, f, 'acc_headphones', (-24.5, 25, 5.5), (3, 18, 2), flat(BLACK)),
-        cube(g, f, 'acc_headphones', (-24, 42, 5), (48, 3, 3), flat(BLACK))],
+        cube(g, f, 'acc_headphones', (25.5, 11.5, 2), (2, 12, 9), flat(BLACK)), cube(g, f, 'acc_headphones', (-27.5, 11.5, 2), (2, 12, 9), flat(BLACK))],
     'scarf': lambda g, f: [
         cube(g, f, 'acc_scarf', (-19.5, 7.5, -18.5), (39, 5, 38), band(PINK, WHITE)),
         cube(g, f, 'acc_scarf', (6, 1, -19.5), (7, 11, 3), band(PINK, WHITE))],
@@ -190,7 +201,7 @@ def main():
             for j in range(h):
                 if 0 <= x + i < oro.width and 0 <= y + j < oro.height:
                     r, g, b, a = px[x + i, y + j]
-                    if a: lu = 0.299 * r + 0.587 * g + 0.114 * b; t = min(1.0, lu / 235.0); px[x + i, y + j] = mix((120, 126, 146), (236, 240, 252), t) + (a,)
+                    if a and not (r > 200 and g < 130): lu = 0.299 * r + 0.587 * g + 0.114 * b; t = min(1.0, lu / 235.0); px[x + i, y + j] = mix((120, 126, 146), (236, 240, 252), t) + (a,)
     oro.save(f'{TEX}/michi_dramatico_shiny.png')
     rd = f'{B}/bedrock/pokemon/resolvers/michi_dramatico'
     json.dump({'species': 'cobblemon:gatitoalien', 'order': 1, 'variations': variantes}, open(f'{rd}/1_michi_dramatico_accessories.json', 'w'), indent=2)
