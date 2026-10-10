@@ -64,7 +64,7 @@ Cada forma es **Hada + otro tipo**, con estadísticas orientadas a un papel (tod
 | Pirate | Lucha | Físico saqueador | 80/120/80/45/55/90 | **Saqueo**: al derrotar a un Pokémon +1 Ataque y cura 1/4 de sus PS |
 
 - Los textos de cada habilidad y la entrada de Pokédex de cada forma salen de `lang/{en_us,es_es,es_mx}.json` (`cobblemon.ability.<id>`, `emi_plush.species.gatitoalien_<forma>.desc`).
-- Pruebas: `SHOWDOWN=<carpeta showdown del servidor> node test/probar_habilidades.js` ejecuta 36 comprobaciones contra el simulador de Cobblemon (cada habilidad hace lo que dice: +30%, x0,5, curaciones…, y que los `.js` no tengan comentarios `//`). Además, un combate real en el juego con la forma Pirate arrancó con la habilidad `plunder` en el equipo.
+- Pruebas: `SHOWDOWN=<carpeta showdown del servidor> node test/probar_habilidades.js` ejecuta 37 comprobaciones contra el simulador de Cobblemon (cada habilidad hace lo que dice: +30%, x0,5, curaciones…, y que los `.js` no tengan comentarios `//`). Además, un combate real en el juego con la forma Pirate arrancó con la habilidad `plunder` en el equipo.
 - El GatitoAlien normal (sin accesorio) sigue siendo Hada puro con Drama y 70/90/60/80/65/105.
 - Probado en el juego (v1.8.2): las 25 formas se ven bien, se pueden sacar, combatir (ganó un combate real) y el aspecto `emi` se conserva al evolucionar (Ralts → Kirlia). La corona dorada pasa a plata sobre el pelaje dorado para que se vea.
 - Para añadir otro accesorio: una entrada en `ACCESORIOS` (gen_michi_extras.py) y otra en `ACC` (michi_forms.py); forma, resolver, peluches y textos salen solos.
