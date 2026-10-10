@@ -44,7 +44,17 @@ Líneas: **Happiny/Chansey/Blissey**, **Cleffa/Clefairy/Clefable**, **Igglybuff/
   `/givepokemon <jugador> gatitoalien accessory=halo gold=true`. Se pueden combinar con `shiny` (la dorada con shiny vuelve a los colores normales; la normal con shiny es dorada).
   OJO: `form=Gold` en `/spawnpokemon` no funciona (Cobblemon solo elige la forma por aspectos); usar los aspectos de arriba.
 - Cada accesorio es un modelo aparte (copia del base + cubos nuevos en el hueso `head`) que usa la misma textura (los accesorios están pintados en la zona libre de abajo). Datos: `species_features/{accessory,gold}.json`, sus asignaciones y el resolver `1_michi_dramatico_accessories.json`. Requiere reiniciar el servidor.
+- Probado en el juego (v1.8.2): las 25 formas se ven bien, se pueden sacar, combatir (ganó un combate real) y el aspecto `emi` se conserva al evolucionar (Ralts → Kirlia). La corona dorada pasa a plata sobre el pelaje dorado para que se vea.
 - Para añadir otro accesorio: una entrada en `ACCESORIOS` (gen_michi_extras.py) y otra en `ACC` (michi_forms.py); forma, resolver, peluches y textos salen solos.
+
+## Comandos rápidos (operador)
+```
+/givepokemon <jugador> eevee emi=true            # cualquier especie Emi (21), con shiny: añadir  shiny
+/givepokemon <jugador> gatitoalien accessory=halo gold=true
+/give <jugador> emi_plush:eevee_emi               # peluche Emi
+/give <jugador> emi_plush:gatitoalien_gold_halo   # peluche de una forma del GatitoAlien
+```
+Si `/givepokemon` se escribe desde la consola hace falta `execute as <jugador> run givepokemon <especie> ...` (pide un jugador).
 
 ## Peluches de todos los Pokémon Emi y de las formas del GatitoAlien
 Un bloque de Pokeblocks por cada especie Emi (21), por cada forma del GatitoAlien (25: `gatitoalien_gold`, `gatitoalien_<accesorio>`, `gatitoalien_gold_<accesorio>`) y el peluche original del GatitoAlien: `/give @s emi_plush:<especie>_emi` (p. ej. `emi_plush:blissey_emi`). Aparecen en la pestaña **Pokeblocks - Misc**; se colocan mirando hacia el jugador y se recogen al romperlos.

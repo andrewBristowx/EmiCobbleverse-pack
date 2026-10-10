@@ -47,10 +47,13 @@ class Free:
         if self.y + h > self.img.height: raise SystemExit('textura llena')
         r = (self.x, self.y); self.x += w; self.rowh = max(self.rowh, h); return r
 
+REGIONES = {}   # hueso del accesorio -> rectangulos (x, y, w, h) de su textura (para repintarlos en la textura dorada)
+
 def cube(geo, free, name, origin, size, painter, rotation=None, pivot=None):
     sx, sy, sz = size
     W, H = 2 * sz + 2 * sx, sz + sy
     ux, uy = free.alloc(W, H)
+    REGIONES.setdefault(name, []).append((ux, uy, int(W), int(H)))
     px = free.img.load()
     for face, (x, y, w, h) in box_rects(ux, uy, sx, sy, sz).items():
         for i in range(w):
@@ -125,9 +128,10 @@ ACCESORIOS = {
     'scarf': lambda g, f: [
         cube(g, f, 'acc_scarf', (-19.5, 8, -18.5), (39, 5, 38), band(PINK, WHITE)),
         cube(g, f, 'acc_scarf', (6, 0.5, -19.5), (7, 11, 2), band(PINK, WHITE))],
-    'halo': lambda g, f: [
-        cube(g, f, 'acc_halo', (-14, 57, -14), (28, 3, 3), glow), cube(g, f, 'acc_halo', (-14, 57, 11), (28, 3, 3), glow),
-        cube(g, f, 'acc_halo', (-14, 57, -11), (3, 3, 22), glow), cube(g, f, 'acc_halo', (11, 57, -11), (3, 3, 22), glow)],
+    'halo': lambda g, f: [   # aro dorado que descansa sobre las bolitas de las antenas (se solapa con ellas: no flota suelto)
+        cube(g, f, 'acc_halo', (-14, 53.6, -13), (28, 2, 3), glow), cube(g, f, 'acc_halo', (-14, 53.6, 10), (28, 2, 3), glow),
+        cube(g, f, 'acc_halo', (-14, 53.6, -10), (4, 2, 20), glow), cube(g, f, 'acc_halo', (10, 53.6, -10), (4, 2, 20), glow),
+        cube(g, f, 'acc_halo', (-14, 54.8, -13), (28, 1, 1), flat((255, 250, 205))), cube(g, f, 'acc_halo', (-14, 54.8, 12), (28, 1, 1), flat((255, 250, 205)))],
     'devil_horns': lambda g, f: [
         cube(g, f, 'acc_devil_horns', (9, 31, -13), (6, 4, 6), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-15, 31, -13), (6, 4, 6), fur(RED, RED_D)),
         cube(g, f, 'acc_devil_horns', (10, 35, -12), (4, 6, 4), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-14, 35, -12), (4, 6, 4), fur(RED, RED_D)),
@@ -173,7 +177,16 @@ def main():
         json.dump(g, open(f'{GEO}/michi_dramatico_{nombre}.geo.json', 'w'), separators=(',', ':'))
         variantes.append({'aspects': [f'{nombre}-accessory'], 'model': f'cobblemon:michi_dramatico_{nombre}.geo'})
     img.save(f'{TEX}/michi_dramatico.png')
-    gold_shiny(img).save(f'{TEX}/michi_dramatico_shiny.png')
+    oro = gold_shiny(img)
+    # accesorios que se pierden sobre el pelaje dorado (la corona es dorada): en la textura dorada pasan a plata
+    px = oro.load()
+    for x, y, w, h in REGIONES.get('acc_crown', []):
+        for i in range(w):
+            for j in range(h):
+                if 0 <= x + i < oro.width and 0 <= y + j < oro.height:
+                    r, g, b, a = px[x + i, y + j]
+                    if a: lu = 0.299 * r + 0.587 * g + 0.114 * b; t = min(1.0, lu / 235.0); px[x + i, y + j] = mix((120, 126, 146), (236, 240, 252), t) + (a,)
+    oro.save(f'{TEX}/michi_dramatico_shiny.png')
     rd = f'{B}/bedrock/pokemon/resolvers/michi_dramatico'
     json.dump({'species': 'cobblemon:gatitoalien', 'order': 1, 'variations': variantes}, open(f'{rd}/1_michi_dramatico_accessories.json', 'w'), indent=2)
     data = os.path.join(OUT, 'data/cobblemon')

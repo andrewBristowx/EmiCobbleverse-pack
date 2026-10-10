@@ -1849,8 +1849,8 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-plush-1.8.1.jar"
-hash = "911b8bb4dcbaa349a6c686faeb4296bcad893fad337ea22697d85ce050275b34"
+file = "mods/emi-plush-1.8.2.jar"
+hash = "98f9098c6a9fe0bf92622552fa21fcf10a012e1a3e20b01e43b49ca8b908b4ad"
 
 [[files]]
 file = "mods/emi-streamlabs-1.1.0.jar"
