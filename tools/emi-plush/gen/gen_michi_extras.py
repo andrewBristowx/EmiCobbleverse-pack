@@ -8,6 +8,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emi_lib import box_rects
 from michi_forms import FORMAS, ACC
+import zfight
 from michi_roles import ROLES, JS, abid
 
 OUT = sys.argv[1]
@@ -52,6 +53,8 @@ REGIONES = {}   # hueso del accesorio -> rectangulos (x, y, w, h) de su textura 
 
 def cube(geo, free, name, origin, size, painter, rotation=None, pivot=None):
     sx, sy, sz = size
+    # Cobblemon solo carga el modelo si todos los UV son enteros (`Expected an int but was 227.5`): el tamaño de los cubos tambien tiene que ser entero
+    assert all(float(v).is_integer() for v in size), f'{name}: tamaño {size} con decimales (el UV de los cubos siguientes dejaria de ser entero)'
     W, H = 2 * sz + 2 * sx, sz + sy
     ux, uy = free.alloc(W, H)
     REGIONES.setdefault(name, []).append((ux, uy, int(W), int(H)))
@@ -117,31 +120,30 @@ ACCESORIOS = {
         cube(g, f, 'acc_crown', (-13, 34, -11), (5, 6, 5), golden), cube(g, f, 'acc_crown', (8, 34, -11), (5, 6, 5), golden),
         cube(g, f, 'acc_crown', (-13, 34, 6), (5, 6, 5), golden), cube(g, f, 'acc_crown', (8, 34, 6), (5, 6, 5), golden),
         cube(g, f, 'acc_crown', (-2.5, 34, -11), (5, 7, 5), golden),
-        cube(g, f, 'acc_crown', (-1.5, 31, -11.6), (3, 3, 1), flat(PINK))],
+        cube(g, f, 'acc_crown', (-1.5, 31, -11.6), (3, 2, 1), flat(PINK))],
     'bow': lambda g, f: [
         cube(g, f, 'acc_bow', (-3, 30, -12), (6, 6, 5), flat(PINK)),
         cube(g, f, 'acc_bow', (-12, 30, -12), (9, 8, 4), dots(PINK, WHITE)), cube(g, f, 'acc_bow', (3, 30, -12), (9, 8, 4), dots(PINK, WHITE))],
-    'headphones': lambda g, f: [
-        cube(g, f, 'acc_headphones', (-17, 30, -3), (34, 2, 5), flat(BLACK)),
-        cube(g, f, 'acc_headphones', (-21, 12, -7), (5, 14, 14), flat(PINK)), cube(g, f, 'acc_headphones', (16, 12, -7), (5, 14, 14), flat(PINK)),
-        cube(g, f, 'acc_headphones', (-19, 26, -3), (2, 5, 5), flat(BLACK)), cube(g, f, 'acc_headphones', (17, 26, -3), (2, 5, 5), flat(BLACK)),
-        cube(g, f, 'acc_headphones', (-22, 15, -4), (1, 8, 8), flat(BLACK)), cube(g, f, 'acc_headphones', (21, 15, -4), (1, 8, 8), flat(BLACK))],
+    'headphones': lambda g, f: [   # la cabeza mide ±20: las almohadillas van por fuera, detras de los brazos, y el arco pasa por encima de las orejas
+        cube(g, f, 'acc_headphones', (20.5, 10, 0.5), (5, 15, 12), flat(PINK)), cube(g, f, 'acc_headphones', (-25.5, 10, 0.5), (5, 15, 12), flat(PINK)),
+        cube(g, f, 'acc_headphones', (25.5, 11.5, 2), (2, 12, 9), flat(BLACK)), cube(g, f, 'acc_headphones', (-27.5, 11.5, 2), (2, 12, 9), flat(BLACK)),
+        cube(g, f, 'acc_headphones', (21.5, 25, 5.5), (3, 18, 2), flat(BLACK)), cube(g, f, 'acc_headphones', (-24.5, 25, 5.5), (3, 18, 2), flat(BLACK)),
+        cube(g, f, 'acc_headphones', (-24, 42, 5), (48, 3, 3), flat(BLACK))],
     'scarf': lambda g, f: [
-        cube(g, f, 'acc_scarf', (-19.5, 8, -18.5), (39, 5, 38), band(PINK, WHITE)),
-        cube(g, f, 'acc_scarf', (6, 0.5, -19.5), (7, 11, 2), band(PINK, WHITE))],
+        cube(g, f, 'acc_scarf', (-19.5, 7.5, -18.5), (39, 5, 38), band(PINK, WHITE)),
+        cube(g, f, 'acc_scarf', (6, 1, -19.5), (7, 11, 3), band(PINK, WHITE))],
     'halo': lambda g, f: [   # aro dorado que descansa sobre las bolitas de las antenas (se solapa con ellas: no flota suelto)
-        cube(g, f, 'acc_halo', (-14, 53.6, -13), (28, 2, 3), glow), cube(g, f, 'acc_halo', (-14, 53.6, 10), (28, 2, 3), glow),
-        cube(g, f, 'acc_halo', (-14, 53.6, -10), (4, 2, 20), glow), cube(g, f, 'acc_halo', (10, 53.6, -10), (4, 2, 20), glow),
-        cube(g, f, 'acc_halo', (-14, 54.8, -13), (28, 1, 1), flat((255, 250, 205))), cube(g, f, 'acc_halo', (-14, 54.8, 12), (28, 1, 1), flat((255, 250, 205)))],
+        cube(g, f, 'acc_halo', (-14.5, 53.6, -13), (29, 2, 3), glow), cube(g, f, 'acc_halo', (-14.5, 53.6, 10), (29, 2, 3), glow),
+        cube(g, f, 'acc_halo', (-14, 53.6, -10), (4, 2, 20), glow), cube(g, f, 'acc_halo', (10, 53.6, -10), (4, 2, 20), glow)],
     'devil_horns': lambda g, f: [
         cube(g, f, 'acc_devil_horns', (9, 31, -13), (6, 4, 6), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-15, 31, -13), (6, 4, 6), fur(RED, RED_D)),
         cube(g, f, 'acc_devil_horns', (10, 35, -12), (4, 6, 4), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-14, 35, -12), (4, 6, 4), fur(RED, RED_D)),
         cube(g, f, 'acc_devil_horns', (11, 41, -11), (2, 5, 2), flat(RED_D)), cube(g, f, 'acc_devil_horns', (-13, 41, -11), (2, 5, 2), flat(RED_D))],
     'witch_hat': lambda g, f: [
-        cube(g, f, 'acc_witch_hat', (-22, 30, -22), (44, 2, 44), flat(PURPLE_D)),
-        cube(g, f, 'acc_witch_hat', (-12, 32, -12), (24, 6, 24), flat(PURPLE)),
-        cube(g, f, 'acc_witch_hat', (-12.5, 32.5, -12.5), (25, 2, 25), band(PINK, PINK_L)),
-        cube(g, f, 'acc_witch_hat', (-3, 32.5, -13.5), (6, 3, 1), flat(GOLD)),
+        cube(g, f, 'acc_witch_hat', (-22, 32, -22), (44, 2, 44), flat(PURPLE_D)),
+        cube(g, f, 'acc_witch_hat', (-12, 32.5, -12), (24, 6, 24), flat(PURPLE)),
+        cube(g, f, 'acc_witch_hat', (-12.5, 33, -12.5), (25, 2, 25), band(PINK, PINK_L)),
+        cube(g, f, 'acc_witch_hat', (-3, 33.5, -13.5), (6, 3, 1), flat(GOLD)),
         cube(g, f, 'acc_witch_hat', (-9, 38, -9), (18, 6, 18), flat(PURPLE)),
         cube(g, f, 'acc_witch_hat', (-6, 44, -6), (12, 6, 12), flat(PURPLE)),
         cube(g, f, 'acc_witch_hat', (-3.5, 50, -3.5), (7, 5, 7), flat(PURPLE_D), rotation=(0, 0, 18), pivot=(0, 50, 0))],
@@ -158,11 +160,11 @@ ACCESORIOS = {
             ((-16, 32, 3), ORANGE), ((12.5, 32, 3), WHITE), ((-8, 32, 10.5), PINK), ((4, 32, 10.5), ORANGE))],
     'pirate': lambda g, f: [
         cube(g, f, 'acc_pirate', (3, 15, -19), (12, 11, 2), flat(BLACK)),
-        cube(g, f, 'acc_pirate', (-20.5, 26, -16.5), (41, 2, 33), flat(BLACK)),
-        cube(g, f, 'acc_pirate', (-20, 31, -14), (40, 2, 28), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-20.5, 29.5, -18), (41, 2, 36), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-17, 30, -14), (34, 3, 28), flat(BLACK)),
         cube(g, f, 'acc_pirate', (-12, 33, -11), (24, 6, 22), flat(BLACK)),
         cube(g, f, 'acc_pirate', (-5, 33, -14.5), (10, 5, 3), flat((60, 52, 70))),
-        cube(g, f, 'acc_pirate', (-3, 34, -15), (6, 4, 1), skull)],
+        cube(g, f, 'acc_pirate', (-3, 33.5, -15), (6, 4, 1), skull)],
 }
 
 def main():
@@ -175,6 +177,8 @@ def main():
         g = copy.deepcopy(geo0)
         g['minecraft:geometry'][0]['description']['identifier'] = f'geometry.michi_dramatico_{nombre}'
         fn(g, free)
+        malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b['cubes'] if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
+        assert not malos, f'{nombre}: caras coplanares (z-fighting) en {malos}'
         json.dump(g, open(f'{GEO}/michi_dramatico_{nombre}.geo.json', 'w'), separators=(',', ':'))
         variantes.append({'aspects': [f'{nombre}-accessory'], 'model': f'cobblemon:michi_dramatico_{nombre}.geo'})
     img.save(f'{TEX}/michi_dramatico.png')

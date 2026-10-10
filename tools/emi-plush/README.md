@@ -85,13 +85,19 @@ Un bloque de Pokeblocks por cada especie Emi (21), por cada forma del GatitoAlie
 - Los de las formas del GatitoAlien salen de los modelos de Pokémon `michi_dramatico_<accesorio>.geo.json` reducidos a 1/4 (igual que el peluche original) con la textura normal o la dorada (`build_michi` en gen_dolls.py).
 - `EmiDollModel`/`EmiDollItemModel` cargan `geo/<nombre>.geo.json` y `textures/entity/<nombre>.png`. `build.sh` ejecuta todos los generadores antes de compilar.
 
+## Revisión de modelos: UV enteros y z-fighting (v1.9.3)
+`python3 test/revisar_modelos.py` (Pokémon) y `python3 test/revisar_modelos.py --peluches` (peluches) se ejecutan a mano antes de empaquetar y fallan si encuentran:
+- **UV con decimales** en un modelo de Pokémon. Cobblemon no carga ese modelo (`Expected an int but was 227.5` en el log del cliente) y la forma se ve con el modelo de antes o sin accesorio. Ocurre cuando un cubo nuevo tiene un tamaño con decimales, porque el hueco que se reserva en la textura deja de ser entero y todos los UV siguientes se descuadran. `gen_michi_extras.cube()` rechaza tamaños con decimales; las posiciones (`origin`) sí pueden tenerlos.
+- **z-fighting**: caras de dos cubos en el mismo plano, mirando al mismo lado y solapadas (rayas blancas parpadeantes, como las del sombrero pirata). Los accesorios del Gatito se generan con al menos 0,3 unidades de separación y `gen_michi_extras.py` lo comprueba al generar. Las piezas nuevas de las especies Emi (pelo) se engordan con `inflate` en `emi_lib.sin_zfight`; cuando chocan dos piezas nuevas solo engorda la que se añadió después (si engordaran las dos seguirían en el mismo plano). Las caras iguales que ya traen los modelos originales de Cobblemon (torso/torso2 del Eevee, etc.) no se tocan, y los párpados y bocas alternativos nunca se muestran a la vez.
+- Cambios de la v1.9.3 en el Gatito: los auriculares ahora van por fuera de la cabeza (que mide ±20 unidades) con un arco por encima de las orejas; antes quedaban dentro de la cabeza y no se veían de frente. En combate real se comprobó que «Toque de Midas» se anuncia con su nombre en español al entrar el Pokémon; el resto de habilidades se comprueban con el simulador (`test/probar_habilidades.js`, 37 comprobaciones).
+
 ## Cómo se hizo el modelo
 `gen/gen_michi.py` genera el modelo (`assets/emi_plush/geo/michi_dramatico.geo.json`) y la textura (`textures/entity/michi_dramatico.png`) a partir de una lista de cubos:
 cada cara tiene su propio rectángulo en el atlas (6 px por unidad) y los colores salen de una función por posición, así que las caras siempre coinciden.
 Para cambiar el aspecto se editan `CUBOS` y `pintar()` en ese script y se vuelve a ejecutar `build.sh`.
 
 ## Compilar
-`build.sh` compila contra los jars reales (nombres *intermediary*, como el resto de mods del pack); necesita variables de entorno:
+`build.sh` genera todo, **ejecuta `test/revisar_modelos.py` (y se detiene si hay UV con decimales o z-fighting)** y compila contra los jars reales (nombres *intermediary*, como el resto de mods del pack); necesita variables de entorno:
 `MC` (client-intermediary.jar de Fabric Loader), `GECKO`, `POKEBLOCKS`, `FAPI` (carpeta con los jars internos de Fabric API), `LIBS` (librerias de Minecraft y fabric-loader), `OUT`.
 
 ## Para añadir otro peluche

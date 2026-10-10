@@ -87,17 +87,17 @@ def add_hair(geo, atlas, head, opts):
     xa = cx - Wc / 2.0
     top = y1 + 0.9                                   # techo de la tapa (la tapa va de y1-0.1 a y1+0.9)
     # tapa
-    add_cube(geo, atlas, 'emi_hair_top', parent, piv, [xa, y1 - 0.1, z0 - 0.1], [Wc, 1, Dc + 1], solid, inflate=0.02)
+    add_cube(geo, atlas, 'emi_hair_top', parent, piv, [xa, y1 - 0.1, z0 - 0.1], [Wc, 1, Dc + 1], solid)
     # paneles laterales: de arriba hasta media cabeza, de delante a atras
     hs = ri(Hs * 0.55)
     ybot_side = top - hs - 1
     for sx in (-1, 1):
         xs = x1 - 0.05 if sx > 0 else x0 - 0.95
-        add_cube(geo, atlas, 'emi_side_l' if sx > 0 else 'emi_side_r', parent, piv, [xs, ybot_side, z0 - 0.1], [1, hs + 1, Dc + 1], hair_painter(tip=None), inflate=0.02)
+        add_cube(geo, atlas, 'emi_side_l' if sx > 0 else 'emi_side_r', parent, piv, [xs, ybot_side, z0 - 0.1], [1, hs + 1, Dc + 1], hair_painter(tip=None))
     # panel trasero: casi toda la espalda de la cabeza
     hb = ri(min(H, Hs * 1.3) * 0.8)
     ybot_back = top - hb - 1
-    add_cube(geo, atlas, 'emi_hair_nape', parent, piv, [xa, ybot_back, z1 - 0.05], [Wc, hb + 1, 1], hair_painter(tip=None), inflate=0.02)
+    add_cube(geo, atlas, 'emi_hair_nape', parent, piv, [xa, ybot_back, z1 - 0.05], [Wc, hb + 1, 1], hair_painter(tip=None))
     # flequillo con raya al medio, pegado a la tapa
     n = 6
     wseg = max(1, round(W / n))
