@@ -1,0 +1,1 @@
+$tellraw @a [{"text":"✦ ","color":"light_purple"},{"selector":"@s","color":"yellow"},{"text":" ha sacado ","color":"gray"},{"text":"$(n)","color":"$(c)","bold":true},{"text":" en el Gasha Michi","color":"gray"}]

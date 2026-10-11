@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "emi_plush:item/ticket_gasha_michi"
+  }
+}

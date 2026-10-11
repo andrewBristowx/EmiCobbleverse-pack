@@ -9,6 +9,7 @@ rm -rf build && mkdir -p build/classes
 python3 gen/gen_michi.py resources
 python3 gen/gen_pokemon.py resources
 python3 gen/gen_michi_extras.py resources
+python3 gen/gen_gasha.py resources
 if [ -n "${COBBLEMON_JAR:-}" ]; then
   (cd gen && python3 gen_all.py ../resources)
 else

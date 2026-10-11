@@ -85,6 +85,30 @@ Un bloque de Pokeblocks por cada especie Emi (21), por cada forma del GatitoAlie
 - Los de las formas del GatitoAlien salen de los modelos de Pokémon `michi_dramatico_<accesorio>.geo.json` reducidos a 1/4 (igual que el peluche original) con la textura normal o la dorada (`build_michi` en gen_dolls.py).
 - `EmiDollModel`/`EmiDollItemModel` cargan `geo/<nombre>.geo.json` y `textures/entity/<nombre>.png`. `build.sh` ejecuta todos los generadores antes de compilar.
 
+## Gasha Michi (v1.10.0)
+Objeto `emi_plush:ticket_gasha_michi` («Ticket Gasha Michi»). **Clic derecho = 1 tirada; agachado = hasta 10 de golpe.** Cada tirada gasta un ticket y entrega:
+
+| Casillas (de 1000) | Premio |
+|---|---|
+| 40 % | Objetos útiles comunes (Poké Balls, pociones, comida, hierro, oro, caramelos S) |
+| 25 % | Objetos útiles buenos (Ultra Balls, hiperpociones, caramelos M/L, diamantes, esmeraldas, fichas de casino, ticket gacha) |
+| 9 % | Objetos épicos (caramelos raros, caramelos XL, Restaurar todo, PP Máx, cápsula/parche de habilidad, piedras evolutivas, tickets de tesoros y cosméticos, netherita, Amuleto Shiny, Master Ball…) |
+| 10 % | Pokémon del mod de Emi (`emipokemon:*`: Unown 6/7/67, Espurr, Meowstic, Zorua, Zoroark, Sprigatito, Floragato, Meowscarada, Eevee Gatito, Snorlax Emi) |
+| 7 % | Peluche suelto (los 21 Emi, las 25 formas del GatitoAlien y el Michi original) |
+| 7 % | Pokémon suelto: los 21 Pokémon Emi (`emi=true`) y las 25 formas del GatitoAlien |
+| 2 % | **Pareja**: Pokémon + su peluche |
+
+**Garantía:** si llevas 10 tiradas sin pareja, la décima es una pareja (se muestra en la barra de acción «n/10»). Cualquier pareja reinicia la cuenta. Las especies más raras pesan menos: GatitoAlien dorado con accesorio < GatitoAlien con accesorio < Pokémon Emi evolucionados < intermedios < bebés. Los premios gordos se anuncian a todo el servidor.
+
+Todo está en funciones de datos (`data/emi_plush/function/gasha/*.mcfunction`), generadas por `gen/gen_gasha.py`: ahí se editan listas, pesos, niveles y casillas (`tirada.mcfunction`). Comandos de operador:
+```
+/give <jugador> emi_plush:ticket_gasha_michi 10
+/execute as <jugador> run function emi_plush:gasha/tirar       (una tirada sin ticket)
+/scoreboard players get <jugador> emi_gasha                     (cuenta hacia la garantía)
+/scoreboard players set <jugador> emi_gasha 9                   (la siguiente es la pareja)
+```
+Los Pokémon se entregan con `givepokemon` (van al PC si el equipo está lleno).
+
 ## Revisión de modelos: UV enteros y z-fighting (v1.9.3)
 `python3 test/revisar_modelos.py` (Pokémon) y `python3 test/revisar_modelos.py --peluches` (peluches) se ejecutan a mano antes de empaquetar y fallan si encuentran:
 - **UV con decimales** en un modelo de Pokémon. Cobblemon no carga ese modelo (`Expected an int but was 227.5` en el log del cliente) y la forma se ve con el modelo de antes o sin accesorio. Ocurre cuando un cubo nuevo tiene un tamaño con decimales, porque el hueco que se reserva en la textura deja de ser entero y todos los UV siguientes se descuadran. `gen_michi_extras.cube()` rechaza tamaños con decimales; las posiciones (`origin`) sí pueden tenerlos.
