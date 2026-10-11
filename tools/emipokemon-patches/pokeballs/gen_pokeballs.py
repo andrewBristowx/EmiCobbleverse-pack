@@ -253,5 +253,6 @@ for nombre, ent, ico in bolas:
     os.makedirs(f'{OUT}/bedrock/poke_balls/variations', exist_ok=True); os.makedirs(f'{OUT}/models/item', exist_ok=True)
     json.dump({'pokeball': f'cobblemon:{nombre}', 'order': 0, 'variations': [{'aspects': [], 'poser': 'cobblemon:poke_ball', 'model': 'cobblemon:poke_ball.geo',
                'texture': f'cobblemon:textures/poke_balls/{nombre}.png', 'layers': []}]}, open(f'{OUT}/bedrock/poke_balls/variations/0_{nombre}_base.json', 'w'))
-    json.dump({'parent': 'cobblemon:item/poke_ball_model', 'textures': {'layer0': f'cobblemon:item/poke_balls/models/{nombre}'}}, open(f'{OUT}/models/item/{nombre}_model.json', 'w'))
+    if nombre != 'poke_ball':   # `poke_ball_model` es el modelo base (padre de todos): reescribirlo con padre = si mismo rompe TODAS las bolas en la mano
+        json.dump({'parent': 'cobblemon:item/poke_ball_model', 'textures': {'layer0': f'cobblemon:item/poke_balls/models/{nombre}'}}, open(f'{OUT}/models/item/{nombre}_model.json', 'w'))
 print(len(bolas), 'pokebolas en', OUT)
