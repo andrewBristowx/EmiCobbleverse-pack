@@ -102,11 +102,19 @@ public final class Catalogo {
     static String regionClave(String region) { return region.trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", ""); }
 
     private static com.google.gson.JsonArray leerExtras() throws java.io.IOException {
-        String texto;
         java.nio.file.Path f = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("emipokemon").resolve("extra-locations.json");
-        if (java.nio.file.Files.exists(f)) texto = java.nio.file.Files.readString(f);
-        else try (var in = Catalogo.class.getResourceAsStream("/emi_estructuras/extra-locations-default.json")) { texto = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
-        return com.google.gson.JsonParser.parseString(texto).getAsJsonObject().getAsJsonArray("ubicaciones");
+        String def;
+        try (var in = Catalogo.class.getResourceAsStream("/emi_estructuras/extra-locations-default.json")) { def = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+        String texto = java.nio.file.Files.exists(f) ? java.nio.file.Files.readString(f) : def;
+        com.google.gson.JsonArray lista = com.google.gson.JsonParser.parseString(texto).getAsJsonObject().getAsJsonArray("ubicaciones");
+        // igual que el parche ExtraLocations de Emipokemon: un config viejo (sin Galar, Paldea, Alola o Dungeons) se completa en memoria con las entradas por defecto que falten, al final y en el mismo orden
+        java.util.Set<String> tiene = new java.util.HashSet<>();
+        for (var el : lista) { var o = el.getAsJsonObject(); if (o.has("structure")) tiene.add(o.get("structure").getAsString()); }
+        com.google.gson.JsonArray todas = new com.google.gson.JsonArray(); todas.addAll(lista);
+        for (var el : com.google.gson.JsonParser.parseString(def).getAsJsonObject().getAsJsonArray("ubicaciones")) {
+            if (!tiene.contains(el.getAsJsonObject().get("structure").getAsString())) todas.add(el);
+        }
+        return todas;
     }
 
     public static List<Entrada> construir(MinecraftServer server) {

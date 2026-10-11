@@ -26,28 +26,12 @@ public final class ExtraLocations {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-    static final String DEFAULT = "{\n"
-            + "  \"_ayuda\": \"Cada entrada añade un hueco al menu de ubicaciones. region: Kanto, Johto, Hoenn, Sinnoh o una nueva. structure: id de la estructura (la usa el mod emi_estructuras). aliases: textos para que Emipokemon la reconozca.\",\n"
-            + "  \"ubicaciones\": [\n"
-            + "    {\"region\": \"Kanto\", \"label\": \"Torre Team Rocket\", \"structure\": \"cobbleverse:team_rocket_tower\", \"aliases\": [\"cobbleverse team rocket tower\"]},\n"
-            + "    {\"region\": \"Kanto\", \"label\": \"Casa de Ash\", \"structure\": \"cobbleverse:ash\", \"aliases\": [\"cobbleverse ash\"]},\n"
-            + "    {\"region\": \"Sinnoh\", \"label\": \"Isla Creciente (Crescent Isle)\", \"structure\": \"cobbleverse:crescent_isle\", \"aliases\": [\"cobbleverse crescent isle\"]},\n"
-            + "    {\"region\": \"Sinnoh\", \"label\": \"Templo Manaphy\", \"structure\": \"cobbleverse:mythical/manaphy\", \"aliases\": [\"cobbleverse mythical manaphy\"]},\n"
-            + "    {\"region\": \"Sinnoh\", \"label\": \"Isla Giratina\", \"structure\": \"legendarymonuments:giratina_island\", \"aliases\": [\"legendarymonuments giratina island\"]},\n"
-            + "    {\"region\": \"Sinnoh\", \"label\": \"Portal de la Distorsión\", \"structure\": \"legendarymonuments:distortion_portal\", \"aliases\": [\"legendarymonuments distortion portal\"]},\n"
-            + "    {\"region\": \"Galar\", \"label\": \"Torre de la Corona (Calyrex)\", \"structure\": \"cobbleverse:crown_spire\", \"aliases\": [\"cobbleverse crown spire\"]},\n"
-            + "    {\"region\": \"Galar\", \"label\": \"Cementerio de la Corona (Spectrier)\", \"structure\": \"cobbleverse:crown_cemetery\", \"aliases\": [\"cobbleverse crown cemetery\"]},\n"
-            + "    {\"region\": \"Galar\", \"label\": \"Árbol Dyna (Dynamax)\", \"structure\": \"cobbleverse:dyna_tree\", \"aliases\": [\"cobbleverse dyna tree\"]},\n"
-            + "    {\"region\": \"Galar\", \"label\": \"Capullo de Eternatus\", \"structure\": \"legendarymonuments:eternatus_cocoon\", \"aliases\": [\"legendarymonuments eternatus cocoon\"]},\n"
-            + "    {\"region\": \"Paldea\", \"label\": \"Santuario Firescourge (Chi-Yu)\", \"structure\": \"legendarymonuments:firescourge_shrine\", \"aliases\": [\"legendarymonuments firescourge shrine\"]},\n"
-            + "    {\"region\": \"Paldea\", \"label\": \"Santuario Grasswither (Wo-Chien)\", \"structure\": \"legendarymonuments:grasswither_shrine\", \"aliases\": [\"legendarymonuments grasswither shrine\"]},\n"
-            + "    {\"region\": \"Paldea\", \"label\": \"Santuario Groundblight (Ting-Lu)\", \"structure\": \"legendarymonuments:groundblight_shrine\", \"aliases\": [\"legendarymonuments groundblight shrine\"]},\n"
-            + "    {\"region\": \"Paldea\", \"label\": \"Santuario Icerend (Chien-Pao)\", \"structure\": \"legendarymonuments:icerend_shrine\", \"aliases\": [\"legendarymonuments icerend shrine\"]},\n"
-            + "    {\"region\": \"Paldea\", \"label\": \"Outskirt Stand\", \"structure\": \"legendarymonuments:outskirt_stand\", \"aliases\": [\"legendarymonuments outskirt stand\"]},\n"
-            + "    {\"region\": \"Alola\", \"label\": \"Torre del Amanecer\", \"structure\": \"cobbleverse:dawn_tower\", \"aliases\": [\"cobbleverse dawn tower\"]},\n"
-            + "    {\"region\": \"Alola\", \"label\": \"Torre del Anochecer\", \"structure\": \"cobbleverse:dusk_tower\", \"aliases\": [\"cobbleverse dusk tower\"]}\n"
-            + "  ]\n"
-            + "}\n";
+    /** Lista completa por defecto (la misma que config/emipokemon/extra-locations.json del paquete), dentro del jar como recurso. */
+    static String porDefecto() throws java.io.IOException {
+        try (var in = ExtraLocations.class.getResourceAsStream("/com/emipokemon/admin/extra-locations-default.json")) {
+            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+    }
 
     /** Se llama con el mapa EXPECTED de RegionalStructureAuditService (region -> lista de huecos). */
     public static void apply(Map<String, List<RegionalStructureAuditService.Expected>> expected) {
@@ -55,11 +39,19 @@ public final class ExtraLocations {
             Path file = FabricLoader.getInstance().getConfigDir().resolve("emipokemon").resolve("extra-locations.json");
             if (!Files.exists(file)) {
                 Files.createDirectories(file.getParent());
-                Files.writeString(file, DEFAULT);
+                Files.writeString(file, porDefecto());
             }
             JsonObject root = GSON.fromJson(Files.readString(file), JsonObject.class);
             JsonArray list = root == null ? null : root.getAsJsonArray("ubicaciones");
             if (list == null) return;
+            // Un config viejo (creado antes de que existieran Galar, Paldea, Alola o Dungeons) no se actualiza solo: las entradas por defecto que
+            // falten (por id de estructura) se añaden en memoria al final, sin tocar el archivo, asi las pestañas nuevas salen siempre.
+            java.util.Set<String> tiene = new java.util.HashSet<>();
+            for (JsonElement el : list) { JsonObject o = el.getAsJsonObject(); if (o.has("structure")) tiene.add(o.get("structure").getAsString()); }
+            JsonArray todas = new JsonArray(); todas.addAll(list);
+            JsonArray def = GSON.fromJson(porDefecto(), JsonObject.class).getAsJsonArray("ubicaciones");
+            for (JsonElement el : def) { JsonObject o = el.getAsJsonObject(); if (!tiene.contains(o.get("structure").getAsString())) todas.add(o); }
+            list = todas;
             for (JsonElement el : list) {
                 JsonObject o = el.getAsJsonObject();
                 String region = o.get("region").getAsString().trim();

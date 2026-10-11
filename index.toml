@@ -1398,7 +1398,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "7caab6fe510ebd938645891bb51410a15801ed9d2df5919c6072292ccebaac1b"
+hash = "420f9f5bdef06639c488f9a9c1e233761150ca4f430ee80e994d3b08c64d96a7"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1841,8 +1841,8 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-estructuras-1.1.1.jar"
-hash = "6ad310c7383e8142736640506bc189287b4a2168af178c0d2f5776e67522e9ad"
+file = "mods/emi-estructuras-1.1.2.jar"
+hash = "c1e39022a8e7c4a28ed836894a80c021451bd480412464bdeeca40f048c2f995"
 
 [[files]]
 file = "mods/emi-ftb-keys-1.0.0.jar"
