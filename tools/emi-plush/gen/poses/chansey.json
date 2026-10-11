@@ -1,0 +1,149 @@
+{
+ "left_arm": {
+  "rotation": [
+   33.457,
+   2.8422,
+   63.5893
+  ]
+ },
+ "right_arm": {
+  "rotation": [
+   30.503,
+   -2.6211,
+   -58.7477
+  ]
+ },
+ "torso": {
+  "rotation": [
+   -0.5,
+   0.866,
+   -0.5
+  ]
+ },
+ "head": {
+  "rotation": [
+   -0.0,
+   -0.25,
+   0.0
+  ]
+ },
+ "left_tendril_front": {
+  "rotation": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "left_tendril_front2": {
+  "rotation": [
+   0.0,
+   0.0,
+   0.9848
+  ]
+ },
+ "left_tendril_middle": {
+  "rotation": [
+   0.0,
+   0.0,
+   1.5321
+  ]
+ },
+ "left_tendril_middle2": {
+  "rotation": [
+   0.0,
+   0.0,
+   0.9397
+  ]
+ },
+ "left_tendril_back": {
+  "rotation": [
+   0.0,
+   0.0,
+   1.8794
+  ]
+ },
+ "left_tendril_back2": {
+  "rotation": [
+   0.0,
+   0.0,
+   0.6428
+  ]
+ },
+ "right_tendril_front": {
+  "rotation": [
+   0.0,
+   0.0,
+   -1.0
+  ]
+ },
+ "right_tendril_front2": {
+  "rotation": [
+   0.0,
+   0.0,
+   -0.9848
+  ]
+ },
+ "right_tendril_middle": {
+  "rotation": [
+   0.0,
+   0.0,
+   -1.5321
+  ]
+ },
+ "right_tendril_middle2": {
+  "rotation": [
+   0.0,
+   0.0,
+   -0.9397
+  ]
+ },
+ "right_tendril_back": {
+  "rotation": [
+   0.0,
+   0.0,
+   -1.8794
+  ]
+ },
+ "right_tendril_back2": {
+  "rotation": [
+   0.0,
+   0.0,
+   -0.6428
+  ]
+ },
+ "tail1": {
+  "rotation": [
+   -0.0,
+   0.0,
+   -0.5
+  ]
+ },
+ "tail2": {
+  "rotation": [
+   -0.0,
+   -5.3623,
+   -0.0
+  ]
+ },
+ "pouch": {
+  "rotation": [
+   4.866,
+   0.0,
+   0.0
+  ]
+ },
+ "egg_torso": {
+  "rotation": [
+   -0.5,
+   0.866,
+   -0.5
+  ]
+ },
+ "egg_pouch": {
+  "rotation": [
+   4.866,
+   0.0,
+   0.0
+  ]
+ }
+}

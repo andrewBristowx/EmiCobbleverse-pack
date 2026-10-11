@@ -93,14 +93,42 @@ def add_cube(geo, atlas, bone_name, parent, pivot, origin, size, painter, rotati
     except KeyError:
         b = {'name': bone_name, 'parent': parent, 'pivot': list(pivot), 'cubes': []}
         bones(geo).append(b)
-    c = {'origin': list(origin), 'size': list(size), 'uv': [ux, uy]}
+    c = {'origin': list(origin), 'size': list(size), 'uv': [ux, uy], '_nuevo': True}
     if inflate: c['inflate'] = inflate
     if rotation:
         c['pivot'] = list(pivot); c['rotation'] = list(rotation)
     b.setdefault('cubes', []).append(c)
     return c
 
+def _hijos(geo):
+    return [c for b in bones(geo) for c in b.get('cubes', [])]
+
+def sin_zfight(geo, sep=0.15, paso=0.16, tope=1.6):
+    """Los cubos que se han añadido (pelo, accesorios: marcados con `_nuevo`) no pueden tener una cara en el mismo plano que la de otro cubo que mire hacia el
+    mismo lado y se solape (el motor las dibuja alternando: «z-fighting», se ven rayas parpadeantes). Se engorda el cubo nuevo (`inflate`) de `paso` en `paso`
+    hasta que todas sus caras queden a mas de `sep` de las de los demas. Cuando chocan dos cubos nuevos solo engorda el que se añadio despues (si engordaran
+    los dos a la vez seguirian en el mismo plano). Devuelve (cubos ajustados, conflictos que no se han podido resolver)."""
+    import zfight
+    cubos = _hijos(geo)
+    orden = {id(c): i for i, c in enumerate(cubos)}
+    n = 0
+    for _ in range(40):
+        cambio = False
+        for c in cubos:
+            if not c.get('_nuevo') or c.get('rotation'): continue
+            choques = zfight.conflictos(geo, c, sep, lista=True)
+            # contra un cubo nuevo anterior o uno original: se aparta c; contra un cubo nuevo posterior: le toca moverse a el
+            if any(not o.get('_nuevo') or o.get('rotation') or orden[id(o)] < orden[id(c)] for o in choques) and c.get('inflate', 0) < tope:
+                c['inflate'] = round(c.get('inflate', 0) + paso, 3); cambio = True; n += 1
+        if not cambio: break
+    restantes = sum(zfight.conflictos(geo, c, sep) for c in cubos if c.get('_nuevo') and not c.get('rotation'))
+    return n, restantes
+
 def finish(geo, atlas, new_id):
+    ajustados, restantes = sin_zfight(geo)
+    if restantes: print(f'  AVISO {new_id}: {restantes} caras coplanares sin resolver')
+    for b in bones(geo):
+        for c in b.get('cubes', []): c.pop('_nuevo', None)
     g = geo['minecraft:geometry'][0]
     g['description']['identifier'] = new_id
     g['description']['texture_height'] = atlas.img.height

@@ -7,7 +7,9 @@ import json, os, sys, copy
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emi_lib import box_rects
-from michi_forms import FORMAS
+from michi_forms import FORMAS, ACC
+import zfight
+from michi_roles import ROLES, JS, abid
 
 OUT = sys.argv[1]
 B = os.path.join(OUT, 'assets/cobblemon')
@@ -47,10 +49,15 @@ class Free:
         if self.y + h > self.img.height: raise SystemExit('textura llena')
         r = (self.x, self.y); self.x += w; self.rowh = max(self.rowh, h); return r
 
+REGIONES = {}   # hueso del accesorio -> rectangulos (x, y, w, h) de su textura (para repintarlos en la textura dorada)
+
 def cube(geo, free, name, origin, size, painter, rotation=None, pivot=None):
     sx, sy, sz = size
+    # Cobblemon solo carga el modelo si todos los UV son enteros (`Expected an int but was 227.5`): el tamaño de los cubos tambien tiene que ser entero
+    assert all(float(v).is_integer() for v in size), f'{name}: tamaño {size} con decimales (el UV de los cubos siguientes dejaria de ser entero)'
     W, H = 2 * sz + 2 * sx, sz + sy
     ux, uy = free.alloc(W, H)
+    REGIONES.setdefault(name, []).append((ux, uy, int(W), int(H)))
     px = free.img.load()
     for face, (x, y, w, h) in box_rects(ux, uy, sx, sy, sz).items():
         for i in range(w):
@@ -99,6 +106,24 @@ def skull(face, i, j, w, h):
     return c + (255,)
 def leaves(face, i, j, w, h): return (GREEN_D if (i + 2 * j) % 4 == 0 else GREEN) + (255,)
 
+def corona(g, f):
+    """Aro dorado alrededor de la parte de arriba de la cabeza (la cabeza mide ±18 arriba y las orejas salen por dentro del aro), con puntas altas por delante y por detras,
+    dos puntas a cada lado y gemas. Todos los tamaños enteros (los UV tienen que ser enteros)."""
+    c = lambda o, sz, p=golden: cube(g, f, 'acc_crown', o, sz, p)
+    out = [c((-18.5, 30, -18), (37, 4, 4)), c((-18.5, 30, 14), (37, 4, 4)),            # delante y detras
+           c((-18.5, 30, -14), (5, 4, 28)), c((13.5, 30, -14), (5, 4, 28))]            # lados
+    for x, alto in ((-15, 3), (-7.5, 3), (0, 5), (7.5, 3), (15, 3)):                    # puntas delanteras (la del medio mas alta)
+        out += [c((x - 2.5, 34, -18), (5, 4, 4)), c((x - 1.5, 38, -17.5), (3, alto, 3))]
+    for x, alto in ((-12, 3), (0, 4), (12, 3)):                                         # puntas traseras
+        out += [c((x - 2.5, 34, 14), (5, 4, 4)), c((x - 1.5, 38, 14.5), (3, alto, 3))]
+    for x0 in (-18.5, 13.5):                                                            # puntas de los lados
+        for z in (-9, 5):
+            out += [c((x0, 34, z), (5, 4, 4)), c((x0 + 1, 38, z + 0.5), (3, 3, 3))]
+    out += [c((-1.5, 33, -18.6), (3, 3, 1), flat(PINK)),                                # gema delantera
+            c((-19.1, 30.5, -2), (1, 3, 3), flat(PINK)), c((18.1, 30.5, -2), (1, 3, 3), flat(PINK)),   # gemas de los lados
+            c((-1.5, 33, 18.6), (3, 3, 1), flat(PINK))]                                 # gema trasera
+    return out
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -108,35 +133,28 @@ ACCESORIOS = {
         cube(g, f, 'acc_beach_hat', (-24, 29, -22), (48, 2, 44), straw),
         cube(g, f, 'acc_beach_hat', (-11, 30, -10), (22, 9, 20), straw),
         cube(g, f, 'acc_beach_hat', (-11.5, 30.5, -10.5), (23, 3, 21), band(PINK, PINK_L))],
-    'crown': lambda g, f: [
-        cube(g, f, 'acc_crown', (-13, 30, -11), (26, 4, 22), golden),
-        cube(g, f, 'acc_crown', (-13, 34, -11), (5, 6, 5), golden), cube(g, f, 'acc_crown', (8, 34, -11), (5, 6, 5), golden),
-        cube(g, f, 'acc_crown', (-13, 34, 6), (5, 6, 5), golden), cube(g, f, 'acc_crown', (8, 34, 6), (5, 6, 5), golden),
-        cube(g, f, 'acc_crown', (-2.5, 34, -11), (5, 7, 5), golden),
-        cube(g, f, 'acc_crown', (-1.5, 31, -11.6), (3, 3, 1), flat(PINK))],
+    'crown': lambda g, f: corona(g, f),
     'bow': lambda g, f: [
         cube(g, f, 'acc_bow', (-3, 30, -12), (6, 6, 5), flat(PINK)),
         cube(g, f, 'acc_bow', (-12, 30, -12), (9, 8, 4), dots(PINK, WHITE)), cube(g, f, 'acc_bow', (3, 30, -12), (9, 8, 4), dots(PINK, WHITE))],
-    'headphones': lambda g, f: [
-        cube(g, f, 'acc_headphones', (-17, 30, -3), (34, 2, 5), flat(BLACK)),
-        cube(g, f, 'acc_headphones', (-21, 12, -7), (5, 14, 14), flat(PINK)), cube(g, f, 'acc_headphones', (16, 12, -7), (5, 14, 14), flat(PINK)),
-        cube(g, f, 'acc_headphones', (-19, 26, -3), (2, 5, 5), flat(BLACK)), cube(g, f, 'acc_headphones', (17, 26, -3), (2, 5, 5), flat(BLACK)),
-        cube(g, f, 'acc_headphones', (-22, 15, -4), (1, 8, 8), flat(BLACK)), cube(g, f, 'acc_headphones', (21, 15, -4), (1, 8, 8), flat(BLACK))],
+    'headphones': lambda g, f: [   # la cabeza mide ±20: las almohadillas van por fuera, detras de los brazos (sin arco por encima)
+        cube(g, f, 'acc_headphones', (20.5, 10, 0.5), (5, 15, 12), flat(PINK)), cube(g, f, 'acc_headphones', (-25.5, 10, 0.5), (5, 15, 12), flat(PINK)),
+        cube(g, f, 'acc_headphones', (25.5, 11.5, 2), (2, 12, 9), flat(BLACK)), cube(g, f, 'acc_headphones', (-27.5, 11.5, 2), (2, 12, 9), flat(BLACK))],
     'scarf': lambda g, f: [
-        cube(g, f, 'acc_scarf', (-19.5, 8, -18.5), (39, 5, 38), band(PINK, WHITE)),
-        cube(g, f, 'acc_scarf', (6, 0.5, -19.5), (7, 11, 2), band(PINK, WHITE))],
-    'halo': lambda g, f: [
-        cube(g, f, 'acc_halo', (-14, 57, -14), (28, 3, 3), glow), cube(g, f, 'acc_halo', (-14, 57, 11), (28, 3, 3), glow),
-        cube(g, f, 'acc_halo', (-14, 57, -11), (3, 3, 22), glow), cube(g, f, 'acc_halo', (11, 57, -11), (3, 3, 22), glow)],
+        cube(g, f, 'acc_scarf', (-19.5, 7.5, -18.5), (39, 5, 38), band(PINK, WHITE)),
+        cube(g, f, 'acc_scarf', (6, 1, -19.5), (7, 11, 3), band(PINK, WHITE))],
+    'halo': lambda g, f: [   # aro dorado que descansa sobre las bolitas de las antenas (se solapa con ellas: no flota suelto)
+        cube(g, f, 'acc_halo', (-14.5, 53.6, -13), (29, 2, 3), glow), cube(g, f, 'acc_halo', (-14.5, 53.6, 10), (29, 2, 3), glow),
+        cube(g, f, 'acc_halo', (-14, 53.6, -10), (4, 2, 20), glow), cube(g, f, 'acc_halo', (10, 53.6, -10), (4, 2, 20), glow)],
     'devil_horns': lambda g, f: [
         cube(g, f, 'acc_devil_horns', (9, 31, -13), (6, 4, 6), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-15, 31, -13), (6, 4, 6), fur(RED, RED_D)),
         cube(g, f, 'acc_devil_horns', (10, 35, -12), (4, 6, 4), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-14, 35, -12), (4, 6, 4), fur(RED, RED_D)),
         cube(g, f, 'acc_devil_horns', (11, 41, -11), (2, 5, 2), flat(RED_D)), cube(g, f, 'acc_devil_horns', (-13, 41, -11), (2, 5, 2), flat(RED_D))],
     'witch_hat': lambda g, f: [
-        cube(g, f, 'acc_witch_hat', (-22, 30, -22), (44, 2, 44), flat(PURPLE_D)),
-        cube(g, f, 'acc_witch_hat', (-12, 32, -12), (24, 6, 24), flat(PURPLE)),
-        cube(g, f, 'acc_witch_hat', (-12.5, 32.5, -12.5), (25, 2, 25), band(PINK, PINK_L)),
-        cube(g, f, 'acc_witch_hat', (-3, 32.5, -13.5), (6, 3, 1), flat(GOLD)),
+        cube(g, f, 'acc_witch_hat', (-22, 32, -22), (44, 2, 44), flat(PURPLE_D)),
+        cube(g, f, 'acc_witch_hat', (-12, 32.5, -12), (24, 6, 24), flat(PURPLE)),
+        cube(g, f, 'acc_witch_hat', (-12.5, 33, -12.5), (25, 2, 25), band(PINK, PINK_L)),
+        cube(g, f, 'acc_witch_hat', (-3, 33.5, -13.5), (6, 3, 1), flat(GOLD)),
         cube(g, f, 'acc_witch_hat', (-9, 38, -9), (18, 6, 18), flat(PURPLE)),
         cube(g, f, 'acc_witch_hat', (-6, 44, -6), (12, 6, 12), flat(PURPLE)),
         cube(g, f, 'acc_witch_hat', (-3.5, 50, -3.5), (7, 5, 7), flat(PURPLE_D), rotation=(0, 0, 18), pivot=(0, 50, 0))],
@@ -153,11 +171,11 @@ ACCESORIOS = {
             ((-16, 32, 3), ORANGE), ((12.5, 32, 3), WHITE), ((-8, 32, 10.5), PINK), ((4, 32, 10.5), ORANGE))],
     'pirate': lambda g, f: [
         cube(g, f, 'acc_pirate', (3, 15, -19), (12, 11, 2), flat(BLACK)),
-        cube(g, f, 'acc_pirate', (-20.5, 26, -16.5), (41, 2, 33), flat(BLACK)),
-        cube(g, f, 'acc_pirate', (-20, 31, -14), (40, 2, 28), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-20.5, 29.5, -18), (41, 2, 36), flat(BLACK)),
+        cube(g, f, 'acc_pirate', (-17, 30, -14), (34, 3, 28), flat(BLACK)),
         cube(g, f, 'acc_pirate', (-12, 33, -11), (24, 6, 22), flat(BLACK)),
         cube(g, f, 'acc_pirate', (-5, 33, -14.5), (10, 5, 3), flat((60, 52, 70))),
-        cube(g, f, 'acc_pirate', (-3, 34, -15), (6, 4, 1), skull)],
+        cube(g, f, 'acc_pirate', (-3, 33.5, -15), (6, 4, 1), skull)],
 }
 
 def main():
@@ -170,10 +188,21 @@ def main():
         g = copy.deepcopy(geo0)
         g['minecraft:geometry'][0]['description']['identifier'] = f'geometry.michi_dramatico_{nombre}'
         fn(g, free)
+        malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b['cubes'] if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
+        assert not malos, f'{nombre}: caras coplanares (z-fighting) en {malos}'
         json.dump(g, open(f'{GEO}/michi_dramatico_{nombre}.geo.json', 'w'), separators=(',', ':'))
         variantes.append({'aspects': [f'{nombre}-accessory'], 'model': f'cobblemon:michi_dramatico_{nombre}.geo'})
     img.save(f'{TEX}/michi_dramatico.png')
-    gold_shiny(img).save(f'{TEX}/michi_dramatico_shiny.png')
+    oro = gold_shiny(img)
+    # accesorios que se pierden sobre el pelaje dorado (la corona es dorada): en la textura dorada pasan a plata
+    px = oro.load()
+    for x, y, w, h in REGIONES.get('acc_crown', []):
+        for i in range(w):
+            for j in range(h):
+                if 0 <= x + i < oro.width and 0 <= y + j < oro.height:
+                    r, g, b, a = px[x + i, y + j]
+                    if a and not (r > 200 and g < 130): lu = 0.299 * r + 0.587 * g + 0.114 * b; t = min(1.0, lu / 235.0); px[x + i, y + j] = mix((120, 126, 146), (236, 240, 252), t) + (a,)
+    oro.save(f'{TEX}/michi_dramatico_shiny.png')
     rd = f'{B}/bedrock/pokemon/resolvers/michi_dramatico'
     json.dump({'species': 'cobblemon:gatitoalien', 'order': 1, 'variations': variantes}, open(f'{rd}/1_michi_dramatico_accessories.json', 'w'), indent=2)
     data = os.path.join(OUT, 'data/cobblemon')
@@ -185,12 +214,48 @@ def main():
     # formas Pokemon (especie y entrada del Pokedex)
     sp_path = os.path.join(OUT, 'data/cobblemon/species/custom/gatitoalien.json')
     sp = json.load(open(sp_path, encoding='utf-8'))
-    sp['forms'] = [{'name': n, 'aspects': asp, 'pokedex': ['emi_plush.species.gatitoalien.desc']} for n, asp, _, _ in FORMAS]
+    NOMBRES_STAT = ('hp', 'attack', 'defence', 'special_attack', 'special_defence', 'speed')
+    formas = []
+    for n, asp, acc, dorado in FORMAS:
+        r = ROLES[acc]
+        assert sum(r['stats']) == 470, n
+        moves = list(sp['moves'])
+        for m in r['moves']:
+            if m not in moves: moves.append(m)
+        formas.append({'name': n, 'aspects': asp, 'primaryType': 'fairy', 'secondaryType': r['tipo'],
+                       'baseStats': dict(zip(NOMBRES_STAT, r['stats'])), 'evYield': {k: r['ev'].get(k, 0) for k in NOMBRES_STAT},
+                       'abilities': [abid(r), 'h:drama'], 'moves': moves,
+                       'pokedex': [f"emi_plush.species.gatitoalien_{acc or 'gold'}.desc"]})
+    sp['forms'] = formas
     json.dump(sp, open(sp_path, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
     dx_path = os.path.join(OUT, 'data/emi_plush/dex_entries/pokemon/gatitoalien.json')
     dx = json.load(open(dx_path, encoding='utf-8'))
     dx['forms'] = [{'displayForm': 'Normal', 'unlockForms': ['Normal']}] + [{'displayForm': n, 'unlockForms': [n]} for n, *_ in FORMAS]
     json.dump(dx, open(dx_path, 'w', encoding='utf-8'), indent=2)
+    # habilidades propias (scripts de Showdown) y textos
+    ab_dir = os.path.join(OUT, 'data/emi_plush/abilities'); os.makedirs(ab_dir, exist_ok=True)
+    por_clave = {r['ab']: abid(r) for r in ROLES.values()}
+    for f in os.listdir(ab_dir):                       # fuera las habilidades de versiones anteriores (ids en ingles); drama se queda
+        if f.endswith('.js') and f != 'drama.js': os.remove(f'{ab_dir}/{f}')
+    for clave, js in JS.items():
+        assert '//' not in js, clave
+        open(f'{ab_dir}/{por_clave[clave]}.js', 'w', encoding='utf-8').write(js + '\n')
+    for code, es in (('en_us', False), ('es_es', True), ('es_mx', True)):
+        p = os.path.join(OUT, f'assets/emi_plush/lang/{code}.json')
+        lang = json.load(open(p, encoding='utf-8'))
+        for k in [k for k in lang if k.startswith('cobblemon.ability.') and not k.startswith('cobblemon.ability.drama')]: del lang[k]
+        for acc, r in ROLES.items():
+            lang[f"cobblemon.ability.{abid(r)}"] = r['ab_es'] if es else r['ab_en']
+            lang[f"cobblemon.ability.{abid(r)}.desc"] = r['d_es'] if es else r['d_en']
+            lang[f"emi_plush.species.gatitoalien_{acc or 'gold'}.desc"] = r['dex_es'] if es else r['dex_en']
+        # nombres de las formas en el Pokedex (clave = nombre de la forma en minusculas)
+        nom = {a: (e if es else n) for a, _f, e, n in ACC}
+        for fn, asp, acc, dorado in FORMAS:
+            base = nom[acc] if acc else ''
+            txt = ((('Dorado ' if es else 'Golden ') if dorado else '') + base).strip()
+            if es and dorado and acc and base.startswith('con '): txt = 'Dorado ' + base
+            lang[f"cobblemon.ui.pokedex.info.form.{fn.lower()}"] = (txt[:1].upper() + txt[1:]) if txt else ('Dorado' if es else 'Golden')
+        json.dump(lang, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
     print('extras de GatitoAlien ok:', ', '.join(ACCESORIOS))
 
 main()

@@ -1,0 +1,135 @@
+{
+ "body": {
+  "position": [
+   0.0,
+   -0.2,
+   0.0
+  ]
+ },
+ "tail": {
+  "rotation": [
+   20.0,
+   0.0,
+   0.0
+  ]
+ },
+ "tail2": {
+  "rotation": [
+   15.0,
+   0.0,
+   0.0
+  ]
+ },
+ "tail3": {
+  "rotation": [
+   10.0,
+   0.0,
+   0.0
+  ]
+ },
+ "tail4": {
+  "rotation": [
+   12.5,
+   0.0,
+   0.0
+  ]
+ },
+ "front_leg_left": {
+  "rotation": [
+   8.0,
+   -2.5,
+   -3.0
+  ]
+ },
+ "elbow_left": {
+  "rotation": [
+   -13.5,
+   0.0,
+   0.0
+  ]
+ },
+ "frontpaw_left": {
+  "rotation": [
+   6.0,
+   0.0,
+   3.0
+  ]
+ },
+ "front_leg_right": {
+  "rotation": [
+   8.0,
+   2.5,
+   3.0
+  ]
+ },
+ "elbow_right": {
+  "rotation": [
+   -13.5,
+   0.0,
+   0.0
+  ]
+ },
+ "frontpaw_right": {
+  "rotation": [
+   6.0,
+   0.0,
+   -3.0
+  ]
+ },
+ "back_leg_left": {
+  "rotation": [
+   8.0,
+   -2.5,
+   -5.0
+  ]
+ },
+ "knee_left": {
+  "rotation": [
+   -5.0,
+   0.0,
+   0.0
+  ]
+ },
+ "ankle_left": {
+  "rotation": [
+   -3.0,
+   0.0,
+   0.0
+  ]
+ },
+ "foot_left": {
+  "rotation": [
+   0.0,
+   0.0,
+   5.0
+  ]
+ },
+ "back_leg_right": {
+  "rotation": [
+   8.0,
+   2.5,
+   5.0
+  ]
+ },
+ "knee_right": {
+  "rotation": [
+   -5.0,
+   0.0,
+   0.0
+  ]
+ },
+ "ankle_right": {
+  "rotation": [
+   -3.0,
+   0.0,
+   0.0
+  ]
+ },
+ "foot_right": {
+  "rotation": [
+   0.0,
+   0.0,
+   -5.0
+  ]
+ }
+}

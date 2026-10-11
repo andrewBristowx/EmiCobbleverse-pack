@@ -24,8 +24,16 @@
         "female"
       ],
       "model": "cobblemon:eevee_female_emi.geo",
-      "texture": "cobblemon:textures/pokemon/0133_eevee/eevee_emi.png",
+      "texture": "cobblemon:textures/pokemon/0133_eevee/eevee_female_emi.png",
       "layers": []
+    },
+    {
+      "aspects": [
+        "emi",
+        "shiny",
+        "female"
+      ],
+      "texture": "cobblemon:textures/pokemon/0133_eevee/eevee_female_emi_shiny.png"
     }
   ]
 }

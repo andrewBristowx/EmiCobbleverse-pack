@@ -15,6 +15,8 @@ else
   echo "(sin COBBLEMON_JAR: se usan las texturas y modelos Emi ya generados)"
 fi
 python3 gen/gen_dolls.py resources src/emi/plush/gen
+python3 test/revisar_modelos.py
+python3 test/revisar_modelos.py --peluches
 CP="$MC:$GECKO:$POKEBLOCKS:$(ls $FAPI/*.jar | tr '\n' ':')$LIBS"
 javac --release 21 -encoding UTF-8 -nowarn -cp "$CP" -d build/classes $(find src -name '*.java')
 cp -r resources/* build/classes/
