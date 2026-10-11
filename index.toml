@@ -1398,7 +1398,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "e181e7ffc137c068e1928a1764c887e5f35375d034e3d78d35bd8e596fdec99d"
+hash = "7caab6fe510ebd938645891bb51410a15801ed9d2df5919c6072292ccebaac1b"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1849,8 +1849,8 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-plush-1.9.4.jar"
-hash = "5380568fd3a0862dc8f809f7fd9fef3bd8a532ce1a7e175424edaba7db8ec278"
+file = "mods/emi-plush-1.10.1.jar"
+hash = "9ef0126c591265cf00d46723b1205e751808a5b0c18b9fa36536d5fa24a7f14a"
 
 [[files]]
 file = "mods/emi-streamlabs-1.1.0.jar"

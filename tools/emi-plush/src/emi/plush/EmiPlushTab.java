@@ -11,6 +11,7 @@ final class EmiPlushTab {
         ItemGroupEvents.MODIFY_ENTRIES_ALL.register((group, entries) -> {
             if (group == ModItemGroups.MISC) {
                 entries.method_45421(EmiPlush.MICHI_ITEM);
+                entries.method_45421(EmiPlush.TICKET_GASHA);
                 emi.plush.gen.DollRegistry.OBJETOS.values().forEach(entries::method_45421);
             }
         });

@@ -24,6 +24,7 @@ public class EmiPlush implements ModInitializer {
     public static class_2248 MICHI;
     public static class_1792 MICHI_ITEM;
     public static class_2591<MichiBlockEntity> MICHI_BE;
+    public static class_1792 TICKET_GASHA;
 
     @Override
     public void onInitialize() {
@@ -34,6 +35,8 @@ public class EmiPlush implements ModInitializer {
         MICHI_BE = class_2378.method_10230(class_7923.field_41181, id,
                 FabricBlockEntityTypeBuilder.create(MichiBlockEntity::new, MICHI).build());
         BlockEntityTypeRegistry.register(MichiBlockEntity.class, MICHI_BE);
+        TICKET_GASHA = class_2378.method_10230(class_7923.field_41178, class_2960.method_60655(ID, "ticket_gasha_michi"),
+                new GashaTicket(new class_1792.class_1793().method_7889(64).method_7894(net.minecraft.class_1814.field_8904)));
         emi.plush.gen.DollRegistry.registrar();
         EmiPlushTab.register();
     }
