@@ -1841,8 +1841,8 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-estructuras-1.1.0.jar"
-hash = "ffcb276544d136d55661aaf6f5ab9ceee1e98d3c2b08a7f41b52fed56241221d"
+file = "mods/emi-estructuras-1.1.1.jar"
+hash = "6ad310c7383e8142736640506bc189287b4a2168af178c0d2f5776e67522e9ad"
 
 [[files]]
 file = "mods/emi-ftb-keys-1.0.0.jar"

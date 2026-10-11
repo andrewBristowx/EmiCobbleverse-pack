@@ -18,13 +18,19 @@ import org.slf4j.LoggerFactory;
 public class EmiEstructuras implements ModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("emi_estructuras");
     private static int arranque = -1;
+    private static final String AVISO_BLOQUES = "Los bloques de comandos estan DESACTIVADOS (enable-command-block=false en server.properties): los activadores de las estructuras (torres de Necrozma, Torre Campana de Ho-Oh, gimnasios, Mew...) no funcionan. Pon enable-command-block=true y reinicia.";
 
     @Override
     public void onInitialize() {
         CommandRegistrationCallback.EVENT.register((d, access, env) -> registrar(d));
         ServerLifecycleEvents.SERVER_STARTED.register(s -> {
+            if (!s.areCommandBlocksEnabled()) LOG.warn(AVISO_BLOQUES);
             Generador.iniciar(s);
             arranque = 600;     // 30 s despues de arrancar, para no competir con el resto del arranque
+        });
+        // los activadores de las estructuras de legendarios (torres de Necrozma, Torre Campana de Ho-Oh, gimnasios, Mew...) son bloques de comandos
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((h, sender, s) -> {
+            if (!s.areCommandBlocksEnabled() && h.player.hasPermissionLevel(2)) h.player.sendMessage(msg(AVISO_BLOQUES, Formatting.RED), false);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Generador.parar());
         ServerTickEvents.END_SERVER_TICK.register(s -> {
