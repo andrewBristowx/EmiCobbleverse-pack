@@ -85,8 +85,8 @@ Un bloque de Pokeblocks por cada especie Emi (21), por cada forma del GatitoAlie
 - Los de las formas del GatitoAlien salen de los modelos de Pokémon `michi_dramatico_<accesorio>.geo.json` reducidos a 1/4 (igual que el peluche original) con la textura normal o la dorada (`build_michi` en gen_dolls.py).
 - `EmiDollModel`/`EmiDollItemModel` cargan `geo/<nombre>.geo.json` y `textures/entity/<nombre>.png`. `build.sh` ejecuta todos los generadores antes de compilar.
 
-## Gasha Michi (v1.10.0)
-Objeto `emi_plush:ticket_gasha_michi` («Ticket Gasha Michi»). **Clic derecho = 1 tirada; agachado = hasta 10 de golpe.** Cada tirada gasta un ticket y entrega:
+## Gasha Especial de Eventos (v1.10.0; ticket nuevo en la v1.10.1)
+Objeto `emi_plush:ticket_gasha_michi` («Ticket Gasha Especial de Eventos», textura 32×32 con el michialien). **Clic derecho = 1 tirada; agachado = hasta 10 de golpe.** Cada tirada gasta un ticket y entrega:
 
 | Casillas (de 1000) | Premio |
 |---|---|

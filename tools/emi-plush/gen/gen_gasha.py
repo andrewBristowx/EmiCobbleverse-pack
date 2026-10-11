@@ -101,8 +101,8 @@ for nom, (ents, idx, fx, anun) in pools.items():
 w('elegir.mcfunction', '$data modify storage emi_plush:gasha arg.j set from storage emi_plush:gasha $(pool)_w[$(i)]\nfunction emi_plush:gasha/elegir2 with storage emi_plush:gasha arg\n')
 w('elegir2.mcfunction', '$data modify storage emi_plush:gasha sel set from storage emi_plush:gasha $(pool)[$(j)]\nfunction emi_plush:gasha/entregar with storage emi_plush:gasha sel\n')
 w('entregar.mcfunction', '$$(cmd1)\n$$(cmd2)\n'
-  '$tellraw @s [{"text":"✦ Gasha Michi: ","color":"light_purple"},{"text":"$(n)","color":"$(c)","bold":true}]\n')
-w('anunciar.mcfunction', '$tellraw @a [{"text":"✦ ","color":"light_purple"},{"selector":"@s","color":"yellow"},{"text":" ha sacado ","color":"gray"},{"text":"$(n)","color":"$(c)","bold":true},{"text":" en el Gasha Michi","color":"gray"}]\n')
+  '$tellraw @s [{"text":"✦ Gasha Especial de Eventos: ","color":"light_purple"},{"text":"$(n)","color":"$(c)","bold":true}]\n')
+w('anunciar.mcfunction', '$tellraw @a [{"text":"✦ ","color":"light_purple"},{"selector":"@s","color":"yellow"},{"text":" ha sacado ","color":"gray"},{"text":"$(n)","color":"$(c)","bold":true},{"text":" en el Gasha Especial de Eventos","color":"gray"}]\n')
 w('fx_comun.mcfunction', 'playsound minecraft:entity.item.pickup player @s ~ ~ ~ 1 1\n')
 w('fx_bueno.mcfunction', 'playsound minecraft:entity.experience_orb.pickup player @s ~ ~ ~ 1 1\nparticle minecraft:happy_villager ~ ~1 ~ 0.4 0.5 0.4 0 8\n')
 w('fx_epico.mcfunction', 'playsound minecraft:entity.player.levelup player @s ~ ~ ~ 1 1.2\nparticle minecraft:end_rod ~ ~1 ~ 0.4 0.6 0.4 0.05 20\n')
@@ -118,27 +118,89 @@ for rango, nom in (('1..400', 'comun'), ('401..650', 'bueno'), ('651..740', 'epi
     tirada.append(f'execute if score #r emi_gasha matches {rango} run return run function emi_plush:gasha/dar_{nom}')
 w('tirada.mcfunction', '\n'.join(tirada) + '\n')
 w('tirar.mcfunction', 'function emi_plush:gasha/tirada\n'
-  'title @s actionbar [{"text":"Gasha Michi: ","color":"light_purple"},{"score":{"name":"@s","objective":"emi_gasha"},"color":"yellow"},{"text":"/10 para tu pareja garantizada (Pokémon + peluche)","color":"gray"}]\n')
+  'title @s actionbar [{"text":"Gasha Especial de Eventos: ","color":"light_purple"},{"score":{"name":"@s","objective":"emi_gasha"},"color":"yellow"},{"text":"/10 para tu pareja garantizada (Pokémon + peluche)","color":"gray"}]\n')
 
-# ---- textura del ticket: boleto rosa con muescas, estrella dorada y huellita
-im = Image.new('RGBA', (16, 16), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-ROSA, ROSA_D, ORO, ORO_L, NEGRO = (240, 98, 156, 255), (190, 60, 120, 255), (255, 200, 40, 255), (255, 240, 150, 255), (40, 30, 50, 255)
-d.rectangle([1, 3, 14, 12], fill=ROSA); d.rectangle([1, 3, 14, 3], fill=ROSA_D); d.rectangle([1, 12, 14, 12], fill=ROSA_D)
-for y in (3, 12):
-    for x in (4, 7, 10, 13): im.putpixel((x, y), (0, 0, 0, 0))
-for x, y in ((1, 7), (1, 8), (14, 7), (14, 8)): im.putpixel((x, y), (0, 0, 0, 0))
-for x, y in ((8, 5), (7, 6), (8, 6), (9, 6), (6, 7), (7, 7), (8, 7), (9, 7), (10, 7), (7, 8), (8, 8), (9, 8), (6, 9), (7, 9), (9, 9), (10, 9)): im.putpixel((x, y), ORO)
-im.putpixel((8, 7), ORO_L); im.putpixel((8, 6), ORO_L)
-for x, y in ((3, 6), (3, 9), (12, 6), (12, 9)): im.putpixel((x, y), ORO_L)
+# ---- textura del ticket (32x32): boleto rosa con marco dorado, el michialien con sus antenas y una estrella dorada en el talon
+W = H = 32
+im=Image.new('RGBA',(W,H),(0,0,0,0)); P=im.load()
+ORO=(255,205,45,255); ORO_D=(196,134,20,255); ORO_L=(255,245,160,255); OUT=(92,40,70,255)
+ROSA_T=(255,170,210,255); ROSA_B=(222,84,150,255)
+BL=(250,246,255,255); GR=(200,196,215,255); GR_D=(150,146,175,255); MOR=(150,90,205,255); MOR_D=(92,52,140,255); NEG=(34,28,48,255)
+def lerp(a,b,t): return tuple(int(a[i]+(b[i]-a[i])*t) for i in range(4))
+# boleto: x 1..30, y 7..25 con muescas semicirculares en los lados
+x0,x1,y0,y1=1,30,5,26
+def dentro(x,y):
+    if not (x0<=x<=x1 and y0<=y<=y1): return False
+    cy=(y0+y1)/2
+    for cx in (x0,x1):
+        if (x-cx)**2+(y-cy)**2<=3.2**2: return False
+    return True
+for y in range(H):
+    for x in range(W):
+        if dentro(x,y):
+            borde=not all(dentro(x+dx,y+dy) for dx,dy in ((1,0),(-1,0),(0,1),(0,-1)))
+            if borde: P[x,y]=OUT
+            else:
+                t=(y-y0)/(y1-y0); P[x,y]=lerp(ROSA_T,ROSA_B,t)
+# marco dorado interior
+for y in range(H):
+    for x in range(W):
+        if dentro(x,y) and P[x,y]!=OUT:
+            vec=[dentro(x+dx,y+dy) and P[x+dx,y+dy]!=OUT for dx,dy in ((1,0),(-1,0),(0,1),(0,-1))]
+            if not all(vec): P[x,y]=ORO
+for y in range(H):
+    for x in range(W):
+        if P[x,y]==ORO and (y==y0+1): P[x,y]=ORO_L
+        if P[x,y]==ORO and (y==y1-1): P[x,y]=ORO_D
+# perforado
+for y in range(y0+2,y1-1,2): P[22,y]=(255,255,255,255)
+# cabeza del michialien (cubo) x 5..17, y 13..22
+for y in range(13,23):
+    for x in range(5,18):
+        c=BL
+        if y==13: c=(255,255,255,255)
+        if x==17 or y==22: c=GR
+        if x==5: c=BL
+        P[x,y]=c
+for x in range(5,18): P[x,13]=(255,255,255,255)
+for y in range(13,23): P[17,y]=GR_D
+for x in range(5,18): P[x,22]=GR_D
+# orejas moradas laterales
+for (x,y) in ((4,12),(5,12),(4,13),(4,14),(18,12),(17,12),(18,13),(18,14)): P[x,y]=MOR
+# antenas con bolitas moradas
+for y in (11,12): P[8,y]=GR; P[14,y]=GR
+for (x,y) in ((7,9),(8,9),(9,9),(7,10),(8,10),(9,10),(13,9),(14,9),(15,9),(13,10),(14,10),(15,10)): P[x,y]=MOR
+for (x,y) in ((7,9),(13,9)): P[x,y]=(190,140,240,255)
+for (x,y) in ((9,10),(15,10)): P[x,y]=MOR_D
+# ojos enfadados (morados con brillo) y cejas
+for (x,y) in ((7,16),(8,16),(7,17),(8,17),(14,16),(15,16),(14,17),(15,17)): P[x,y]=MOR_D
+for (x,y) in ((7,16),(14,16)): P[x,y]=(230,200,255,255)
+for (x,y) in ((6,15),(7,15),(15,15),(16,15)): P[x,y]=NEG
+P[8,15]=NEG; P[14,15]=NEG
+# nariz y boca con luna
+P[11,18]=GR_D; 
+for x in range(9,14): P[x,20]=NEG
+for x in range(8,15): P[x,21]=NEG
+P[10,20]=MOR; P[10,21]=MOR; P[11,21]=MOR
+# patitas
+for (x,y) in ((7,23),(8,23),(14,23),(15,23)): P[x,y]=(255,200,215,255)
+# estrella dorada en el talon
+star=[(26,11),(26,12),(25,13),(26,13),(27,13),(23,14),(24,14),(25,14),(26,14),(27,14),(28,14),(29,14),(24,15),(25,15),(26,15),(27,15),(28,15),(25,16),(26,16),(27,16),(24,17),(25,17),(27,17),(28,17),(24,18),(28,18)]
+for x,y in star: P[x,y]=ORO
+for x,y in ((26,12),(26,13),(25,14),(26,14),(26,15)): P[x,y]=ORO_L
+P[28,17]=ORO_D; P[28,18]=ORO_D; P[28,15]=ORO_D
+# destellos
+for (x,y) in ((20,10),(19,24),(3,8),(29,22),(21,19)): P[x,y]=(255,255,255,255)
+for (x,y) in ((20,9),(20,11),(19,10),(21,10)): P[x,y]=(255,230,245,255)
 os.makedirs(f'{A}/textures/item', exist_ok=True); os.makedirs(f'{A}/models/item', exist_ok=True)
 im.save(f'{A}/textures/item/ticket_gasha_michi.png')
 json.dump({'parent': 'minecraft:item/generated', 'textures': {'layer0': 'emi_plush:item/ticket_gasha_michi'}}, open(f'{A}/models/item/ticket_gasha_michi.json', 'w'), indent=2)
 
 # ---- textos
-TXT = {'es': {'item.emi_plush.ticket_gasha_michi': 'Ticket Gasha Michi',
+TXT = {'es': {'item.emi_plush.ticket_gasha_michi': 'Ticket Gasha Especial de Eventos',
               'item.emi_plush.ticket_gasha_michi.desc': 'Clic derecho: 1 tirada. Agachado: hasta 10 de golpe.',
               'item.emi_plush.ticket_gasha_michi.desc2': 'La tirada 10 sin pareja trae un Pokémon con su peluche.'},
-       'en': {'item.emi_plush.ticket_gasha_michi': 'Michi Gasha Ticket',
+       'en': {'item.emi_plush.ticket_gasha_michi': 'Special Event Gasha Ticket',
               'item.emi_plush.ticket_gasha_michi.desc': 'Right click: 1 pull. Sneak: up to 10 at once.',
               'item.emi_plush.ticket_gasha_michi.desc2': 'Every 10th pull without a pair gives a Pokemon with its plush.'}}
 for code, k in (('en_us', 'en'), ('es_es', 'es'), ('es_mx', 'es')):
