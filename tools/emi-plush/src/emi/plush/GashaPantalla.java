@@ -285,7 +285,7 @@ public class GashaPantalla extends class_437 {
         if (rp == null) { img(c, "ball", cx, cy, escala * 2.2f, escala * 2.2f, 0, 1f, 0xFFFFFF); return; }
         var m = c.method_51448();
         m.method_22903();
-        m.method_46416(cx, cy, 0);
+        m.method_46416(cx, cy - 0.935f * escala, 0);   // el modelo de Cobblemon cuelga ~0,35*escala por debajo del punto y mide ~1,17*escala
         var st = p.estados.get(i);
         st.updatePartialTicks(delta);
         float giro = (float) Math.toRadians(35 + (System.nanoTime() - t0) / 1e9 * 45);
@@ -300,8 +300,8 @@ public class GashaPantalla extends class_437 {
         float x0 = cx - sep * (n - 1) / 2f;
         for (int i = 0; i < n; i++) {
             float vx = x0 + i * sep;
-            if (i < p.pokes.size()) pokemon(c, p, i, vx, cy + 78 * esc, 215 * esc, delta);
-            else objeto(c, p.objetos.get(i - p.pokes.size()), vx, cy, 190 * esc);
+            if (i < p.pokes.size()) pokemon(c, p, i, vx, cy, 112 * esc, delta);
+            else objeto(c, p.objetos.get(i - p.pokes.size()), vx, cy, 230 * esc);
             if (i > 0) txt(c, "+", vx - sep / 2f, cy, 64 * esc, ORO_L, true);
         }
     }
@@ -487,7 +487,7 @@ public class GashaPantalla extends class_437 {
             txt(c, "Todavía no has tirado", 1368, 782, 16, LILA, true);
         } else {
             if (ultimo.visuales() > 0) {
-                if (!ultimo.pokes.isEmpty()) pokemon(c, ultimo, 0, 1160, 812, 62, delta);
+                if (!ultimo.pokes.isEmpty()) pokemon(c, ultimo, 0, 1160, 782, 44, delta);
                 else objeto(c, ultimo.objetos.get(0), 1160, 782, 72);
             }
             txt(c, nombreVisual(ultimo), 1368, 755, 22, BLANCO, true);
