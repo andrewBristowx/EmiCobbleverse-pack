@@ -1,0 +1,111 @@
+{
+ "emi_gimnasios:teselia/trio": [
+  {
+   "x": 35.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia trio"
+  }
+ ],
+ "emi_gimnasios:teselia/lenora": [
+  {
+   "x": 34.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia basica"
+  }
+ ],
+ "emi_gimnasios:teselia/burgh": [
+  {
+   "x": 32.5,
+   "y": 4,
+   "z": 17.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia insecto"
+  }
+ ],
+ "emi_gimnasios:teselia/elesa": [
+  {
+   "x": 34.5,
+   "y": 4,
+   "z": 17.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia rayo"
+  }
+ ],
+ "emi_gimnasios:teselia/clay": [
+  {
+   "x": 34.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia temblor"
+  }
+ ],
+ "emi_gimnasios:teselia/skyla": [
+  {
+   "x": 42.5,
+   "y": 4,
+   "z": 19.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia reactor"
+  }
+ ],
+ "emi_gimnasios:teselia/brycen": [
+  {
+   "x": 30.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia frio"
+  }
+ ],
+ "emi_gimnasios:teselia/drayden": [
+  {
+   "x": 36.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia leyenda"
+  }
+ ],
+ "emi_gimnasios:teselia/liga": [
+  {
+   "x": 38.5,
+   "y": 4,
+   "z": 63.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia elite_shauntal"
+  },
+  {
+   "x": 70.5,
+   "y": 4,
+   "z": 63.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia elite_marshal"
+  },
+  {
+   "x": 38.5,
+   "y": 4,
+   "z": 17.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia elite_grimsley"
+  },
+  {
+   "x": 70.5,
+   "y": 4,
+   "z": 17.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia elite_caitlin"
+  },
+  {
+   "x": 104.5,
+   "y": 5,
+   "z": 40.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios teselia champion_alder"
+  }
+ ]
+}

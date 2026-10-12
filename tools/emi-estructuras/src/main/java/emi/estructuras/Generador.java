@@ -119,7 +119,23 @@ public final class Generador {
     }
 
     /** Tiene sentido arrancar solo: algun mundo cargado y sin terminar. */
-    public static boolean hayPendiente() { for (Mundo m : MUNDOS) if (m.mundo() != null && !m.progreso.terminado) return true; return false; }
+    public static boolean hayPendiente() {
+        for (Mundo m : MUNDOS) {
+            if (m.mundo() == null) continue;
+            if (!m.progreso.terminado) return true;
+            if (faltan(m) > 0) { m.progreso.terminado = false; guardar(m); return true; }     // estructuras nuevas añadidas en una version posterior del mod (p. ej. los gimnasios de Teselia)
+        }
+        return false;
+    }
+
+    /** Cuantas entradas del catalogo actual aun no estan hechas en este mundo (solo cuenta las que existen en el catalogo, las saltadas no). */
+    static int faltan(Mundo m) {
+        int n = 0;
+        try {
+            for (Entrada e : Catalogo.construir(server, m)) { Hecha h = m.progreso.hechas.get(e.id.toString()); if (h == null || !h.ok) n++; }
+        } catch (RuntimeException ex) { EmiEstructuras.LOG.warn("No pude comprobar lo que falta en {}", m.nombre, ex); }
+        return n;
+    }
 
     /**
      * Empieza (o reanuda) la generacion de los mundos dados. forzar = rehacer TODO: cada estructura ya hecha se limpia (se vuelve al suelo plano
@@ -131,7 +147,7 @@ public final class Generador {
         int total = 0;
         for (Mundo m : ms) {
             if (m.mundo() == null) { avisos.append("La dimension ").append(m.dim.getValue()).append(" no esta cargada. "); continue; }
-            if (!forzar && m.progreso.terminado) { avisos.append(m.nombre).append(": ya esta generado (usa forzar para rehacerlo). "); continue; }
+            if (!forzar && m.progreso.terminado && faltan(m) == 0) { avisos.append(m.nombre).append(": ya esta generado (usa forzar para rehacerlo). "); continue; }
             m.todas = Catalogo.construir(server, m);
             if (forzar) m.fallos.clear();
             int n = 0;
@@ -647,6 +663,7 @@ public final class Generador {
         }
 
         void fin(ServerWorld w) {
+            if (plantilla != null) NpcsGimnasio.crear(server, w, e.id.toString(), origenPlantilla);
             Hecha h = new Hecha();
             h.id = e.id.toString(); h.x = cx; h.z = cz; h.clave = e.clave; h.ok = true;
             h.minX = bb.getMinX(); h.minY = bb.getMinY(); h.minZ = bb.getMinZ(); h.maxX = bb.getMaxX(); h.maxY = bb.getMaxY(); h.maxZ = bb.getMaxZ();
