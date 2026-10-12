@@ -35,9 +35,11 @@ EPICO = [('Caramelos raros x5', 'cobblemon:rare_candy', 5), ('Caramelo de experi
 PESO_EPICO = {'cobblemon:master_ball': 1, 'minecraft:enchanted_golden_apple': 1, 'emipokemon:shiny_amulet': 1, 'minecraft:netherite_ingot': 2, 'cobblemon:ability_patch': 2}
 
 # ------------------------------------------------------------------ Pokemon que metimos en el mod de Emi (especies emipokemon:*): (nombre, especie, nivel, peso)
+# OJO: espurr_emi, zorua_emi, sprigatito_emi y floragato_emi NO se dan: sus evoluciones estan escritas con espacio de nombres ("emipokemon:meowstic_emi")
+# y Cobblemon 1.7.3 falla al volver a leerlos de los datos guardados ("Failed to read a pokémon"), asi que se pierden al reconectar.
 MOD = [('Unown 6', 'emipokemon:unown_6', 20, 3), ('Unown 7', 'emipokemon:unown_7', 20, 3), ('Unown 67', 'emipokemon:unown_67', 20, 3),
-       ('Espurr de Emi', 'emipokemon:espurr_emi', 15, 5), ('Meowstic de Emi', 'emipokemon:meowstic_emi', 35, 3), ('Zorua de Emi', 'emipokemon:zorua_emi', 15, 5),
-       ('Zoroark de Emi', 'emipokemon:zoroark_emi', 35, 3), ('Sprigatito de Emi', 'emipokemon:sprigatito_emi', 10, 5), ('Floragato de Emi', 'emipokemon:floragato_emi', 25, 4),
+       ('Meowstic de Emi', 'emipokemon:meowstic_emi', 35, 3),
+       ('Zoroark de Emi', 'emipokemon:zoroark_emi', 35, 3),
        ('Meowscarada de Emi', 'emipokemon:meowscarada_emi', 40, 2), ('Eevee Gatito', 'emipokemon:eevee_gatito', 20, 4), ('Snorlax de Emi', 'emipokemon:snorlax_emi', 40, 2)]
 
 # ------------------------------------------------------------------ Pokemon + peluche: (nombre, comando del Pokemon, objeto del peluche, peso)

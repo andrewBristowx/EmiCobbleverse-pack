@@ -93,7 +93,7 @@ Objeto `emi_plush:ticket_gasha_michi` («Ticket Gasha Especial de Eventos», tex
 | 40 % | Objetos útiles comunes (Poké Balls, pociones, comida, hierro, oro, caramelos S) |
 | 25 % | Objetos útiles buenos (Ultra Balls, hiperpociones, caramelos M/L, diamantes, esmeraldas, fichas de casino, ticket gacha) |
 | 9 % | Objetos épicos (caramelos raros, caramelos XL, Restaurar todo, PP Máx, cápsula/parche de habilidad, piedras evolutivas, tickets de tesoros y cosméticos, netherita, Amuleto Shiny, Master Ball…) |
-| 10 % | Pokémon del mod de Emi (`emipokemon:*`: Unown 6/7/67, Espurr, Meowstic, Zorua, Zoroark, Sprigatito, Floragato, Meowscarada, Eevee Gatito, Snorlax Emi) |
+| 10 % | Pokémon del mod de Emi (`emipokemon:*`: Unown 6/7/67, Meowstic, Zoroark, Meowscarada, Eevee Gatito, Snorlax Emi; Espurr, Zorua, Sprigatito y Floragato se quitaron, ver abajo) |
 | 7 % | Peluche suelto (los 21 Emi, las 25 formas del GatitoAlien y el Michi original) |
 | 7 % | Pokémon suelto: los 21 Pokémon Emi (`emi=true`) y las 25 formas del GatitoAlien |
 | 2 % | **Pareja**: Pokémon + su peluche |
@@ -108,6 +108,8 @@ Todo está en funciones de datos (`data/emi_plush/function/gasha/*.mcfunction`),
 /scoreboard players set <jugador> emi_gasha 9                   (la siguiente es la pareja)
 ```
 Los Pokémon se entregan con `givepokemon` (van al PC si el equipo está lleno).
+
+**Espurr, Zorua, Sprigatito y Floragato de Emi no se dan (v1.12.0).** Sus evoluciones están escritas con espacio de nombres en los datos de Emipokemon (`"result": "emipokemon:meowstic_emi"`) y Cobblemon 1.7.3 (`Pokemon.setGmaxFactor` → `PokemonSpecies.getByName`) lanza `InvalidIdentifierException` al volver a leerlos de los datos guardados: en el log sale «Failed to read a pokémon» y esos Pokémon no se cargan al reconectar. Pasa con cualquier origen, no solo con el Gasha. Si Emipokemon corrige sus datos, se pueden volver a añadir a `MOD` en `gen/gen_gasha.py`.
 
 ## Máquina Gasha Especial de Eventos (v1.11.0)
 Bloque `emi_plush:maquina_gasha_michi` («Máquina Gasha Especial de Eventos», pestaña Pokeblocks-Misc), de dos bloques de alto (la mitad de arriba es `maquina_gasha_michi_arriba`, invisible). Usa la geometría y las animaciones GeckoLib de la máquina Emi de Emipokemon (`emipokemon:geo/emi_gacha_machine.geo.json`, `animations/standard_gacha_machine.animation.json`) con una textura propia (`textures/block/maquina_gasha_michi.png`, la de Emi con los carmesí pasados a morado y las cremas a lila; la genera `gen_gasha.py` leyendo el jar de Emipokemon de `mods/`). Si se quita Emipokemon el modelo no carga.

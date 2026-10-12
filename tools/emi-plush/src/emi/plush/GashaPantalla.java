@@ -300,18 +300,14 @@ public class GashaPantalla extends class_437 {
         float x0 = cx - sep * (n - 1) / 2f;
         for (int i = 0; i < n; i++) {
             float vx = x0 + i * sep;
-            if (i < p.pokes.size()) pokemon(c, p, i, vx, cy + 70 * esc, 95 * esc, delta);
-            else objeto(c, p.objetos.get(i - p.pokes.size()), vx, cy, 150 * esc);
+            if (i < p.pokes.size()) pokemon(c, p, i, vx, cy + 78 * esc, 215 * esc, delta);
+            else objeto(c, p.objetos.get(i - p.pokes.size()), vx, cy, 190 * esc);
             if (i > 0) txt(c, "+", vx - sep / 2f, cy, 64 * esc, ORO_L, true);
         }
     }
 
     private String nombreVisual(Premio p) {
-        if (p.visuales() == 1 && p.pokes.isEmpty()) {
-            class_1799 st = p.objetos.get(0);
-            return st.method_7964().method_54160() + (st.method_7947() > 1 ? "  x" + st.method_7947() : "");
-        }
-        return p.nombre.replaceAll(" x\\d+$", "");
+        return p.nombre.replaceAll(" x(\\d+)$", "  x$1");
     }
 
     @Override
@@ -347,7 +343,6 @@ public class GashaPantalla extends class_437 {
         }
         if (fin && ultimo != null) {
             panelPremio(c, ultimo, 1f, delta);
-            txt(c, "Haz clic para continuar", BX, 640, 20, LILA, true);
         }
         m.method_22909();
     }
@@ -443,8 +438,10 @@ public class GashaPantalla extends class_437 {
         int borde = p.mayor ? 0xFFFFCD2D : 0xFFFFB8E6;
         rect(c, -w / 2f - 8, -h / 2f - 8, w / 2f + 8, h / 2f + 8, 0xFFB0700A);
         rect(c, -w / 2f - 4, -h / 2f - 4, w / 2f + 4, h / 2f + 4, borde);
-        rect(c, -w / 2f, -h / 2f, w / 2f, h / 2f, 0xF52E1452);
-        rect(c, -w / 2f + 10, -h / 2f + 10, w / 2f - 10, h / 2f - 10, 0x30FFFFFF & 0x20FFFFFF);
+        rect(c, -w / 2f, -h / 2f, w / 2f, h / 2f, 0xF4240E44);
+        rect(c, -w / 2f + 12, -h / 2f + 12, w / 2f - 12, h / 2f - 12, 0xF42E1556);
+        rect(c, -w / 2f + 12, -h / 2f + 12, w / 2f - 12, -h / 2f + 14, borde);
+        rect(c, -w / 2f + 12, h / 2f - 14, w / 2f - 12, h / 2f - 12, borde);
         txt(c, p.titulo(), 0, -h / 2f + 40, p.mayor ? 46 : 38, p.mayor ? ORO : ORO_L, true);
         visuales(c, p, 0, -10, 1f, delta);
         txt(c, nombreVisual(p), 0, h / 2f - 62, 28, BLANCO, true);
@@ -487,10 +484,10 @@ public class GashaPantalla extends class_437 {
         txt(c, "ÚLTIMO PREMIO", 1285, 702, 22, ORO_L, true);
         if (ultimo == null) {
             img(c, "emi", 1160, 782, 94, 94, 0, 1f, 0xFFFFFF);
-            txt(c, "Todavía no has tirado", 1368, 782, 20, LILA, true);
+            txt(c, "Todavía no has tirado", 1368, 782, 16, LILA, true);
         } else {
             if (ultimo.visuales() > 0) {
-                if (!ultimo.pokes.isEmpty()) pokemon(c, ultimo, 0, 1160, 806, 30, delta);
+                if (!ultimo.pokes.isEmpty()) pokemon(c, ultimo, 0, 1160, 812, 62, delta);
                 else objeto(c, ultimo.objetos.get(0), 1160, 782, 72);
             }
             txt(c, nombreVisual(ultimo), 1368, 755, 22, BLANCO, true);
@@ -500,7 +497,8 @@ public class GashaPantalla extends class_437 {
         interfazBoton(c, dx, dy, 1, libre && tk >= 1);
         interfazBoton(c, dx, dy, 10, libre && tk >= 10);
         txt(c, "X", 1475, 925, 30, BLANCO, true);
-        if (!error.isEmpty()) txt(c, error, 768, 835, 22, 0xFFFF8080, true);
+        if (fin) txt(c, "Haz clic para continuar", 768, 835, 26, ORO_L, true);
+        else if (!error.isEmpty()) txt(c, error, 768, 835, 22, 0xFFFF8080, true);
         else if (esperando) txt(c, "...", 768, 835, 22, LILA, true);
         txt(c, "Cada 10 tiradas sin pareja te aseguro un Pokémon con su peluche", 768, 1000, 17, LILA, true);
     }

@@ -1,4 +1,4 @@
-execute store result storage emi_plush:gasha arg.i int 1 run random value 0..41
+execute store result storage emi_plush:gasha arg.i int 1 run random value 0..22
 data modify storage emi_plush:gasha arg.pool set value "mod"
 function emi_plush:gasha/elegir with storage emi_plush:gasha arg
 data modify storage emi_plush:gasha res set value {}
