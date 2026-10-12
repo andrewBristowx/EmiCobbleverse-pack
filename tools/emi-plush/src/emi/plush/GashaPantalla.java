@@ -266,6 +266,12 @@ public class GashaPantalla extends class_437 {
         m.method_22909();
     }
 
+    /** Como txt, pero si el texto no cabe en `ancho` (unidades del lienzo) lo encoge. */
+    private void txtAncho(class_332 c, String s, float cx, float cy, float tam, int col, float ancho) {
+        float w = field_22793.method_1727(s) * tam / 9f;
+        txt(c, s, cx, cy, w > ancho ? tam * ancho / w : tam, col, true);
+    }
+
     private void rect(class_332 c, float x0, float y0, float x1, float y1, int argb) {
         c.method_25294(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), argb);
     }
@@ -300,7 +306,7 @@ public class GashaPantalla extends class_437 {
         float x0 = cx - sep * (n - 1) / 2f;
         for (int i = 0; i < n; i++) {
             float vx = x0 + i * sep;
-            if (i < p.pokes.size()) pokemon(c, p, i, vx, cy, 112 * esc, delta);
+            if (i < p.pokes.size()) pokemon(c, p, i, vx, cy, (n == 1 ? 165 : 130) * esc, delta);
             else objeto(c, p.objetos.get(i - p.pokes.size()), vx, cy, 230 * esc);
             if (i > 0) txt(c, "+", vx - sep / 2f, cy, 64 * esc, ORO_L, true);
         }
@@ -444,7 +450,7 @@ public class GashaPantalla extends class_437 {
         rect(c, -w / 2f + 12, h / 2f - 14, w / 2f - 12, h / 2f - 12, borde);
         txt(c, p.titulo(), 0, -h / 2f + 40, p.mayor ? 46 : 38, p.mayor ? ORO : ORO_L, true);
         visuales(c, p, 0, -10, 1f, delta);
-        txt(c, nombreVisual(p), 0, h / 2f - 62, 28, BLANCO, true);
+        txtAncho(c, nombreVisual(p), 0, h / 2f - 62, 28, BLANCO, w - 50);
         txt(c, p.tipo(), 0, h / 2f - 26, 19, p.mayor ? ORO : LILA, true);
         m.method_22909();
     }
@@ -490,8 +496,8 @@ public class GashaPantalla extends class_437 {
                 if (!ultimo.pokes.isEmpty()) pokemon(c, ultimo, 0, 1160, 782, 44, delta);
                 else objeto(c, ultimo.objetos.get(0), 1160, 782, 72);
             }
-            txt(c, nombreVisual(ultimo), 1368, 755, 22, BLANCO, true);
-            txt(c, ultimo.tipo(), 1368, 786, 17, ultimo.mayor ? ORO : LILA, true);
+            txtAncho(c, nombreVisual(ultimo).replace(" + su peluche", ""), 1368, 755, 22, BLANCO, 190);
+            txtAncho(c, ultimo.tipo(), 1368, 786, 17, ultimo.mayor ? ORO : LILA, 190);
             if (ultimo.mayor) txt(c, "¡Premio mayor!", 1368, 812, 17, ROSA, true);
         }
         interfazBoton(c, dx, dy, 1, libre && tk >= 1);
