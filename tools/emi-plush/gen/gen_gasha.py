@@ -207,5 +207,49 @@ for code, k in (('en_us', 'en'), ('es_es', 'es'), ('es_mx', 'es')):
     p = f'{A}/lang/{code}.json'
     d_ = json.load(open(p, encoding='utf-8')); d_.update(TXT[k])
     json.dump(d_, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+
+# ================================================================== maquina del Gasha Especial de Eventos
+# Usa la geometria y las animaciones GeckoLib de la maquina de Emipokemon (emipokemon:geo/emi_gacha_machine.geo.json) con una textura propia recoloreada a michialien.
+import colorsys
+EP_JAR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'mods', 'Emipokemon-0.6.0-alpha.1.jar')
+def alien(img):
+    """Cambia los carmesi/cremas de Emi por morado y lila del michialien; los demas colores (oro, cristal, capsulas) se quedan."""
+    img = img.convert('RGBA'); px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a == 0: continue
+            h, sat, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if (h > 0.86 or h < 0.03) and sat > 0.4 and v < 0.75:                       # carmesi / magenta oscuro -> morado
+                r, g, b = (int(c * 255) for c in colorsys.hsv_to_rgb(0.74, min(1, sat * 0.8), min(1, v * 1.02)))
+            elif (r, g, b) == (235, 228, 215): r, g, b = 244, 238, 255                    # crema -> lila blanco
+            px[x, y] = (r, g, b, a)
+    return img
+if os.path.exists(EP_JAR):
+    import zipfile, io
+    zf = zipfile.ZipFile(EP_JAR)
+    os.makedirs(f'{A}/textures/block', exist_ok=True); os.makedirs(f'{A}/textures/item', exist_ok=True)
+    alien(Image.open(io.BytesIO(zf.read('assets/emipokemon/textures/block/emi_gacha_machine.png')))).save(f'{A}/textures/block/maquina_gasha_michi.png')
+    if not os.path.exists(f'{A}/textures/item/maquina_gasha_michi.png'):
+        alien(Image.open(io.BytesIO(zf.read('assets/emipokemon/textures/item/emi_gacha_machine.png')))).save(f'{A}/textures/item/maquina_gasha_michi.png')
+json.dump({'parent': 'minecraft:item/generated', 'textures': {'layer0': 'emi_plush:item/maquina_gasha_michi'}}, open(f'{A}/models/item/maquina_gasha_michi.json', 'w'), indent=2)
+os.makedirs(f'{A}/models/block', exist_ok=True)
+json.dump({'textures': {'particle': 'emi_plush:item/maquina_gasha_michi'}, 'elements': []}, open(f'{A}/models/block/maquina_gasha_vacio.json', 'w'))
+os.makedirs(f'{A}/blockstates', exist_ok=True)
+for nombre in ('maquina_gasha_michi', 'maquina_gasha_michi_arriba'):
+    json.dump({'variants': {f'facing={f}': {'model': 'emi_plush:block/maquina_gasha_vacio'} for f in ('north', 'east', 'south', 'west')}}, open(f'{A}/blockstates/{nombre}.json', 'w'))
+if os.path.exists(f'{A}/models/block/maquina_gasha_michi.json'): os.remove(f'{A}/models/block/maquina_gasha_michi.json')
+os.makedirs(f'{RES}/data/emi_plush/loot_table/blocks', exist_ok=True)
+json.dump({'type': 'minecraft:block', 'pools': [{'bonus_rolls': 0.0, 'conditions': [{'condition': 'minecraft:survives_explosion'}], 'entries': [{'type': 'minecraft:item', 'name': 'emi_plush:maquina_gasha_michi'}], 'rolls': 1.0}]},
+          open(f'{RES}/data/emi_plush/loot_table/blocks/maquina_gasha_michi.json', 'w'), indent=2)
+json.dump({'type': 'minecraft:block', 'pools': []}, open(f'{RES}/data/emi_plush/loot_table/blocks/maquina_gasha_michi_arriba.json', 'w'))
+TXT_M = {'es': {'block.emi_plush.maquina_gasha_michi': 'Máquina Gasha Especial de Eventos', 'item.emi_plush.maquina_gasha_michi': 'Máquina Gasha Especial de Eventos',
+                'block.emi_plush.maquina_gasha_michi.sin_ticket': 'Necesitas un Ticket Gasha Especial de Eventos en la mano.'},
+         'en': {'block.emi_plush.maquina_gasha_michi': 'Special Event Gasha Machine', 'item.emi_plush.maquina_gasha_michi': 'Special Event Gasha Machine',
+                'block.emi_plush.maquina_gasha_michi.sin_ticket': 'You need a Special Event Gasha Ticket in your hand.'}}
+for code, k in (('en_us', 'en'), ('es_es', 'es'), ('es_mx', 'es')):
+    p = f'{A}/lang/{code}.json'; d_ = json.load(open(p, encoding='utf-8')); d_.update(TXT_M[k])
+    json.dump(d_, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+
 tot = {nom: len(e) for nom, (e, *_r) in pools.items()}
 print('Gasha Michi:', tot, '| casillas de pareja', len(pools['pareja'][1]))

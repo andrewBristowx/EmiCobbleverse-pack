@@ -109,6 +109,14 @@ Todo está en funciones de datos (`data/emi_plush/function/gasha/*.mcfunction`),
 ```
 Los Pokémon se entregan con `givepokemon` (van al PC si el equipo está lleno).
 
+## Máquina Gasha Especial de Eventos (v1.11.0)
+Bloque `emi_plush:maquina_gasha_michi` («Máquina Gasha Especial de Eventos», pestaña Pokeblocks-Misc), de dos bloques de alto (la mitad de arriba es `maquina_gasha_michi_arriba`, invisible). Usa la geometría y las animaciones GeckoLib de la máquina Emi de Emipokemon (`emipokemon:geo/emi_gacha_machine.geo.json`, `animations/standard_gacha_machine.animation.json`) con una textura propia (`textures/block/maquina_gasha_michi.png`, la de Emi con los carmesí pasados a morado y las cremas a lila; la genera `gen_gasha.py` leyendo el jar de Emipokemon de `mods/`). Si se quita Emipokemon el modelo no carga.
+- **Clic derecho con un Ticket Gasha en la mano** (el de `emi_plush:ticket_gasha_michi`): gasta el ticket (en creativo no), la máquina gira ~1,6 s y a los 2,2 s siguientes abre la compuerta y ejecuta `emi_plush:gasha/tirar` como el jugador (mismos premios y garantía de 10 que el ticket suelto). Si el jugador se desconecta mientras gira, la máquina devuelve el ticket. Sin ticket: mensaje en la barra de acción. Mientras gira, otros clics se ignoran.
+- Al romperla suelta ella misma (loot table propia); la mitad de arriba no suelta nada.
+- `/give <jugador> emi_plush:maquina_gasha_michi`. No tiene receta.
+- `GashaMachineBlockEntity` guarda la fase y la sincroniza al cliente para las animaciones (`idle`, `activate`+`roll`, `result_epic`).
+- El ícono (`textures/item/maquina_gasha_michi.png`) es una captura recortada de la máquina real; `gen_gasha.py` no la pisa si ya existe.
+
 ## Revisión de modelos: UV enteros y z-fighting (v1.9.3)
 `python3 test/revisar_modelos.py` (Pokémon) y `python3 test/revisar_modelos.py --peluches` (peluches) se ejecutan a mano antes de empaquetar y fallan si encuentran:
 - **UV con decimales** en un modelo de Pokémon. Cobblemon no carga ese modelo (`Expected an int but was 227.5` en el log del cliente) y la forma se ve con el modelo de antes o sin accesorio. Ocurre cuando un cubo nuevo tiene un tamaño con decimales, porque el hueco que se reserva en la textura deja de ser entero y todos los UV siguientes se descuadran. `gen_michi_extras.cube()` rechaza tamaños con decimales; las posiciones (`origin`) sí pueden tenerlos.

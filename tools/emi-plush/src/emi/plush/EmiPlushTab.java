@@ -12,6 +12,7 @@ final class EmiPlushTab {
             if (group == ModItemGroups.MISC) {
                 entries.method_45421(EmiPlush.MICHI_ITEM);
                 entries.method_45421(EmiPlush.TICKET_GASHA);
+                entries.method_45421(EmiPlush.MAQUINA_GASHA_ITEM);
                 emi.plush.gen.DollRegistry.OBJETOS.values().forEach(entries::method_45421);
             }
         });
