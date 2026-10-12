@@ -88,8 +88,16 @@ public class GashaPantalla extends class_437 {
                 RenderablePokemon rp = null;
                 try {
                     var pk = PokemonProperties.Companion.parse(props).create();
-                    pk.updateAspects();            // sin esto los aspectos no incluyen las propiedades (emi=true, gold, accessory) y sale la forma normal
-                    rp = pk.asRenderablePokemon();
+                    pk.updateAspects();
+                    RenderablePokemon base = pk.asRenderablePokemon();
+                    // el Pokémon creado en el cliente no trae las propiedades propias como aspectos: se añaden a mano (emi → emi, gold → gold, accessory=X → X-accessory)
+                    java.util.Set<String> aspectos = new java.util.HashSet<>(base.getAspects());
+                    for (String t : props.split(" ")) {
+                        if (t.equals("emi=true")) aspectos.add("emi");
+                        else if (t.equals("gold=true")) aspectos.add("gold");
+                        else if (t.startsWith("accessory=")) aspectos.add(t.substring(10) + "-accessory");
+                    }
+                    rp = new RenderablePokemon(base.getSpecies(), aspectos, class_1799.field_8037);
                 } catch (RuntimeException | LinkageError ex) {
                     // sin modelo: se dibuja una Pokébola en su lugar
                 }
