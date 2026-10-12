@@ -74,4 +74,4 @@ def dumps(root, name=''):
         elif t == 11: out.write(struct.pack('>i', len(v))); out.write(struct.pack('>%di' % len(v), *v))
         elif t == 12: out.write(struct.pack('>i', len(v))); out.write(struct.pack('>%dq' % len(v), *v))
     out.write(bytes([10])); ws(name); wp(root)
-    return gzip.compress(out.getvalue())
+    return gzip.compress(out.getvalue(), mtime=0)

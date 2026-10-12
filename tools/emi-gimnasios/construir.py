@@ -10,7 +10,10 @@ def registrar(nombre, v, npcs, region, etiqueta, aliases, orden_fuera=None):
     g = gymlib.girar(v, 1)           # la fachada pasa de mirar al norte a mirar al oeste (la entrada segura de Emipokemon esta al oeste)
     lista = []
     for (x, y, z, yaw, cmd) in npcs:
-        lista.append({'x': round(z + 0.5, 2), 'y': y, 'z': round(w0 - 1 - x + 0.5, 2), 'yaw': (yaw - 90) % 360, 'cmd': cmd})
+        e = {'x': round(z + 0.5, 2), 'y': y, 'z': round(w0 - 1 - x + 0.5, 2), 'yaw': (yaw - 90) % 360, 'cmd': cmd}
+        p = cmd.split()
+        if len(p) == 4 and p[:2] == ['emipokemon', 'desafios']: e['id'] = f'challenge_{p[2]}_{p[3]}'   # id interno del NPC en Emipokemon (para moverlo si ya existe)
+        lista.append(e)
     return g, lista
 
 def bloques_validos():

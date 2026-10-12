@@ -5,7 +5,8 @@
    "y": 4,
    "z": 18.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia trio"
+   "cmd": "emipokemon desafios teselia trio",
+   "id": "challenge_teselia_trio"
   }
  ],
  "emi_gimnasios:teselia/lenora": [
@@ -14,7 +15,8 @@
    "y": 4,
    "z": 18.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia basica"
+   "cmd": "emipokemon desafios teselia basica",
+   "id": "challenge_teselia_basica"
   }
  ],
  "emi_gimnasios:teselia/burgh": [
@@ -23,7 +25,8 @@
    "y": 4,
    "z": 17.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia insecto"
+   "cmd": "emipokemon desafios teselia insecto",
+   "id": "challenge_teselia_insecto"
   }
  ],
  "emi_gimnasios:teselia/elesa": [
@@ -32,7 +35,8 @@
    "y": 4,
    "z": 17.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia rayo"
+   "cmd": "emipokemon desafios teselia rayo",
+   "id": "challenge_teselia_rayo"
   }
  ],
  "emi_gimnasios:teselia/clay": [
@@ -41,7 +45,8 @@
    "y": 4,
    "z": 18.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia temblor"
+   "cmd": "emipokemon desafios teselia temblor",
+   "id": "challenge_teselia_temblor"
   }
  ],
  "emi_gimnasios:teselia/skyla": [
@@ -50,7 +55,8 @@
    "y": 4,
    "z": 19.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia reactor"
+   "cmd": "emipokemon desafios teselia reactor",
+   "id": "challenge_teselia_reactor"
   }
  ],
  "emi_gimnasios:teselia/brycen": [
@@ -59,7 +65,8 @@
    "y": 4,
    "z": 18.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia frio"
+   "cmd": "emipokemon desafios teselia frio",
+   "id": "challenge_teselia_frio"
   }
  ],
  "emi_gimnasios:teselia/drayden": [
@@ -68,7 +75,8 @@
    "y": 4,
    "z": 18.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia leyenda"
+   "cmd": "emipokemon desafios teselia leyenda",
+   "id": "challenge_teselia_leyenda"
   }
  ],
  "emi_gimnasios:teselia/liga": [
@@ -77,35 +85,40 @@
    "y": 4,
    "z": 63.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia elite_shauntal"
+   "cmd": "emipokemon desafios teselia elite_shauntal",
+   "id": "challenge_teselia_elite_shauntal"
   },
   {
    "x": 70.5,
    "y": 4,
    "z": 63.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia elite_marshal"
+   "cmd": "emipokemon desafios teselia elite_marshal",
+   "id": "challenge_teselia_elite_marshal"
   },
   {
    "x": 38.5,
    "y": 4,
    "z": 17.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia elite_grimsley"
+   "cmd": "emipokemon desafios teselia elite_grimsley",
+   "id": "challenge_teselia_elite_grimsley"
   },
   {
    "x": 70.5,
    "y": 4,
    "z": 17.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia elite_caitlin"
+   "cmd": "emipokemon desafios teselia elite_caitlin",
+   "id": "challenge_teselia_elite_caitlin"
   },
   {
    "x": 104.5,
    "y": 5,
    "z": 40.5,
    "yaw": 90,
-   "cmd": "emipokemon desafios teselia champion_alder"
+   "cmd": "emipokemon desafios teselia champion_alder",
+   "id": "challenge_teselia_champion_alder"
   }
  ]
 }

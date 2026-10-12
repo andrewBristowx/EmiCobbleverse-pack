@@ -27,7 +27,7 @@ def construir():
         for x in range(W):
             if abs(x - CX) > 3: v.set(x, 0, z, 'grass_block')
     for (x, z) in [(6, 3), (30, 3), (9, 5), (27, 5)]:
-        v.fill(x - 1, 1, z, x + 1, 1, z, 'azalea_leaves'); v.set(x, 2, z, 'flowering_azalea')
+        v.fill(x - 1, 1, z, x + 1, 1, z, 'azalea_leaves'); v.set(x, 1, z, 'moss_block'); v.set(x, 2, z, 'flowering_azalea')
     # rotonda central de 2 plantas con cupula de cristal
     v.cilindro(CX, 1, 8, CZ, R, 'white_concrete')
     v.disco(CX, 1, CZ, R, 'smooth_quartz')

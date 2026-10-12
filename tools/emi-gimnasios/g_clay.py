@@ -104,7 +104,7 @@ def construir():
         a = rnd.random() * 6.28; rr = rnd.random() * 10
         x = int(CX + math.cos(a) * rr); z = int(CZ + math.sin(a) * rr)
         for y in range(ry + 1, 3, -1):
-            if v.get(x, y, z) != 'air' and v.get(x, y - 1, z) == 'air':
+            if v.get(x, y, z) != 'air' and not v.get(x, y, z).startswith('lantern') and v.get(x, y - 1, z) == 'air':
                 v.set(x, y - 1, z, 'lantern[hanging=true]') if rnd.random() < 0.5 else v.set(x, y - 1, z, 'amethyst_cluster[facing=down]') if False else None
                 break
     return v, [(CX, 4, CZ + 10, 180, 'emipokemon desafios teselia temblor')]

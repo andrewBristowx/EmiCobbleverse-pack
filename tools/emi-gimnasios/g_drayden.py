@@ -99,23 +99,22 @@ def construir():
     # cabeza del dragon sobre la puerta y alas abiertas detras
     cabeza_dragon(v, CX, 24, Z0 + 1)
     zalas = Z0 + 14
+    # ala de dragon: poligono (u = distancia al cuerpo, y) con borde de salida festoneado, huesos de oro y membrana verde
+    ala = [(0, 0), (6, 9), (12, 12), (18, 8), (16, 4), (13, 1), (11, -3), (7, -2), (3, -3)]
+    def dentro(px, py):
+        c = False
+        for (x1, y1), (x2, y2) in zip(ala, ala[1:] + ala[:1]):
+            if (y1 > py) != (y2 > py) and px < (x2 - x1) * (py - y1) / (y2 - y1) + x1: c = not c
+        return c
     for s in (-1, 1):
-        hombro = (CX + s * 5, 23, zalas)
-        puntas = [(CX + s * 17, 33, zalas), (CX + s * 20, 28, zalas), (CX + s * 16, 22, zalas)]
-        for p in puntas:
-            v.linea(hombro[0], hombro[1], hombro[2], p[0], p[1], p[2], 'gold_block')
-        # membrana: triangulos entre huesos
-        for (p, q) in zip([hombro] + puntas[:-1], puntas):
-            pass
-        for t in range(0, 11):
-            for (p, q) in ((puntas[0], puntas[1]), (puntas[1], puntas[2])):
-                x = round(hombro[0] + (p[0] + (q[0] - p[0]) * t / 10 - hombro[0]) * 1.0); y = round(hombro[1] + (p[1] + (q[1] - p[1]) * t / 10 - hombro[1]) * 1.0)
-                n = 12
-                for k in range(1, n):
-                    xx = round(hombro[0] + (x - hombro[0]) * k / n); yy = round(hombro[1] + (y - hombro[1]) * k / n)
-                    for dz in (0, 1): v.set(xx, yy, zalas + dz, 'green_stained_glass' if v.get(xx, yy, zalas + dz) == 'air' else v.get(xx, yy, zalas + dz))
-        # garras de las puntas
-        for p in puntas: v.set(p[0], p[1] + 1, p[2], 'gold_block')
+        for u in range(0, 20):
+            for dy in range(-4, 14):
+                if dentro(u + 0.5, dy + 0.5):
+                    v.set(CX + s * (5 + u), 23 + dy, zalas, 'green_concrete' if (u + dy) % 4 else 'lime_concrete')
+        for (a1, a2) in (((0, 0), (6, 9)), ((6, 9), (12, 12)), ((12, 12), (18, 8)), ((12, 12), (16, 4)), ((12, 12), (11, -3)), ((12, 12), (7, -2))):
+            v.linea(CX + s * (5 + a1[0]), 23 + a1[1], zalas, CX + s * (5 + a2[0]), 23 + a2[1], zalas, 'gold_block')
+            v.linea(CX + s * (5 + a1[0]), 23 + a1[1], zalas + 1, CX + s * (5 + a2[0]), 23 + a2[1], zalas + 1, 'gold_block')
+        v.set(CX + s * 23, 31, zalas, 'gold_block'); v.set(CX + s * 21, 27, zalas, 'gold_block')
     # cola enroscada junto a la escalera (curva baja a la derecha del frente)
     tubo(v, [(CX + 9, 2, 3), (CX + 12, 2, 6), (CX + 13, 3, 11), (CX + 12, 5, 15)], 1.5, 'green_concrete', 'lime_concrete')
     # ---- interior: sala del templo, columnas y cuatro dragones de piedra

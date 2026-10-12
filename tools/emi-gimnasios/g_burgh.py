@@ -63,7 +63,7 @@ def construir():
     for dx in (-8, 8):
         for dy in (3, 5, 7): v.set(CX + dx, dy, CZ - R - 1, 'bee_nest[facing=north,honey_level=0]')
         v.fill(CX + dx - 1, 1, CZ - R - 2, CX + dx + 1, 1, CZ - R - 2, 'azalea_leaves')
-        v.set(CX + dx, 2, CZ - R - 2, 'flowering_azalea')
+        v.set(CX + dx, 1, CZ - R - 2, 'moss_block'); v.set(CX + dx, 2, CZ - R - 2, 'flowering_azalea')
     # entrada hexagonal 5x6
     for y in range(2, 8):
         ancho = 2 if y < 6 else (2 if y == 6 else 1)
