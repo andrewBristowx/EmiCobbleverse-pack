@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 public class EmiPlushClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        BlockEntityRendererRegistry.register(EmiPlush.MAQUINA_GASHA_BE, GashaMachineRenderer::new);
         MichiBlockModel model = new MichiBlockModel();
         class_5614<PokedollBlockEntity> factory = ctx -> new PokedollBlockRenderer(ctx, model);
         BlockEntityRendererRegistry.register(EmiPlush.MICHI_BE, factory);
