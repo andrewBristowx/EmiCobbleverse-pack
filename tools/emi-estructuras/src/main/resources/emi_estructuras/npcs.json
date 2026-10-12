@@ -2,7 +2,7 @@
  "emi_gimnasios:teselia/trio": [
   {
    "x": 35.5,
-   "y": 4,
+   "y": 3,
    "z": 18.5,
    "yaw": 90,
    "cmd": "emipokemon desafios teselia trio",
@@ -41,9 +41,9 @@
  ],
  "emi_gimnasios:teselia/clay": [
   {
-   "x": 34.5,
-   "y": 4,
-   "z": 18.5,
+   "x": 35.5,
+   "y": 3,
+   "z": 19.5,
    "yaw": 90,
    "cmd": "emipokemon desafios teselia temblor",
    "id": "challenge_teselia_temblor"
@@ -105,20 +105,514 @@
    "id": "challenge_teselia_elite_grimsley"
   },
   {
-   "x": 70.5,
+   "x": 69.5,
    "y": 4,
-   "z": 17.5,
+   "z": 18.5,
    "yaw": 90,
    "cmd": "emipokemon desafios teselia elite_caitlin",
    "id": "challenge_teselia_elite_caitlin"
   },
   {
    "x": 104.5,
-   "y": 5,
+   "y": 4,
    "z": 40.5,
    "yaw": 90,
    "cmd": "emipokemon desafios teselia champion_alder",
    "id": "challenge_teselia_champion_alder"
+  }
+ ],
+ "emi_gimnasios:kalos/viola": [
+  {
+   "x": 33.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos bicho",
+   "id": "challenge_kalos_bicho"
+  }
+ ],
+ "emi_gimnasios:kalos/grant": [
+  {
+   "x": 36.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos risco",
+   "id": "challenge_kalos_risco"
+  }
+ ],
+ "emi_gimnasios:kalos/korrina": [
+  {
+   "x": 25.5,
+   "y": 3,
+   "z": 19.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos pelea",
+   "id": "challenge_kalos_pelea"
+  }
+ ],
+ "emi_gimnasios:kalos/ramos": [
+  {
+   "x": 27.5,
+   "y": 3,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos planta",
+   "id": "challenge_kalos_planta"
+  }
+ ],
+ "emi_gimnasios:kalos/clemont": [
+  {
+   "x": 35.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos voltaje",
+   "id": "challenge_kalos_voltaje"
+  }
+ ],
+ "emi_gimnasios:kalos/valerie": [
+  {
+   "x": 35.5,
+   "y": 4,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos hada",
+   "id": "challenge_kalos_hada"
+  }
+ ],
+ "emi_gimnasios:kalos/olympia": [
+  {
+   "x": 35.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos psiquica",
+   "id": "challenge_kalos_psiquica"
+  }
+ ],
+ "emi_gimnasios:kalos/wulfric": [
+  {
+   "x": 38.5,
+   "y": 4,
+   "z": 18.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos iceberg",
+   "id": "challenge_kalos_iceberg"
+  }
+ ],
+ "emi_gimnasios:kalos/liga": [
+  {
+   "x": 26.5,
+   "y": 4,
+   "z": 85.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios kalos elite_malva",
+   "id": "challenge_kalos_elite_malva"
+  },
+  {
+   "x": 26.5,
+   "y": 4,
+   "z": 10.5,
+   "yaw": 0,
+   "cmd": "emipokemon desafios kalos elite_siebold",
+   "id": "challenge_kalos_elite_siebold"
+  },
+  {
+   "x": 52.5,
+   "y": 4,
+   "z": 85.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios kalos elite_wikstrom",
+   "id": "challenge_kalos_elite_wikstrom"
+  },
+  {
+   "x": 52.5,
+   "y": 4,
+   "z": 10.5,
+   "yaw": 0,
+   "cmd": "emipokemon desafios kalos elite_drasna",
+   "id": "challenge_kalos_elite_drasna"
+  },
+  {
+   "x": 80.5,
+   "y": 4,
+   "z": 47.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios kalos champion_diantha",
+   "id": "challenge_kalos_champion_diantha"
+  }
+ ],
+ "emi_gimnasios:galar/milo": [
+  {
+   "x": 39.5,
+   "y": 4,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar hierba",
+   "id": "challenge_galar_hierba"
+  }
+ ],
+ "emi_gimnasios:galar/nessa": [
+  {
+   "x": 43.5,
+   "y": 3,
+   "z": 22.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar agua",
+   "id": "challenge_galar_agua"
+  }
+ ],
+ "emi_gimnasios:galar/kabu": [
+  {
+   "x": 27.5,
+   "y": 3,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar fuego",
+   "id": "challenge_galar_fuego"
+  }
+ ],
+ "emi_gimnasios:galar/bea": [
+  {
+   "x": 41.5,
+   "y": 4,
+   "z": 22.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar lucha",
+   "id": "challenge_galar_lucha"
+  }
+ ],
+ "emi_gimnasios:galar/opal": [
+  {
+   "x": 39.5,
+   "y": 4,
+   "z": 22.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar hada",
+   "id": "challenge_galar_hada"
+  }
+ ],
+ "emi_gimnasios:galar/gordie": [
+  {
+   "x": 26.5,
+   "y": 5,
+   "z": 23.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar roca",
+   "id": "challenge_galar_roca"
+  }
+ ],
+ "emi_gimnasios:galar/piers": [
+  {
+   "x": 36.5,
+   "y": 4,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar siniestra",
+   "id": "challenge_galar_siniestra"
+  }
+ ],
+ "emi_gimnasios:galar/raihan": [
+  {
+   "x": 44.5,
+   "y": 5,
+   "z": 24.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar dragon",
+   "id": "challenge_galar_dragon"
+  }
+ ],
+ "emi_gimnasios:galar/leon": [
+  {
+   "x": 42.5,
+   "y": 2,
+   "z": 35.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios galar champion_leon",
+   "id": "challenge_galar_champion_leon"
+  }
+ ],
+ "emi_gimnasios:paldea/katy": [
+  {
+   "x": 32.5,
+   "y": 4,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea bicho",
+   "id": "challenge_paldea_bicho"
+  }
+ ],
+ "emi_gimnasios:paldea/brassius": [
+  {
+   "x": 38.5,
+   "y": 4,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea hierba",
+   "id": "challenge_paldea_hierba"
+  }
+ ],
+ "emi_gimnasios:paldea/iono": [
+  {
+   "x": 35.5,
+   "y": 4,
+   "z": 19.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea electrica",
+   "id": "challenge_paldea_electrica"
+  }
+ ],
+ "emi_gimnasios:paldea/kofu": [
+  {
+   "x": 41.5,
+   "y": 4,
+   "z": 24.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea agua",
+   "id": "challenge_paldea_agua"
+  }
+ ],
+ "emi_gimnasios:paldea/larry": [
+  {
+   "x": 34.5,
+   "y": 3,
+   "z": 19.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea normal",
+   "id": "challenge_paldea_normal"
+  }
+ ],
+ "emi_gimnasios:paldea/ryme": [
+  {
+   "x": 41.5,
+   "y": 4,
+   "z": 22.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea fantasma",
+   "id": "challenge_paldea_fantasma"
+  }
+ ],
+ "emi_gimnasios:paldea/tulip": [
+  {
+   "x": 36.5,
+   "y": 4,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea psiquica",
+   "id": "challenge_paldea_psiquica"
+  }
+ ],
+ "emi_gimnasios:paldea/grusha": [
+  {
+   "x": 42.5,
+   "y": 4,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea hielo",
+   "id": "challenge_paldea_hielo"
+  }
+ ],
+ "emi_gimnasios:paldea/liga": [
+  {
+   "x": 26.5,
+   "y": 4,
+   "z": 74.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios paldea elite_giacomo",
+   "id": "challenge_paldea_elite_giacomo"
+  },
+  {
+   "x": 26.5,
+   "y": 4,
+   "z": 8.5,
+   "yaw": 0,
+   "cmd": "emipokemon desafios paldea elite_mela",
+   "id": "challenge_paldea_elite_mela"
+  },
+  {
+   "x": 50.5,
+   "y": 4,
+   "z": 74.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios paldea elite_atticus",
+   "id": "challenge_paldea_elite_atticus"
+  },
+  {
+   "x": 50.5,
+   "y": 4,
+   "z": 8.5,
+   "yaw": 0,
+   "cmd": "emipokemon desafios paldea elite_ortega",
+   "id": "challenge_paldea_elite_ortega"
+  },
+  {
+   "x": 74.5,
+   "y": 2,
+   "z": 65.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios paldea elite_eri",
+   "id": "challenge_paldea_elite_eri"
+  },
+  {
+   "x": 110.5,
+   "y": 5,
+   "z": 41.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios paldea champion_geeta",
+   "id": "challenge_paldea_champion_geeta"
+  }
+ ],
+ "emi_gimnasios:alola/ilima": [
+  {
+   "x": 36.5,
+   "y": 4,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_ilima",
+   "id": "challenge_alola_captain_ilima"
+  }
+ ],
+ "emi_gimnasios:alola/lana": [
+  {
+   "x": 29.5,
+   "y": 2,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_lana",
+   "id": "challenge_alola_captain_lana"
+  }
+ ],
+ "emi_gimnasios:alola/kiawe": [
+  {
+   "x": 26.5,
+   "y": 3,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_kiawe",
+   "id": "challenge_alola_captain_kiawe"
+  }
+ ],
+ "emi_gimnasios:alola/mallow": [
+  {
+   "x": 29.5,
+   "y": 16,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_mallow",
+   "id": "challenge_alola_captain_mallow"
+  }
+ ],
+ "emi_gimnasios:alola/sophocles": [
+  {
+   "x": 31.5,
+   "y": 3,
+   "z": 19.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_sophocles",
+   "id": "challenge_alola_captain_sophocles"
+  }
+ ],
+ "emi_gimnasios:alola/acerola": [
+  {
+   "x": 36.5,
+   "y": 4,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_acerola",
+   "id": "challenge_alola_captain_acerola"
+  }
+ ],
+ "emi_gimnasios:alola/mina": [
+  {
+   "x": 35.5,
+   "y": 6,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola captain_mina",
+   "id": "challenge_alola_captain_mina"
+  }
+ ],
+ "emi_gimnasios:alola/hala": [
+  {
+   "x": 29.5,
+   "y": 5,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola kahuna_hala",
+   "id": "challenge_alola_kahuna_hala"
+  }
+ ],
+ "emi_gimnasios:alola/olivia": [
+  {
+   "x": 25.5,
+   "y": 18,
+   "z": 21.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola kahuna_olivia",
+   "id": "challenge_alola_kahuna_olivia"
+  }
+ ],
+ "emi_gimnasios:alola/nanu": [
+  {
+   "x": 35.5,
+   "y": 2,
+   "z": 20.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola kahuna_nanu",
+   "id": "challenge_alola_kahuna_nanu"
+  }
+ ],
+ "emi_gimnasios:alola/hapu": [
+  {
+   "x": 32.5,
+   "y": 4,
+   "z": 22.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola kahuna_hapu",
+   "id": "challenge_alola_kahuna_hapu"
+  }
+ ],
+ "emi_gimnasios:alola/liga": [
+  {
+   "x": 26.5,
+   "y": 4,
+   "z": 79.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios alola elite_hala",
+   "id": "challenge_alola_elite_hala"
+  },
+  {
+   "x": 26.5,
+   "y": 4,
+   "z": 9.5,
+   "yaw": 0,
+   "cmd": "emipokemon desafios alola elite_olivia",
+   "id": "challenge_alola_elite_olivia"
+  },
+  {
+   "x": 52.5,
+   "y": 4,
+   "z": 79.5,
+   "yaw": 180,
+   "cmd": "emipokemon desafios alola elite_acerola",
+   "id": "challenge_alola_elite_acerola"
+  },
+  {
+   "x": 52.5,
+   "y": 4,
+   "z": 9.5,
+   "yaw": 0,
+   "cmd": "emipokemon desafios alola elite_kahili",
+   "id": "challenge_alola_elite_kahili"
+  },
+  {
+   "x": 90.5,
+   "y": 5,
+   "z": 44.5,
+   "yaw": 90,
+   "cmd": "emipokemon desafios alola champion_kukui",
+   "id": "challenge_alola_champion_kukui"
   }
  ]
 }

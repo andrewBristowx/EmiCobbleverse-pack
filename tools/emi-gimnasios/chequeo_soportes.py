@@ -55,7 +55,25 @@ def revisar(path):
             f = pr.get('facing', 'up'); d = {'up': (0, -1, 0), 'down': (0, 1, 0), 'north': (0, 0, 1), 'south': (0, 0, -1), 'east': (-1, 0, 0), 'west': (1, 0, 0)}[f]
             if not es_solido(at(*d)[0]): err = 'amatista sin soporte (' + f + ')'
         elif n == 'pointed_dripstone':
-            pass
+            d = pr.get('vertical_direction', 'down')
+            ref = at(0, 1, 0) if d == 'down' else at(0, -1, 0)
+            if not (es_solido(ref[0]) or ref[0] == 'pointed_dripstone'): err = 'estalactita/estalagmita sin soporte'
+        elif n == 'hanging_roots':
+            a = at(0, 1, 0)[0]
+            if not (es_solido(a) or a == 'hanging_roots'): err = 'raices colgantes sin techo'
+        elif n in ('red_mushroom', 'brown_mushroom'):
+            if at(0, -1, 0)[0] not in ('podzol', 'mycelium'): err = 'seta pequeña sin podzol/micelio'
+        elif n == 'cactus':
+            if at(0, -1, 0)[0] not in ('sand', 'red_sand', 'cactus'): err = 'cactus sin arena'
+            elif any(es_solido(at(dx, 0, dz)[0]) for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1))): err = 'cactus pegado a un bloque'
+        elif n in ('dead_bush',):
+            if at(0, -1, 0)[0] not in TIERRA + ('sand', 'red_sand', 'terracotta', 'red_terracotta', 'orange_terracotta', 'yellow_terracotta', 'brown_terracotta', 'white_terracotta'): err = 'arbusto seco sin tierra'
+        elif n == 'snow':
+            if not es_solido(at(0, -1, 0)[0]): err = 'capa de nieve sin base'
+        elif n == 'lily_pad':
+            if at(0, -1, 0)[0] != 'water': err = 'nenufar sin agua'
+        elif n == 'bamboo':
+            if at(0, -1, 0)[0] not in TIERRA + ('bamboo',): err = 'bambu sin tierra'
         elif n in ('ladder',):
             f = pr.get('facing', 'north'); d = {'north': (0, 0, 1), 'south': (0, 0, -1), 'east': (-1, 0, 0), 'west': (1, 0, 0)}[f]
             if not es_solido(at(*d)[0]): err = 'escalera de mano sin pared'
@@ -66,6 +84,14 @@ def revisar(path):
             pass
         elif n == 'chain':
             pass
+        if n in ('water', 'lava') and 'level' not in pr:
+            # el fluido no debe tener aire (ni el borde de la plantilla) a los lados o debajo: se derramaria
+            for (dx, dy, dz) in ((1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1), (0, -1, 0)):
+                nx, ny, nz = x + dx, y + dy, z + dz
+                if ny < 0: continue      # bajo la plantilla esta el suelo del mundo plano
+                if not (0 <= nx < sx and 0 <= ny < sy and 0 <= nz < sz): err = 'fluido en el borde de la plantilla'; break
+                nb = g.get((nx, ny, nz), ('air', {}))[0]
+                if nb in ('air', 'cave_air'): err = n + ' se derramaria (aire al lado/debajo)'; break
         if err:
             prob[err] += 1; ej.setdefault(err, (x, y, z))
     return prob, ej

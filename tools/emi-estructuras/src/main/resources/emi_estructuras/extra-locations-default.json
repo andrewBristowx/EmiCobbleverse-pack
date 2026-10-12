@@ -1337,6 +1337,357 @@
     "emi gimnasios teselia liga",
     "liga teselia alto mando campeon alder"
    ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Viola (Bicho)",
+   "structure": "T:emi_gimnasios:kalos/viola",
+   "aliases": [
+    "emi gimnasios kalos viola",
+    "gimnasio viola santalune"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Grant (Roca)",
+   "structure": "T:emi_gimnasios:kalos/grant",
+   "aliases": [
+    "emi gimnasios kalos grant",
+    "gimnasio grant cyllage"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Korrina (Lucha)",
+   "structure": "T:emi_gimnasios:kalos/korrina",
+   "aliases": [
+    "emi gimnasios kalos korrina",
+    "gimnasio korrina shalour"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Ramos (Planta)",
+   "structure": "T:emi_gimnasios:kalos/ramos",
+   "aliases": [
+    "emi gimnasios kalos ramos",
+    "gimnasio ramos coumarine"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Clemont (Eléctrico)",
+   "structure": "T:emi_gimnasios:kalos/clemont",
+   "aliases": [
+    "emi gimnasios kalos clemont",
+    "gimnasio clemont lumiose"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Valerie (Hada)",
+   "structure": "T:emi_gimnasios:kalos/valerie",
+   "aliases": [
+    "emi gimnasios kalos valerie",
+    "gimnasio valerie laverre"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Olympia (Psíquico)",
+   "structure": "T:emi_gimnasios:kalos/olympia",
+   "aliases": [
+    "emi gimnasios kalos olympia",
+    "gimnasio olympia anistar"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Gimnasio Wulfric (Hielo)",
+   "structure": "T:emi_gimnasios:kalos/wulfric",
+   "aliases": [
+    "emi gimnasios kalos wulfric",
+    "gimnasio wulfric snowbelle"
+   ]
+  },
+  {
+   "region": "Kalos",
+   "label": "Liga de Kalos (Alto Mando y Campeona Diantha)",
+   "structure": "T:emi_gimnasios:kalos/liga",
+   "aliases": [
+    "emi gimnasios kalos liga",
+    "liga kalos alto mando campeona diantha"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Milo (Planta)",
+   "structure": "T:emi_gimnasios:galar/milo",
+   "aliases": [
+    "emi gimnasios galar milo",
+    "estadio milo turffield"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Nessa (Agua)",
+   "structure": "T:emi_gimnasios:galar/nessa",
+   "aliases": [
+    "emi gimnasios galar nessa",
+    "estadio nessa hulbury"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Kabu (Fuego)",
+   "structure": "T:emi_gimnasios:galar/kabu",
+   "aliases": [
+    "emi gimnasios galar kabu",
+    "estadio kabu motostoke"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Bea (Lucha)",
+   "structure": "T:emi_gimnasios:galar/bea",
+   "aliases": [
+    "emi gimnasios galar bea",
+    "estadio bea stow-on-side"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Opal (Hada)",
+   "structure": "T:emi_gimnasios:galar/opal",
+   "aliases": [
+    "emi gimnasios galar opal",
+    "estadio opal ballonlea"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Gordie (Roca)",
+   "structure": "T:emi_gimnasios:galar/gordie",
+   "aliases": [
+    "emi gimnasios galar gordie",
+    "estadio gordie circhester"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Piers (Siniestro)",
+   "structure": "T:emi_gimnasios:galar/piers",
+   "aliases": [
+    "emi gimnasios galar piers",
+    "estadio piers spikemuth"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio Raihan (Dragón)",
+   "structure": "T:emi_gimnasios:galar/raihan",
+   "aliases": [
+    "emi gimnasios galar raihan",
+    "estadio raihan hammerlocke"
+   ]
+  },
+  {
+   "region": "Galar",
+   "label": "Estadio de Wyndon (Campeón Leon)",
+   "structure": "T:emi_gimnasios:galar/leon",
+   "aliases": [
+    "emi gimnasios galar leon",
+    "estadio wyndon campeon leon"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Katy (Bicho)",
+   "structure": "T:emi_gimnasios:paldea/katy",
+   "aliases": [
+    "emi gimnasios paldea katy",
+    "gimnasio katy cortondo"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Brassius (Planta)",
+   "structure": "T:emi_gimnasios:paldea/brassius",
+   "aliases": [
+    "emi gimnasios paldea brassius",
+    "gimnasio brassius artazon"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Iono (Eléctrico)",
+   "structure": "T:emi_gimnasios:paldea/iono",
+   "aliases": [
+    "emi gimnasios paldea iono",
+    "gimnasio iono levincia"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Kofu (Agua)",
+   "structure": "T:emi_gimnasios:paldea/kofu",
+   "aliases": [
+    "emi gimnasios paldea kofu",
+    "gimnasio kofu cascarrafa"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Larry (Normal)",
+   "structure": "T:emi_gimnasios:paldea/larry",
+   "aliases": [
+    "emi gimnasios paldea larry",
+    "gimnasio larry medali"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Ryme (Fantasma)",
+   "structure": "T:emi_gimnasios:paldea/ryme",
+   "aliases": [
+    "emi gimnasios paldea ryme",
+    "gimnasio ryme montenevera"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Tulip (Psíquico)",
+   "structure": "T:emi_gimnasios:paldea/tulip",
+   "aliases": [
+    "emi gimnasios paldea tulip",
+    "gimnasio tulip alfornada"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Gimnasio Grusha (Hielo)",
+   "structure": "T:emi_gimnasios:paldea/grusha",
+   "aliases": [
+    "emi gimnasios paldea grusha",
+    "gimnasio grusha glaseado"
+   ]
+  },
+  {
+   "region": "Paldea",
+   "label": "Liga de Paldea (Team Star y Campeona Geeta)",
+   "structure": "T:emi_gimnasios:paldea/liga",
+   "aliases": [
+    "emi gimnasios paldea liga",
+    "liga paldea team star campeona geeta"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Ilima (Normal)",
+   "structure": "T:emi_gimnasios:alola/ilima",
+   "aliases": [
+    "emi gimnasios alola ilima",
+    "prueba ilima caverna verdeante"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Lana (Agua)",
+   "structure": "T:emi_gimnasios:alola/lana",
+   "aliases": [
+    "emi gimnasios alola lana",
+    "prueba lana colina arroyuelo"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Kiawe (Fuego)",
+   "structure": "T:emi_gimnasios:alola/kiawe",
+   "aliases": [
+    "emi gimnasios alola kiawe",
+    "prueba kiawe volcan wela"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Mallow (Planta)",
+   "structure": "T:emi_gimnasios:alola/mallow",
+   "aliases": [
+    "emi gimnasios alola mallow",
+    "prueba mallow selva frondosa"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Sophocles (Eléctrico)",
+   "structure": "T:emi_gimnasios:alola/sophocles",
+   "aliases": [
+    "emi gimnasios alola sophocles",
+    "prueba sophocles observatorio hokulani"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Acerola (Fantasma)",
+   "structure": "T:emi_gimnasios:alola/acerola",
+   "aliases": [
+    "emi gimnasios alola acerola",
+    "prueba acerola thrifty megamart"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Prueba de Mina (Hada)",
+   "structure": "T:emi_gimnasios:alola/mina",
+   "aliases": [
+    "emi gimnasios alola mina",
+    "prueba mina aldea marinera"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Gran prueba de Hala (Lucha)",
+   "structure": "T:emi_gimnasios:alola/hala",
+   "aliases": [
+    "emi gimnasios alola hala",
+    "gran prueba hala ruinas del conflicto"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Gran prueba de Olivia (Roca)",
+   "structure": "T:emi_gimnasios:alola/olivia",
+   "aliases": [
+    "emi gimnasios alola olivia",
+    "gran prueba olivia ruinas de la vida"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Gran prueba de Nanu (Siniestro)",
+   "structure": "T:emi_gimnasios:alola/nanu",
+   "aliases": [
+    "emi gimnasios alola nanu",
+    "gran prueba nanu ciudad malie"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Gran prueba de Hapu (Tierra)",
+   "structure": "T:emi_gimnasios:alola/hapu",
+   "aliases": [
+    "emi gimnasios alola hapu",
+    "gran prueba hapu canon de poni"
+   ]
+  },
+  {
+   "region": "Alola",
+   "label": "Liga de Alola (Alto Mando y Campeón Kukui)",
+   "structure": "T:emi_gimnasios:alola/liga",
+   "aliases": [
+    "emi gimnasios alola liga",
+    "liga alola monte lanakila alto mando campeon kukui"
+   ]
   }
  ]
 }

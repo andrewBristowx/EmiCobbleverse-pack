@@ -13,7 +13,10 @@ def parse_estado(s):
     if m.group(2):
         for kv in m.group(2).split(','):
             k, v = kv.split('='); props[k.strip()] = v.strip()
+    if nombre.endswith('_leaves') and 'persistent' not in props: props['persistent'] = 'true'   # sin esto las hojas se caen solas (no hay troncos cerca)
     return nombre, props
+
+OPUESTO_ESC = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
 
 class V:
     def __init__(s, w, h, l):
@@ -40,7 +43,8 @@ class V:
     def anillo(s, x0, z0, x1, z1, y, b):
         s.fill(x0, y, z0, x1, y, z0, b); s.fill(x0, y, z1, x1, y, z1, b); s.fill(x0, y, z0, x0, y, z1, b); s.fill(x1, y, z0, x1, y, z1, b)
     def stairs(s, x, y, z, mat, facing, half='bottom', shape='straight'):
-        s.set(x, y, z, f'{mat}_stairs[facing={facing},half={half},shape={shape}]')
+        """`facing` = hacia donde mira el FRENTE de la escalera (el lado bajo, por donde se sube). El estado de Minecraft guarda el lado contrario: el del respaldo alto."""
+        s.set(x, y, z, f'{mat}_stairs[facing={OPUESTO_ESC[facing]},half={half},shape={shape}]')
     def slab(s, x, y, z, mat, tipo='bottom'): s.set(x, y, z, f'{mat}_slab[type={tipo}]')
     def aire(s, x0, y0, z0, x1, y1, z1): s.fill(x0, y0, z0, x1, y1, z1, 'air')
     # ---------------------------------------------------------- pixel art en una pared (plano XY mirando a -z o +z)

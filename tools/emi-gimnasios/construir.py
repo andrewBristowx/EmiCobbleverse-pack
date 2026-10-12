@@ -4,12 +4,35 @@ Uso: python3 construir.py <carpeta tools/emi-estructuras> [<config extra-locatio
 import json, os, sys
 import gymlib
 
+def _libre(b): return b.split('[')[0] in ('air', 'cave_air', 'void_air')
+
+
+def _firme(b):
+    n = b.split('[')[0].replace('minecraft:', '')
+    if _libre(b) or n in ('water', 'lava') or 'slab' in n or 'stairs' in n or 'fence' in n or 'wall' in n or 'carpet' in n or n.endswith(('_bars', 'pane', 'cobweb', 'campfire', 'lantern', 'candle', 'torch')): return False
+    return True
+
+
+def ubicar_npc(v, x, y, z):
+    """busca el sitio mas cercano donde el NPC pueda estar de pie: 2 bloques de aire y un bloque firme debajo (primero cambiando la altura, luego los lados)"""
+    cands = [(0, 0)] + [(dx, dz) for r in (1, 2) for dx in range(-r, r + 1) for dz in range(-r, r + 1) if max(abs(dx), abs(dz)) == r]
+    for (dx, dz) in cands:
+        for dy in (0, -1, 1, -2, 2, -3, 3):
+            xx, yy, zz = int(x) + dx, int(y) + dy, int(z) + dz
+            if _libre(v.get(xx, yy, zz)) and _libre(v.get(xx, yy + 1, zz)) and _firme(v.get(xx, yy - 1, zz)):
+                return xx + (x - int(x)), yy, zz + (z - int(z)), (dx, dy, dz) != (0, 0, 0)
+    return x, y, z, False
+
+
 def registrar(nombre, v, npcs, region, etiqueta, aliases, orden_fuera=None):
     """nombre = ruta de la plantilla (p. ej. teselia/elesa); npcs = [(x, y, z, yaw_antes_de_girar, comando)] en coordenadas de la plantilla sin girar"""
     w0 = v.w
     g = gymlib.girar(v, 1)           # la fachada pasa de mirar al norte a mirar al oeste (la entrada segura de Emipokemon esta al oeste)
     lista = []
     for (x, y, z, yaw, cmd) in npcs:
+        x2, y2, z2, movido = ubicar_npc(v, x, y, z)
+        if movido: print(f'    (NPC {cmd.split()[-1]} de {nombre} movido de ({int(x)},{y},{int(z)}) a ({int(x2)},{y2},{int(z2)}))')
+        x, y, z = x2, y2, z2
         e = {'x': round(z + 0.5, 2), 'y': y, 'z': round(w0 - 1 - x + 0.5, 2), 'yaw': (yaw - 90) % 360, 'cmd': cmd}
         p = cmd.split()
         if len(p) == 4 and p[:2] == ['emipokemon', 'desafios']: e['id'] = f'challenge_{p[2]}_{p[3]}'   # id interno del NPC en Emipokemon (para moverlo si ya existe)
