@@ -1,11 +1,9 @@
 package emi.plush;
 
 import net.minecraft.class_1657;
-import net.minecraft.class_1268;
 import net.minecraft.class_1937;
 import net.minecraft.class_2338;
 import net.minecraft.class_2487;
-import net.minecraft.class_2561;
 import net.minecraft.class_2586;
 import net.minecraft.class_2596;
 import net.minecraft.class_2602;
@@ -20,11 +18,9 @@ import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-import java.util.UUID;
-
 /**
- * Entidad de la máquina del Gasha: fase 0 reposo, 1 girando (la bola rueda ~1.5 s), 2 premio (se abre la compuerta). El premio sale al
- * terminar de girar: ejecuta `emi_plush:gasha/tirar` como el jugador que insertó el ticket. La fase se sincroniza al cliente para las animaciones.
+ * Entidad de la máquina del Gasha: fase 0 reposo, 1 girando (la bola rueda ~1.5 s), 2 premio (se abre la compuerta). Los premios los reparte
+ * {@link GashaServidor} cuando alguien tira desde la pantalla; aquí solo está la animación de la máquina del mundo, sincronizada al cliente.
  */
 public class GashaMachineBlockEntity extends class_2586 implements GeoBlockEntity {
     static final int GIRO = 32, PREMIO = 44;
@@ -35,26 +31,19 @@ public class GashaMachineBlockEntity extends class_2586 implements GeoBlockEntit
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private int fase;
     private int ticks;
-    private UUID jugador;
 
     public GashaMachineBlockEntity(class_2338 pos, class_2680 state) {
         super(EmiPlush.MAQUINA_GASHA_BE, pos, state);
     }
 
-    /** Clic derecho (solo servidor): gasta un ticket de la mano y empieza a girar. */
+    /** Clic derecho (solo servidor): el jugador abre la pantalla del Gasha. */
     public void usar(class_1657 player) {
-        if (fase != 0) return;
-        var mano = player.method_5998(class_1268.field_5808);
-        if (!mano.method_31574(EmiPlush.TICKET_GASHA)) {
-            player.method_7353(class_2561.method_43471("block.emi_plush.maquina_gasha_michi.sin_ticket"), true);
-            return;
-        }
-        if (!player.method_7337()) mano.method_7934(1);
-        jugador = player.method_5667();
-        cambiar(1, GIRO);
-        var p = method_11016();
-        player.method_5682().method_3734().method_44252(player.method_5671().method_9206(4),
-                String.format("playsound minecraft:block.note_block.bell block @a %d %d %d 1 1.2", p.method_10263(), p.method_10264(), p.method_10260()));
+        if (player instanceof net.minecraft.class_3222 sp) GashaServidor.abrir(sp, method_11016());
+    }
+
+    /** Efecto en la máquina del mundo cuando alguien tira desde la pantalla: gira un momento y abre la compuerta. */
+    public void efecto() {
+        if (fase == 0) cambiar(1, GIRO);
     }
 
     private void cambiar(int nueva, int t) {
@@ -67,23 +56,8 @@ public class GashaMachineBlockEntity extends class_2586 implements GeoBlockEntit
     public static void tick(class_1937 world, class_2338 pos, class_2680 state, GashaMachineBlockEntity e) {
         if (world.method_8608() || e.fase == 0) return;
         if (--e.ticks > 0) return;
-        if (e.fase == 1) {
-            e.cambiar(2, PREMIO);
-            var servidor = world.method_8503();
-            var jug = e.jugador == null ? null : servidor.method_3760().method_14602(e.jugador);
-            if (jug != null) {
-                var fuente = jug.method_5671().method_9206(4);
-                var comandos = servidor.method_3734();
-                comandos.method_44252(fuente, String.format("playsound minecraft:block.note_block.chime block @a %d %d %d 1 1.4", pos.method_10263(), pos.method_10264(), pos.method_10260()));
-                comandos.method_44252(fuente, String.format("particle minecraft:happy_villager %.1f %.1f %.1f 0.4 0.6 0.4 0 14", pos.method_10263() + 0.5, pos.method_10264() + 1.4, pos.method_10260() + 0.5));
-                comandos.method_44252(fuente, "function emi_plush:gasha/tirar");
-            } else {
-                net.minecraft.class_1264.method_5449(world, pos.method_10263() + 0.5, pos.method_10264() + 1.2, pos.method_10260() + 0.5, new net.minecraft.class_1799(EmiPlush.TICKET_GASHA));   // se desconectó: devolvemos el ticket
-            }
-        } else {
-            e.cambiar(0, 0);
-            e.jugador = null;
-        }
+        if (e.fase == 1) e.cambiar(2, PREMIO);
+        else e.cambiar(0, 0);
     }
 
     @Override
@@ -91,7 +65,6 @@ public class GashaMachineBlockEntity extends class_2586 implements GeoBlockEntit
         super.method_11007(nbt, reg);
         nbt.method_10569("Fase", fase);
         nbt.method_10569("Ticks", ticks);
-        if (jugador != null) nbt.method_25927("Jugador", jugador);
     }
 
     @Override
@@ -99,7 +72,6 @@ public class GashaMachineBlockEntity extends class_2586 implements GeoBlockEntit
         super.method_11014(nbt, reg);
         fase = nbt.method_10550("Fase");
         ticks = nbt.method_10550("Ticks");
-        jugador = nbt.method_25928("Jugador") ? nbt.method_25926("Jugador") : null;
     }
 
     @Override
