@@ -87,7 +87,9 @@ public class GashaPantalla extends class_437 {
                 p.pokes.add(props);
                 RenderablePokemon rp = null;
                 try {
-                    rp = PokemonProperties.Companion.parse(props).create().asRenderablePokemon();
+                    var pk = PokemonProperties.Companion.parse(props).create();
+                    pk.updateAspects();            // sin esto los aspectos no incluyen las propiedades (emi=true, gold, accessory) y sale la forma normal
+                    rp = pk.asRenderablePokemon();
                 } catch (RuntimeException | LinkageError ex) {
                     // sin modelo: se dibuja una Pokébola en su lugar
                 }
