@@ -54,6 +54,7 @@ def construir():
         x, z = rnd.randint(5, 33), rnd.randint(ZF + 3, 38)
         for y in range(22, 4, -1):
             if v.get(x, y, z) != 'air' and v.get(x, y - 1, z) == 'air' and not v.get(x, y, z).startswith(('hanging', 'lantern', 'chain', 'pointed')):
+                if v.get(x, y, z).split('[')[0].endswith(('leaves', 'stairs', 'slab', 'log')): break      # solo cuelgan de piedra/tierra (cara completa)
                 if rnd.random() < 0.5:
                     for k in range(1, rnd.randint(2, 5)):
                         if v.get(x, y - k, z) == 'air': v.set(x, y - k, z, 'hanging_roots')

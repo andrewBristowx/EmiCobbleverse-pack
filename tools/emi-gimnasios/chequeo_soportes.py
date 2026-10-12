@@ -14,6 +14,12 @@ def nombre(b): return b.split('[')[0].replace('minecraft:', '')
 def es_solido(n):
     return n not in ('air', 'cave_air', 'void_air') and not any(n == s or n.endswith('_' + s) or n.endswith(s) and s in ('glass_pane', 'bars') for s in SOLIDO_NO)
 
+NO_FIRME = ('leaves', 'slab', 'stairs', 'fence', 'fence_gate', '_wall', 'trapdoor', '_door', '_pane', 'bars', '_bed', 'chest', 'sapling',
+            'flower', 'roots', 'azalea', '_cluster', '_bud', 'vine', 'vines', 'ladder', 'chain', 'lantern', 'candle', 'carpet', 'head', 'skull')
+def es_firme(n):
+    """cara completa donde puede agarrarse una estalactita o una amatista (las hojas, losas, escaleras... no valen)"""
+    return es_solido(n) and not n.endswith(NO_FIRME) and n not in ('red_mushroom', 'brown_mushroom', 'short_grass', 'fern', 'tall_grass', 'cobweb')
+
 def revisar(path):
     r = nbtlib2.parse(open(path, 'rb').read())
     pal = []
@@ -53,14 +59,14 @@ def revisar(path):
             if at(0, -1, 0)[0] not in TIERRA and n not in ('cactus', 'sugar_cane', 'bamboo'): err = n + ' no sobre tierra: ' + at(0, -1, 0)[0]
         elif n == 'amethyst_cluster' or n.endswith('amethyst_bud'):
             f = pr.get('facing', 'up'); d = {'up': (0, -1, 0), 'down': (0, 1, 0), 'north': (0, 0, 1), 'south': (0, 0, -1), 'east': (-1, 0, 0), 'west': (1, 0, 0)}[f]
-            if not es_solido(at(*d)[0]): err = 'amatista sin soporte (' + f + ')'
+            if not es_firme(at(*d)[0]): err = 'amatista sin soporte (' + f + ')'
         elif n == 'pointed_dripstone':
             d = pr.get('vertical_direction', 'down')
             ref = at(0, 1, 0) if d == 'down' else at(0, -1, 0)
-            if not (es_solido(ref[0]) or ref[0] == 'pointed_dripstone'): err = 'estalactita/estalagmita sin soporte'
+            if not (es_firme(ref[0]) or ref[0] == 'pointed_dripstone'): err = 'estalactita/estalagmita sin soporte'
         elif n == 'hanging_roots':
             a = at(0, 1, 0)[0]
-            if not (es_solido(a) or a == 'hanging_roots'): err = 'raices colgantes sin techo'
+            if not (es_firme(a) or a == 'hanging_roots'): err = 'raices colgantes sin techo'
         elif n in ('red_mushroom', 'brown_mushroom'):
             if at(0, -1, 0)[0] not in ('podzol', 'mycelium'): err = 'seta pequeña sin podzol/micelio'
         elif n == 'cactus':
