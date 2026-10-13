@@ -3,6 +3,7 @@
 .gitattributes
 .packwizignore
 README.md
+CLAUDE.md
 PUBLICAR-EN-GITHUB.bat
 ACTUALIZAR-PACK.bat
 prism-instance/

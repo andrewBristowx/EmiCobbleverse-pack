@@ -134,7 +134,7 @@ public final class Catalogo {
             vistos.add(id);
             out.add(new Entrada(ident, plantilla, f[0], f[1], OCEANO.contains(id)));
         }
-        añadirExtras(reg, vistos, out);
+        añadirExtras(server, reg, vistos, out);
         TreeSet<String> resto = new TreeSet<>();
         for (Identifier id : reg.getIds()) if (NAMESPACES.contains(id.getNamespace()) && !vistos.contains(id.toString())) resto.add(id.toString());
         for (String id : resto) out.add(new Entrada(Identifier.of(id), false, null, id, OCEANO.contains(id)));
@@ -145,7 +145,7 @@ public final class Catalogo {
      * Las ubicaciones extra del menu (config/emipokemon/extra-locations.json, las crea el parche de Emipokemon; si todavia no existe
      * se usan las del jar). Cada una va al final de su region: orden = lo que ya tiene la region + su posicion en el archivo.
      */
-    private static void añadirExtras(Registry<Structure> reg, Set<String> vistos, List<Entrada> out) {
+    private static void añadirExtras(MinecraftServer server, Registry<Structure> reg, Set<String> vistos, List<Entrada> out) {
         try {
             com.google.gson.JsonArray lista = leerExtras();
             Map<String, Integer> contador = new LinkedHashMap<>();
@@ -156,11 +156,18 @@ public final class Catalogo {
                 if (region.equals("dungeons")) continue;      // van al otro mundo
                 int orden = contador.merge(region, 1, Integer::sum);
                 String id = o.has("structure") ? o.get("structure").getAsString().trim() : "";
+                // "T:espacio:ruta" = plantilla .nbt suelta (los gimnasios y ligas de emi_gimnasios); si no, estructura de worldgen registrada
+                boolean plantilla = id.startsWith("T:");
+                if (plantilla) id = id.substring(2);
                 if (id.isEmpty() || vistos.contains(id)) continue;
                 Identifier ident = Identifier.tryParse(id);
-                if (ident == null || !reg.containsId(ident)) { EmiEstructuras.LOG.warn("Ubicacion extra {}: la estructura {} no esta registrada; la salto", o.get("label"), id); continue; }
+                if (ident == null) { EmiEstructuras.LOG.warn("Ubicacion extra {}: id no valido {}", o.get("label"), id); continue; }
+                if (plantilla ? server.getStructureTemplateManager().getTemplate(ident).isEmpty() : !reg.containsId(ident)) {
+                    EmiEstructuras.LOG.warn("Ubicacion extra {}: {} {} no existe; la salto", o.get("label"), plantilla ? "la plantilla" : "la estructura", id);
+                    continue;
+                }
                 vistos.add(id);
-                out.add(new Entrada(ident, false, region + ":" + orden, o.get("label").getAsString(), OCEANO.contains(id)));
+                out.add(new Entrada(ident, plantilla, region + ":" + orden, o.get("label").getAsString(), OCEANO.contains(id)));
             }
         } catch (Exception e) {
             EmiEstructuras.LOG.warn("No pude leer las ubicaciones extra", e);

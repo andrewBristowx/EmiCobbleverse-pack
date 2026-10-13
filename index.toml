@@ -409,7 +409,7 @@ hash = "76f7de4a21d1ff2699fad245e370dc2d4a86e5d49e5597e82483d536f2cc353d"
 
 [[files]]
 file = "config/emipokemon/extra-locations.json"
-hash = "1b5b2cea40c9acd7f58a9d055714a9952893457c3ff78f2ee523f03f474dbd72"
+hash = "66c37b0f794efa67f15a004b3f36e90285f656b37fff7957323d394042d45cbf"
 
 [[files]]
 file = "config/emipokemon/shop/extra/mt-movimientos.json"
@@ -1398,7 +1398,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "420f9f5bdef06639c488f9a9c1e233761150ca4f430ee80e994d3b08c64d96a7"
+hash = "2249789a2005f1e3eea1943bc2613f750159e6267c0a337ec5f7f7cb192c3a3e"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1841,16 +1841,20 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-estructuras-1.1.2.jar"
-hash = "c1e39022a8e7c4a28ed836894a80c021451bd480412464bdeeca40f048c2f995"
+file = "mods/emi-carreras-0.6.0.jar"
+hash = "c4fad13f6ab0e277bf558f45de8d1ca50b6358a301f4a04bebc8a6a77028e060"
+
+[[files]]
+file = "mods/emi-estructuras-1.3.0.jar"
+hash = "0060398aca33ca43ad701f0a9b68298c7d9dd9f7b98ac41d302fb66c941d2604"
 
 [[files]]
 file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-plush-1.11.0.jar"
-hash = "8c082008517ea0ccfcd41a72b31076deab9c3feaf001ed68a9e8b14b1897d055"
+file = "mods/emi-plush-1.12.0.jar"
+hash = "64b09b79b969305cd8ee7d9ced6d636a90f7d7103a064a9ebabd981b9e7e04ba"
 
 [[files]]
 file = "mods/emi-streamlabs-1.1.0.jar"

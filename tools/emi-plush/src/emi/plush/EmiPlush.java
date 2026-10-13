@@ -48,6 +48,9 @@ public class EmiPlush implements ModInitializer {
                 new net.minecraft.class_1747(MAQUINA_GASHA, new class_1792.class_1793().method_7894(net.minecraft.class_1814.field_8904)));
         MAQUINA_GASHA_BE = class_2378.method_10230(class_7923.field_41181, idMaquina,
                 FabricBlockEntityTypeBuilder.create(GashaMachineBlockEntity::new, MAQUINA_GASHA).build());
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S().register(GashaPeticion.ID, GashaPeticion.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(GashaRespuesta.ID, GashaRespuesta.CODEC);
+        GashaServidor.registrar();
         emi.plush.gen.DollRegistry.registrar();
         EmiPlushTab.register();
     }

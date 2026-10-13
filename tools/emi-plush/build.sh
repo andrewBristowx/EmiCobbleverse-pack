@@ -10,6 +10,7 @@ python3 gen/gen_michi.py resources
 python3 gen/gen_pokemon.py resources
 python3 gen/gen_michi_extras.py resources
 python3 gen/gen_gasha.py resources
+python3 gen/gen_gasha_gui.py resources/assets/emi_plush/textures/gui/gasha
 if [ -n "${COBBLEMON_JAR:-}" ]; then
   (cd gen && python3 gen_all.py ../resources)
 else
@@ -18,7 +19,7 @@ fi
 python3 gen/gen_dolls.py resources src/emi/plush/gen
 python3 test/revisar_modelos.py
 python3 test/revisar_modelos.py --peluches
-CP="$MC:$GECKO:$POKEBLOCKS:$(ls $FAPI/*.jar | tr '\n' ':')$LIBS"
+CP="$MC:$GECKO:$POKEBLOCKS:$(ls $FAPI/*.jar | tr '\n' ':')$LIBS${COBBLEMON_JAR:+:$COBBLEMON_JAR}${KOTLIN_JAR:+:$KOTLIN_JAR}"
 javac --release 21 -encoding UTF-8 -nowarn -cp "$CP" -d build/classes $(find src -name '*.java')
 cp -r resources/* build/classes/
 (cd build/classes && rm -f "$OUT" && zip -qr "$OUT" .)

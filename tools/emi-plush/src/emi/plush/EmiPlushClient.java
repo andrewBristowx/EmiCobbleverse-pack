@@ -10,6 +10,7 @@ public class EmiPlushClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         BlockEntityRendererRegistry.register(EmiPlush.MAQUINA_GASHA_BE, GashaMachineRenderer::new);
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(GashaRespuesta.ID, (p, ctx) -> ctx.client().execute(() -> GashaPantalla.recibir(p.json())));
         MichiBlockModel model = new MichiBlockModel();
         class_5614<PokedollBlockEntity> factory = ctx -> new PokedollBlockRenderer(ctx, model);
         BlockEntityRendererRegistry.register(EmiPlush.MICHI_BE, factory);
