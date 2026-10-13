@@ -71,7 +71,24 @@ Se oculta con F1 como cualquier interfaz.
 | Voltorb trampa | suelta un Voltorb detrás de ti; explota al tocarlo (parada + ralentización) |
 | Protección | escudo de 8 s: **para todos los ataques** mientras dura (el jugador brilla, sale un título «¡Protegido!» y la cuenta atrás en la barra de abajo) |
 | Trueno | rayo sobre **todos** los que van delante de ti |
+| Bostezo del Michi (0.7.0) | los rivales a menos de 14 bloques (por cualquier lado) se quedan **dormidos** 1,7 s y frenados |
+| Rayo del OVNI (0.7.0) | un OVNI **abduce al que va primero** (si eres tú, no pasa nada): parada 2,5 s y frenado; el mejorado abduce también al segundo. Solo sale en las cajas a quien no va primero |
+| Superestrella (0.7.0) | turbo **y** protección a la vez durante 5 s |
+| Grimer pegajoso (0.7.0) | suelta un Grimer detrás de ti: quien lo toque queda **pegado** (muy frenado 5,5 s, sin parar del todo) |
+| Nube de tinta (0.7.0) | los que van **delante** de ti quedan **ciegos** 3 s y frenados (solo sale a quien no va primero) |
+| Lluvia de michiestrellitas (0.7.0) | te da **+5 michiestrellitas** al instante |
 Las franjas amarillas/naranjas del asfalto son **turbos**.
+
+### Michiestrellitas (0.7.0)
+- Por cada pista hay grupos de 3 **michiestrellitas** (estrella dorada con la carita del Michialien, hecha por `estrella/hacer_estrella.py`; modelo `emi_carreras:item/estrella_michi` con `custom_model_data` 7020002 sobre `minecraft:nether_star`). Se cogen al pasar, **reaparecen** a los 12 s y el contador sale en la interfaz (debajo de la casilla del poder: «★ 3/10» con barra).
+- **10 michiestrellitas mejoran el poder**: si llevas uno pasa a ser **★ mejorado** (dura y pega un 60 % más; la casilla y el objeto llevan una estrella delante y brillan); si no llevas ninguno recibes uno ya mejorado. Si ya llevas uno mejorado, las estrellas se guardan (hasta 10) y mejoran el siguiente poder que cojas.
+- **Un golpe de verdad (que no pare el escudo) o una caída te quitan la mitad** (redondeando hacia abajo).
+- Las posiciones salen de `estrellas` en el JSON de cada pista (los generadores las ponen); config: `estrellas`, `estrellasMejora` (10), `estrellaRespawnSegundos` (12).
+- Pruebas (organizador): `/carrera _estrellas <n>` da estrellas durante una carrera; `/carrera _poder <nombre>` da un poder (también `golpe_<tipo>`: pokeball, voltorb, trueno, bostezo, ovni, mermelada, tinta).
+
+### Eventos de Emipokemon durante la carrera (0.7.0)
+Mientras hay una carrera (desde que se empieza hasta que se limpia) `Pausas.java` apaga **en memoria** la limpieza de objetos («clearlag»: aviso + borrado) y los eventos con aviso general de Emipokemon (bosses Mega/Gigantamax/Tera, evento shiny, entrenador legendario), y al terminar los vuelve a encender y adelanta sus temporizadores el tiempo que estuvieron parados.
+No se toca el archivo de configuración de Emipokemon; **pero** si un organizador cambia algo de la configuración de Emipokemon con un comando durante la carrera, ese guardado se llevaría los valores apagados. En el cliente, `mixin/BossBarHudMixin` oculta las barras de jefe mientras dura la carrera. Se apaga con `pausarEventos: false`.
 
 ## Comandos
 Jugadores: `/carrera unirse · salir · elegir <1-6> · estado · ayuda`.
@@ -80,7 +97,7 @@ Solo pruebas: `/carrera _poder <baya|pokeball|voltorb|escudo|caramelo|trueno>` (
 
 ## Configuración (`config/emi_carreras.json`, se crea sola)
 `pista` (la de por defecto), `pistas` (las que se pueden elegir), `musica`, `volumenMusica`, `sonidos`, `vueltas` (0 = las de la pista), `minPlayers` (1), `maxPlayers` (12), `velocidad` (0.23 ≈ 10 bloques/s), `adelanto`, `alturaPokemon`, `presentacion` (true/false: la presentación con cámaras), `presentacionSegundos` (por corredor; 0 = automático), `cuentaAtras`, `segundosTrasPrimero`, `respawnSegundos`,
-`queueReminderSeconds`, `poderes`, `cajaRespawnSegundos`, `prestados` (especies prestadas) y **`recompensas`**: lista de comandos por puesto (1.º, 2.º, 3.º…) con `{jugador}`, vacíos por defecto
+`queueReminderSeconds`, `poderes`, `cajaRespawnSegundos`, `estrellas`, `estrellasMejora`, `estrellaRespawnSegundos`, `pausarEventos`, `prestados` (especies prestadas) y **`recompensas`**: lista de comandos por puesto (1.º, 2.º, 3.º…) con `{jugador}`, vacíos por defecto
 (p. ej. `"cobbledollars give {jugador} 500"`: pon el comando real de tu economía).
 Si existe `config/emi_carreras/pistas/<id>.json` se usa en lugar del de dentro del mod (para ajustar la pista sin recompilar).
 
@@ -116,6 +133,11 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.7.0 (michiestrellitas, poderes nuevos, pausa de eventos, estatuas)
+Servidor de pruebas y cliente real (un solo jugador): las estrellas salen en las 3 pistas (24, 26 y 25), se cogen y reaparecen y el contador de la interfaz sube; con 11 estrellas el poder pasa a «★ Baya Aranja — ¡Mejorado!» y quedan 1; una caída con 7 estrellas deja 4;
+los 6 poderes nuevos y el Voltorb/Trueno se usaron con clic derecho sin errores en el registro; `golpe_ovni` se aplica. Con la carrera en marcha `/emipokemon admin items cleanup status` dice DESACTIVADA y al parar vuelve a ACTIVADA; una barra de jefe de prueba (`/bossbar`) no se ve durante la carrera y vuelve después. Las estatuas grandes salen macizas (antes con huecos: el muestreo de la superficie era más ancho que un bloque con escalas grandes).
+**No probado**: con varios jugadores (el efecto real del Bostezo, OVNI, Tinta y Grimer sobre un rival: solo el golpe de prueba sobre uno mismo), la pausa con un boss real de Emipokemon (solo se comprobó la limpieza de objetos y la barra de jefe), y el sonido.
 
 ## Probado en la 0.6.0 (pista Estación Michialien)
 Servidor de pruebas y cliente real (un solo jugador): la plantilla se coloca (5,4 s), la presentación, el aviso y la cuenta atrás salen bien, el mapa de la interfaz dibuja la luna con los turbos, los saltos y la meta; los **dos saltos** (borde azul) llevan al jugador a su aterrizaje; la **mermelada** baja la velocidad de 0,23 a 0,138 dentro de la zona y la devuelve al salir; el **atajo** con turbo (usando un Caramelo) aterriza en el sitio previsto y **sin turbo se cae** y vuelve a la parrilla;

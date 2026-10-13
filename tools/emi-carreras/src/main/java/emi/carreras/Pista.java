@@ -28,6 +28,7 @@ public final class Pista {
     /** Puntos de control en orden. [0] es la META. Cada uno: x1,y1,z1, x2,y2,z2 (zona), rx,ry,rz, ryaw (donde reaparece quien se cae). */
     public double[][] checkpoints;
     public double[][] cajas;             // x, y, z de cada caja de poderes
+    public double[][] estrellas;         // x, y, z de cada michiestrellita (se cogen y reaparecen)
     public double[][] turbos;            // x1,y1,z1, x2,y2,z2 de cada franja de turbo
     public double caidaY = 40;           // por debajo de esta Y se considera caido de la pista
     /** Plataformas de salto: al pisarlas el servidor lanza al corredor en arco hasta `destino` (o `destino_turbo` si lleva turbo activo). */

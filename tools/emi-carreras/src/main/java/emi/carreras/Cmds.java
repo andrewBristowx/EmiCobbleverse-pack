@@ -47,6 +47,8 @@ public final class Cmds {
         }, "Hecho."))));
         root.then(admin("_poder").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.word())
                 .executes(c -> con(c, () -> Carrera.probar(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre")), "Poder dado."))));
+        root.then(admin("_estrellas").then(CommandManager.argument("cantidad", IntegerArgumentType.integer(1, 50))
+                .executes(c -> con(c, () -> Carrera.probarEstrellas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "cantidad")), "Michiestrellitas dadas."))));
         d.register(root);
     }
 

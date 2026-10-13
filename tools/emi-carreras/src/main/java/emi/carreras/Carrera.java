@@ -68,9 +68,9 @@ public final class Carrera {
     static final List<Bola> bolas = new ArrayList<>();
     static final List<Trampa> trampas = new ArrayList<>();
 
-    static final class Caja { Vec3d pos; int libreEn; Entity ent; UUID uuid; boolean creada; int sinEntidad; }
-    static final class Bola { SnowballEntity ent; Corredor dueno; int nace; Vec3d ultima; }
-    static final class Trampa { PokemonEntity ent; Corredor dueno; int nace; }
+    static final class Caja { Vec3d pos; int libreEn; Entity ent; UUID uuid; boolean creada; int sinEntidad; boolean estrella; }
+    static final class Bola { SnowballEntity ent; Corredor dueno; int nace; Vec3d ultima; double fuerza = 1; }
+    static final class Trampa { PokemonEntity ent; Corredor dueno; int nace; String tipo = "voltorb"; double fuerza = 1; }
     /** Voltorb fijo de la pista: explota con quien lo toque y reaparece solo. */
     static final class Fijo { Vec3d pos; PokemonEntity ent; int libreEn; }
     static final List<Fijo> fijos = new ArrayList<>();
@@ -92,7 +92,7 @@ public final class Carrera {
         fase = Fase.LIBRE;
     }
 
-    public static void shutdown() { limpiarEntidades(); }
+    public static void shutdown() { try { Pausas.reanudar(); } catch (Throwable t) { } limpiarEntidades(); }
 
     static ServerWorld mundo() { return server.getWorld(MUNDO); }
 
@@ -107,13 +107,22 @@ public final class Carrera {
             for (Corredor c : corr.values()) {
                 ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
                 if (p == null || c.abandono) continue;
-                lista.add(new EstadoPayload.Jugador(c.id, c.nombre, (float) p.getX(), (float) p.getZ(), c.vuelta, pu.getOrDefault(c, corr.size()), c.finTick >= 0, Math.max(0, (c.escudoHasta - now + 19) / 20)));
+                lista.add(new EstadoPayload.Jugador(c.id, c.nombre, (float) p.getX(), (float) p.getZ(), c.vuelta, pu.getOrDefault(c, corr.size()), c.finTick >= 0, Math.max(0, (c.escudoHasta - now + 19) / 20), c.estrellas));
             }
         }
         var m = pista.mapa;
         EstadoPayload pl = new EstadoPayload(activo, pista.id, pista.nombre, m == null ? 0 : (float) m.x0, m == null ? 0 : (float) m.z0, m == null ? 0 : (float) m.ancho, m == null ? 0 : (float) m.largo,
-                m == null ? 0 : m.px, m == null ? 0 : m.py, vueltasTotal, fase == Fase.CARRERA ? now - tickInicio : 0, fase == Fase.PRESENTACION ? 0 : fase == Fase.CUENTA ? 1 : fase == Fase.CARRERA ? 2 : 3, lista);
+                m == null ? 0 : m.px, m == null ? 0 : m.py, vueltasTotal, fase == Fase.CARRERA ? now - tickInicio : 0, fase == Fase.PRESENTACION ? 0 : fase == Fase.CUENTA ? 1 : fase == Fase.CARRERA ? 2 : 3, cfg.estrellas && pista.estrellas != null ? cfg.estrellasMejora : 0, lista);
         for (ServerPlayerEntity p : jugadores()) if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) ServerPlayNetworking.send(p, pl);
+    }
+
+    /** Avisa al cliente del poder que lleva el corredor (con la estrella delante si esta mejorado). */
+    static void enviarPoder(ServerPlayerEntity p, Corredor c, boolean nuevo) {
+        if (p == null || !ServerPlayNetworking.canSend(p, PoderPayload.ID)) return;
+        Poder pw = c.poder;
+        if (pw == null) { ServerPlayNetworking.send(p, PoderPayload.ninguno()); return; }
+        Integer col = pw.color.getColorValue();
+        ServerPlayNetworking.send(p, new PoderPayload(pw.name(), (c.mejorado ? "★ " : "") + pw.nombre, (c.mejorado ? "¡Mejorado! " : "") + pw.descripcion, pw.itemId, col == null ? 0xFFFFFF : col, nuevo));
     }
 
     /** Avisa al cliente del poder que lleva (null = ninguno). */
@@ -305,7 +314,7 @@ public final class Carrera {
             double[] g = pista.parrilla[c.hueco];
             c.reaparicion = new Vec3d(g[0], g[1], g[2]); c.reaparicionYaw = (float) g[3];
             c.vuelta = 0; c.siguiente = 1; c.finTick = -1; c.tiemposVuelta = new int[vueltasTotal]; c.abandono = false;
-            c.poder = null; c.escudoHasta = c.paradoHasta = c.lentoHasta = c.turboHasta = c.ciegoHasta = c.golpeInmuneHasta = 0; c.ultimoModificador = Double.NaN; c.previa = null;
+            c.poder = null; c.mejorado = false; c.estrellas = 0; c.escudoHasta = c.paradoHasta = c.lentoHasta = c.turboHasta = c.ciegoHasta = c.golpeInmuneHasta = 0; c.ultimoModificador = Double.NaN; c.previa = null;
             p.getInventory().clear();
             p.clearStatusEffects();
             p.changeGameMode(cfg.presentacion ? GameMode.SPECTATOR : GameMode.ADVENTURE);   // en la presentacion el jugador hace de camara
@@ -317,6 +326,7 @@ public final class Carrera {
         }
         crearCajas(w);
         crearVoltorbFijos(w);
+        Pausas.pausar();
         graciaHasta = ahora() + 60;
         if (cfg.presentacion) comenzarPresentacion(w, orden);
         if (fase != Fase.PRESENTACION) { fase = Fase.CUENTA; tickCuenta = ahora() + cfg.cuentaAtras * 20; }
@@ -451,7 +461,9 @@ public final class Carrera {
         Set<UUID> buenas = new HashSet<>();
         for (Caja c : cajas) if (c.uuid != null) buenas.add(c.uuid);
         for (Corredor c : corr.values()) if (c.asiento != null) buenas.add(c.asiento.getUuid());
-        Box zona = new Box(-30000000, -64, -30000000, 30000000, 320, 30000000);
+        var mp = pista == null ? null : pista.mapa;       // solo se mira la zona de la pista (y un margen): un cuadro de 60 millones de bloques cada segundo era carisimo
+        Box zona = mp == null ? new Box(-30000000, -64, -30000000, 30000000, 320, 30000000)
+                : new Box(mp.x0 - 60, -64, mp.z0 - 60, mp.x0 + mp.ancho + 60, 320, mp.z0 + mp.largo + 60);
         int n = 0;
         for (var e : w.getEntitiesByClass(net.minecraft.entity.decoration.DisplayEntity.ItemDisplayEntity.class, zona, e -> e.getCommandTags().contains(TAG))) {
             if (!buenas.contains(e.getUuid())) { e.discard(); n++; }
@@ -514,7 +526,7 @@ public final class Carrera {
                 ItemStack st = inv.getStack(i);
                 if (i == 4) {
                     if (c.poder == null) { if (!st.isEmpty()) { inv.setStack(i, ItemStack.EMPTY); cambio = true; } }
-                    else if (st.isEmpty() || !st.getName().getString().startsWith(c.poder.nombre)) { inv.setStack(i, c.poder.item()); cambio = true; }
+                    else if (st.isEmpty() || !st.getName().getString().contains(c.poder.nombre) || st.getName().getString().startsWith("★") != c.mejorado) { inv.setStack(i, c.poder.item(c.mejorado)); cambio = true; }
                 } else if (!st.isEmpty()) { inv.setStack(i, ItemStack.EMPTY); cambio = true; }
             }
             if (cambio) { p.playerScreenHandler.sendContentUpdates(); }
@@ -522,6 +534,7 @@ public final class Carrera {
             for (ItemEntity ie : w.getEntitiesByClass(ItemEntity.class, p.getBoundingBox().expand(6), e -> true)) ie.discard();
         }
         if (now >= c.ciegoHasta && c.ciegoHasta != 0) c.ciegoHasta = 0;
+        if (now % 5 == 0 && c.estrellas >= cfg.estrellasMejora && fase == Fase.CARRERA) comprobarMejora(c, p);
         aplicarVelocidad(p, c, now);
     }
 
@@ -700,6 +713,7 @@ public final class Carrera {
     static void reaparecer(ServerPlayerEntity p, Corredor c, ServerWorld w, int now) {
         EmiCarreras.LOG.info("{} se cae de la pista y reaparece en el punto de control", c.nombre);
         terminarVuelo(p, c, w, now, false);
+        if (fase == Fase.CARRERA) perderEstrellas(c, p, "Caída");
         p.teleport(w, c.reaparicion.x, c.reaparicion.y, c.reaparicion.z, c.reaparicionYaw, 0f);
         c.paradoHasta = Math.max(c.paradoHasta, now + cfg.respawnSegundos * 20);
         c.turboHasta = 0;
@@ -722,7 +736,7 @@ public final class Carrera {
             Msg.broadcastTo(jugadores(), Msg.say("Quedan " + cfg.segundosTrasPrimero + " segundos para que termine la carrera."));
         }
         if (podioTick == null) podioTick = new int[0];
-        c.poder = null; enviarPoder(p, null, false);
+        c.poder = null; enviarPoder(p, (Poder) null, false);
         c.paradoHasta = 0;
         podioPendiente.put(c.id, ahora() + 60);
     }
@@ -941,7 +955,8 @@ public final class Carrera {
 
     /** Devuelve a todos lo suyo, quita Pokemon, cajas y proyectiles y deja el minijuego libre. */
     static void limpiar() {
-        try { enviarEstado(ahora(), false); for (ServerPlayerEntity pj : jugadores()) enviarPoder(pj, null, false); } catch (Throwable t) { EmiCarreras.LOG.warn("interfaz: {}", t.toString()); }
+        try { Pausas.reanudar(); } catch (Throwable t) { EmiCarreras.LOG.warn("pausas: {}", t.toString()); }
+        try { enviarEstado(ahora(), false); for (ServerPlayerEntity pj : jugadores()) enviarPoder(pj, (Poder) null, false); } catch (Throwable t) { EmiCarreras.LOG.warn("interfaz: {}", t.toString()); }
         try { pararMusica(); } catch (Throwable t) { EmiCarreras.LOG.warn("musica: {}", t.toString()); }
         try { quitarPresentacion(); } catch (Throwable t) { EmiCarreras.LOG.warn("presentacion: {}", t.toString()); }
         for (Corredor c : corr.values()) {
@@ -1048,8 +1063,16 @@ public final class Carrera {
             invocarCaja(w, c);
             cajas.add(c);
         }
+        if (cfg.estrellas && pista.estrellas != null) {
+            for (double[] a : pista.estrellas) {
+                Caja c = new Caja(); c.pos = new Vec3d(a[0] + 0.5, a[1], a[2] + 0.5); c.libreEn = 0; c.estrella = true;
+                invocarCaja(w, c);
+                cajas.add(c);
+            }
+        }
     }
 
+    static final int ESTRELLA_MODELO = 7020002;   // custom_model_data de la michiestrellita (assets/minecraft/models/item/nether_star.json)
     static final int MONEDA_MODELO = 7020001;     // custom_model_data de la moneda del Michialien (assets/minecraft/models/item/nautilus_shell.json)
 
     /**
@@ -1060,9 +1083,10 @@ public final class Carrera {
         c.uuid = UUID.randomUUID();
         int[] u = {(int) (c.uuid.getMostSignificantBits() >> 32), (int) c.uuid.getMostSignificantBits(), (int) (c.uuid.getLeastSignificantBits() >> 32), (int) c.uuid.getLeastSignificantBits()};
         String cmd = String.format(Locale.ROOT, "summon minecraft:item_display %.2f %.2f %.2f {UUID:[I;%d,%d,%d,%d],Tags:[\"%s\"],item_display:\"fixed\","
-                + "item:{id:\"minecraft:nautilus_shell\",count:1,components:{\"minecraft:custom_model_data\":%d}},"
-                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,1.1f,0f],scale:[0.9f,0.9f,0.9f]}}",
-                c.pos.x, c.pos.y, c.pos.z, u[0], u[1], u[2], u[3], TAG, MONEDA_MODELO);
+                + "item:{id:\"%s\",count:1,components:{\"minecraft:custom_model_data\":%d}},"
+                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,1.1f,0f],scale:[%s]}}",
+                c.pos.x, c.pos.y, c.pos.z, u[0], u[1], u[2], u[3], TAG, c.estrella ? "minecraft:nether_star" : "minecraft:nautilus_shell",
+                c.estrella ? ESTRELLA_MODELO : MONEDA_MODELO, c.estrella ? "1.1f,1.1f,1.1f" : "0.9f,0.9f,0.9f");
         try { server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(w).withSilent(), cmd); }
         catch (Exception e) { EmiCarreras.LOG.warn("No se pudo crear una caja", e); }
         Entity e = w.getEntity(c.uuid);
@@ -1095,14 +1119,25 @@ public final class Carrera {
                 else { if (++c.sinEntidad > 200 && w.isChunkLoaded(net.minecraft.util.math.ChunkPos.toLong((int) Math.floor(c.pos.x) >> 4, (int) Math.floor(c.pos.z) >> 4))) { c.uuid = null; c.creada = false; } continue; }
             }
             if (now % 10 == 0) w.spawnParticles(ParticleTypes.END_ROD, c.pos.x, c.pos.y + 1, c.pos.z, 1, 0.4, 0.4, 0.4, 0.01);
+            if (c.estrella) {
+                for (Corredor r : corr.values()) {
+                    ServerPlayerEntity p = server.getPlayerManager().getPlayer(r.id);
+                    if (p == null || r.abandono || r.finTick >= 0) continue;
+                    if (Math.abs(p.getX() - c.pos.x) < 1.5 && Math.abs(p.getZ() - c.pos.z) < 1.5 && Math.abs(p.getY() - c.pos.y) < 3) {
+                        ganarEstrellas(r, p, 1);
+                        c.ent.discard(); c.ent = null; c.uuid = null; c.creada = false; c.libreEn = now + cfg.estrellaRespawnSegundos * 20;
+                        w.spawnParticles(ParticleTypes.END_ROD, c.pos.x, c.pos.y + 1, c.pos.z, 8, 0.3, 0.3, 0.3, 0.05);
+                        break;
+                    }
+                }
+                continue;
+            }
             for (Corredor r : corr.values()) {
                 ServerPlayerEntity p = server.getPlayerManager().getPlayer(r.id);
                 if (p == null || r.abandono || r.finTick >= 0 || r.poder != null) continue;
                 if (Math.abs(p.getX() - c.pos.x) < 1.6 && Math.abs(p.getZ() - c.pos.z) < 1.6 && Math.abs(p.getY() - c.pos.y) < 3) {
-                    List<Corredor> orden = ordenados();
-                    double rr = orden.size() <= 1 ? 0.5 : orden.indexOf(r) / (double) (orden.size() - 1);
-                    r.poder = Poder.sortear(rr, rnd);
-                    enviarPoder(p, r.poder, true);
+                    r.poder = sortearPara(r); r.mejorado = false;
+                    enviarPoder(p, r, true);
                     Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.4f);
                     sfx(p, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.5f);
                     p.sendMessage(Text.literal("¡Has conseguido ").formatted(Formatting.WHITE).append(r.poder.titulo()).append(Text.literal("! ").formatted(Formatting.WHITE)).append(Text.literal(r.poder.descripcion).formatted(Formatting.GRAY)), false);
@@ -1120,7 +1155,66 @@ public final class Carrera {
         if (c == null || fase != Fase.CARRERA) return "Solo durante la carrera.";
         if (que.startsWith("golpe_")) { golpear(c, PELIGRO, que.substring(6), mundo(), ahora()); return null; }   // solo pruebas: te da un golpe (pokeball, voltorb, trueno)
         try { c.poder = Poder.valueOf(que.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException e) { return "Poder desconocido: " + Arrays.toString(Poder.values()); }
-        enviarPoder(p, c.poder, true);
+        c.mejorado = false;
+        enviarPoder(p, c, true);
+        return null;
+    }
+
+    /** Elige el poder de una caja segun el puesto del corredor (quien va detras tiene mas probabilidad de los fuertes). */
+    static Poder sortearPara(Corredor r) {
+        List<Corredor> orden = ordenados();
+        double rr = orden.size() <= 1 ? 0.5 : orden.indexOf(r) / (double) (orden.size() - 1);
+        return Poder.sortear(rr, rnd);
+    }
+
+    // ------------------------------------------------------------------ michiestrellitas
+
+    /** Suma michiestrellitas y, si llega a la meta, mejora el poder. */
+    static void ganarEstrellas(Corredor c, ServerPlayerEntity p, int n) {
+        c.estrellas += n;
+        float tono = 1.0f + Math.min(1.0f, c.estrellas / (float) Math.max(1, cfg.estrellasMejora)) * 0.9f;       // suena mas agudo cuanto mas cerca de la meta
+        Msg.sound(p, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, tono);
+        sfx(p, SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT, 0.7f, tono);
+        comprobarMejora(c, p);
+    }
+
+    /**
+     * Con la meta de michiestrellitas (10): el poder que llevas pasa a ser MEJORADO (un poco mas fuerte y duradero); si no llevas ninguno, recibes uno ya mejorado.
+     * Si ya llevas uno mejorado, las estrellas se guardan (sin pasar de la meta) hasta que cojas otro.
+     */
+    static void comprobarMejora(Corredor c, ServerPlayerEntity p) {
+        int meta = Math.max(1, cfg.estrellasMejora);
+        if (c.estrellas < meta || p == null || c.abandono || c.finTick >= 0) return;
+        if (c.poder != null && c.mejorado) { c.estrellas = meta; return; }
+        if (c.poder == null) {
+            Poder nuevo = sortearPara(c);
+            for (int i = 0; i < 6 && nuevo == Poder.LLUVIA; i++) nuevo = sortearPara(c);         // la lluvia de estrellas no vale de premio por estrellas
+            c.poder = nuevo;
+        }
+        c.mejorado = true;
+        c.estrellas -= meta;
+        enviarPoder(p, c, true);
+        Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.2f);
+        sfx(p, SoundEvents.BLOCK_BEACON_POWER_SELECT, 1f, 1.4f);
+        Msg.title(p, Text.literal("¡" + meta + " michiestrellitas!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Tu poder ahora es ★ " + c.poder.nombre + " (más fuerte)").formatted(Formatting.YELLOW), 0, 35, 8);
+        mundo().spawnParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 1, p.getZ(), 30, 0.5, 0.7, 0.5, 0.2);
+    }
+
+    /** Un golpe de verdad o una caida te quitan la mitad de las michiestrellitas. */
+    static void perderEstrellas(Corredor c, ServerPlayerEntity p, String motivo) {
+        int perdidas = c.estrellas / 2;
+        if (perdidas <= 0) return;
+        c.estrellas -= perdidas;
+        p.sendMessage(Msg.say(motivo + ": pierdes " + perdidas + " michiestrellita" + (perdidas == 1 ? "" : "s") + "."), true);
+        sfx(p, SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK, 0.8f, 0.8f);
+        mundo().spawnParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 1.4, p.getZ(), 12, 0.4, 0.4, 0.4, 0.15);
+    }
+
+    /** SOLO PRUEBAS (comando _estrellas, para el organizador): da michiestrellitas. */
+    public static String probarEstrellas(ServerPlayerEntity p, int n) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null || fase != Fase.CARRERA) return "Solo durante la carrera.";
+        ganarEstrellas(c, p, n);
         return null;
     }
 
@@ -1133,26 +1227,47 @@ public final class Carrera {
         c.usoCooldown = now + 6;
         ServerWorld w = mundo();
         Poder pw = c.poder;
-        c.poder = null;
-        enviarPoder(p, null, false);
-        EmiCarreras.LOG.info("{} usa {}", c.nombre, pw);
+        boolean mej = c.mejorado;
+        double f = mej ? 1.6 : 1.0;                       // el poder mejorado dura y pega un 60 % mas
+        c.poder = null; c.mejorado = false;
+        enviarPoder(p, (Poder) null, false);
+        EmiCarreras.LOG.info("{} usa {}{}", c.nombre, pw, mej ? " (mejorado)" : "");
         p.getInventory().setStack(4, ItemStack.EMPTY);
         boolean atras = p.isSneaking();
         double yaw = Math.toRadians(p.getYaw());
         Vec3d dir = new Vec3d(-Math.sin(yaw), 0, Math.cos(yaw));
         switch (pw) {
-            case BAYA -> { turbo(c, 0.35, 30, now); Msg.sound(p, SoundEvents.ENTITY_GENERIC_EAT, 1f, 1.2f); }
-            case CARAMELO -> { turbo(c, 0.7, 70, now); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.5f); w.spawnParticles(ParticleTypes.FIREWORK, p.getX(), p.getY() + 1, p.getZ(), 20, 0.4, 0.5, 0.4, 0.1); }
+            case BAYA -> { turbo(c, mej ? 0.5 : 0.35, (int) (30 * f), now); Msg.sound(p, SoundEvents.ENTITY_GENERIC_EAT, 1f, 1.2f); }
+            case CARAMELO -> { turbo(c, mej ? 0.9 : 0.7, (int) (70 * f), now); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.5f); w.spawnParticles(ParticleTypes.FIREWORK, p.getX(), p.getY() + 1, p.getZ(), 20, 0.4, 0.5, 0.4, 0.1); }
             case ESCUDO -> {
-                c.escudoHasta = now + 160;
+                c.escudoHasta = now + (int) (160 * f);
                 Msg.sound(p, SoundEvents.ITEM_SHIELD_BLOCK, 1f, 1.2f);
                 Msg.sound(p, SoundEvents.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);
-                Msg.title(p, Text.literal("¡Protegido!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("Nada te para durante 8 segundos").formatted(Formatting.GRAY), 0, 25, 8);
+                Msg.title(p, Text.literal("¡Protegido!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("Nada te para durante " + (int) (8 * f) + " segundos").formatted(Formatting.GRAY), 0, 25, 8);
                 w.spawnParticles(ParticleTypes.ENCHANTED_HIT, p.getX(), p.getY() + 1, p.getZ(), 40, 0.6, 0.7, 0.6, 0.4);
             }
-            case POKEBALL -> lanzarBola(w, p, c, atras ? dir.multiply(-1) : dir, atras ? 0 : p.getPitch(), now);
-            case VOLTORB -> soltarVoltorb(w, p, c, dir, now);
-            case TRUENO -> trueno(w, p, c, now);
+            case POKEBALL -> lanzarBola(w, p, c, atras ? dir.multiply(-1) : dir, atras ? 0 : p.getPitch(), now, f);
+            case VOLTORB -> soltarTrampa(w, p, c, dir, now, "voltorb", "voltorb", f);
+            case TRUENO -> trueno(w, p, c, now, f);
+            case MERMELADA -> soltarTrampa(w, p, c, dir, now, "grimer", "mermelada", f);
+            case BOSTEZO -> bostezo(w, p, c, now, f);
+            case OVNI -> ovni(w, p, c, now, f, mej);
+            case TINTA -> tinta(w, p, c, now, f);
+            case ESTRELLA -> {
+                turbo(c, 0.5, (int) (100 * f), now);
+                c.escudoHasta = Math.max(c.escudoHasta, now + (int) (100 * f));
+                Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 0.8f);
+                sfx(p, SoundEvents.BLOCK_BEACON_ACTIVATE, 0.8f, 2f);
+                Msg.title(p, Text.literal("¡Superestrella!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Turbo y protección").formatted(Formatting.GRAY), 0, 25, 8);
+                w.spawnParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 1, p.getZ(), 40, 0.6, 0.7, 0.6, 0.3);
+            }
+            case LLUVIA -> {
+                int n = mej ? 8 : 5;
+                Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.6f);
+                w.spawnParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 2, p.getZ(), 40, 0.8, 1.0, 0.8, 0.05);
+                ganarEstrellas(c, p, n);
+                p.sendMessage(Msg.say("¡Llueven michiestrellitas: +" + n + "!"), false);
+            }
         }
     }
 
@@ -1160,7 +1275,7 @@ public final class Carrera {
         c.turboHasta = Math.max(c.turboHasta, now + ticks); c.turboFactor = Math.max(c.turboFactor, factor);
     }
 
-    static void lanzarBola(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, float pitch, int now) {
+    static void lanzarBola(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, float pitch, int now, double f) {
         // se lanza hacia donde apunta el jugador (tambien arriba/abajo, limitado para que no se vaya al cielo ni al suelo): hay que apuntar
         double vy = -Math.sin(Math.toRadians(Math.max(-12f, Math.min(12f, pitch)))) * 1.3;
         SnowballEntity s = new SnowballEntity(w, p.getX() + dir.x * 1.2, p.getY() + 0.9, p.getZ() + dir.z * 1.2);
@@ -1170,7 +1285,7 @@ public final class Carrera {
         s.setVelocity(dir.x * 1.3, vy, dir.z * 1.3);
         s.addCommandTag(TAG);
         w.spawnEntity(s);
-        Bola b = new Bola(); b.ent = s; b.dueno = c; b.nace = now; b.ultima = s.getPos();
+        Bola b = new Bola(); b.ent = s; b.dueno = c; b.nace = now; b.ultima = s.getPos(); b.fuerza = f;
         bolas.add(b);
         w.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.PLAYERS, 1f, 0.8f);
     }
@@ -1181,7 +1296,7 @@ public final class Carrera {
             boolean quitada = b.ent.isRemoved();
             Vec3d pos = quitada ? b.ultima.add(b.ent.getVelocity()) : b.ent.getPos();
             Corredor v = rivalCerca(pos, b.dueno, quitada ? 2.4 : 1.4);
-            if (v != null) { golpear(v, b.dueno, "pokeball", w, now); b.ent.discard(); it.remove(); continue; }
+            if (v != null) { golpear(v, b.dueno, "pokeball", w, now, b.fuerza); b.ent.discard(); it.remove(); continue; }
             if (quitada || now - b.nace > 90) { b.ent.discard(); it.remove(); continue; }
             b.ultima = pos;
         }
@@ -1199,15 +1314,16 @@ public final class Carrera {
         return mejor;
     }
 
-    static void soltarVoltorb(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, int now) {
-        PokemonEntity e = PokemonProperties.Companion.parse("species=voltorb level=10").createEntity(w);
+    /** Trampa detras del corredor: un Voltorb (explota) o un Grimer (pega); el que la toque recibe el golpe de ese tipo. */
+    static void soltarTrampa(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, int now, String especie, String tipo, double f) {
+        PokemonEntity e = PokemonProperties.Companion.parse("species=" + especie + " level=10").createEntity(w);
         e.setAiDisabled(true); e.setInvulnerable(true); e.setSilent(true); e.setNoGravity(false); e.setPersistent();
-        e.getPokemon().setScaleModifier(1.3f);
+        e.getPokemon().setScaleModifier(especie.equals("voltorb") ? 1.3f : 1.1f);
         e.refreshPositionAndAngles(p.getX() - dir.x * 2.0, p.getY(), p.getZ() - dir.z * 2.0, p.getYaw(), 0f);
         e.addCommandTag(TAG);
         w.spawnEntity(e);
         unir(e.getNameForScoreboard());
-        Trampa t = new Trampa(); t.ent = e; t.dueno = c; t.nace = now;
+        Trampa t = new Trampa(); t.ent = e; t.dueno = c; t.nace = now; t.tipo = tipo; t.fuerza = f;
         trampas.add(t);
         Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 0.6f);
     }
@@ -1222,15 +1338,20 @@ public final class Carrera {
                 if (po != null && !t.dueno.abandono && Math.hypot(po.getX() - t.ent.getX(), po.getZ() - t.ent.getZ()) < 1.3 && t.dueno.finTick < 0) v = t.dueno;
             }
             if (v != null) {
-                w.spawnParticles(ParticleTypes.EXPLOSION, t.ent.getX(), t.ent.getY() + 0.7, t.ent.getZ(), 3, 0.3, 0.3, 0.3, 0.0);
-                w.playSound(null, t.ent.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 0.8f, 1.2f);
-                golpear(v, t.dueno, "voltorb", w, now);
+                if (t.tipo.equals("voltorb")) {
+                    w.spawnParticles(ParticleTypes.EXPLOSION, t.ent.getX(), t.ent.getY() + 0.7, t.ent.getZ(), 3, 0.3, 0.3, 0.3, 0.0);
+                    w.playSound(null, t.ent.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 0.8f, 1.2f);
+                } else {
+                    w.spawnParticles(ParticleTypes.ITEM_SLIME, t.ent.getX(), t.ent.getY() + 0.7, t.ent.getZ(), 25, 0.4, 0.4, 0.4, 0.1);
+                    w.playSound(null, t.ent.getBlockPos(), SoundEvents.BLOCK_SLIME_BLOCK_PLACE, SoundCategory.PLAYERS, 1f, 0.7f);
+                }
+                golpear(v, t.dueno, t.tipo, w, now, t.fuerza);
                 t.ent.discard(); it.remove();
             }
         }
     }
 
-    static void trueno(ServerWorld w, ServerPlayerEntity p, Corredor c, int now) {
+    static void trueno(ServerWorld w, ServerPlayerEntity p, Corredor c, int now, double f) {
         List<Corredor> orden = ordenados();
         int yo = orden.indexOf(c), n = 0;
         for (int i = 0; i < yo; i++) {
@@ -1239,14 +1360,67 @@ public final class Carrera {
             if (pv == null || v.finTick >= 0) continue;
             LightningEntity rayo = EntityType.LIGHTNING_BOLT.create(w);
             if (rayo != null) { rayo.refreshPositionAfterTeleport(pv.getX(), pv.getY(), pv.getZ()); rayo.setCosmetic(true); w.spawnEntity(rayo); }
-            golpear(v, c, "trueno", w, now);
+            golpear(v, c, "trueno", w, now, f);
             n++;
         }
         p.sendMessage(Msg.say(n == 0 ? "Vas el primero: el Trueno no ha alcanzado a nadie." : "¡El Trueno ha alcanzado a " + n + " rival(es)!"), false);
     }
 
-    /** Aplica un ataque a v (respeta el escudo y un breve periodo de inmunidad tras un golpe). */
-    static void golpear(Corredor v, Corredor autor, String tipo, ServerWorld w, int now) {
+    /** Los rivales cercanos (cualquier lado) se duermen un momento. */
+    static void bostezo(ServerWorld w, ServerPlayerEntity p, Corredor c, int now, double f) {
+        double radio = 14 * f;
+        int n = 0;
+        w.spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getY() + 1.2, p.getZ(), 30, 1.0, 0.6, 1.0, 0.05);
+        w.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_CAT_PURREOW, SoundCategory.PLAYERS, 1.2f, 1.4f);
+        for (Corredor v : new ArrayList<>(corr.values())) {
+            if (v == c || v.abandono || v.finTick >= 0) continue;
+            ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
+            if (pv == null || pv.distanceTo(p) > radio) continue;
+            golpear(v, c, "bostezo", w, now, f);
+            n++;
+        }
+        p.sendMessage(Msg.say(n == 0 ? "El bostezo no ha dormido a nadie (no hay rivales cerca)." : "¡El bostezo ha dormido a " + n + " rival(es)!"), false);
+    }
+
+    /** Un OVNI abduce al que va primero (si eres tu, no pasa nada); mejorado, tambien al segundo. */
+    static void ovni(ServerWorld w, ServerPlayerEntity p, Corredor c, int now, double f, boolean mej) {
+        List<Corredor> orden = ordenados();
+        int n = 0;
+        for (int i = 0; i < Math.min(orden.size(), mej ? 2 : 1); i++) {
+            Corredor v = orden.get(i);
+            if (v == c || v.abandono || v.finTick >= 0) continue;
+            ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
+            if (pv == null) continue;
+            w.spawnParticles(ParticleTypes.END_ROD, pv.getX(), pv.getY() + 3, pv.getZ(), 40, 0.4, 1.8, 0.4, 0.02);
+            w.spawnParticles(ParticleTypes.ELECTRIC_SPARK, pv.getX(), pv.getY() + 1, pv.getZ(), 25, 0.5, 1.2, 0.5, 0.3);
+            w.playSound(null, pv.getBlockPos(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1.2f, 0.6f);
+            golpear(v, c, "ovni", w, now, f);
+            n++;
+        }
+        p.sendMessage(Msg.say(n == 0 ? "Vas el primero: el OVNI no ha encontrado a nadie." : "¡El OVNI ha abducido a " + n + " rival(es)!"), false);
+    }
+
+    /** Los rivales que van delante no ven nada unos segundos. */
+    static void tinta(ServerWorld w, ServerPlayerEntity p, Corredor c, int now, double f) {
+        List<Corredor> orden = ordenados();
+        int yo = orden.indexOf(c), n = 0;
+        for (int i = 0; i < yo; i++) {
+            Corredor v = orden.get(i);
+            ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
+            if (pv == null || v.finTick >= 0) continue;
+            w.spawnParticles(ParticleTypes.SQUID_INK, pv.getX(), pv.getY() + 1.4, pv.getZ(), 30, 0.4, 0.4, 0.4, 0.05);
+            golpear(v, c, "tinta", w, now, f);
+            n++;
+        }
+        p.sendMessage(Msg.say(n == 0 ? "Vas el primero: la tinta no ha alcanzado a nadie." : "¡La tinta ha cegado a " + n + " rival(es)!"), false);
+    }
+
+    static int d(int base, double f) { return (int) Math.round(base * f); }
+
+    /** Aplica un ataque a v (respeta el escudo y un breve periodo de inmunidad tras un golpe). `f` = fuerza (1 normal, 1,6 si el poder estaba mejorado). */
+    static void golpear(Corredor v, Corredor autor, String tipo, ServerWorld w, int now) { golpear(v, autor, tipo, w, now, 1.0); }
+
+    static void golpear(Corredor v, Corredor autor, String tipo, ServerWorld w, int now, double f) {
         ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
         if (pv == null || now < v.golpeInmuneHasta) return;
         if (now < v.escudoHasta) {          // la proteccion dura todo su tiempo y para todos los ataques
@@ -1256,18 +1430,34 @@ public final class Carrera {
             return;
         }
         switch (tipo) {
-            case "pokeball" -> { v.paradoHasta = now + 50; v.lentoHasta = now + 90; v.lentoFactor = 0.4; }
-            case "voltorb" -> { v.paradoHasta = now + 25; v.lentoHasta = now + 70; v.lentoFactor = 0.5; }
-            default -> { v.paradoHasta = now + 16; v.lentoHasta = now + 80; v.lentoFactor = 0.4; }
+            case "pokeball" -> { v.paradoHasta = now + d(50, f); v.lentoHasta = now + d(90, f); v.lentoFactor = 0.4; }
+            case "voltorb" -> { v.paradoHasta = now + d(25, f); v.lentoHasta = now + d(70, f); v.lentoFactor = 0.5; }
+            case "bostezo" -> { v.paradoHasta = now + d(34, f); v.lentoHasta = now + d(80, f); v.lentoFactor = 0.5; }
+            case "ovni" -> { v.paradoHasta = now + d(50, f); v.lentoHasta = now + d(110, f); v.lentoFactor = 0.5; }
+            case "mermelada" -> { v.lentoHasta = now + d(110, f); v.lentoFactor = 0.65; }                 // pegajoso: no te para, te frena mucho
+            case "tinta" -> {
+                v.lentoHasta = now + d(70, f); v.lentoFactor = 0.3;
+                pv.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.BLINDNESS, d(60, f), 0, false, false, false));
+            }
+            default -> { v.paradoHasta = now + d(16, f); v.lentoHasta = now + d(80, f); v.lentoFactor = 0.4; }
         }
         v.turboHasta = 0;
         v.golpeInmuneHasta = now + 30;
         EmiCarreras.LOG.info("{} recibe {} de {}", v.nombre, tipo, autor.nombre);
-        String que = tipo.equals("pokeball") ? "te ha capturado con una Pokéball" : tipo.equals("voltorb") ? "te ha hecho explotar un Voltorb" : "te ha lanzado un Trueno";
+        String que = switch (tipo) {
+            case "pokeball" -> "te ha capturado con una Pokéball";
+            case "voltorb" -> "te ha hecho explotar un Voltorb";
+            case "bostezo" -> "te ha dormido con un bostezo";
+            case "ovni" -> "te ha abducido con un OVNI";
+            case "mermelada" -> "te ha pegado con un Grimer";
+            case "tinta" -> "te ha cegado con tinta";
+            default -> "te ha lanzado un Trueno";
+        };
         Msg.title(pv, Text.literal("¡Golpe!").formatted(Formatting.RED, Formatting.BOLD), Text.literal(autor.nombre + " " + que).formatted(Formatting.GRAY), 0, 25, 5);
         Msg.sound(pv, SoundEvents.ENTITY_GENERIC_HURT, 1f, 0.8f);
         w.spawnParticles(ParticleTypes.CRIT, pv.getX(), pv.getY() + 1, pv.getZ(), 15, 0.4, 0.5, 0.4, 0.2);
+        perderEstrellas(v, pv, "Golpe");
         ServerPlayerEntity pa = server.getPlayerManager().getPlayer(autor.id);
-        if (pa != null && !tipo.equals("trueno")) pa.sendMessage(Msg.say("¡Has alcanzado a " + v.nombre + "!"), false);
+        if (pa != null && !tipo.equals("trueno") && !tipo.equals("ovni") && !tipo.equals("bostezo") && !tipo.equals("tinta")) pa.sendMessage(Msg.say("¡Has alcanzado a " + v.nombre + "!"), false);
     }
 }

@@ -261,6 +261,17 @@ def main(destino):
             cajas.append([int(round(px)) + ORIGEN[0], sup(k) + 1 + ORIGEN[1], int(round(pz)) + ORIGEN[2]])
     for u in (0.105, 0.30, 0.47, 0.585, 0.68, 0.82, 0.90):
         hilera(au(u), (-3, -1, 1, 3))
+    # michiestrellitas: grupos de 3 en zigzag entre las hileras de cajas, fuera de los huecos de salto
+    estrellas = []
+    for u in (0.045, 0.135, 0.22, 0.41, 0.52, 0.635, 0.715, 0.865, 0.94):
+        k0 = au(u)
+        for j, o in enumerate((-3.0, 0.0, 3.0)):
+            kk = k0 + j * 14
+            if any((kk + d) % n in saltar for d in range(-26, 27, 4)): continue
+            m = ms[kk % n]
+            px, pz = m['x'] + ox + (-m['tz']) * o, m['z'] + oz + m['tx'] * o
+            estrellas.append([int(round(px)) + ORIGEN[0], sup(kk) + 1 + ORIGEN[1], int(round(pz)) + ORIGEN[2]])
+    print(len(estrellas), 'michiestrellitas')
 
     # ---------- parrilla de salida (detras de la meta, en el arco sur... la pista viene de abajo)
     parrilla = []
@@ -480,7 +491,7 @@ def main(destino):
         'podio': [round(podio[0] + ORIGEN[0], 2), podio[1] + ORIGEN[1], round(podio[2] + ORIGEN[2], 2), podio[3]],
         'checkpoints': [[c['zona'][0] + ORIGEN[0], c['zona'][1] + ORIGEN[1], c['zona'][2] + ORIGEN[2], c['zona'][3] + ORIGEN[0], c['zona'][4] + ORIGEN[1], c['zona'][5] + ORIGEN[2],
                          round(c['resp'][0] + ORIGEN[0], 2), c['resp'][1] + ORIGEN[1], round(c['resp'][2] + ORIGEN[2], 2), round(c['resp'][3], 1)] for c in cps],
-        'cajas': cajas, 'turbos': turbos, 'saltos': saltos, 'lodo': lodo, 'voltorbs': [], 'caidaY': caida,
+        'cajas': cajas, 'estrellas': estrellas, 'turbos': turbos, 'saltos': saltos, 'lodo': lodo, 'voltorbs': [], 'caidaY': caida,
     }
     js = os.path.join(destino, 'src/main/resources/data/emi_carreras/pistas', ID + '.json')
     os.makedirs(os.path.dirname(js), exist_ok=True)

@@ -100,6 +100,7 @@ def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, 
     """`altura`: alto de la estatua en bloques; si se da `esc` (bloques por unidad del modelo) manda este y el alto sale de el (asi varias estatuas del mismo modelo guardan la misma escala).
     Acepta cubos con UV de caja (Cobblemon) y con UV por cara (modelos de bloque de Blockbench, p. ej. los peluches de emi-plush)."""
     g, bones = _cargar_geo(geo_path)
+    if esc: paso_mult = max(paso_mult, 2.2 * esc)       # con escala grande los puntos de la superficie deben quedar mas juntos que un bloque, o salen huecos
     tex = Image.open(tex_path).convert('RGBA')
     tw, th = g['description']['texture_width'], g['description']['texture_height']
     sx_t, sy_t = tex.width / tw, tex.height / th

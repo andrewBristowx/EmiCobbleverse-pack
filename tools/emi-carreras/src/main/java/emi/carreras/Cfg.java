@@ -34,6 +34,10 @@ public final class Cfg {
     public int queueReminderSeconds = 60;        // aviso periodico mientras la cola esta abierta
     public boolean poderes = true;
     public int cajaRespawnSegundos = 6;
+    public boolean estrellas = true;             // michiestrellitas por la pista (10 mejoran el poder; un golpe o una caida quitan la mitad)
+    public int estrellasMejora = 10;             // cuantas hacen falta para mejorar el poder
+    public int estrellaRespawnSegundos = 12;
+    public boolean pausarEventos = true;         // durante la carrera se paran la limpieza de objetos y los bosses/eventos de Emipokemon
     /** Pokemon que se prestan al que no tenga ninguno terrestre en el equipo (se elige uno al azar). */
     public List<String> prestados = new ArrayList<>(List.of("growlithe", "ponyta", "eevee", "machop", "mareep", "sandshrew", "vulpix", "riolu", "rattata", "pikachu"));
     /** Comandos que se ejecutan al terminar para cada puesto (1.º, 2.º...); {jugador} se sustituye por el nombre. Vacio = sin premio. */
