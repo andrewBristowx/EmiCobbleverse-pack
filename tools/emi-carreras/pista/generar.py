@@ -9,6 +9,8 @@ from gymlib import V
 from piezas2 import arbol
 import camino
 import escenario
+import modelo
+import catalogo_estatuas
 
 ID = 'circuito_pokeball'
 MARGEN = 45
@@ -232,12 +234,36 @@ def main(destino):
     escenario.edificio(v, cx0, cz0, 18, 12, 7, 'white_concrete', 'red_concrete', 'red_concrete')
     escenario.pokeball_cartel(v, cx0 + 9, 6, cz0 - 1, 3)
     escenario.edificio(v, cx0 + 26, cz0, 14, 10, 6, 'white_concrete', 'blue_concrete', 'blue_concrete')
-    escenario.pikachu(v, pxc - 32, 17, pzc + 14)
-    sx, sz = pxc + 10, pzc + 52
-    if not lejos(sx, sz, 30):
-        for dx, dz in ((0, 0), (20, 0), (-20, 0), (0, 20), (0, -20), (30, 10), (-30, 10)):
-            if lejos(sx + dx, sz + dz, 30): sx, sz = sx + dx, sz + dz; break
-    escenario.snorlax(v, sx, sz, rnd)
+    ASSETS, TEX = os.environ.get('COBBLEMON_ASSETS'), os.environ.get('MC_TEXTURAS')
+    ocupado = [(pxc + 20, pzc - 3, 30), (pxc - 6, pzc + 3, 14)]          # centro/tienda y podio: (x, z, radio)
+    def sitio_libre(x, z, r):
+        if not lejos(x, z, r + 8): return False
+        return all(math.hypot(x - ox_, z - oz_) > r + r_ for ox_, oz_, r_ in ocupado)
+    def estatua(especie, altura, x, z, veces=0):
+        bl = catalogo_estatuas.cargar(especie, altura, ASSETS, TEX)
+        if veces: bl = modelo.girar(bl, veces)
+        escenario.poner_estatua(v, bl, x, 1, z)
+        ocupado.append((x, z, max(max(abs(k[0]) for k in bl), max(abs(k[2]) for k in bl)) + 3))
+        print('estatua %s en (%d, %d) giro %d' % (especie, x + ORIGEN[0], z + ORIGEN[2], veces))
+    # las dos grandes dentro del circuito, de cara a la recta de salida (norte = -z)
+    estatua('pikachu', 30, pxc - 32, pzc + 16)
+    estatua('snorlax', 36, pxc + 12, pzc + 54)
+    # el resto, junto al asfalto y mirando a la pista
+    figuras = [('charmander', 24, 0.06), ('squirtle', 22, 0.19), ('dragonite', 34, 0.33), ('lapras', 26, 0.52), ('eevee', 22, 0.60),
+               ('jigglypuff', 22, 0.71), ('gengar', 28, 0.84), ('lucario', 30, 0.93)]
+    for especie, alt, fr in figuras:
+        k = centro((s_meta + fr * total) % total)
+        m = ms[k]
+        colocada = False
+        for lado in (1, -1):
+            for dist in (MEDIO + 17, MEDIO + 22, MEDIO + 28):
+                x = int(round(m['x'] + ox + (-m['tz']) * dist * lado)); z = int(round(m['z'] + oz + m['tx'] * dist * lado))
+                if sitio_libre(x, z, 9):
+                    dx, dz = (m['x'] + ox) - x, (m['z'] + oz) - z       # hacia la pista
+                    veces = 0 if (dz < 0 and abs(dz) >= abs(dx)) else (1 if dx > 0 and abs(dx) > abs(dz) else (2 if dz > 0 and abs(dz) >= abs(dx) else 3))
+                    estatua(especie, alt, x, z, veces); colocada = True; break
+            if colocada: break
+        if not colocada: print('AVISO: no hay sitio para', especie)
 
     # ---- decoracion: arboles lejos de la pista
     for _ in range(260):

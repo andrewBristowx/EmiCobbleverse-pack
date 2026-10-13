@@ -6,7 +6,7 @@
   "description": "Minijuego de carreras con Pokemon (tipo Mario Kart) para el servidor de Emi.",
   "authors": ["SomitadePony"],
   "license": "All-Rights-Reserved",
-  "environment": "server",
+  "environment": "*",
   "entrypoints": { "main": ["emi.carreras.EmiCarreras"] },
   "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.1", "fabric-api": "*", "cobblemon": "*" }
 }

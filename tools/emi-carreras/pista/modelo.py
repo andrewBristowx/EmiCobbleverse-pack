@@ -1,0 +1,200 @@
+"""Convierte un modelo de Pokémon de Cobblemon (geometría Bedrock + textura) en bloques para una estatua.
+
+Uso (desde Python): voxeles = modelo_a_voxeles('0025_pikachu', 'pikachu_male', 'pikachu', altura=26)
+devuelve {(x, y, z): '#rrggbb'} con y hacia arriba y el frente del Pokémon hacia -z; luego `a_bloques` elige el bloque de color mas parecido.
+Los archivos salen de un jar/carpeta de Cobblemon: variable COBBLEMON_ASSETS = carpeta que contiene assets/cobblemon (jar descomprimido).
+"""
+import json, math, os
+from PIL import Image
+
+ROOT = os.environ.get('COBBLEMON_ASSETS', '.')
+
+
+def _rot(p, piv, rot):
+    """rotacion de Bedrock (grados, orden Z·Y·X) de p alrededor de piv"""
+    x, y, z = p[0] - piv[0], p[1] - piv[1], p[2] - piv[2]
+    rx, ry, rz = (math.radians(a) for a in rot)
+    # X
+    y, z = y * math.cos(rx) - z * math.sin(rx), y * math.sin(rx) + z * math.cos(rx)
+    # Y
+    x, z = x * math.cos(ry) + z * math.sin(ry), -x * math.sin(ry) + z * math.cos(ry)
+    # Z
+    x, y = x * math.cos(rz) - y * math.sin(rz), x * math.sin(rz) + y * math.cos(rz)
+    return (x + piv[0], y + piv[1], z + piv[2])
+
+
+def _cargar_geo(ruta):
+    d = json.load(open(ruta))
+    g = d['minecraft:geometry'][0]
+    bones = {b['name']: b for b in g['bones']}
+    return g, bones
+
+
+def _cadena(bones, nombre):
+    out = []
+    while nombre:
+        b = bones[nombre]
+        out.append(b)
+        nombre = b.get('parent')
+    return out        # del hueso hacia la raiz
+
+
+def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, 1), paso_mult=2.0):
+    g, bones = _cargar_geo(geo_path)
+    tex = Image.open(tex_path).convert('RGBA')
+    tw, th = g['description']['texture_width'], g['description']['texture_height']
+    sx_t, sy_t = tex.width / tw, tex.height / th
+    caras = []   # (puntos 3D del modelo, color) sin voxelizar
+    pts = []
+    for b in g['bones']:
+        for c in b.get('cubes', []):
+            o, sz = c['origin'], c['size']
+            inf = c.get('inflate', b.get('inflate', 0)) or 0
+            mirror = c.get('mirror', b.get('mirror', False))
+            u0, v0 = c['uv']
+            X0, Y0, Z0 = o[0] - inf, o[1] - inf, o[2] - inf
+            SX, SY, SZ = sz[0] + 2 * inf, sz[1] + 2 * inf, sz[2] + 2 * inf
+            cadena = _cadena(bones, b['name'])
+            cuadros = {'n': (u0 + sz[2], v0 + sz[2], sz[0], sz[1]), 'e': (u0, v0 + sz[2], sz[2], sz[1]),
+                       's': (u0 + sz[2] + sz[0] + sz[2], v0 + sz[2], sz[0], sz[1]), 'w': (u0 + sz[2] + sz[0], v0 + sz[2], sz[2], sz[1]),
+                       'u': (u0 + sz[2], v0, sz[0], sz[2]), 'd': (u0 + sz[2] + sz[0], v0, sz[0], sz[2])}
+            if mirror: cuadros['e'], cuadros['w'] = cuadros['w'], cuadros['e']
+            paso = 1.0 / paso_mult
+            def muestrear(cara, ai, aj, ak):
+                pass
+            # recorremos la superficie del cubo en pasos de media unidad
+            nx, ny, nz = max(1, int(SX * paso_mult)), max(1, int(SY * paso_mult)), max(1, int(SZ * paso_mult))
+            def punto(fx, fy, fz): return (X0 + SX * fx, Y0 + SY * fy, Z0 + SZ * fz)
+            def color(cara, a, bb):
+                u, v, w, h = cuadros[cara]
+                # a, bb en [0,1): a recorre el ancho de la cara, bb el alto
+                if mirror: a = 1 - a
+                px = (u + a * w) * sx_t; py = (v + bb * h) * sy_t
+                px = min(tex.width - 1, max(0, int(px))); py = min(tex.height - 1, max(0, int(py)))
+                return tex.getpixel((px, py))
+            for i in range(nx):
+                for j in range(ny):
+                    fx, fy = (i + 0.5) / nx, (j + 0.5) / ny
+                    # cara norte (z minima): u crece hacia -x visto desde fuera => a = 1 - fx
+                    pts.append((punto(fx, 1 - fy, 0), color('n', 1 - fx, fy), cadena, c))
+                    pts.append((punto(fx, 1 - fy, 1), color('s', fx, fy), cadena, c))
+            for k in range(nz):
+                for j in range(ny):
+                    fz, fy = (k + 0.5) / nz, (j + 0.5) / ny
+                    pts.append((punto(1, 1 - fy, fz), color('e', 1 - fz, fy), cadena, c))     # +x (este)
+                    pts.append((punto(0, 1 - fy, fz), color('w', fz, fy), cadena, c))         # -x (oeste)
+            for i in range(nx):
+                for k in range(nz):
+                    fx, fz = (i + 0.5) / nx, (k + 0.5) / nz
+                    pts.append((punto(fx, 1, fz), color('u', fx, fz), cadena, c))
+                    pts.append((punto(fx, 0, 1 - fz), color('d', fx, fz), cadena, c))
+    # aplicar rotaciones (cubo y huesos) y voxelizar
+    todos = []
+    for p, col, cadena, c in pts:
+        if col[3] < 40: continue
+        if c.get('rotation'):
+            p = _rot(p, c.get('pivot', [0, 0, 0]), [a * s for a, s in zip(c['rotation'], signo)])
+        for b in cadena:
+            if b.get('rotation'): p = _rot(p, b.get('pivot', [0, 0, 0]), [a * s for a, s in zip(b['rotation'], signo)])
+        todos.append((p, col))
+    ymin = min(p[1] for p, _ in todos); ymax = max(p[1] for p, _ in todos)
+    esc = altura / max(1e-6, ymax - ymin)
+    vox = {}
+    acum = {}
+    for p, col in todos:
+        k = (int(math.floor(p[0] * esc)), int(math.floor((p[1] - ymin) * esc)), int(math.floor(p[2] * esc)))
+        acum.setdefault(k, []).append(col)
+    for k, cols in acum.items():
+        cubos = {}
+        for c in cols: cubos.setdefault((c[0] // 40, c[1] // 40, c[2] // 40), []).append(c)
+        mejor = max(cubos.values(), key=len)                      # color mas frecuente (no la media: asi no se emborronan ojos y manchas)
+        vox[k] = tuple(sum(c[i] for c in mejor) // len(mejor) for i in range(3))
+    return vox
+
+
+def vistas(vox, ruta, escala=10):
+    """tres vistas ortogonales: frente (desde -z), lado (desde +x) y arriba"""
+    xs = [k[0] for k in vox]; ys = [k[1] for k in vox]; zs = [k[2] for k in vox]
+    x0, x1, y0, y1, z0, z1 = min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)
+    W = (x1 - x0 + 1) + (z1 - z0 + 1) * 2 + 6
+    H = (y1 - y0 + 1) + 4
+    im = Image.new('RGB', (W * escala, H * escala), (200, 220, 255))
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(im)
+    def pinta(ox, plano):
+        for (a, b), col in plano.items(): d.rectangle([(ox + a) * escala, (y1 - b + 2) * escala, (ox + a + 1) * escala - 1, (y1 - b + 3) * escala - 1], fill=col)
+    frente, lado = {}, {}
+    for k in sorted(vox, key=lambda k: -k[2]): frente[(k[0] - x0, k[1])] = vox[k]                  # lo mas cerca (z pequeño) gana
+    for k in sorted(vox, key=lambda k: k[0]): lado[(k[2] - z0, k[1])] = vox[k]                    # visto desde +x
+    atras = {}
+    for k in sorted(vox, key=lambda k: k[2]): atras[(x1 - k[0], k[1])] = vox[k]                   # visto desde +z
+    pinta(2, frente); pinta(2 + (x1 - x0 + 1) + 2, lado); pinta(2 + (x1 - x0 + 1) + 2 + (z1 - z0 + 1) + 2, atras)
+    im.save(ruta)
+
+
+# ---------------------------------------------------------------- de color a bloque
+_PAL = None
+
+
+def _paleta(tex_dir):
+    """colores medios de los bloques de color de Minecraft (concreto, lana, terracota) a partir de sus texturas"""
+    global _PAL
+    if _PAL is not None: return _PAL
+    colores = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray', 'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black']
+    nombres = [c + '_concrete' for c in colores] + [c + '_wool' for c in colores] + [c + '_terracotta' for c in colores] + ['terracotta', 'smooth_sandstone', 'sandstone', 'snow_block', 'gold_block', 'bone_block_side']
+    pal = {}
+    for n in nombres:
+        f = os.path.join(tex_dir, n + '.png')
+        if not os.path.exists(f): continue
+        im = Image.open(f).convert('RGB').resize((1, 1), Image.BOX)
+        pal[n.replace('_side', '')] = im.getpixel((0, 0))
+    _PAL = pal
+    return pal
+
+
+def a_bloques(vox, tex_dir):
+    """{(x,y,z): bloque}: el bloque de color mas parecido a cada voxel (distancia de color ponderada)"""
+    pal = _paleta(tex_dir)
+    cache = {}
+    out = {}
+    for k, c in vox.items():
+        q = (c[0] // 6, c[1] // 6, c[2] // 6)
+        if q not in cache:
+            mejor, md = None, 1e18
+            for n, p in pal.items():
+                rm = (c[0] + p[0]) / 2
+                d = (2 + rm / 256) * (c[0] - p[0]) ** 2 + 4 * (c[1] - p[1]) ** 2 + (2 + (255 - rm) / 256) * (c[2] - p[2]) ** 2
+                if d < md: md, mejor = d, n
+            cache[q] = mejor
+        out[k] = cache[q]
+    return out
+
+
+def buscar(assets, especie):
+    """(geo, textura) de una especie: busca <assets>/bedrock/pokemon/models/NNNN_<especie>/ y su textura"""
+    import glob
+    ms = glob.glob(os.path.join(assets, 'bedrock/pokemon/models/*_%s' % especie))
+    if not ms: raise FileNotFoundError(especie)
+    d = ms[0]; nn = os.path.basename(d)
+    geos = sorted(glob.glob(os.path.join(d, '*.geo.json')))
+    pref = [g for g in geos if os.path.basename(g) in (especie + '.geo.json', especie + '_male.geo.json')]
+    geo = (pref or geos)[0]
+    td = os.path.join(assets, 'textures/pokemon', nn)
+    for cand in (especie + '.png', especie + '_male.png', especie + '_female.png'):
+        if os.path.exists(os.path.join(td, cand)): return geo, os.path.join(td, cand)
+    pngs = [p for p in sorted(glob.glob(os.path.join(td, '*.png'))) if not any(w in p for w in ('shiny', 'emissive', 'layer'))]
+    return geo, pngs[0]
+
+
+def estatua(assets, tex_dir, especie, altura):
+    geo, tex = buscar(assets, especie)
+    return a_bloques(voxeles_modelo(geo, tex, altura), tex_dir)
+
+
+def girar(bl, veces):
+    """gira la estatua `veces` cuartos de vuelta alrededor de y (el frente pasa de -z a +x, +z, -x...)"""
+    out = {}
+    for (x, y, z), b in bl.items():
+        for _ in range(veces % 4): x, z = -z, x
+        out[(x, y, z)] = b
+    return out

@@ -120,3 +120,17 @@ def snorlax(v, cx, cz, rnd):
     v.set(cx, base + 16, cz - 15, 'black_concrete')
     # mechon de pelo
     for dz in (-1, 0, 1): v.set(cx, base + 24, cz - 6 + dz, 'black_concrete')
+
+
+def poner_estatua(v, bl, cx, y0, cz, peana=True):
+    """coloca una estatua hecha por modelo.py (dict {(x,y,z): bloque}, frente hacia -z) con los pies en y0 y centrada en (cx, cz)"""
+    xs = [k[0] for k in bl]; zs = [k[2] for k in bl]
+    if peana:
+        for x in range(min(xs) - 2, max(xs) + 3):
+            for z in range(min(zs) - 2, max(zs) + 3):
+                v.set(cx + x, y0 - 1, cz + z, 'smooth_stone')
+        for x in range(min(xs) - 3, max(xs) + 4):
+            for z in (min(zs) - 3, max(zs) + 3): v.set(cx + x, y0 - 1, cz + z, 'stone_bricks')
+        for z in range(min(zs) - 3, max(zs) + 4):
+            for x in (min(xs) - 3, max(xs) + 3): v.set(cx + x, y0 - 1, cz + z, 'stone_bricks')
+    for (x, y, z), b in bl.items(): v.set(cx + x, y0 + y, cz + z, b)

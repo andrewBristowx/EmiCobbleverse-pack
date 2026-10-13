@@ -1,7 +1,7 @@
 # Emi Carreras (`emi_carreras`)
 
-Minijuego de **carreras de Pokémon** estilo Mario Kart para el servidor de Emi. **Mod solo de servidor** (Fabric 1.21.1, Fabric API + Cobblemon):
-los jugadores no instalan nada. Hasta **12 corredores** (se puede jugar con menos, incluso solo), una pista con temática Pokémon, puntos de control,
+Minijuego de **carreras de Pokémon** estilo Mario Kart para el servidor de Emi. Toda la lógica es de servidor (Fabric 1.21.1, Fabric API + Cobblemon): los jugadores no necesitan hacer nada.
+Desde la 0.1.1 el mod se declara para cliente y servidor (`environment: *`) **solo para que funcione también en un mundo de un jugador o abierto a LAN** (el servidor integrado lo carga); en el cliente no hace nada. Hasta **12 corredores** (se puede jugar con menos, incluso solo), una pista con temática Pokémon, puntos de control,
 vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carreras:pista`.
 
 ## Cómo se juega
@@ -39,12 +39,19 @@ Solo pruebas: `/carrera _poder <baya|pokeball|voltorb|escudo|caramelo|trueno>` (
 (p. ej. `"cobbledollars give {jugador} 500"`: pon el comando real de tu economía).
 Si existe `config/emi_carreras/pistas/<id>.json` se usa en lugar del de dentro del mod (para ajustar la pista sin recompilar).
 
+## Probarlo sin servidor
+En un mundo de un jugador (con trucos activados para tener operador) o abierto a LAN con amigos: `/carrera abrir`, `/carrera unirse`, `/carrera empezar`. Para esto está la instancia de Prism
+`prism-instance/EmiCobbleverse-Prism-Instance-PRUEBAS.zip`, que se actualiza sola desde la rama de pruebas del repositorio y **no toca la instancia oficial** (que sigue leyendo `main`). Sin probar aún en un mundo de un jugador.
+
 ## Cómo está hecho
 - **Montura**: en Cobblemon solo ~115 de 1025 especies se pueden montar, así que no se usa la monta de Cobblemon. El jugador anda con atributos fijos (velocidad, sin salto, escalón de 1 bloque) y
   su Pokémon es una copia sin IA (`PokemonProperties` → `createEntity`) que se coloca encima cada tick, adelantada según lo que se movió (el servidor no conoce la velocidad de un jugador). El equipo del jugador **no se toca**.
 - **Seguridad**: lo que tenía el jugador se guarda en `world/emi_carreras/saved/<uuid>.nbt` y se devuelve al terminar, al cancelar o al volver a entrar tras una caída del servidor.
   El tick de la carrera está protegido: si algo falla, se cancela la carrera (y se devuelve todo) en vez de tumbar el servidor.
 - Los corredores entran en el equipo `emi_carrera` (sin colisión de nombre) **solo si no tienen ya equipo**, para no pisar los prefijos/colores de otros mods.
+- **Estatuas de Pokémon**: `pista/modelo.py` convierte el modelo y la textura reales de Cobblemon (geometría Bedrock) en bloques de color (concreto, lana, terracota; se elige el más parecido) y `pista/catalogo_estatuas.py`
+  guarda cada estatua en `pista/estatuas/<especie>_<altura>.json`, de modo que regenerar la pista no necesita Cobblemon. Para crear una nueva: `COBBLEMON_ASSETS=<jar de Cobblemon descomprimido>/assets/cobblemon MC_TEXTURAS=<textures/block del client.jar> python3 generar.py ..`
+  tras añadirla a la lista `figuras` de `generar.py`. Los modelos salen en su postura de reposo (brazos abiertos), y algunos (Bulbasaur, Venusaur, Mewtwo, Machamp) no quedan bien.
 - **Pista**: `pista/generar.py` (Python, usa `tools/emi-gimnasios/gymlib.py`) genera la plantilla `data/emi_carreras/structure/circuito_pokeball.nbt` y `data/emi_carreras/pistas/circuito_pokeball.json`
   (parrilla, puntos de control, cajas, turbos, podio). `camino.py` define el trazado (curva Catmull-Rom). La plantilla se coloca sola la primera vez que se empieza una carrera (o con `/carrera instalar`).
 
@@ -52,7 +59,7 @@ Si existe `config/emi_carreras/pistas/<id>.json` se usa en lugar del de dentro d
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
 
-## Probado (v0.1.0)
+## Probado (v0.1.0; la 0.1.1 solo cambia las estatuas y el entorno)
 Servidor Fabric de pruebas con todos los mods del pack y un **cliente real** (un solo jugador, administrador):
 - cola, parrilla, cuenta atrás, carrera, vueltas y puntos de control en orden (teletransportando por los arcos), meta, tabla de resultados, podio y devolución exacta del inventario/posición/modo/hambre (también con `/carrera parar`);
 - la montura: el Pokémon visual acompaña al jugador, anima el paso y todos van a ~10 bloques/s (medido); el filtro de terrestres (Unown fuera; GatitoAlien, Meowstic y Espeon valen);
