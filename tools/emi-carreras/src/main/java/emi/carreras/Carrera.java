@@ -1,0 +1,855 @@
+package emi.carreras;
+
+import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
+import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
+import com.cobblemon.mod.common.pokemon.Pokemon;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LightningEntity;
+import net.minecraft.entity.projectile.thrown.SnowballEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.scoreboard.AbstractTeam;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.Team;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.structure.StructurePlacementData;
+import net.minecraft.structure.StructureTemplate;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.WorldSavePath;
+import net.minecraft.block.Block;
+import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+
+/** Estado y reglas de la carrera. Todo ocurre en la dimension emi_carreras:pista. */
+public final class Carrera {
+    public enum Fase { LIBRE, COLA, CUENTA, CARRERA, FIN }
+
+    public static final RegistryKey<World> MUNDO = RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_carreras", "pista"));
+    static final String TAG = "emi_carrera";
+
+    static MinecraftServer server;
+    static Cfg cfg = new Cfg();
+    static Pista pista;
+    static Fase fase = Fase.LIBRE;
+    static final LinkedHashMap<UUID, Corredor> corr = new LinkedHashMap<>();
+    static final List<UUID> llegada = new ArrayList<>();
+    static final Random rnd = new Random();
+    static int tickCuenta, tickInicio, tickFin, limite = -1, tickAviso, vueltasTotal, graciaHasta;
+    static int[] podioTick;
+
+    static final List<Caja> cajas = new ArrayList<>();
+    static final List<Bola> bolas = new ArrayList<>();
+    static final List<Trampa> trampas = new ArrayList<>();
+
+    static final class Caja { Vec3d pos; int libreEn; Entity ent; }
+    static final class Bola { SnowballEntity ent; Corredor dueno; int nace; Vec3d ultima; }
+    static final class Trampa { PokemonEntity ent; Corredor dueno; int nace; }
+
+    // ------------------------------------------------------------------ arranque
+
+    public static void init(MinecraftServer s) {
+        server = s;
+        cfg = Cfg.load();
+        Montura.alturaBase = cfg.alturaPokemon;
+        pista = Pista.cargar(cfg.pista);
+        if (pista == null) EmiCarreras.LOG.error("No hay pista valida ({}): el minijuego no se podra usar", cfg.pista);
+        else EmiCarreras.LOG.info("Pista '{}' lista: {} puntos de control, {} cajas, {} huecos de salida", pista.id, pista.n(),
+                pista.cajas == null ? 0 : pista.cajas.length, pista.parrilla.length);
+        fase = Fase.LIBRE;
+    }
+
+    public static void shutdown() { limpiarEntidades(); }
+
+    static ServerWorld mundo() { return server.getWorld(MUNDO); }
+    public static Fase fase() { return fase; }
+    public static boolean participa(net.minecraft.entity.player.PlayerEntity p) { return corr.containsKey(p.getUuid()) && fase != Fase.LIBRE && fase != Fase.COLA; }
+    static int ahora() { return server.getTicks(); }
+    static int totalVueltas() { return cfg.vueltas > 0 ? cfg.vueltas : pista.vueltas; }
+
+    static List<ServerPlayerEntity> jugadores() {
+        List<ServerPlayerEntity> l = new ArrayList<>();
+        for (UUID id : corr.keySet()) { ServerPlayerEntity p = server.getPlayerManager().getPlayer(id); if (p != null) l.add(p); }
+        return l;
+    }
+
+    // ------------------------------------------------------------------ cola
+
+    public static String abrir() {
+        if (pista == null) return "No hay pista cargada (revisa el log del servidor).";
+        if (mundo() == null) return "No existe la dimension emi_carreras:pista (¿falta el mod o el datapack?).";
+        if (fase != Fase.LIBRE) return "Ya hay una carrera en marcha o la cola ya esta abierta.";
+        corr.clear();
+        fase = Fase.COLA;
+        tickAviso = ahora();
+        anunciar();
+        return null;
+    }
+
+    static void anunciar() {
+        Text t = Text.empty().append(Msg.PREFIX)
+                .append(Text.literal("¡Carrera de Pokémon en «" + pista.nombre + "»! ").formatted(Formatting.YELLOW))
+                .append(Msg.button("UNIRSE", "/carrera unirse", Formatting.GREEN, "Apuntarte a la carrera"));
+        Msg.broadcast(server, t);
+        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList())
+            if (!corr.containsKey(p.getUuid())) Msg.title(p, Text.literal("¡CARRERA!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Escribe /carrera unirse").formatted(Formatting.YELLOW), 5, 50, 10);
+    }
+
+    public static String cerrarCola() {
+        if (fase != Fase.COLA) return "No hay cola abierta.";
+        Msg.broadcast(server, Msg.say("Se ha cerrado la cola de la carrera."));
+        corr.clear();
+        fase = Fase.LIBRE;
+        return null;
+    }
+
+    public static String unirse(ServerPlayerEntity p) {
+        if (fase != Fase.COLA) return "No hay ninguna carrera abierta ahora mismo.";
+        if (corr.containsKey(p.getUuid())) return "Ya estas apuntado.";
+        if (corr.size() >= cfg.maxPlayers) return "La carrera esta llena (" + cfg.maxPlayers + " corredores).";
+        if (p.getServerWorld().getRegistryKey() == MUNDO) return "No puedes apuntarte desde la pista.";
+        Corredor c = new Corredor(p.getUuid(), p.getName().getString());
+        corr.put(p.getUuid(), c);
+        var cand = Montura.candidatos(p);
+        cand.stream().filter(Montura.Candidato::valido).findFirst().ifPresent(x -> { c.slot = x.slot(); c.pokemon = x.pokemon(); });
+        p.sendMessage(Msg.say("¡Apuntado! Corredores: " + corr.size() + "/" + cfg.maxPlayers), false);
+        mostrarEquipo(p, c, cand);
+        for (ServerPlayerEntity o : jugadores()) if (o != p) o.sendMessage(Msg.say(c.nombre + " se ha apuntado (" + corr.size() + ")."), false);
+        return null;
+    }
+
+    static void mostrarEquipo(ServerPlayerEntity p, Corredor c, List<Montura.Candidato> cand) {
+        p.sendMessage(Msg.say(Text.literal("Elige tu Pokémon de carrera (solo terrestres; todos corren igual de rápido):").formatted(Formatting.WHITE)), false);
+        boolean alguno = false;
+        for (var x : cand) {
+            if (!x.valido()) {
+                p.sendMessage(Text.literal("   " + x.slot() + ". ").formatted(Formatting.DARK_GRAY).append(x.pokemon().getDisplayName(false).copy().formatted(Formatting.DARK_GRAY)).append(Text.literal("  (no puede: no es terrestre)").formatted(Formatting.DARK_GRAY)), false);
+                continue;
+            }
+            alguno = true;
+            boolean sel = c.slot == x.slot();
+            p.sendMessage(Text.literal("   " + x.slot() + ". ").formatted(Formatting.GRAY).append(x.pokemon().getDisplayName(false).copy().formatted(Formatting.WHITE))
+                    .append(Text.literal("  ")).append(sel ? Text.literal("[ELEGIDO]").formatted(Formatting.GREEN, Formatting.BOLD)
+                            : Msg.button("ELEGIR", "/carrera elegir " + x.slot(), Formatting.AQUA, "Correr con este Pokémon")), false);
+        }
+        if (!alguno) p.sendMessage(Text.literal("   No tienes ningún Pokémon terrestre en el equipo: te prestaremos uno.").formatted(Formatting.YELLOW), false);
+    }
+
+    public static String elegir(ServerPlayerEntity p, int slot) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null || (fase != Fase.COLA)) return "Solo puedes elegir mientras esperas a que empiece la carrera.";
+        var cand = Montura.candidatos(p);
+        var x = cand.stream().filter(k -> k.slot() == slot).findFirst();
+        if (x.isEmpty()) return "No tienes ningún Pokémon en el hueco " + slot + ".";
+        if (!x.get().valido()) return "Ese Pokémon no es terrestre (vuela o no camina): elige otro.";
+        c.slot = slot; c.pokemon = x.get().pokemon(); c.prestado = false;
+        mostrarEquipo(p, c, cand);
+        return null;
+    }
+
+    public static String salir(ServerPlayerEntity p) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null) return "No estas apuntado.";
+        if (fase == Fase.COLA) { corr.remove(p.getUuid()); p.sendMessage(Msg.say("Te has bajado de la carrera."), false); return null; }
+        if (fase == Fase.FIN) return "La carrera ya ha terminado.";
+        abandonar(c, p, "ha abandonado la carrera");
+        return null;
+    }
+
+    // ------------------------------------------------------------------ salida
+
+    public static String empezar() {
+        if (fase != Fase.COLA) return "No hay cola abierta (usa /carrera abrir).";
+        corr.values().removeIf(c -> server.getPlayerManager().getPlayer(c.id) == null);
+        if (corr.size() < cfg.minPlayers) return "Faltan corredores: hacen falta al menos " + cfg.minPlayers + " y hay " + corr.size() + ".";
+        ServerWorld w = mundo();
+        if (w == null) return "No existe la dimension de la pista.";
+        if (pista.plantilla != null && !instalada()) {
+            String r = instalar();
+            if (r != null) return r;
+        }
+        List<Corredor> orden = new ArrayList<>(corr.values());
+        Collections.shuffle(orden, rnd);
+        for (int i = 0; i < orden.size(); i++) orden.get(i).hueco = i % pista.parrilla.length;
+        limpiarEntidades();
+        equipo();
+        for (Corredor c : orden) {
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+            try { Saved.save(server, p); }
+            catch (RuntimeException e) { return "No se pudo guardar el inventario de " + c.nombre + ": la carrera no empieza (nada ha cambiado)."; }
+        }
+        vueltasTotal = totalVueltas();
+        llegada.clear();
+        podioTick = null;
+        for (Corredor c : orden) {
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+            if (c.pokemon == null) { c.pokemon = prestar(); c.prestado = true; p.sendMessage(Msg.say("Corres con un Pokémon prestado: " + c.pokemon.getSpecies().getName() + "."), false); }
+            double[] g = pista.parrilla[c.hueco];
+            c.reaparicion = new Vec3d(g[0], g[1], g[2]); c.reaparicionYaw = (float) g[3];
+            c.vuelta = 0; c.siguiente = 1; c.finTick = -1; c.tiemposVuelta = new int[vueltasTotal]; c.abandono = false;
+            c.poder = null; c.escudoHasta = c.paradoHasta = c.lentoHasta = c.turboHasta = c.ciegoHasta = c.golpeInmuneHasta = 0; c.ultimoModificador = Double.NaN; c.previa = null;
+            p.getInventory().clear();
+            p.clearStatusEffects();
+            p.changeGameMode(GameMode.ADVENTURE);
+            p.getAbilities().flying = false; p.sendAbilitiesUpdate();
+            p.setHealth(p.getMaxHealth());
+            p.teleport(w, g[0], g[1], g[2], (float) g[3], 0f);
+            Montura.prepararJugador(p, cfg.velocidad);
+            unir(p.getNameForScoreboard());
+            p.sendMessage(Msg.say("¡A la parrilla! Cuando acabe la cuenta atrás, corre. Pulsa F5 para verte desde fuera."), false);
+        }
+        crearCajas(w);
+        fase = Fase.CUENTA;
+        tickCuenta = ahora() + cfg.cuentaAtras * 20;
+        graciaHasta = ahora() + 60;
+        EmiCarreras.LOG.info("Carrera en '{}' con {} corredores y {} vueltas", pista.id, corr.size(), vueltasTotal);
+        return null;
+    }
+
+    static Pokemon prestar() {
+        String sp = cfg.prestados.get(rnd.nextInt(cfg.prestados.size()));
+        return PokemonProperties.Companion.parse("species=" + sp + " level=20").create();
+    }
+
+    static Scoreboard sb() { return server.getScoreboard(); }
+
+    /** Mete en el equipo de la carrera solo a quien no tenga equipo (otros mods usan equipos para prefijos/colores y no hay que tocarlos). */
+    static void unir(String nombre) {
+        try { if (sb().getScoreHolderTeam(nombre) == null) sb().addScoreHolderToTeam(nombre, equipo()); }
+        catch (Exception e) { EmiCarreras.LOG.debug("equipo: {}", e.toString()); }
+    }
+
+    static void soltar(String nombre) {
+        try { Team t = sb().getTeam("emi_carrera"); if (t != null && sb().getScoreHolderTeam(nombre) == t) sb().removeScoreHolderFromTeam(nombre, t); }
+        catch (Exception e) { EmiCarreras.LOG.debug("equipo: {}", e.toString()); }
+    }
+
+    static Team equipo() {
+        Team t = sb().getTeam("emi_carrera");
+        if (t == null) t = sb().addTeam("emi_carrera");
+        t.setCollisionRule(AbstractTeam.CollisionRule.NEVER);
+        t.setNameTagVisibilityRule(AbstractTeam.VisibilityRule.NEVER);
+        t.setShowFriendlyInvisibles(false);
+        return t;
+    }
+
+    // ------------------------------------------------------------------ tick
+
+    public static void tick(MinecraftServer s) {
+        try { tick2(s); }
+        catch (Throwable t) {
+            EmiCarreras.LOG.error("Error en la carrera; se cancela para no tumbar el servidor", t);
+            try { limpiar(); } catch (Throwable t2) { EmiCarreras.LOG.error("Tampoco se pudo limpiar", t2); fase = Fase.LIBRE; corr.clear(); }
+        }
+    }
+
+    static void tick2(MinecraftServer s) {
+        if (fase == Fase.LIBRE) { if (s.getTicks() % 200 == 0 && mundo() != null) limpiarEntidades(); return; }
+        int now = ahora();
+        if (fase == Fase.COLA) {
+            corr.values().removeIf(c -> server.getPlayerManager().getPlayer(c.id) == null);
+            if (cfg.queueReminderSeconds > 0 && now - tickAviso >= cfg.queueReminderSeconds * 20) { tickAviso = now; anunciar(); }
+            return;
+        }
+        ServerWorld w = mundo();
+        if (w == null) { parar("la dimension de la pista ya no existe"); return; }
+
+        if (fase == Fase.CUENTA) {
+            int restan = tickCuenta - now;
+            if (restan % 20 == 0 && restan > 0) {
+                int seg = restan / 20;
+                for (ServerPlayerEntity p : jugadores()) {
+                    Msg.title(p, Text.literal(String.valueOf(seg)).formatted(seg <= 3 ? Formatting.RED : Formatting.YELLOW, Formatting.BOLD), Text.literal(pista.nombre).formatted(Formatting.GRAY), 0, 22, 0);
+                    Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), 1f, seg <= 3 ? 1.6f : 1.0f);
+                }
+            }
+            if (restan <= 0) {
+                fase = Fase.CARRERA; tickInicio = now; limite = -1;
+                for (ServerPlayerEntity p : jugadores()) {
+                    Msg.title(p, Text.literal("¡YA!").formatted(Formatting.GREEN, Formatting.BOLD), null, 0, 30, 10);
+                    Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1f, 1.8f);
+                }
+            }
+        }
+
+        // jugadores desconectados o fuera de la pista
+        for (Corredor c : new ArrayList<>(corr.values())) {
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+            if (p == null) { if (!c.abandono) abandonar(c, null, "se ha desconectado"); continue; }
+            if (c.abandono) continue;
+            if (p.getServerWorld().getRegistryKey() != MUNDO) {
+                if (now < graciaHasta) {        // el teletransporte puede tardar un tick en completarse: se repite
+                    p.teleport(w, c.reaparicion.x, c.reaparicion.y, c.reaparicion.z, c.reaparicionYaw, 0f);
+                    continue;
+                }
+                EmiCarreras.LOG.info("{} esta fuera de la pista (dimension {}): se le da por retirado", c.nombre, p.getServerWorld().getRegistryKey().getValue());
+                abandonar(c, p, "ha salido de la pista"); continue;
+            }
+            mantener(p, c, w, now);
+        }
+
+        if (fase == Fase.CARRERA) {
+            Map<Corredor, Integer> puestos = puestos();
+            for (Corredor c : corr.values()) {
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+                if (p == null || c.abandono || c.finTick >= 0) continue;
+                avanzar(p, c, w, now, puestos);
+            }
+            moverProyectiles(w, now);
+            comprobarTrampas(w, now);
+            actualizarCajas(w, now);
+            if (now % 4 == 0) hud(now, puestos);
+            // final: todos han acabado o se acabo el tiempo
+            boolean todos = true;
+            for (Corredor c : corr.values()) if (!c.abandono && c.finTick < 0) { todos = false; break; }
+            if (todos || (limite > 0 && now >= limite)) finalizar();
+        } else if (fase == Fase.FIN) {
+            for (Corredor c : corr.values()) {
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+                if (p != null && !c.abandono) Montura.velocidadEfecto(p, 0);
+            }
+            if (now >= tickFin) limpiar();
+        }
+        if (fase == Fase.CARRERA || fase == Fase.FIN) enviarAlPodio(now);
+        if (now % 40 == 0) expulsarIntrusos(w);
+    }
+
+    /** En la pista no debe haber nada vivo salvo los corredores y lo que pone el minijuego (Pokemon salvajes, mobs...). */
+    static void expulsarIntrusos(ServerWorld w) {
+        Box zona = new Box(pista.origen[0] - 40, pista.origen[1] - 20, pista.origen[2] - 40, pista.origen[0] + 400, pista.origen[1] + 120, pista.origen[2] + 400);
+        for (net.minecraft.entity.LivingEntity e : w.getEntitiesByClass(net.minecraft.entity.LivingEntity.class, zona,
+                x -> !(x instanceof net.minecraft.entity.player.PlayerEntity) && !x.getCommandTags().contains(TAG)))
+            e.discard();
+    }
+
+    /** Mantenimiento por jugador: hambre, inventario, visual, efectos de velocidad. */
+    static void mantener(ServerPlayerEntity p, Corredor c, ServerWorld w, int now) {
+        p.getHungerManager().setFoodLevel(6);          // con 6 o menos no se puede correr: todos van a la misma velocidad
+        p.getHungerManager().setSaturationLevel(0f);
+        p.setHealth(p.getMaxHealth());
+        // visual del Pokemon
+        if (c.visual == null || c.visual.isRemoved()) {
+            if (w.isChunkLoaded(p.getBlockPos())) {
+                c.visual = Montura.crearVisual(w, c.pokemon, p.getName(), p.getPos(), p.getYaw());
+                c.visual.addCommandTag(TAG);
+                unir(c.visual.getNameForScoreboard());
+            }
+        } else {
+            Vec3d ahora = p.getPos();
+            Vec3d delta = c.previa == null ? Vec3d.ZERO : ahora.subtract(c.previa);
+            c.previa = ahora;
+            Montura.seguir(c.visual, p, delta, cfg.adelanto);
+            boolean brilla = now < c.escudoHasta;
+            if (c.visual.isGlowing() != brilla) c.visual.setGlowing(brilla);
+            if (now % 2 == 0) {
+                if (now < c.turboHasta && now >= c.paradoHasta) w.spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getY() + 0.3, p.getZ(), 2, 0.25, 0.1, 0.25, 0.02);
+                if (now < c.paradoHasta && fase == Fase.CARRERA) w.spawnParticles(ParticleTypes.ELECTRIC_SPARK, p.getX(), p.getY() + 0.8, p.getZ(), 4, 0.4, 0.5, 0.4, 0.3);
+            }
+        }
+        // inventario: solo el poder en la ranura 5
+        if (now % 5 == 0) {
+            var inv = p.getInventory();
+            boolean cambio = false;
+            for (int i = 0; i < inv.size(); i++) {
+                ItemStack st = inv.getStack(i);
+                if (i == 4) {
+                    if (c.poder == null) { if (!st.isEmpty()) { inv.setStack(i, ItemStack.EMPTY); cambio = true; } }
+                    else if (st.isEmpty() || !st.getName().getString().startsWith(c.poder.nombre)) { inv.setStack(i, c.poder.item()); cambio = true; }
+                } else if (!st.isEmpty()) { inv.setStack(i, ItemStack.EMPTY); cambio = true; }
+            }
+            if (cambio) { p.playerScreenHandler.sendContentUpdates(); }
+            if (inv.selectedSlot != 4 && c.poder != null) { inv.selectedSlot = 4; p.networkHandler.sendPacket(new UpdateSelectedSlotS2CPacket(4)); }
+            for (ItemEntity ie : w.getEntitiesByClass(ItemEntity.class, p.getBoundingBox().expand(6), e -> true)) ie.discard();
+        }
+        if (now >= c.ciegoHasta && c.ciegoHasta != 0) c.ciegoHasta = 0;
+        aplicarVelocidad(p, c, now);
+    }
+
+    static void aplicarVelocidad(ServerPlayerEntity p, Corredor c, int now) {
+        boolean parado = fase == Fase.CUENTA || now < c.paradoHasta;
+        double f = 0;
+        if (now < c.turboHasta) f += c.turboFactor;
+        if (now < c.lentoHasta) f -= c.lentoFactor;
+        double mod = parado ? -1.0 : Math.max(-0.9, f);
+        if (Double.compare(mod, c.ultimoModificador) != 0) { Montura.velocidadEfecto(p, mod); c.ultimoModificador = mod; }
+    }
+
+    /** Puntos de control, vueltas, caidas, turbos y cajas. */
+    static void avanzar(ServerPlayerEntity p, Corredor c, ServerWorld w, int now, Map<Corredor, Integer> puestos) {
+        Vec3d pos = p.getPos();
+        if (pos.y < pista.caidaY) { reaparecer(p, c, w, now); return; }
+        if (pista.enTurbo(pos)) { c.turboHasta = Math.max(c.turboHasta, now + 25); c.turboFactor = Math.max(c.turboFactor, 0.45); }
+        if (pista.zona(c.siguiente).contains(pos)) pasarPunto(p, c, w, now);
+    }
+
+    static void pasarPunto(ServerPlayerEntity p, Corredor c, ServerWorld w, int now) {
+        int t = now - tickInicio;
+        if (c.siguiente == 0) {                       // cruza la meta
+            c.tiemposVuelta[c.vuelta] = t - c.ultimaVueltaTick; c.ultimaVueltaTick = t;
+            c.vuelta++;
+            EmiCarreras.LOG.info("{} completa la vuelta {} ({})", c.nombre, c.vuelta, fmt(c.tiemposVuelta[c.vuelta - 1]));
+            if (c.vuelta >= vueltasTotal) { terminar(p, c, t); return; }
+            Msg.title(p, Text.literal("Vuelta " + (c.vuelta + 1) + "/" + vueltasTotal).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(c.vuelta + 1 == vueltasTotal ? "¡Última vuelta!" : "Tu mejor vuelta: " + fmt(mejorVuelta(c))).formatted(Formatting.YELLOW), 0, 30, 10);
+            Msg.sound(p, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
+            c.siguiente = 1;
+        } else {
+            double[] cp = pista.checkpoints[c.siguiente];
+            c.reaparicion = new Vec3d(cp[6], cp[7], cp[8]); c.reaparicionYaw = (float) cp[9];
+            EmiCarreras.LOG.info("{} pasa el punto de control {}", c.nombre, c.siguiente);
+            c.siguiente = (c.siguiente + 1) % pista.n();
+        }
+    }
+
+    static int mejorVuelta(Corredor c) { int m = Integer.MAX_VALUE; for (int i = 0; i < c.vuelta; i++) m = Math.min(m, c.tiemposVuelta[i]); return m == Integer.MAX_VALUE ? 0 : m; }
+
+    static void reaparecer(ServerPlayerEntity p, Corredor c, ServerWorld w, int now) {
+        EmiCarreras.LOG.info("{} se cae de la pista y reaparece en el punto de control", c.nombre);
+        p.teleport(w, c.reaparicion.x, c.reaparicion.y, c.reaparicion.z, c.reaparicionYaw, 0f);
+        c.paradoHasta = Math.max(c.paradoHasta, now + cfg.respawnSegundos * 20);
+        c.previa = null;
+        Msg.sound(p, SoundEvents.ENTITY_ENDERMAN_TELEPORT, 0.6f, 1.2f);
+    }
+
+    static void terminar(ServerPlayerEntity p, Corredor c, int t) {
+        c.finTick = t;
+        llegada.add(c.id);
+        EmiCarreras.LOG.info("{} termina en el puesto {} ({})", c.nombre, llegada.size(), fmt(t));
+        int puesto = llegada.size();
+        Msg.broadcastTo(jugadores(), Msg.say(Text.literal(c.nombre).formatted(Formatting.AQUA).append(Text.literal(" ha terminado en el puesto " + puesto + " (" + fmt(t) + ")").formatted(Formatting.WHITE))));
+        Msg.title(p, Text.literal("¡META!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Puesto " + puesto + " · " + fmt(t)).formatted(Formatting.YELLOW), 0, 80, 20);
+        Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        if (puesto == 1 && limite < 0) {
+            limite = ahora() + cfg.segundosTrasPrimero * 20;
+            Msg.broadcastTo(jugadores(), Msg.say("Quedan " + cfg.segundosTrasPrimero + " segundos para que termine la carrera."));
+        }
+        if (podioTick == null) podioTick = new int[0];
+        c.poder = null;
+        c.paradoHasta = 0;
+        podioPendiente.put(c.id, ahora() + 60);
+    }
+
+    static final Map<UUID, Integer> podioPendiente = new HashMap<>();
+
+    static void enviarAlPodio(int now) {
+        if (pista.podio == null) return;
+        for (var it = podioPendiente.entrySet().iterator(); it.hasNext(); ) {
+            var e = it.next();
+            if (now < e.getValue()) continue;
+            it.remove();
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(e.getKey());
+            Corredor c = corr.get(e.getKey());
+            if (p == null || c == null || c.abandono) continue;
+            double[] d = pista.podio;
+            p.teleport(mundo(), d[0] + (rnd.nextDouble() - 0.5) * 3, d[1], d[2] + (rnd.nextDouble() - 0.5) * 3, (float) d[3], 0f);
+            c.previa = null;
+        }
+    }
+
+    static void abandonar(Corredor c, ServerPlayerEntity p, String motivo) {
+        EmiCarreras.LOG.info("{} {}", c.nombre, motivo);
+        c.abandono = true;
+        if (c.visual != null) { c.visual.discard(); c.visual = null; }
+        Msg.broadcastTo(jugadores(), Msg.say(c.nombre + " " + motivo + "."));
+        if (p != null) { soltar(p.getNameForScoreboard()); Saved.restore(server, p); }
+        // si se desconecto, se le devuelve lo suyo al volver a entrar (Saved queda en disco)
+    }
+
+    // ------------------------------------------------------------------ clasificacion
+
+    /** Orden actual: mas progreso primero; a igualdad, el mas cerca de su siguiente punto de control. */
+    static List<Corredor> ordenados() {
+        List<Corredor> l = new ArrayList<>();
+        Map<Corredor, Double> pun = new HashMap<>();
+        for (Corredor c : corr.values()) {
+            if (c.abandono && c.finTick < 0) continue;
+            double v = c.progreso(pista);
+            if (c.finTick < 0) {
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+                if (p != null) v += 900 - Math.min(900, p.getPos().distanceTo(pista.centro(c.siguiente)));
+            }
+            pun.put(c, v); l.add(c);
+        }
+        l.sort((a, b) -> Double.compare(pun.get(b), pun.get(a)));
+        return l;
+    }
+
+    static Map<Corredor, Integer> puestos() {
+        Map<Corredor, Integer> m = new HashMap<>();
+        int i = 1;
+        for (Corredor c : ordenados()) m.put(c, i++);
+        return m;
+    }
+
+    static void hud(int now, Map<Corredor, Integer> puestos) {
+        int n = puestos.size();
+        for (Corredor c : corr.values()) {
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+            if (p == null || c.abandono) continue;
+            Text t;
+            if (c.finTick >= 0) t = Text.literal("¡Has terminado! Puesto " + (llegada.indexOf(c.id) + 1) + " · " + fmt(c.finTick)).formatted(Formatting.GOLD);
+            else {
+                var tx = Text.literal("Vuelta " + Math.min(c.vuelta + 1, vueltasTotal) + "/" + vueltasTotal).formatted(Formatting.GOLD)
+                        .append(Text.literal("   Puesto " + puestos.getOrDefault(c, n) + "/" + n).formatted(Formatting.AQUA))
+                        .append(Text.literal("   " + fmt(now - tickInicio)).formatted(Formatting.WHITE));
+                if (c.poder != null) tx.append(Text.literal("   ").append(c.poder.titulo()));
+                if (now < c.escudoHasta) tx.append(Text.literal("  ✔ protegido").formatted(Formatting.GREEN));
+                t = tx;
+            }
+            Msg.actionBar(p, t);
+        }
+    }
+
+    static String fmt(int ticks) {
+        int ms = ticks * 50, m = ms / 60000, s = (ms / 1000) % 60, d = (ms % 1000) / 100;
+        return m + ":" + (s < 10 ? "0" : "") + s + "." + d;
+    }
+
+    // ------------------------------------------------------------------ final
+
+    static void finalizar() {
+        fase = Fase.FIN;
+        tickFin = ahora() + 200;
+        List<Corredor> orden = new ArrayList<>();
+        for (UUID id : llegada) { Corredor c = corr.get(id); if (c != null) orden.add(c); }
+        for (Corredor c : ordenados()) if (!orden.contains(c)) orden.add(c);
+        Text cab = Text.literal("══ Resultados · " + pista.nombre + " ══").formatted(Formatting.GOLD, Formatting.BOLD);
+        Msg.broadcast(server, cab);
+        int i = 1;
+        for (Corredor c : orden) {
+            String linea = i + ". " + c.nombre + (c.finTick >= 0 ? "  " + fmt(c.finTick) + (c.vuelta > 0 ? "  (mejor vuelta " + fmt(mejorVuelta(c)) + ")" : "") : "  no ha terminado");
+            Msg.broadcast(server, Text.literal(linea).formatted(i == 1 ? Formatting.GOLD : i == 2 ? Formatting.GRAY : i == 3 ? Formatting.RED : Formatting.WHITE));
+            if (i <= cfg.recompensas.size() && c.finTick >= 0) {
+                String cmd = cfg.recompensas.get(i - 1);
+                if (cmd != null && !cmd.isBlank()) try { server.getCommandManager().executeWithPrefix(server.getCommandSource(), cmd.replace("{jugador}", c.nombre)); }
+                catch (Exception e) { EmiCarreras.LOG.warn("Fallo el premio '{}'", cmd, e); }
+            }
+            i++;
+        }
+        if (!orden.isEmpty()) {
+            Corredor g = orden.get(0);
+            ServerPlayerEntity pg = server.getPlayerManager().getPlayer(g.id);
+            for (ServerPlayerEntity p : jugadores()) Msg.title(p, Text.literal("🏆 " + g.nombre).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("¡ha ganado la carrera!").formatted(Formatting.YELLOW), 5, 80, 20);
+            if (pg != null && pista.podio != null) fuegos(pg);
+        }
+        for (ServerPlayerEntity p : jugadores()) p.sendMessage(Msg.say("En unos segundos volverás a donde estabas."), false);
+        // quitar proyectiles y trampas
+        limpiarEntidades(false);
+        // los que no han llegado van al podio tambien
+        for (Corredor c : corr.values()) if (c.finTick < 0 && !c.abandono) podioPendiente.put(c.id, ahora() + 20);
+    }
+
+    static void fuegos(ServerPlayerEntity p) {
+        ServerWorld w = (ServerWorld) p.getWorld();
+        for (int k = 0; k < 6; k++) w.spawnParticles(ParticleTypes.FIREWORK, p.getX() + (rnd.nextDouble() - 0.5) * 6, p.getY() + 1 + rnd.nextDouble() * 4, p.getZ() + (rnd.nextDouble() - 0.5) * 6, 12, 0.3, 0.3, 0.3, 0.1);
+    }
+
+    public static String parar(String motivo) {
+        if (fase == Fase.LIBRE) return "No hay nada en marcha.";
+        Msg.broadcast(server, Msg.say("Carrera cancelada" + (motivo == null ? "." : ": " + motivo + ".")));
+        limpiar();
+        return null;
+    }
+
+    /** Devuelve a todos lo suyo, quita Pokemon, cajas y proyectiles y deja el minijuego libre. */
+    static void limpiar() {
+        for (Corredor c : corr.values()) {
+            try {
+                if (c.visual != null) { c.visual.discard(); c.visual = null; }
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+                if (p != null) {
+                    soltar(p.getNameForScoreboard());
+                    if (!Saved.restore(server, p)) EmiCarreras.LOG.warn("{} no tenia nada guardado que devolver", c.nombre);
+                }
+            } catch (Throwable t) { EmiCarreras.LOG.error("No se pudo devolver a {} a su sitio (se le devolvera al volver a entrar)", c.nombre, t); }
+        }
+        corr.clear(); llegada.clear(); podioPendiente.clear();
+        try { limpiarEntidades(); } catch (Throwable t) { EmiCarreras.LOG.error("limpiando entidades", t); }
+        try { Team t = sb().getTeam("emi_carrera"); if (t != null) sb().removeTeam(t); } catch (Throwable t) { EmiCarreras.LOG.debug("{}", t.toString()); }
+        fase = Fase.LIBRE;
+    }
+
+    static void limpiarEntidades() { limpiarEntidades(true); }
+
+    /** Quita todo lo que haya creado el minijuego en la pista (cajas, proyectiles, trampas y Pokemon visuales sueltos). */
+    static void limpiarEntidades(boolean todo) {
+        ServerWorld w = server == null ? null : mundo();
+        for (Bola b : bolas) if (b.ent != null) b.ent.discard();
+        bolas.clear();
+        for (Trampa t : trampas) if (t.ent != null) t.ent.discard();
+        trampas.clear();
+        if (!todo || w == null) return;
+        for (Caja c : cajas) if (c.ent != null) c.ent.discard();
+        cajas.clear();
+        Set<UUID> vivos = new HashSet<>();
+        for (Corredor c : corr.values()) if (c.visual != null) vivos.add(c.visual.getUuid());
+        for (Entity e : w.getEntitiesByClass(Entity.class, new Box(-30000000, -64, -30000000, 30000000, 320, 30000000), e -> e.getCommandTags().contains(TAG)))
+            if (!vivos.contains(e.getUuid())) e.discard();
+    }
+
+    // ------------------------------------------------------------------ entrada/salida de jugadores
+
+    public static void alEntrar(ServerPlayerEntity p) {
+        if (!Saved.exists(server, p.getUuid())) return;
+        Corredor c = corr.get(p.getUuid());
+        if (c != null && !c.abandono && (fase == Fase.CUENTA || fase == Fase.CARRERA || fase == Fase.FIN)) return;   // sigue en la carrera
+        if (Saved.restore(server, p)) p.sendMessage(Msg.say("Se te ha devuelto lo que tenías antes de la carrera."), false);
+    }
+
+    public static void alSalir(ServerPlayerEntity p) {
+        if (fase == Fase.COLA) corr.remove(p.getUuid());
+    }
+
+    // ------------------------------------------------------------------ pista (instalacion de la plantilla)
+
+    static Path marca() { return server.getSavePath(WorldSavePath.ROOT).resolve("emi_carreras").resolve("instalada_" + pista.id + ".txt"); }
+    static boolean instalada() {
+        try { return Files.exists(marca()) && Files.readString(marca()).trim().equals(pista.version); } catch (Exception e) { return false; }
+    }
+
+    /** Coloca la plantilla de la pista en la dimension (una sola vez; /carrera instalar lo repite). null = bien. */
+    public static String instalar() {
+        if (pista == null || pista.plantilla == null) return "Esta pista no trae plantilla.";
+        ServerWorld w = mundo();
+        if (w == null) return "No existe la dimension de la pista.";
+        Optional<StructureTemplate> t = server.getStructureTemplateManager().getTemplate(Identifier.of(pista.plantilla));
+        if (t.isEmpty()) return "No encuentro la plantilla " + pista.plantilla + ".";
+        BlockPos o = new BlockPos(pista.origen[0], pista.origen[1], pista.origen[2]);
+        var size = t.get().getSize();
+        List<ChunkPos> forzados = new ArrayList<>();
+        for (int cx = o.getX() >> 4; cx <= (o.getX() + size.getX()) >> 4; cx++)
+            for (int cz = o.getZ() >> 4; cz <= (o.getZ() + size.getZ()) >> 4; cz++) { w.setChunkForced(cx, cz, true); forzados.add(new ChunkPos(cx, cz)); }
+        try {
+            long t0 = System.currentTimeMillis();
+            if (Files.exists(marca())) {      // ya habia una version anterior: se borra para que no queden restos
+                BlockPos.Mutable mp = new BlockPos.Mutable();
+                for (int x = o.getX(); x <= o.getX() + size.getX(); x++)
+                    for (int z = o.getZ(); z <= o.getZ() + size.getZ(); z++)
+                        for (int y = o.getY(); y <= o.getY() + size.getY(); y++) {
+                            mp.set(x, y, z);
+                            if (!w.getBlockState(mp).isAir()) w.setBlockState(mp, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.FORCE_STATE);
+                        }
+            }
+            boolean ok = t.get().place(w, o, o, new StructurePlacementData().setIgnoreEntities(true), w.getRandom(), Block.NOTIFY_LISTENERS);
+            EmiCarreras.LOG.info("Pista '{}' colocada ({}) en {} ms", pista.id, ok, System.currentTimeMillis() - t0);
+            if (!ok) return "Minecraft no pudo colocar la plantilla.";
+            Files.createDirectories(marca().getParent());
+            Files.writeString(marca(), pista.version);
+        } catch (Exception e) {
+            EmiCarreras.LOG.error("No se pudo colocar la pista", e);
+            return "Error al colocar la pista: " + e.getMessage();
+        } finally {
+            for (ChunkPos c : forzados) w.setChunkForced(c.x, c.z, false);
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------ cajas y poderes
+
+    static void crearCajas(ServerWorld w) {
+        cajas.clear();
+        if (!cfg.poderes || pista.cajas == null) return;
+        for (double[] a : pista.cajas) {
+            Caja c = new Caja(); c.pos = new Vec3d(a[0] + 0.5, a[1], a[2] + 0.5); c.libreEn = 0;
+            invocarCaja(w, c);
+            cajas.add(c);
+        }
+    }
+
+    static void invocarCaja(ServerWorld w, Caja c) {
+        String cmd = String.format(Locale.ROOT, "summon minecraft:item_display %.2f %.2f %.2f {Tags:[\"%s\"],billboard:\"vertical\",item:{id:\"minecraft:sniffer_egg\",count:1},"
+                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0.9f,0f],scale:[1.7f,1.7f,1.7f]},Glowing:1b,glow_color_override:16766720}", c.pos.x, c.pos.y, c.pos.z, TAG);
+        try { server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(w).withSilent(), cmd); }
+        catch (Exception e) { EmiCarreras.LOG.warn("No se pudo crear una caja", e); return; }
+        var l = w.getEntitiesByClass(Entity.class, new Box(c.pos.x - 0.5, c.pos.y - 0.5, c.pos.z - 0.5, c.pos.x + 0.5, c.pos.y + 1.5, c.pos.z + 0.5), e -> e.getCommandTags().contains(TAG));
+        c.ent = l.isEmpty() ? null : l.get(0);
+    }
+
+    static void actualizarCajas(ServerWorld w, int now) {
+        for (Caja c : cajas) {
+            if (c.ent == null || c.ent.isRemoved()) {
+                if (now >= c.libreEn) { c.ent = null; invocarCaja(w, c); }
+                continue;
+            }
+            if (now % 10 == 0) w.spawnParticles(ParticleTypes.END_ROD, c.pos.x, c.pos.y + 1, c.pos.z, 1, 0.4, 0.4, 0.4, 0.01);
+            for (Corredor r : corr.values()) {
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(r.id);
+                if (p == null || r.abandono || r.finTick >= 0 || r.poder != null) continue;
+                if (Math.abs(p.getX() - c.pos.x) < 1.6 && Math.abs(p.getZ() - c.pos.z) < 1.6 && Math.abs(p.getY() - c.pos.y) < 3) {
+                    List<Corredor> orden = ordenados();
+                    double rr = orden.size() <= 1 ? 0.5 : orden.indexOf(r) / (double) (orden.size() - 1);
+                    r.poder = Poder.sortear(rr, rnd);
+                    Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.4f);
+                    p.sendMessage(Text.literal("¡Has conseguido ").formatted(Formatting.WHITE).append(r.poder.titulo()).append(Text.literal("! ").formatted(Formatting.WHITE)).append(Text.literal(r.poder.descripcion).formatted(Formatting.GRAY)), false);
+                    c.ent.discard(); c.ent = null; c.libreEn = now + cfg.cajaRespawnSegundos * 20;
+                    w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, c.pos.x, c.pos.y + 1, c.pos.z, 12, 0.4, 0.4, 0.4, 0.05);
+                    break;
+                }
+            }
+        }
+    }
+
+    /** SOLO PRUEBAS (comandos _poder y _golpe, para el organizador): da un poder o recibe un golpe sin necesitar rivales. */
+    public static String probar(ServerPlayerEntity p, String que) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null || fase != Fase.CARRERA) return "Solo durante la carrera.";
+        if (que.startsWith("golpe:")) { golpear(c, c, que.substring(6), mundo(), ahora()); return null; }
+        try { c.poder = Poder.valueOf(que.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException e) { return "Poder desconocido: " + Arrays.toString(Poder.values()); }
+        return null;
+    }
+
+    /** Clic derecho del corredor: usa su poder. */
+    public static void usarPoder(ServerPlayerEntity p) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null || fase != Fase.CARRERA || c.poder == null || c.abandono || c.finTick >= 0) return;
+        int now = ahora();
+        if (now < c.usoCooldown) return;
+        c.usoCooldown = now + 6;
+        ServerWorld w = mundo();
+        Poder pw = c.poder;
+        c.poder = null;
+        EmiCarreras.LOG.info("{} usa {}", c.nombre, pw);
+        p.getInventory().setStack(4, ItemStack.EMPTY);
+        boolean atras = p.isSneaking();
+        double yaw = Math.toRadians(p.getYaw());
+        Vec3d dir = new Vec3d(-Math.sin(yaw), 0, Math.cos(yaw));
+        switch (pw) {
+            case BAYA -> { turbo(c, 0.35, 30, now); Msg.sound(p, SoundEvents.ENTITY_GENERIC_EAT, 1f, 1.2f); }
+            case CARAMELO -> { turbo(c, 0.7, 70, now); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.5f); w.spawnParticles(ParticleTypes.FIREWORK, p.getX(), p.getY() + 1, p.getZ(), 20, 0.4, 0.5, 0.4, 0.1); }
+            case ESCUDO -> { c.escudoHasta = now + 160; Msg.sound(p, SoundEvents.ITEM_SHIELD_BLOCK, 1f, 1.2f); }
+            case POKEBALL -> lanzarBola(w, p, c, atras ? dir.multiply(-1) : dir, now);
+            case VOLTORB -> soltarVoltorb(w, p, c, dir, now);
+            case TRUENO -> trueno(w, p, c, now);
+        }
+    }
+
+    static void turbo(Corredor c, double factor, int ticks, int now) {
+        c.turboHasta = Math.max(c.turboHasta, now + ticks); c.turboFactor = Math.max(c.turboFactor, factor);
+    }
+
+    static void lanzarBola(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, int now) {
+        SnowballEntity s = new SnowballEntity(w, p.getX() + dir.x * 1.2, p.getY() + 0.9, p.getZ() + dir.z * 1.2);
+        s.setItem(Poder.POKEBALL.item());
+        s.setNoGravity(true);
+        s.setOwner(p);
+        s.setVelocity(dir.x * 1.3, 0, dir.z * 1.3);
+        s.addCommandTag(TAG);
+        w.spawnEntity(s);
+        Bola b = new Bola(); b.ent = s; b.dueno = c; b.nace = now; b.ultima = s.getPos();
+        bolas.add(b);
+        w.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.PLAYERS, 1f, 0.8f);
+    }
+
+    static void moverProyectiles(ServerWorld w, int now) {
+        for (Iterator<Bola> it = bolas.iterator(); it.hasNext(); ) {
+            Bola b = it.next();
+            boolean quitada = b.ent.isRemoved();
+            Vec3d pos = quitada ? b.ultima.add(b.ent.getVelocity()) : b.ent.getPos();
+            Corredor v = rivalCerca(pos, b.dueno, quitada ? 2.4 : 1.4);
+            if (v != null) { golpear(v, b.dueno, "pokeball", w, now); b.ent.discard(); it.remove(); continue; }
+            if (quitada || now - b.nace > 90) { b.ent.discard(); it.remove(); continue; }
+            b.ultima = pos;
+        }
+    }
+
+    static Corredor rivalCerca(Vec3d pos, Corredor excepto, double radio) {
+        Corredor mejor = null; double md = radio;
+        for (Corredor r : corr.values()) {
+            if (r == excepto || r.abandono || r.finTick >= 0) continue;
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(r.id);
+            if (p == null) continue;
+            double d = Math.hypot(p.getX() - pos.x, p.getZ() - pos.z);
+            if (d < md && Math.abs(p.getY() + 0.9 - pos.y) < 2.2) { md = d; mejor = r; }
+        }
+        return mejor;
+    }
+
+    static void soltarVoltorb(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, int now) {
+        PokemonEntity e = PokemonProperties.Companion.parse("species=voltorb level=10").createEntity(w);
+        e.setAiDisabled(true); e.setInvulnerable(true); e.setSilent(true); e.setNoGravity(false); e.setPersistent();
+        e.getPokemon().setScaleModifier(1.3f);
+        e.refreshPositionAndAngles(p.getX() - dir.x * 2.0, p.getY(), p.getZ() - dir.z * 2.0, p.getYaw(), 0f);
+        e.addCommandTag(TAG);
+        w.spawnEntity(e);
+        unir(e.getNameForScoreboard());
+        Trampa t = new Trampa(); t.ent = e; t.dueno = c; t.nace = now;
+        trampas.add(t);
+        Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 0.6f);
+    }
+
+    static void comprobarTrampas(ServerWorld w, int now) {
+        for (Iterator<Trampa> it = trampas.iterator(); it.hasNext(); ) {
+            Trampa t = it.next();
+            if (t.ent.isRemoved() || now - t.nace > 20 * 90) { t.ent.discard(); it.remove(); continue; }
+            Corredor v = rivalCerca(t.ent.getPos(), now - t.nace < 20 ? t.dueno : null, 1.3);
+            if (v == null && now - t.nace >= 20) {
+                ServerPlayerEntity po = server.getPlayerManager().getPlayer(t.dueno.id);
+                if (po != null && !t.dueno.abandono && Math.hypot(po.getX() - t.ent.getX(), po.getZ() - t.ent.getZ()) < 1.3 && t.dueno.finTick < 0) v = t.dueno;
+            }
+            if (v != null) {
+                w.spawnParticles(ParticleTypes.EXPLOSION, t.ent.getX(), t.ent.getY() + 0.7, t.ent.getZ(), 3, 0.3, 0.3, 0.3, 0.0);
+                w.playSound(null, t.ent.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 0.8f, 1.2f);
+                golpear(v, t.dueno, "voltorb", w, now);
+                t.ent.discard(); it.remove();
+            }
+        }
+    }
+
+    static void trueno(ServerWorld w, ServerPlayerEntity p, Corredor c, int now) {
+        List<Corredor> orden = ordenados();
+        int yo = orden.indexOf(c), n = 0;
+        for (int i = 0; i < yo; i++) {
+            Corredor v = orden.get(i);
+            ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
+            if (pv == null || v.finTick >= 0) continue;
+            LightningEntity rayo = EntityType.LIGHTNING_BOLT.create(w);
+            if (rayo != null) { rayo.refreshPositionAfterTeleport(pv.getX(), pv.getY(), pv.getZ()); rayo.setCosmetic(true); w.spawnEntity(rayo); }
+            golpear(v, c, "trueno", w, now);
+            n++;
+        }
+        p.sendMessage(Msg.say(n == 0 ? "Vas el primero: el Trueno no ha alcanzado a nadie." : "¡El Trueno ha alcanzado a " + n + " rival(es)!"), false);
+    }
+
+    /** Aplica un ataque a v (respeta el escudo y un breve periodo de inmunidad tras un golpe). */
+    static void golpear(Corredor v, Corredor autor, String tipo, ServerWorld w, int now) {
+        ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
+        if (pv == null || now < v.golpeInmuneHasta) return;
+        if (now < v.escudoHasta) {
+            v.escudoHasta = 0; v.golpeInmuneHasta = now + 20;
+            Msg.sound(pv, SoundEvents.ITEM_SHIELD_BREAK, 1f, 1f);
+            pv.sendMessage(Msg.say("¡Tu protección ha parado el ataque de " + autor.nombre + "!"), false);
+            return;
+        }
+        switch (tipo) {
+            case "pokeball" -> { v.paradoHasta = now + 50; v.lentoHasta = now + 90; v.lentoFactor = 0.4; }
+            case "voltorb" -> { v.paradoHasta = now + 25; v.lentoHasta = now + 70; v.lentoFactor = 0.5; }
+            default -> { v.paradoHasta = now + 16; v.lentoHasta = now + 80; v.lentoFactor = 0.4; }
+        }
+        v.turboHasta = 0;
+        v.golpeInmuneHasta = now + 30;
+        EmiCarreras.LOG.info("{} recibe {} de {}", v.nombre, tipo, autor.nombre);
+        String que = tipo.equals("pokeball") ? "te ha capturado con una Pokéball" : tipo.equals("voltorb") ? "te ha hecho explotar un Voltorb" : "te ha lanzado un Trueno";
+        Msg.title(pv, Text.literal("¡Golpe!").formatted(Formatting.RED, Formatting.BOLD), Text.literal(autor.nombre + " " + que).formatted(Formatting.GRAY), 0, 25, 5);
+        Msg.sound(pv, SoundEvents.ENTITY_GENERIC_HURT, 1f, 0.8f);
+        w.spawnParticles(ParticleTypes.CRIT, pv.getX(), pv.getY() + 1, pv.getZ(), 15, 0.4, 0.5, 0.4, 0.2);
+        ServerPlayerEntity pa = server.getPlayerManager().getPlayer(autor.id);
+        if (pa != null && !tipo.equals("trueno")) pa.sendMessage(Msg.say("¡Has alcanzado a " + v.nombre + "!"), false);
+    }
+}
