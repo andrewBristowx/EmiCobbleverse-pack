@@ -15,7 +15,7 @@ public record EstadoPayload(boolean activo, String pista, String nombrePista, fl
     public static final CustomPayload.Id<EstadoPayload> ID = new CustomPayload.Id<>(Identifier.of("emi_carreras", "estado"));
 
     /** Un corredor: posicion en el mundo, vuelta (0 = primera) y puesto actual (1 = el primero). */
-    public record Jugador(UUID id, String nombre, float x, float z, int vuelta, int puesto, boolean fin) {}
+    public record Jugador(UUID id, String nombre, float x, float z, int vuelta, int puesto, boolean fin, int escudo) {}
 
     public static final PacketCodec<RegistryByteBuf, EstadoPayload> CODEC = PacketCodec.of(EstadoPayload::escribir, EstadoPayload::leer);
 
@@ -29,7 +29,7 @@ public record EstadoPayload(boolean activo, String pista, String nombrePista, fl
         b.writeVarInt(p.jugadores.size());
         for (Jugador j : p.jugadores) {
             b.writeUuid(j.id); b.writeString(j.nombre); b.writeFloat(j.x); b.writeFloat(j.z);
-            b.writeVarInt(j.vuelta); b.writeVarInt(j.puesto); b.writeBoolean(j.fin);
+            b.writeVarInt(j.vuelta); b.writeVarInt(j.puesto); b.writeBoolean(j.fin); b.writeVarInt(j.escudo);
         }
     }
 
@@ -40,7 +40,7 @@ public record EstadoPayload(boolean activo, String pista, String nombrePista, fl
         int mpx = b.readVarInt(), mpy = b.readVarInt(), vueltas = b.readVarInt(), tiempo = b.readVarInt();
         int n = b.readVarInt();
         List<Jugador> l = new ArrayList<>();
-        for (int i = 0; i < n; i++) l.add(new Jugador(b.readUuid(), b.readString(), b.readFloat(), b.readFloat(), b.readVarInt(), b.readVarInt(), b.readBoolean()));
+        for (int i = 0; i < n; i++) l.add(new Jugador(b.readUuid(), b.readString(), b.readFloat(), b.readFloat(), b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readVarInt()));
         return new EstadoPayload(activo, pista, nombre, mx, mz, mancho, mlargo, mpx, mpy, vueltas, tiempo, l);
     }
 

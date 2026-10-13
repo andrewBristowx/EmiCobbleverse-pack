@@ -107,7 +107,7 @@ public final class Carrera {
             for (Corredor c : corr.values()) {
                 ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
                 if (p == null || c.abandono) continue;
-                lista.add(new EstadoPayload.Jugador(c.id, c.nombre, (float) p.getX(), (float) p.getZ(), c.vuelta, pu.getOrDefault(c, corr.size()), c.finTick >= 0));
+                lista.add(new EstadoPayload.Jugador(c.id, c.nombre, (float) p.getX(), (float) p.getZ(), c.vuelta, pu.getOrDefault(c, corr.size()), c.finTick >= 0, Math.max(0, (c.escudoHasta - now + 19) / 20)));
             }
         }
         var m = pista.mapa;
@@ -779,6 +779,7 @@ public final class Carrera {
         for (Corredor c : corr.values()) {
             ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
             if (p == null || c.abandono) continue;
+            if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) continue;       // con la interfaz del cliente ya sale todo en pantalla
             Text t;
             if (c.finTick >= 0) t = Text.literal("¡Has terminado! Puesto " + (llegada.indexOf(c.id) + 1) + " · " + fmt(c.finTick)).formatted(Formatting.GOLD);
             else {
