@@ -51,6 +51,7 @@ public final class CarrerasHud {
             m.scale(esc, esc, 1f);
             try {
                 int y = casillaPoder(ctx, mc, yo);
+                y = estrellas(ctx, mc, e, yo, 6, y + 4);
                 participantes(ctx, mc, e, 6, y + 6);
                 mapa(ctx, mc, e, ancho, alto);
                 puesto(ctx, mc, e, yo, ancho, alto);
@@ -113,6 +114,36 @@ public final class CarrerasHud {
         if (yo != null && yo.escudo() > 0)
             ctx.drawText(tr, Text.literal("Protegido " + yo.escudo() + " s").formatted(Formatting.GREEN), x + s + 6, y + 23, 0xFFFFFF, true);
         return y + s;
+    }
+
+    // ------------------------------------------------------------ michiestrellitas (contador debajo de la casilla del poder)
+
+    private static ItemStack iconoEstrella;
+
+    /** Contador «N/10» con una barra; devuelve la y donde acaba (la misma si la pista no tiene estrellas). */
+    private static int estrellas(DrawContext ctx, MinecraftClient mc, EstadoPayload e, EstadoPayload.Jugador yo, int x, int y) {
+        int meta = e.estrellasMeta();
+        if (meta <= 0 || yo == null) return y - 4;
+        TextRenderer tr = mc.textRenderer;
+        int w = 106, h = 15, n = Math.min(yo.estrellas(), meta);
+        caja(ctx, x, y, w, h, n >= meta ? 0xFFFFD700 : BORDE);
+        if (iconoEstrella == null) {
+            iconoEstrella = new ItemStack(net.minecraft.item.Items.NETHER_STAR);
+            iconoEstrella.set(net.minecraft.component.DataComponentTypes.CUSTOM_MODEL_DATA, new net.minecraft.component.type.CustomModelDataComponent(7020002));
+        }
+        MatrixStack m = ctx.getMatrices();
+        m.push(); m.translate(x + 2, y + 1, 0); m.scale(0.8f, 0.8f, 1f);
+        ctx.drawItem(iconoEstrella, 0, 0);
+        m.pop();
+        ctx.drawText(tr, yo.estrellas() + "/" + meta, x + 17, y + 4, n >= meta ? 0xFFD700 : 0xFFFFFF, true);
+        int bx = x + 17 + tr.getWidth(meta + "/" + meta) + 6, bw = x + w - 4 - bx;
+        if (bw > 8) {
+            ctx.fill(bx, y + 5, bx + bw, y + 10, 0xFF22222E);
+            int lleno = bw * n / meta;
+            ctx.fill(bx, y + 5, bx + lleno, y + 10, 0xFFFFC21A);
+            ctx.fill(bx, y + 5, bx + lleno, y + 6, 0xFFFFE97A);
+        }
+        return y + h;
     }
 
     // ------------------------------------------------------------ participantes (debajo de la casilla)

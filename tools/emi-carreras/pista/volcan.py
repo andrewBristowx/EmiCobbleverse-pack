@@ -316,6 +316,22 @@ def main(destino):
         hilera(ms, 'm', idx(ms, x_, z_), (-3, -1, 1, 3))
     hilera(at, 'a', S['turbo0'] - 24, (-2, 0, 2))
     hilera(at, 'a', S['tierra'] + 6 + 28, (-2, 0, 2))
+    # michiestrellitas: grupos de 3 en zigzag por el bucle (lejos de los huecos de salto y de la entrada al atajo) y un grupo en el atajo
+    estrellas = []
+    def libre_e(k, saltar):
+        return not any(((k + d) % n if saltar is saltar_main else k + d) in saltar for d in range(-26, 27, 4))
+    def grupo_e(path, nom, k0, saltar, offs, paso=14):
+        for j, o in enumerate(offs):
+            k = k0 + j * paso
+            if k < 0 or k >= len(path) or not libre_e(k, saltar): continue
+            m = path[k]
+            px, pz = m['x'] + ox + (-m['tz']) * o, m['z'] + oz + m['tx'] * o
+            estrellas.append([int(round(px)) + ORIGEN[0], sup[nom](k) + 1 + ORIGEN[1], int(round(pz)) + ORIGEN[2]])
+    k_ini = idx(ms, 100, 40)
+    for u in (0.10, 0.19, 0.30, 0.42, 0.50, 0.58, 0.68, 0.77):
+        k0 = (k_ini + int(u * n)) % n
+        if not (E['pad0'] - 40 <= k0 <= E['pad1'] + 20): grupo_e(ms, 'm', k0, saltar_main, (-3.0, 0.0, 3.0))
+    grupo_e(at, 'a', S['tierra'] + 6 + 8, saltar_at, (-1.6, 0.0, 1.6))
 
     # ---------- parrilla de salida (detras de la meta)
     parrilla = []
@@ -425,7 +441,7 @@ def main(destino):
         'podio': [round(podio[0] + ORIGEN[0], 2), podio[1] + ORIGEN[1], round(podio[2] + ORIGEN[2], 2), podio[3]],
         'checkpoints': [[c['zona'][0] + ORIGEN[0], c['zona'][1] + ORIGEN[1], c['zona'][2] + ORIGEN[2], c['zona'][3] + ORIGEN[0], c['zona'][4] + ORIGEN[1], c['zona'][5] + ORIGEN[2],
                          round(c['resp'][0] + ORIGEN[0], 2), c['resp'][1] + ORIGEN[1], round(c['resp'][2] + ORIGEN[2], 2), round(c['resp'][3], 1)] for c in cps],
-        'cajas': cajas, 'turbos': turbos, 'saltos': saltos, 'lodo': lodo, 'voltorbs': voltorbs, 'caidaY': caida,
+        'cajas': cajas, 'estrellas': estrellas, 'turbos': turbos, 'saltos': saltos, 'lodo': lodo, 'voltorbs': voltorbs, 'caidaY': caida,
     }
     js = os.path.join(destino, 'src/main/resources/data/emi_carreras/pistas', ID + '.json')
     os.makedirs(os.path.dirname(js), exist_ok=True)

@@ -18,7 +18,13 @@ public enum Poder {
     VOLTORB("Voltorb trampa", "Suelta un Voltorb detrás de ti: explota al tocarlo", "cobblemon:great_ball", Formatting.DARK_RED, new int[]{25, 15, 5}),
     ESCUDO("Protección", "Te protege de los ataques durante unos segundos", "minecraft:shield", Formatting.GREEN, new int[]{20, 15, 10}),
     CARAMELO("Caramelo Raro", "Super turbo", "cobblemon:rare_candy", Formatting.LIGHT_PURPLE, new int[]{5, 15, 30}),
-    TRUENO("Trueno", "Un rayo golpea a todos los que van delante de ti", "cobblemon:thunder_stone", Formatting.YELLOW, new int[]{0, 10, 30});
+    TRUENO("Trueno", "Un rayo golpea a todos los que van delante de ti", "cobblemon:thunder_stone", Formatting.YELLOW, new int[]{0, 10, 30}),
+    BOSTEZO("Bostezo del Michi", "Los rivales cercanos se quedan dormidos un momento", "cobblemon:moon_stone", Formatting.BLUE, new int[]{10, 15, 15}),
+    OVNI("Rayo del OVNI", "Un OVNI abduce al que va primero", "cobblemon:ultra_ball", Formatting.DARK_AQUA, new int[]{0, 10, 35}),
+    ESTRELLA("Superestrella", "Turbo y protección a la vez", "minecraft:nether_star", Formatting.GOLD, new int[]{2, 8, 20}),
+    MERMELADA("Grimer pegajoso", "Suelta un Grimer detrás de ti: quien lo pise se queda pegado", "minecraft:honey_bottle", Formatting.DARK_PURPLE, new int[]{20, 15, 8}),
+    TINTA("Nube de tinta", "Los rivales que van delante no ven nada unos segundos", "minecraft:ink_sac", Formatting.DARK_GRAY, new int[]{0, 15, 20}),
+    LLUVIA("Lluvia de michiestrellitas", "Consigues michiestrellitas al instante", "minecraft:amethyst_shard", Formatting.LIGHT_PURPLE, new int[]{15, 15, 10});
 
     public final String nombre, descripcion, itemId;
     public final Formatting color;
@@ -31,10 +37,14 @@ public enum Poder {
 
     public Text titulo() { return Text.literal(nombre).formatted(color, Formatting.BOLD); }
 
-    public ItemStack item() {
+    public ItemStack item() { return item(false); }
+
+    /** El objeto de la ranura 5; el poder mejorado lleva una estrella delante del nombre y brilla. */
+    public ItemStack item(boolean mejorado) {
         Item it = Registries.ITEM.getOrEmpty(Identifier.of(itemId)).orElse(Items.PAPER);
         ItemStack st = new ItemStack(it);
-        st.set(DataComponentTypes.CUSTOM_NAME, Text.empty().append(titulo()).append(Text.literal("  (clic derecho)").formatted(Formatting.GRAY)));
+        st.set(DataComponentTypes.CUSTOM_NAME, Text.empty().append(Text.literal(mejorado ? "★ " : "").formatted(Formatting.GOLD, Formatting.BOLD)).append(titulo()).append(Text.literal("  (clic derecho)").formatted(Formatting.GRAY)));
+        if (mejorado) st.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         return st;
     }
 

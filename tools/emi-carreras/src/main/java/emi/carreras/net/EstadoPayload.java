@@ -11,11 +11,11 @@ import java.util.UUID;
 
 /** Estado de la carrera para la interfaz del cliente (tabla de posiciones y mapa). El servidor lo envia unas 4 veces por segundo a quien tenga el mod. */
 public record EstadoPayload(boolean activo, String pista, String nombrePista, float mx, float mz, float mancho, float mlargo, int mpx, int mpy,
-                            int vueltas, int tiempo, int fase, List<Jugador> jugadores) implements CustomPayload {
+                            int vueltas, int tiempo, int fase, int estrellasMeta, List<Jugador> jugadores) implements CustomPayload {
     public static final CustomPayload.Id<EstadoPayload> ID = new CustomPayload.Id<>(Identifier.of("emi_carreras", "estado"));
 
     /** Un corredor: posicion en el mundo, vuelta (0 = primera) y puesto actual (1 = el primero). */
-    public record Jugador(UUID id, String nombre, float x, float z, int vuelta, int puesto, boolean fin, int escudo) {}
+    public record Jugador(UUID id, String nombre, float x, float z, int vuelta, int puesto, boolean fin, int escudo, int estrellas) {}
 
     public static final PacketCodec<RegistryByteBuf, EstadoPayload> CODEC = PacketCodec.of(EstadoPayload::escribir, EstadoPayload::leer);
 
@@ -25,11 +25,11 @@ public record EstadoPayload(boolean activo, String pista, String nombrePista, fl
         b.writeString(p.nombrePista == null ? "" : p.nombrePista);
         b.writeFloat(p.mx); b.writeFloat(p.mz); b.writeFloat(p.mancho); b.writeFloat(p.mlargo);
         b.writeVarInt(p.mpx); b.writeVarInt(p.mpy);
-        b.writeVarInt(p.vueltas); b.writeVarInt(p.tiempo); b.writeVarInt(p.fase);
+        b.writeVarInt(p.vueltas); b.writeVarInt(p.tiempo); b.writeVarInt(p.fase); b.writeVarInt(p.estrellasMeta);
         b.writeVarInt(p.jugadores.size());
         for (Jugador j : p.jugadores) {
             b.writeUuid(j.id); b.writeString(j.nombre); b.writeFloat(j.x); b.writeFloat(j.z);
-            b.writeVarInt(j.vuelta); b.writeVarInt(j.puesto); b.writeBoolean(j.fin); b.writeVarInt(j.escudo);
+            b.writeVarInt(j.vuelta); b.writeVarInt(j.puesto); b.writeBoolean(j.fin); b.writeVarInt(j.escudo); b.writeVarInt(j.estrellas);
         }
     }
 
@@ -37,11 +37,11 @@ public record EstadoPayload(boolean activo, String pista, String nombrePista, fl
         boolean activo = b.readBoolean();
         String pista = b.readString(), nombre = b.readString();
         float mx = b.readFloat(), mz = b.readFloat(), mancho = b.readFloat(), mlargo = b.readFloat();
-        int mpx = b.readVarInt(), mpy = b.readVarInt(), vueltas = b.readVarInt(), tiempo = b.readVarInt(), fase = b.readVarInt();
+        int mpx = b.readVarInt(), mpy = b.readVarInt(), vueltas = b.readVarInt(), tiempo = b.readVarInt(), fase = b.readVarInt(), meta = b.readVarInt();
         int n = b.readVarInt();
         List<Jugador> l = new ArrayList<>();
-        for (int i = 0; i < n; i++) l.add(new Jugador(b.readUuid(), b.readString(), b.readFloat(), b.readFloat(), b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readVarInt()));
-        return new EstadoPayload(activo, pista, nombre, mx, mz, mancho, mlargo, mpx, mpy, vueltas, tiempo, fase, l);
+        for (int i = 0; i < n; i++) l.add(new Jugador(b.readUuid(), b.readString(), b.readFloat(), b.readFloat(), b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readVarInt(), b.readVarInt()));
+        return new EstadoPayload(activo, pista, nombre, mx, mz, mancho, mlargo, mpx, mpy, vueltas, tiempo, fase, meta, l);
     }
 
     @Override public Id<? extends CustomPayload> getId() { return ID; }

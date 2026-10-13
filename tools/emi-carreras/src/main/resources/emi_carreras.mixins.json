@@ -5,6 +5,6 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "emi-carreras-refmap.json",
   "mixins": [],
-  "client": ["InGameHudMixin"],
+  "client": ["InGameHudMixin", "BossBarHudMixin"],
   "injectors": { "defaultRequire": 1 }
 }

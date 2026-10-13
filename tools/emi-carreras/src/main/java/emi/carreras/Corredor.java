@@ -28,6 +28,8 @@ public final class Corredor {
 
     // poderes y efectos (ticks absolutos del servidor)
     public Poder poder;
+    public boolean mejorado;             // el poder que lleva esta mejorado (10 michiestrellitas)
+    public int estrellas;                // michiestrellitas que lleva
     public int escudoHasta, paradoHasta, lentoHasta, turboHasta, ciegoHasta, golpeInmuneHasta, usoCooldown;
     public double lentoFactor, turboFactor;
     public double ultimoModificador = Double.NaN;

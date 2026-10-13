@@ -185,6 +185,15 @@ def main(destino):
         for o in (-4.5, -1.5, 1.5, 4.5):
             px, pz = m['x'] + ox + (-m['tz']) * o, m['z'] + oz + m['tx'] * o
             cajas.append([int(round(px)), sup_y(k) + 1, int(round(pz))])
+    # michiestrellitas: grupos de 3 en zigzag entre las hileras de cajas
+    estrellas = []
+    for fr in (0.04, 0.14, 0.22, 0.38, 0.47, 0.64, 0.72, 0.90):
+        k0 = centro((s_meta + fr * total) % total)
+        for j, o in enumerate((-3.0, 0.0, 3.0)):
+            kk = (k0 + j * 12) % n
+            m = ms[kk]
+            px, pz = m['x'] + ox + (-m['tz']) * o, m['z'] + oz + m['tx'] * o
+            estrellas.append([int(round(px)), sup_y(kk) + 1, int(round(pz))])
 
     # ---- parrilla de salida: filas detras de la meta, dos columnas
     parrilla = []
@@ -297,6 +306,7 @@ def main(destino):
         'checkpoints': [[c['zona'][0] + ORIGEN[0], c['zona'][1] + ORIGEN[1], c['zona'][2] + ORIGEN[2], c['zona'][3] + ORIGEN[0], c['zona'][4] + ORIGEN[1], c['zona'][5] + ORIGEN[2],
                          round(c['resp'][0] + ORIGEN[0], 2), c['resp'][1] + ORIGEN[1], round(c['resp'][2] + ORIGEN[2], 2), round(c['resp'][3], 1)] for c in cps],
         'cajas': [[c[0] + ORIGEN[0], c[1] + ORIGEN[1], c[2] + ORIGEN[2]] for c in cajas],
+        'estrellas': [[c[0] + ORIGEN[0], c[1] + ORIGEN[1], c[2] + ORIGEN[2]] for c in estrellas],
         'turbos': [[t[0] + ORIGEN[0], t[1] + ORIGEN[1], t[2] + ORIGEN[2], t[3] + ORIGEN[0], t[4] + ORIGEN[1], t[5] + ORIGEN[2]] for t in turbos],
         'caidaY': caida,
         'mapa': {'x0': ORIGEN[0], 'z0': ORIGEN[2], 'ancho': W, 'largo': L, 'px': mw_, 'py': mh_},
