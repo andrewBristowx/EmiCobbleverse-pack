@@ -739,7 +739,7 @@ public final class Carrera {
             case BAYA -> { turbo(c, 0.35, 30, now); Msg.sound(p, SoundEvents.ENTITY_GENERIC_EAT, 1f, 1.2f); }
             case CARAMELO -> { turbo(c, 0.7, 70, now); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.5f); w.spawnParticles(ParticleTypes.FIREWORK, p.getX(), p.getY() + 1, p.getZ(), 20, 0.4, 0.5, 0.4, 0.1); }
             case ESCUDO -> { c.escudoHasta = now + 160; Msg.sound(p, SoundEvents.ITEM_SHIELD_BLOCK, 1f, 1.2f); }
-            case POKEBALL -> lanzarBola(w, p, c, atras ? dir.multiply(-1) : dir, now);
+            case POKEBALL -> lanzarBola(w, p, c, atras ? dir.multiply(-1) : dir, atras ? 0 : p.getPitch(), now);
             case VOLTORB -> soltarVoltorb(w, p, c, dir, now);
             case TRUENO -> trueno(w, p, c, now);
         }
@@ -749,12 +749,14 @@ public final class Carrera {
         c.turboHasta = Math.max(c.turboHasta, now + ticks); c.turboFactor = Math.max(c.turboFactor, factor);
     }
 
-    static void lanzarBola(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, int now) {
+    static void lanzarBola(ServerWorld w, ServerPlayerEntity p, Corredor c, Vec3d dir, float pitch, int now) {
+        // se lanza hacia donde apunta el jugador (tambien arriba/abajo, limitado para que no se vaya al cielo ni al suelo): hay que apuntar
+        double vy = -Math.sin(Math.toRadians(Math.max(-12f, Math.min(12f, pitch)))) * 1.3;
         SnowballEntity s = new SnowballEntity(w, p.getX() + dir.x * 1.2, p.getY() + 0.9, p.getZ() + dir.z * 1.2);
         s.setItem(Poder.POKEBALL.item());
         s.setNoGravity(true);
         s.setOwner(p);
-        s.setVelocity(dir.x * 1.3, 0, dir.z * 1.3);
+        s.setVelocity(dir.x * 1.3, vy, dir.z * 1.3);
         s.addCommandTag(TAG);
         w.spawnEntity(s);
         Bola b = new Bola(); b.ent = s; b.dueno = c; b.nace = now; b.ultima = s.getPos();

@@ -23,7 +23,7 @@ vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carre
 |---|---|
 | Baya Aranja | pequeño turbo (1,5 s) |
 | Caramelo Raro | super turbo (3,5 s) |
-| Pokéball | proyectil: el primer rival al que alcance queda **capturado** 2,5 s |
+| Pokéball | proyectil que sale **hacia donde apuntas** (también un poco arriba/abajo): hay que apuntar; el primer rival que toque queda **capturado** 2,5 s |
 | Voltorb trampa | suelta un Voltorb detrás de ti; explota al tocarlo (parada + ralentización) |
 | Protección | escudo 8 s: absorbe el siguiente ataque (el Pokémon brilla) |
 | Trueno | rayo sobre **todos** los que van delante de ti |
