@@ -28,7 +28,11 @@ public final class Cmds {
         root.then(CommandManager.literal("ayuda").executes(Cmds::ayuda));
         root.executes(Cmds::ayuda);
         // --- organizador
-        root.then(admin("abrir").executes(c -> con(c, Carrera::abrir, "Cola abierta: se ha avisado a todos.")));
+        root.then(admin("abrir").executes(c -> con(c, () -> Carrera.abrir(null), "Cola abierta: se ha avisado a todos."))
+                .then(CommandManager.argument("pista", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(Carrera.ids(), b))
+                        .executes(c -> con(c, () -> Carrera.abrir(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "pista")), "Cola abierta: se ha avisado a todos."))));
+        root.then(CommandManager.literal("pistas").executes(c -> { c.getSource().sendFeedback(() -> Msg.say("Pistas: " + String.join(", ", Carrera.ids()) + "  (usa /carrera abrir <pista>)"), false); return 1; }));
         root.then(admin("cerrar").executes(c -> con(c, Carrera::cerrarCola)));
         root.then(admin("empezar").executes(c -> con(c, Carrera::empezar, "Preparando la parrilla...")));
         root.then(admin("parar").executes(c -> con(c, () -> Carrera.parar(null))));
@@ -82,7 +86,7 @@ public final class Cmds {
         String[] l = {"/carrera unirse · /carrera salir · /carrera elegir <1-6> · /carrera estado",
                 "Corres con uno de tus Pokémon terrestres (todos igual de rápidos). Pasa por todos los puntos de control.",
                 "Recoge los huevos misteriosos y usa el poder con clic derecho (agáchate para tirarlo hacia atrás).",
-                "Organizador: /carrera abrir · empezar · parar · cerrar · expulsar <jugador> · instalar · recargar"};
+                "Organizador: /carrera abrir [pista] · pistas · empezar · parar · cerrar · expulsar <jugador> · instalar · recargar"};
         for (String s : l) c.getSource().sendFeedback(() -> Text.literal(s).formatted(Formatting.YELLOW), false);
         return 1;
     }

@@ -1,0 +1,4 @@
+{
+  "musica.circuito": {"category": "music", "sounds": [{"name": "emi_carreras:musica_circuito", "stream": true}]},
+  "musica.volcan": {"category": "music", "sounds": [{"name": "emi_carreras:musica_volcan", "stream": true}]}
+}

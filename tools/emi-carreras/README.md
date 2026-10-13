@@ -4,6 +4,27 @@ Minijuego de **carreras de Pokémon** estilo Mario Kart para el servidor de Emi.
 Desde la 0.1.1 el mod se declara para cliente y servidor (`environment: *`) **solo para que funcione también en un mundo de un jugador o abierto a LAN** (el servidor integrado lo carga); en el cliente no hace nada. Hasta **12 corredores** (se puede jugar con menos, incluso solo), una pista con temática Pokémon, puntos de control,
 vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carreras:pista`.
 
+## Pistas
+Se elige con `/carrera abrir [pista]` (sin nombre, la de `pista` en la configuración); `/carrera pistas` las lista.
+| Id | Nombre | Cómo es |
+|---|---|---|
+| `circuito_pokeball` | Circuito Pokéball | Ancha y fácil, 3 vueltas, estatuas de Pokémon, túnel Pokéball. |
+| `volcan_cinnabar` | Volcán Cinnabar | **Más difícil**: pista estrecha con desnivel, 2 vueltas, 2 **saltos** sobre lava, un **atajo** con salto largo, **lodo** y **Voltorb fijos**. Volcán con cráter de lava y estatuas de fuego. |
+
+### Mecánicas del Volcán Cinnabar
+- **Plataforma de salto** (franja verde con flechas blancas, antes de un hueco con lava): al pisarla el servidor te lanza en un **arco** hasta la otra orilla (no hace falta saltar; el salto está desactivado). Los dos saltos del bucle principal son seguros.
+- **Atajo con turbo («como en Crash Team Racing»)**: por el lado derecho sale un camino estrecho por el interior que se salta ~340 bloques de bucle. Hay un hueco de 17 bloques: **solo se cruza si pisas antes la franja azul y amarilla del suelo (3 de ancho)**, que da turbo; con turbo
+  (esa franja, una Baya o un Caramelo) el arco llega a la otra orilla; sin turbo el arco acaba en la lava y vuelves al último punto de control. Al aterrizar bien hay un pequeño turbo extra.
+- **Lodo** (marrón): frena un 40-45 %. En el atajo ocupa todo el ancho; en dos curvas del bucle solo media pista (se esquiva).
+- **Voltorb fijos**: explotan al tocarlos (como el poder) y reaparecen a los 12 s. Solo existen mientras hay un corredor cerca.
+- Caer a la lava (o pisar el suelo fuera de la pista) = volver al último punto de control. El atajo no tiene puntos de control propios: los puntos de control del bucle que se salta no existen (no hay ninguno en ese tramo).
+- Los generadores son `pista/camino_volcan.py` y `pista/volcan.py` (Python; `python3 volcan.py ..`). Los datos nuevos del JSON de pista: `saltos` (zona, destino, destino_turbo, normal, altura, ticks), `lodo`, `voltorbs`, `musica`, `ambiente`.
+
+## Sonido
+- **Música de fondo** durante la carrera (chiptune original hecha con `musica/generar_musica.py`, ogg dentro del mod): «circuito» (alegre, 51,2 s) y «volcan» (oscura y rápida, 40 s). El servidor la relanza en bucle (las duraciones están en `DURACION_MUSICA` de `Carrera.java`); suena en la categoría **Música** del cliente.
+- **Efectos**: cuenta atrás y fuegos artificiales en el «¡YA!», campanitas en los puntos de control y vueltas (campana en la última), cofre de poder (amatista), turbo (cohete), salto (brisa + slime), lodo, caída a la lava, meta y fin de carrera. En el Volcán hay sonidos de ambiente (burbujas de lava y retumbos lejanos).
+- Configuración: `musica`, `volumenMusica`, `sonidos`.
+
 ## Cómo se juega
 1. El organizador escribe **`/carrera abrir`**: aviso a todos con el botón **[UNIRSE]** (se repite cada 60 s).
 2. Cada jugador pulsa el botón o escribe `/carrera unirse`. Sale la lista de su equipo con botones **[ELEGIR]**: **solo valen los Pokémon terrestres**
@@ -31,11 +52,11 @@ Las franjas amarillas/naranjas del asfalto son **turbos**.
 
 ## Comandos
 Jugadores: `/carrera unirse · salir · elegir <1-6> · estado · ayuda`.
-Organizador (operador nivel 2 o permiso `emi_carreras.admin` de LuckPerms): `/carrera abrir · cerrar · empezar · parar · expulsar <jugador> · instalar · recargar`.
-Solo pruebas: `/carrera _poder <baya|pokeball|voltorb|escudo|caramelo|trueno>` (durante la carrera, te da ese poder).
+Organizador (operador nivel 2 o permiso `emi_carreras.admin` de LuckPerms): `/carrera abrir [pista] · pistas · cerrar · empezar · parar · expulsar <jugador> · instalar · recargar`.
+Solo pruebas: `/carrera _poder <baya|pokeball|voltorb|escudo|caramelo|trueno>` (durante la carrera, te da ese poder) y `/carrera _poder golpe_<pokeball|voltorb|trueno>` (te da ese golpe, para probar la Protección).
 
 ## Configuración (`config/emi_carreras.json`, se crea sola)
-`pista`, `vueltas` (0 = las de la pista), `minPlayers` (1), `maxPlayers` (12), `velocidad` (0.23 ≈ 10 bloques/s), `adelanto`, `alturaPokemon`, `presentacion` (true/false: la presentación con cámaras), `presentacionSegundos` (por corredor; 0 = automático), `cuentaAtras`, `segundosTrasPrimero`, `respawnSegundos`,
+`pista` (la de por defecto), `pistas` (las que se pueden elegir), `musica`, `volumenMusica`, `sonidos`, `vueltas` (0 = las de la pista), `minPlayers` (1), `maxPlayers` (12), `velocidad` (0.23 ≈ 10 bloques/s), `adelanto`, `alturaPokemon`, `presentacion` (true/false: la presentación con cámaras), `presentacionSegundos` (por corredor; 0 = automático), `cuentaAtras`, `segundosTrasPrimero`, `respawnSegundos`,
 `queueReminderSeconds`, `poderes`, `cajaRespawnSegundos`, `prestados` (especies prestadas) y **`recompensas`**: lista de comandos por puesto (1.º, 2.º, 3.º…) con `{jugador}`, vacíos por defecto
 (p. ej. `"cobbledollars give {jugador} 500"`: pon el comando real de tu economía).
 Si existe `config/emi_carreras/pistas/<id>.json` se usa en lugar del de dentro del mod (para ajustar la pista sin recompilar).
@@ -72,6 +93,13 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.4.0
+Servidor de pruebas y cliente real (un solo jugador):
+- **Volcán Cinnabar**: se coloca solo (7 s), los puntos de control van en orden (por el atajo y por el bucle), la **plataforma de salto** del bucle lanza en arco y aterriza en la pista, la **del atajo con turbo** cruza el hueco y **sin turbo cae a la lava** y reaparece, el **Voltorb fijo** explota y golpea, el **lodo**, las estatuas (Charizard, Dragonite, Charmander, Lucario) y el volcán se ven bien (capturas).
+- **Protección**: con ella activa el golpe de prueba no te afecta; al acabar los 8 s sí (log del servidor).
+- Selector de pista (`abrir volcan_cinnabar` y `abrir` sin nombre) y música/efectos: el servidor los envía sin errores, los .ogg son válidos y están registrados en `sounds.json`; **no se pudo oír** nada porque el cliente de pruebas no tiene tarjeta de sonido.
+- **No probado**: una vuelta completa corriendo a pie por el Volcán (se probó por tramos con teletransportes y a pie en los saltos), varios jugadores a la vez, el balance real del atajo (cuánto gana), el ruido real de los sonidos y la música, y el servidor real.
 
 ## Probado en la 0.3.0
 Con servidor de pruebas y un cliente real (un solo jugador): la **moneda** (con el michi del dueño centrado y el borde nuevo, 0.3.1) se ve por las dos caras y gira; la **presentación** (espera, cámara orbitando al GatitoAlien con su nombre en el título, vuelta al hueco ya transformado y cuenta atrás 5-4-3…) funciona.

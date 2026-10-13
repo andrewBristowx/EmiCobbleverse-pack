@@ -32,6 +32,11 @@ public final class Corredor {
     public double lentoFactor, turboFactor;
     public double ultimoModificador = Double.NaN;
     public Vec3d previa;
+    // vuelo de una plataforma de salto
+    public int vueloIni, vueloTicks, saltoCooldown;
+    public Vec3d vueloA, vueloB;
+    public double vueloAltura;
+    public boolean vueloTurbo;
 
     public Corredor(UUID id, String nombre) { this.id = id; this.nombre = nombre; }
 

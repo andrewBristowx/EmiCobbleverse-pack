@@ -30,8 +30,25 @@ public final class Pista {
     public double[][] cajas;             // x, y, z de cada caja de poderes
     public double[][] turbos;            // x1,y1,z1, x2,y2,z2 de cada franja de turbo
     public double caidaY = 40;           // por debajo de esta Y se considera caido de la pista
+    /** Plataformas de salto: al pisarlas el servidor lanza al corredor en arco hasta `destino` (o `destino_turbo` si lleva turbo activo). */
+    public Salto[] saltos;
+    public double[][] lodo;              // x1,y1,z1, x2,y2,z2, factor de frenada (0.45 = pierde el 45 % de la velocidad)
+    public double[][] voltorbs;          // x, y, z de cada Voltorb fijo (explota al tocarlo y reaparece)
+    public String musica;                // id de la musica de fondo (emi_carreras:musica.<id>); null = ninguna
+    public String ambiente;              // "volcan": sonidos de ambiente
 
-    private transient Box[] zonas, zonasTurbo;
+    public static final class Salto {
+        public double[] zona;            // caja que activa el salto (x1,y1,z1,x2,y2,z2)
+        public double[] destino;         // x,y,z de aterrizaje
+        public double[] destino_turbo;   // aterrizaje si lleva turbo (null = el mismo)
+        public double[] normal;          // nx,nz: eje lateral de la pista en el aterrizaje
+        public double altura = 4;        // altura maxima del arco sobre la recta
+        public int ticks = 30;           // duracion del vuelo
+        public int ticks_turbo = 0;      // duracion del vuelo con turbo (0 = ticks)
+        public transient Box caja;
+    }
+
+    private transient Box[] zonas, zonasTurbo, zonasLodo;
 
     public static Pista cargar(String id) {
         Gson g = new Gson();
@@ -52,6 +69,9 @@ public final class Pista {
             for (int i = 0; i < p.zonas.length; i++) p.zonas[i] = caja(p.checkpoints[i]);
             p.zonasTurbo = new Box[p.turbos == null ? 0 : p.turbos.length];
             for (int i = 0; i < p.zonasTurbo.length; i++) p.zonasTurbo[i] = caja(p.turbos[i]);
+            if (p.saltos != null) for (Salto sa : p.saltos) sa.caja = caja(sa.zona);
+            p.zonasLodo = new Box[p.lodo == null ? 0 : p.lodo.length];
+            for (int i = 0; i < p.zonasLodo.length; i++) p.zonasLodo[i] = caja(p.lodo[i]);
             return p;
         } catch (Exception e) {
             EmiCarreras.LOG.error("No se pudo leer la pista {}", id, e);
@@ -68,4 +88,7 @@ public final class Pista {
     public Box zona(int i) { return zonas[i]; }
     public Vec3d centro(int i) { return zonas[i].getCenter(); }
     public boolean enTurbo(Vec3d p) { for (Box b : zonasTurbo) if (b.contains(p)) return true; return false; }
+    /** factor de frenada del lodo bajo el jugador (0 = no esta en lodo) */
+    public double lodoEn(Vec3d p) { for (int i = 0; i < zonasLodo.length; i++) if (zonasLodo[i].contains(p)) return lodo[i][6]; return 0; }
+    public Salto saltoEn(Vec3d p) { if (saltos != null) for (Salto s : saltos) if (s.caja.contains(p)) return s; return null; }
 }

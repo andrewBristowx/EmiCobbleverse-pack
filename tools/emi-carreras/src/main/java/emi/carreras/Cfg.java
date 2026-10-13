@@ -21,6 +21,10 @@ public final class Cfg {
     public double velocidad = 0.23;              // atributo de velocidad igual para todos (un jugador normal anda a 0.1; 0.23 = unos 10 bloques/s)
     public double adelanto = 3.0;                // ticks que se adelanta el Pokemon visual para compensar el retraso de la red
     public float alturaPokemon = 1.3f;           // todos los Pokemon se escalan a esta altura (bloques)
+    public java.util.List<String> pistas = new java.util.ArrayList<>(java.util.List.of("circuito_pokeball", "volcan_cinnabar"));   // pistas que se pueden elegir con /carrera abrir <pista>
+    public boolean musica = true;                // musica de fondo durante la carrera
+    public float volumenMusica = 0.6f;
+    public boolean sonidos = true;               // efectos de sonido y ambiente
     public boolean presentacion = true;          // antes de la cuenta atras, camaras que enfocan a cada corredor
     public int presentacionSegundos = 0;         // segundos por corredor (0 = automatico: 3 s con uno, menos si hay muchos)
     public int cuentaAtras = 5;                  // segundos
