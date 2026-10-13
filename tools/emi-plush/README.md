@@ -139,3 +139,5 @@ Para cambiar el aspecto se editan `CUBOS` y `pintar()` en ese script y se vuelve
 ## Para añadir otro peluche
 Copia `MichiBlockEntity`/`MichiBlockModel`/`MichiItemModel`, registra el bloque, el objeto y el tipo de entidad en `EmiPlush`, el renderizador en `EmiPlushClient`,
 y añade blockstate, modelo de bloque y de objeto, loot table, textos de idioma y su geo+textura.
+
+**Eevee Emi (v1.12.1).** Su pelaje original es marrón y el grupo de color más oscuro (21 % de la textura) se pintaba de negro: salían manchas negras y la cara se perdía. Ahora todo el pelaje es plata y solo la crema (pecho, punta de la cola) va en rosa pálido (`CONFIG['eevee']` en `gen/emi_species.py`). Ojo con esto al añadir especies: si el grupo más oscuro ocupa mucho, no lo pintes de `BLACK`.

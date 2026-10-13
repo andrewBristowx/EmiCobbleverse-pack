@@ -14,8 +14,8 @@ Repositorio: `andrewBristowx/EmiCobbleverse-pack` (rama principal `main`). Los j
   entorno (`MC`, `GECKO`, `POKEBLOCKS`, `FAPI`, `LIBS`, `OUT`, `COBBLEMON_JAR`); ver `tools/emi-plush/build.sh`.
 - `tools/emipokemon-patches/`: Emipokemon no tiene código fuente; se parchea el jar (clases/recursos inyectados). Ver su README.
 
-## Mods propios (estado en pack 1.0.117)
-- `emi-plush` 1.12.0: peluches, GatitoAlien (25 formas), Gasha Especial de Eventos (ticket + **máquina** `emi_plush:maquina_gasha_michi`
+## Mods propios (estado en pack 1.0.118)
+- `emi-plush` 1.12.1: peluches, GatitoAlien (25 formas), Gasha Especial de Eventos (ticket + **máquina** `emi_plush:maquina_gasha_michi`
   con **pantalla propia** `GashaPantalla`, animación normal y de premio mayor). Ver su README. Se quitaron del gasha 4 Pokémon de Emi
   (espurr/zorua/sprigatito/floragato) porque Cobblemon no puede releerlos de los datos guardados (evoluciones con espacio de nombres).
 - `emi-estructuras` 1.3.0: dimensiones `emi_estructuras:plano` y `emi_estructuras:dungeons`, comando `/emiestructuras`. Desde 1.2.0/1.3.0 coloca también los

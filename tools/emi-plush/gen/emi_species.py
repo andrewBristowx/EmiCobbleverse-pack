@@ -200,7 +200,8 @@ CONFIG = {
     'igglybuff':  dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
     'jigglypuff': dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
     'wigglytuff': dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
-    'eevee':      dict(map=[BLACK, SILVER_D, SILVER_D, SILVER, SILVER_L, PINK_L]),
+    # el marron mas oscuro del Eevee es su pelaje (21 % de la textura): pintarlo de negro daba manchas; todo plata y solo la crema (pecho, cola) en rosa palido
+    'eevee':      dict(map=[SILVER_D, SILVER_D, SILVER_D, SILVER, SILVER_L, PINK_P]),
     'vaporeon':   dict(map=[BLACK, PINK_H, PINK_L, PINKS, SKIN, WHITE]),
     'jolteon':    dict(map=[BLACK, SILVER_D, SILVER, SILVER, SILVER_L, WHITE]),
     'flareon':    dict(map=[PINK_H, PINK_L, SILVER_D, SILVER, SILVER_L, WHITE]),
