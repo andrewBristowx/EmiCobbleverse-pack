@@ -76,7 +76,7 @@ public final class Carrera {
     static final List<Fijo> fijos = new ArrayList<>();
     static final Corredor PELIGRO = new Corredor(new UUID(0, 0), "un Voltorb");
     static String musicaActual; static int musicaProx;
-    static final Map<String, Integer> DURACION_MUSICA = Map.of("circuito", 1024, "volcan", 800);
+    static final Map<String, Integer> DURACION_MUSICA = Map.of("circuito", 1024, "volcan", 800, "emi", 1200);
     static final Map<String, Integer> NOMBRES = new HashMap<>();
 
     // ------------------------------------------------------------------ arranque
@@ -174,7 +174,12 @@ public final class Carrera {
     // ------------------------------------------------------------------ cola
 
     /** Ids de las pistas que se pueden elegir. */
-    public static List<String> ids() { return cfg == null ? List.of() : cfg.pistas; }
+    public static List<String> ids() {
+        if (cfg == null) return List.of();
+        List<String> l = new ArrayList<>(cfg.pistas);
+        for (String d : Cfg.PISTAS_DE_SERIE) if (!l.contains(d)) l.add(d);       // las pistas nuevas salen aunque la configuracion ya existiera sin ellas
+        return l;
+    }
 
     public static String abrir(String id) {
         if (fase != Fase.LIBRE) return "Ya hay una carrera en marcha o la cola ya esta abierta.";

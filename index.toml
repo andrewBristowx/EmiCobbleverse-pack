@@ -1841,8 +1841,8 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-carreras-0.5.2.jar"
-hash = "493e884ce8e9775de93ce8d7a63d27deba5bd2234878891e3396062baa295c6f"
+file = "mods/emi-carreras-0.6.0.jar"
+hash = "c4fad13f6ab0e277bf558f45de8d1ca50b6358a301f4a04bebc8a6a77028e060"
 
 [[files]]
 file = "mods/emi-estructuras-1.3.0.jar"

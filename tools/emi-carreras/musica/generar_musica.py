@@ -1,8 +1,8 @@
 """Genera la musica de fondo de las carreras (chiptune original, sintetizada con numpy) y la codifica a .ogg con ffmpeg.
 
 Uso: python3 generar_musica.py   (necesita numpy y ffmpeg con libvorbis)
-Escribe src/main/resources/assets/emi_carreras/sounds/musica_circuito.ogg (51,2 s) y musica_volcan.ogg (40,0 s).
-Las duraciones DEBEN coincidir con DURACION_MUSICA de Carrera.java (en ticks: 1024 y 800): el servidor relanza la pista cuando acaba.
+Escribe src/main/resources/assets/emi_carreras/sounds/musica_circuito.ogg (51,2 s), musica_volcan.ogg (40,0 s) y musica_emi.ogg (60,0 s).
+Las duraciones DEBEN coincidir con DURACION_MUSICA de Carrera.java (en ticks: 1024, 800 y 1200): el servidor relanza la pista cuando acaba.
 """
 import os, subprocess, wave
 import numpy as np
@@ -74,9 +74,14 @@ class Mezcla:
         return out
 
 ACORDES = {'C': (60, 64, 67), 'G': (55, 59, 62), 'Am': (57, 60, 64), 'F': (53, 57, 60), 'Dm': (62, 65, 69), 'Em': (64, 67, 71),
-           'E': (52, 56, 59), 'E7': (52, 56, 59), 'Bdim': (59, 62, 65)}
+           'E': (52, 56, 59), 'E7': (52, 56, 59), 'Bdim': (59, 62, 65),
+           'D': (62, 66, 69), 'A': (57, 61, 64), 'Bm': (59, 62, 66), 'F#m': (54, 57, 61)}
 
-def pista(nombre, bpm, compases, prog, motivos, lead_ond, bajo_ond, duty_arp, lead_oct=0, bateria='alegre', arps_vol=0.16):
+def campana(f, dur):
+    n = int(dur * SR); t = np.arange(n) / SR
+    return (np.sin(2 * np.pi * f * t) + 0.35 * np.sin(2 * np.pi * 2 * f * t) + 0.12 * np.sin(2 * np.pi * 3.01 * f * t)) * np.exp(-t * 3.2)
+
+def pista(nombre, bpm, compases, prog, motivos, lead_ond, bajo_ond, duty_arp, lead_oct=0, bateria='alegre', arps_vol=0.16, brillo=False):
     beat = 60.0 / bpm
     total = compases * 4 * beat
     mz = Mezcla(total)
@@ -101,11 +106,19 @@ def pista(nombre, bpm, compases, prog, motivos, lead_ond, bajo_ond, duty_arp, le
             oct_ = 12 * (grado // 3) + lead_oct
             nota = acorde[grado % 3] + 12 + oct_
             if lead_ond == 'pulse': x = pulse(hz(nota), largo * beat / 2 * 0.95, 0.25, vib=1.0, d=0.2, s=0.6)
+            elif lead_ond == 'tri': x = tri(hz(nota + 12), largo * beat / 2 * 0.98, d=0.4, s=0.8) * 1.3
             else: x = saw(hz(nota), largo * beat / 2 * 0.95)
             mz.poner(t0 + off * beat / 2, x, 0.38)
+        if brillo:      # campanitas de estrella: dos notas altas del acorde por compas, a contratiempo
+            for q, off in enumerate((1.5, 3.0)):
+                mz.poner(t0 + off * beat, campana(hz(acorde[(b + q) % 3] + 24), beat * 1.6), 0.22, pan=-0.6 if q == 0 else 0.6)
         # bateria
         for k in range(4):
-            if bateria == 'alegre':
+            if bateria == 'suave':
+                if k in (0, 2): mz.poner(t0 + k * beat, kick(), 0.6)
+                if k == 3: mz.poner(t0 + k * beat, snare(0.1), 0.22)
+                mz.poner(t0 + k * beat + beat / 2, hat(), 0.14)
+            elif bateria == 'alegre':
                 if k in (0, 2): mz.poner(t0 + k * beat, kick(), 0.9)
                 if k in (1, 3): mz.poner(t0 + k * beat, snare(), 0.55)
                 mz.poner(t0 + k * beat, hat(), 0.22); mz.poner(t0 + k * beat + beat / 2, hat(abierto=(k == 3)), 0.2)
@@ -152,6 +165,17 @@ def main():
     a, t = pista('volcan', 168, 28, prog_v, mot_v, 'saw', 'pulse', 0.25, bateria='fuerte', arps_vol=0.12)
     assert abs(t - 40.0) < 1e-6, t
     guardar('musica_volcan', a)
+    # Estacion Michialien: sonadora y dulce, re mayor, 128 bpm, 32 compases = 60,0 s
+    prog_e = ['D', 'A', 'Bm', 'F#m', 'G', 'D', 'Em', 'A', 'D', 'A', 'Bm', 'F#m', 'G', 'D', 'A', 'A']
+    mot_e = [
+        [(0, 2, 4), (2, 1, 3), (3, 1, 2), (4, 2, 3), (6, 2, 2)],
+        [(0, 1, 2), (1, 1, 3), (2, 2, 4), (4, 1, 3), (5, 1, 2), (6, 2, 1)],
+        [(0, 2, 3), (2, 2, 4), (4, 1, 5), (5, 1, 4), (6, 2, 3)],
+        [(0, 1, 4), (1, 1, 3), (2, 1, 2), (3, 1, 3), (4, 4, 4)],
+    ]
+    a, t = pista('emi', 128, 32, prog_e, mot_e, 'tri', 'tri', 0.125, bateria='suave', arps_vol=0.13, brillo=True)
+    assert abs(t - 60.0) < 1e-6, t
+    guardar('musica_emi', a)
 
 if __name__ == '__main__':
     main()

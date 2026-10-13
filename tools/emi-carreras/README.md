@@ -9,7 +9,16 @@ Se elige con `/carrera abrir [pista]` (sin nombre, la de `pista` en la configura
 | Id | Nombre | Cómo es |
 |---|---|---|
 | `circuito_pokeball` | Circuito Pokéball | Ancha y fácil, 3 vueltas, estatuas de Pokémon, túnel Pokéball. |
+| `estacion_michialien` | Estación Michialien | **Tema Emi / GatitoAlien**: circuito en forma de **luna creciente** (la de la barriga del Michialien) sobre un mar de nubes, 2 vueltas, dificultad media. **Estatuas gigantes de los peluches del Michialien**, cartel enorme con el pixel art de la moneda, portico «EMI» en la meta, farolas con forma de antena, arcos de estrellas, planeta con anillo, luna, OVNI y estrellas. 2 **saltos** sobre las nubes, un **atajo** que se salta la horquilla norte con un salto con turbo, 2 zonas de «mermelada» (lodo) y turbos. Música propia. |
 | `volcan_cinnabar` | Volcán Cinnabar | **Más difícil**: pista estrecha con desnivel, 2 vueltas, 2 **saltos** sobre lava, un **atajo** con salto largo, **lodo** y **Voltorb fijos**. Volcán con cráter de lava y estatuas de fuego. |
+
+### Estación Michialien
+- Generador: `pista/emi.py` (+ `pista/camino_emi.py`, el trazado de la luna; `python3 emi.py ..`). Necesita `MC_TEXTURAS=<textures/block de Minecraft>` para dibujar bien el cartel (las estatuas ya vienen guardadas en `pista/estatuas/michi_*.json`). Origen (2000, 64, 0); plantilla 304 × 112 × 451.
+- **Estatuas de los peluches** (`pista/catalogo_peluches.py`): se voxelizan los modelos de bloque de `tools/emi-plush` (geometría de Blockbench con **UV por cara**, que `modelo.py` entiende desde esta versión) a bloques de color (concreto, lana, terracota, **amatista** para el lila de las antenas) a escala fija (2,0 bloques por unidad: ~26 de ancho y 28 de alto; las dos de la meta, 2,8).
+  Formas usadas: base (Michi Dramático), dorado con corona, y con corona, gafas de sol, lazo, aureola, sombrero de bruja, de Papá Noel, pirata, auriculares, bufanda, corona de flores, dorado y sombrero de playa. Para otra forma: añadirla a `ESTATUAS` de `emi.py` (con `MC_TEXTURAS` se crea y se guarda sola).
+- **Atajo**: en el arco exterior norte, antes de la horquilla, el **carril interior** (3 de ancho) con su franja de turbo y su plataforma verde con borde azul; con turbo (esa franja, una Baya o un Caramelo) el salto de ~87 bloques aterriza en el arco interior, justo después de la horquilla (se ahorran ~140 bloques de pista); sin turbo el arco acaba en las nubes y vuelves al último punto de control. Ningún punto de control cae en el tramo que se salta.
+- **Mermelada** (lodo, rosa y lila): una mancha tras el primer salto (solo media pista) y otra en el arco sur.
+- Datos nuevos del JSON: ninguno; el `musica` es `emi` (60 s, re mayor, 128 bpm, `DURACION_MUSICA` 1200 ticks).
 
 ### Mecánicas del Volcán Cinnabar
 - **Plataforma de salto** (franja verde con flechas blancas, antes de un hueco con lava; **solo el borde azul de 1 bloque del final dispara el salto**, la parte verde es solo la guía): al pisar el borde azul vuelas en arco hasta la otra orilla (no hace falta saltar; el salto está desactivado). El servidor sienta al jugador en un **asiento invisible** (una entidad) y lo mueve por la parábola; el cliente interpola
@@ -35,7 +44,7 @@ El servidor manda el estado de la carrera ~4 veces por segundo (`EstadoPayload`)
 Se oculta con F1 como cualquier interfaz.
 
 ## Sonido
-- **Música de fondo** durante la carrera (chiptune original hecha con `musica/generar_musica.py`, ogg dentro del mod): «circuito» (alegre, 51,2 s) y «volcan» (oscura y rápida, 40 s). El servidor la relanza en bucle (las duraciones están en `DURACION_MUSICA` de `Carrera.java`); suena en la categoría **Música** del cliente.
+- **Música de fondo** durante la carrera (chiptune original hecha con `musica/generar_musica.py`, ogg dentro del mod): «circuito» (alegre, 51,2 s), «volcan» (oscura y rápida, 40 s) y «emi» (soñadora, con campanitas, 60 s). El servidor la relanza en bucle (las duraciones están en `DURACION_MUSICA` de `Carrera.java`); suena en la categoría **Música** del cliente.
 - **Efectos**: cuenta atrás y fuegos artificiales en el «¡YA!», campanitas en los puntos de control y vueltas (campana en la última), cofre de poder (amatista), turbo (cohete), salto (brisa + slime), lodo, caída a la lava, meta y fin de carrera. En el Volcán hay sonidos de ambiente (burbujas de lava y retumbos lejanos).
 - Configuración: `musica`, `volumenMusica`, `sonidos`.
 
@@ -107,6 +116,13 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.6.0 (pista Estación Michialien)
+Servidor de pruebas y cliente real (un solo jugador): la plantilla se coloca (5,4 s), la presentación, el aviso y la cuenta atrás salen bien, el mapa de la interfaz dibuja la luna con los turbos, los saltos y la meta; los **dos saltos** (borde azul) llevan al jugador a su aterrizaje; la **mermelada** baja la velocidad de 0,23 a 0,138 dentro de la zona y la devuelve al salir; el **atajo** con turbo (usando un Caramelo) aterriza en el sitio previsto y **sin turbo se cae** y vuelve a la parrilla;
+pasando por los 8 puntos de control en orden (teletransportado) se completan las 2 vueltas y la carrera termina con resultados. Vistas desde el suelo y desde el aire de las estatuas, el cartel, los arcos, el planeta y el OVNI (capturas); el portico dice «EMI» legible desde la parrilla.
+**No probado**: correr la vuelta entera a pie (el cliente de pruebas va con pocos fps), con varios jugadores, el servidor real, la música (no hay tarjeta de audio: solo se comprobó que el ogg dura 60,0 s), ni coger las cajas de poderes en esta pista.
+Nota sobre el generador: `emi.py` no es byte a byte repetible (el orden de la paleta del .nbt cambia entre ejecuciones; el contenido es el mismo), así que la plantilla del repositorio es la que va dentro del jar probado.
+Nota: la primera vez que se coloca una pista (o tras cambiar su plantilla) el servidor tarda unos segundos y puede ir con tirones; mejor ponerla antes con `/carrera instalar` cuando no haya nadie esperando.
 
 ## Probado en la 0.5.2 (escalas de interfaz y ocultar la interfaz de vainilla)
 Servidor de pruebas y cliente real (un solo jugador, carrera «Circuito Pokéball» con Protección en la casilla). Con la carrera en marcha no se ven barra de objetos, corazones, hambre, nivel/experiencia, lista de Pokémon, minimapa ni contador de CobbleDollars, y la cámara está en tercera persona; al parar la carrera **todo vuelve** (capturas antes/durante/después).

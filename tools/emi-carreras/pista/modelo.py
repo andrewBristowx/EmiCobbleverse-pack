@@ -96,7 +96,9 @@ def _cadena(bones, nombre):
     return out        # del hueso hacia la raiz
 
 
-def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, pose=None, ocultos=OCULTOS):
+def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, pose=None, ocultos=OCULTOS, esc=None):
+    """`altura`: alto de la estatua en bloques; si se da `esc` (bloques por unidad del modelo) manda este y el alto sale de el (asi varias estatuas del mismo modelo guardan la misma escala).
+    Acepta cubos con UV de caja (Cobblemon) y con UV por cara (modelos de bloque de Blockbench, p. ej. los peluches de emi-plush)."""
     g, bones = _cargar_geo(geo_path)
     tex = Image.open(tex_path).convert('RGBA')
     tw, th = g['description']['texture_width'], g['description']['texture_height']
@@ -111,15 +113,22 @@ def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, 
             o, sz = c['origin'], c['size']
             inf = c.get('inflate', b.get('inflate', 0)) or 0
             mirror = c.get('mirror', b.get('mirror', False))
-            u0, v0 = c['uv']
+            uvc = c['uv']
+            u0, v0 = (0, 0) if isinstance(uvc, dict) else uvc
             X0, Y0, Z0 = o[0] - inf, o[1] - inf, o[2] - inf
             SX, SY, SZ = sz[0] + 2 * inf, sz[1] + 2 * inf, sz[2] + 2 * inf
             cadena = _cadena(bones, b['name'])
             cubos_info.append((c, cadena))
-            cuadros = {'n': (u0 + sz[2], v0 + sz[2], sz[0], sz[1]), 'e': (u0, v0 + sz[2], sz[2], sz[1]),
-                       's': (u0 + sz[2] + sz[0] + sz[2], v0 + sz[2], sz[0], sz[1]), 'w': (u0 + sz[2] + sz[0], v0 + sz[2], sz[2], sz[1]),
-                       'u': (u0 + sz[2], v0, sz[0], sz[2]), 'd': (u0 + sz[2] + sz[0], v0, sz[0], sz[2])}
-            if mirror: cuadros['e'], cuadros['w'] = cuadros['w'], cuadros['e']
+            if isinstance(uvc, dict):                    # UV por cara: {'north': {'uv': [u, v], 'uv_size': [ancho, alto]}, ...} (el tamano puede ser negativo: cara espejada)
+                cuadros = {}
+                for cara, k in (('n', 'north'), ('e', 'east'), ('s', 'south'), ('w', 'west'), ('u', 'up'), ('d', 'down')):
+                    f = uvc.get(k)
+                    cuadros[cara] = (f['uv'][0], f['uv'][1], f['uv_size'][0], f['uv_size'][1]) if f else None
+            else:
+              cuadros = {'n': (u0 + sz[2], v0 + sz[2], sz[0], sz[1]), 'e': (u0, v0 + sz[2], sz[2], sz[1]),
+                         's': (u0 + sz[2] + sz[0] + sz[2], v0 + sz[2], sz[0], sz[1]), 'w': (u0 + sz[2] + sz[0], v0 + sz[2], sz[2], sz[1]),
+                         'u': (u0 + sz[2], v0, sz[0], sz[2]), 'd': (u0 + sz[2] + sz[0], v0, sz[0], sz[2])}
+            if mirror and not isinstance(uvc, dict): cuadros['e'], cuadros['w'] = cuadros['w'], cuadros['e']
             paso = 1.0 / paso_mult
             def muestrear(cara, ai, aj, ak):
                 pass
@@ -127,9 +136,10 @@ def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, 
             nx, ny, nz = max(1, int(SX * paso_mult)), max(1, int(SY * paso_mult)), max(1, int(SZ * paso_mult))
             def punto(fx, fy, fz): return (X0 + SX * fx, Y0 + SY * fy, Z0 + SZ * fz)
             def color(cara, a, bb):
+                if cuadros[cara] is None: return (0, 0, 0, 0)
                 u, v, w, h = cuadros[cara]
                 # a, bb en [0,1): a recorre el ancho de la cara, bb el alto
-                if mirror: a = 1 - a
+                if mirror and not isinstance(uvc, dict): a = 1 - a
                 px = (u + a * w) * sx_t; py = (v + bb * h) * sy_t
                 px = min(tex.width - 1, max(0, int(px))); py = min(tex.height - 1, max(0, int(py)))
                 return tex.getpixel((px, py))
@@ -184,7 +194,7 @@ def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, 
         return False
     todos = [(p, col, d) for (p, col, d), cu in zip(todos, todos_cubo) if not (d and enterrado(p, cu))]
     ymin = min(p[1] for p, _, _ in todos); ymax = max(p[1] for p, _, _ in todos)
-    esc = altura / max(1e-6, ymax - ymin)
+    if esc is None: esc = altura / max(1e-6, ymax - ymin)
     vox = {}
     acum = {}
     for p, col, decal in todos:
@@ -229,7 +239,7 @@ def _paleta(tex_dir):
     global _PAL
     if _PAL is not None: return _PAL
     colores = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray', 'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black']
-    nombres = [c + '_concrete' for c in colores] + [c + '_wool' for c in colores] + [c + '_terracotta' for c in colores] + ['terracotta', 'smooth_sandstone', 'sandstone', 'snow_block', 'gold_block', 'bone_block_side']
+    nombres = [c + '_concrete' for c in colores] + [c + '_wool' for c in colores] + [c + '_terracotta' for c in colores] + ['terracotta', 'smooth_sandstone', 'sandstone', 'snow_block', 'gold_block', 'bone_block_side', 'amethyst_block']
     pal = {}
     for n in nombres:
         f = os.path.join(tex_dir, n + '.png')
@@ -240,8 +250,10 @@ def _paleta(tex_dir):
     return pal
 
 
-def a_bloques(vox, tex_dir):
-    """{(x,y,z): bloque}: el bloque de color mas parecido a cada voxel (distancia de color ponderada)"""
+def a_bloques(vox, tex_dir, sesgo=None):
+    """{(x,y,z): bloque}: el bloque de color mas parecido a cada voxel (distancia de color ponderada).
+    `sesgo`: {bloque: factor} multiplica la distancia de ese bloque (factor < 1 lo favorece; p. ej. amethyst_block para los lilas, que no tienen bloque propio)"""
+    sesgo = sesgo or {}
     pal = _paleta(tex_dir)
     cache = {}
     out = {}
@@ -252,6 +264,7 @@ def a_bloques(vox, tex_dir):
             for n, p in pal.items():
                 rm = (c[0] + p[0]) / 2
                 d = (2 + rm / 256) * (c[0] - p[0]) ** 2 + 4 * (c[1] - p[1]) ** 2 + (2 + (255 - rm) / 256) * (c[2] - p[2]) ** 2
+                d *= sesgo.get(n, 1.0)
                 if d < md: md, mejor = d, n
             cache[q] = mejor
         out[k] = cache[q]
