@@ -212,8 +212,9 @@ public final class Carrera {
             p.getAbilities().flying = false; p.sendAbilitiesUpdate();
             p.setHealth(p.getMaxHealth());
             p.teleport(w, g[0], g[1], g[2], (float) g[3], 0f);
-            Montura.prepararJugador(p, cfg.velocidad);
+            Montura.prepararJugador(p, cfg.velocidad, !Morph.disponible());
             unir(p.getNameForScoreboard());
+            Morph.transformar(server, p, c.pokemon);
             p.sendMessage(Msg.say("¡A la parrilla! Cuando acabe la cuenta atrás, corre. Pulsa F5 para verte desde fuera."), false);
         }
         crearCajas(w);
@@ -346,7 +347,10 @@ public final class Carrera {
         p.getHungerManager().setSaturationLevel(0f);
         p.setHealth(p.getMaxHealth());
         // visual del Pokemon
-        if (c.visual == null || c.visual.isRemoved()) {
+        if (Morph.disponible()) {
+            // el jugador va transformado en su Pokemon (CobbleMorph): no hace falta copia visual
+            if (c.visual != null) { c.visual.discard(); c.visual = null; }
+        } else if (c.visual == null || c.visual.isRemoved()) {
             if (w.isChunkLoaded(p.getBlockPos())) {
                 c.visual = Montura.crearVisual(w, c.pokemon, p.getName(), p.getPos(), p.getYaw());
                 c.visual.addCommandTag(TAG);
@@ -359,10 +363,11 @@ public final class Carrera {
             Montura.seguir(c.visual, p, delta, cfg.adelanto);
             boolean brilla = now < c.escudoHasta;
             if (c.visual.isGlowing() != brilla) c.visual.setGlowing(brilla);
-            if (now % 2 == 0) {
-                if (now < c.turboHasta && now >= c.paradoHasta) w.spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getY() + 0.3, p.getZ(), 2, 0.25, 0.1, 0.25, 0.02);
-                if (now < c.paradoHasta && fase == Fase.CARRERA) w.spawnParticles(ParticleTypes.ELECTRIC_SPARK, p.getX(), p.getY() + 0.8, p.getZ(), 4, 0.4, 0.5, 0.4, 0.3);
-            }
+        }
+        if (now % 2 == 0) {          // efectos visibles para todos: turbo, golpe y escudo
+            if (now < c.turboHasta && now >= c.paradoHasta) w.spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getY() + 0.3, p.getZ(), 2, 0.25, 0.1, 0.25, 0.02);
+            if (now < c.paradoHasta && fase == Fase.CARRERA) w.spawnParticles(ParticleTypes.ELECTRIC_SPARK, p.getX(), p.getY() + 0.8, p.getZ(), 4, 0.4, 0.5, 0.4, 0.3);
+            if (now < c.escudoHasta) w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, p.getX(), p.getY() + 0.9, p.getZ(), 3, 0.6, 0.6, 0.6, 0.0);
         }
         // inventario: solo el poder en la ranura 5
         if (now % 5 == 0) {

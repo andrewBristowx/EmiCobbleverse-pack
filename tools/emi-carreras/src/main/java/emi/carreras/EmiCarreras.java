@@ -41,9 +41,22 @@ public class EmiCarreras implements ModInitializer {
             if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return ActionResult.FAIL;
         });
-        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> Carrera.participa(player) ? ActionResult.FAIL : ActionResult.PASS);
-        AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> Carrera.participa(player) ? ActionResult.FAIL : ActionResult.PASS);
-        AttackBlockCallback.EVENT.register((player, world, hand, pos, dir) -> Carrera.participa(player) ? ActionResult.FAIL : ActionResult.PASS);
+        // clic derecho sobre una entidad o clic izquierdo (entidad o bloque): tambien usan el poder (si hay una entidad en la mira, el clic derecho ya no llega al objeto)
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (!world.isClient && hand == net.minecraft.util.Hand.MAIN_HAND && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
+            return ActionResult.FAIL;
+        });
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
+            return ActionResult.FAIL;
+        });
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, dir) -> {
+            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
+            return ActionResult.FAIL;
+        });
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> !Carrera.participa(player));
     }
 }

@@ -42,6 +42,8 @@ public final class Saved {
         t.putInt("mode", p.interactionManager.getGameMode().getId());
         t.putInt("food", p.getHungerManager().getFoodLevel());
         t.putFloat("sat", p.getHungerManager().getSaturationLevel());
+        t.putBoolean("morphOn", Morph.disponible());
+        t.putString("morph", Morph.actual(p.getUuid()));       // transformacion anterior de CobbleMorph (para devolverla)
         BlockPos sp = p.getSpawnPointPosition();
         if (sp != null) {
             t.putLong("spawnPos", sp.asLong());
@@ -101,6 +103,7 @@ public final class Saved {
             p.setSpawnPoint(World.OVERWORLD, null, 0f, false, false);
         }
         p.sendAbilitiesUpdate();
+        if (t.getBoolean("morphOn")) Morph.restaurar(server, p, t.getString("morph"));
         try { Files.deleteIfExists(f); } catch (IOException e) { EmiCarreras.LOG.warn("No se pudo borrar {}", f, e); }
         return true;
     }

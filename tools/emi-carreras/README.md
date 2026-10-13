@@ -9,11 +9,12 @@ vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carre
 2. Cada jugador pulsa el botón o escribe `/carrera unirse`. Sale la lista de su equipo con botones **[ELEGIR]**: **solo valen los Pokémon terrestres**
    (los que caminan y no vuelan ni son de tipo Volador). Si no tiene ninguno se le **presta** uno (`prestados` en la config). Se cambia con `/carrera elegir <1-6>` hasta que empiece.
 3. **`/carrera empezar`**: se guarda en disco el inventario, la posición, el modo de juego y el hambre de cada uno, y todos aparecen en la **parrilla** (cuenta atrás de 5 s).
-4. Durante la carrera el jugador va **invisible y a pie**; su Pokémon es una **copia visual** que lo acompaña (misma especie, forma, variocolor y tamaño normalizado a 1,3 bloques).
+4. Durante la carrera el jugador va **transformado en su Pokémon** con el mod **CobbleMorph** (que ya está en el pack): el cliente dibuja el modelo del Pokémon en lugar del jugador, con su misma especie, forma y variocolor, y camina con su animación.
+   Si CobbleMorph no está instalado, el jugador va invisible y su Pokémon es una **copia visual** que lo acompaña (puede desfasarse al correr).
    **Todos van exactamente a la misma velocidad** (atributo fijo, sin correr, sin saltar). Se maneja con WASD y el ratón; **pulsa F5** para verte desde fuera.
 5. Hay que pasar por todos los **puntos de control en orden** (arcos azules; la meta es el arco rojo con Pokéballs). Tres vueltas por defecto. Si te caes de la pista
    vuelves al último punto de control tras 2 s parado.
-6. Las **cajas** (huevos dorados brillantes en la pista) dan un **poder** al azar, que sale en la ranura 5 de la barra: **clic derecho** para usarlo (agáchate para tirarlo hacia atrás).
+6. Las **cajas** (huevos dorados brillantes en la pista) dan un **poder** al azar, que sale en la ranura 5 de la barra: **clic derecho** para usarlo (también vale el clic izquierdo, o clicar sobre una entidad; agáchate para tirarlo hacia atrás).
    Quien va peor clasificado tiene más probabilidad de los poderes fuertes. Se recargan a los 6 s.
 7. Cuando llega el primero, los demás tienen 45 s. Al final: clasificación en el chat, título con el ganador, y a los 10 s todos recuperan lo suyo y vuelven a donde estaban.
 
@@ -44,7 +45,8 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 `prism-instance/EmiCobbleverse-Prism-Instance-PRUEBAS.zip`, que se actualiza sola desde la rama de pruebas del repositorio y **no toca la instancia oficial** (que sigue leyendo `main`). Sin probar aún en un mundo de un jugador.
 
 ## Cómo está hecho
-- **Montura**: en Cobblemon solo ~115 de 1025 especies se pueden montar, así que no se usa la monta de Cobblemon. El jugador anda con atributos fijos (velocidad, sin salto, escalón de 1 bloque) y
+- **CobbleMorph (desde la 0.2.0)**: `Morph.java` lo maneja por reflexión y con los comandos `/transform` y `/untransform` (el servidor los ejecuta como consola); la transformación anterior del jugador, si tenía, se guarda con su inventario y se le devuelve al terminar (también tras una caída del servidor). Los efectos de turbo, golpe y escudo salen como partículas.
+- **Montura de reserva**: en Cobblemon solo ~115 de 1025 especies se pueden montar, así que no se usa la monta de Cobblemon. El jugador anda con atributos fijos (velocidad, sin salto, escalón de 1 bloque) y
   su Pokémon es una copia sin IA (`PokemonProperties` → `createEntity`) que se coloca encima cada tick, adelantada según lo que se movió (el servidor no conoce la velocidad de un jugador). El equipo del jugador **no se toca**.
 - **Seguridad**: lo que tenía el jugador se guarda en `world/emi_carreras/saved/<uuid>.nbt` y se devuelve al terminar, al cancelar o al volver a entrar tras una caída del servidor.
   El tick de la carrera está protegido: si algo falla, se cancela la carrera (y se devuelve todo) en vez de tumbar el servidor.

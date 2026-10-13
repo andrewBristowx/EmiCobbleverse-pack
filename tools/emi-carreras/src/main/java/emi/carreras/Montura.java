@@ -89,8 +89,8 @@ public final class Montura {
     }
 
     /** Pone al jugador en "modo corredor": invisible, sin salto, velocidad fija igual para todos y escalones de 1 bloque. */
-    public static void prepararJugador(ServerPlayerEntity p, double velocidad) {
-        p.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, StatusEffectInstance.INFINITE, 0, false, false, false));
+    public static void prepararJugador(ServerPlayerEntity p, double velocidad, boolean invisible) {
+        if (invisible) p.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, StatusEffectInstance.INFINITE, 0, false, false, false));
         p.setInvulnerable(true);
         var vel = p.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
         if (vel != null) {
