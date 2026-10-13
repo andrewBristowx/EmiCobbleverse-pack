@@ -1,0 +1,10 @@
+{
+  "parent": "builtin/entity",
+  "texture_size": [
+    16,
+    16
+  ],
+  "textures": {
+    "particle": "emi_plush:block/gatitoalien_pirate_particle"
+  }
+}
