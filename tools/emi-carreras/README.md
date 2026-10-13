@@ -14,7 +14,7 @@ vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carre
    **Todos van exactamente a la misma velocidad** (atributo fijo, sin correr, sin saltar). Se maneja con WASD y el ratón; **pulsa F5** para verte desde fuera.
 5. Hay que pasar por todos los **puntos de control en orden** (arcos azules; la meta es el arco rojo con Pokéballs). Tres vueltas por defecto. Si te caes de la pista
    vuelves al último punto de control tras 2 s parado.
-6. Las **cajas** (una **moneda del Michialien** que gira, con el gatito blanco de antenas moradas y la luna) dan un **poder** al azar, que sale en la ranura 5 de la barra: **clic derecho** para usarlo (también vale el clic izquierdo, o clicar sobre una entidad; agáchate para tirarlo hacia atrás).
+6. Las **cajas** (una **moneda del Michialien** que gira, con el michi en pixel art sobre un borde dorado grabado) dan un **poder** al azar, que sale en la ranura 5 de la barra: **clic derecho** para usarlo (también vale el clic izquierdo, o clicar sobre una entidad; agáchate para tirarlo hacia atrás).
    Quien va peor clasificado tiene más probabilidad de los poderes fuertes. Se recargan a los 6 s.
 7. Cuando llega el primero, los demás tienen 45 s. Al final: clasificación en el chat, título con el ganador, y a los 10 s todos recuperan lo suyo y vuelven a donde estaban.
 
@@ -59,7 +59,8 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 - **Pista**: `pista/generar.py` (Python, usa `tools/emi-gimnasios/gymlib.py`) genera la plantilla `data/emi_carreras/structure/circuito_pokeball.nbt` y `data/emi_carreras/pistas/circuito_pokeball.json`
   (parrilla, puntos de control, cajas, turbos, podio). `camino.py` define el trazado (curva Catmull-Rom). La plantilla se coloca sola la primera vez que se empieza una carrera (o con `/carrera instalar`).
 
-- **Moneda del Michialien (0.3.0)**: las cajas son entidades `item_display` con un objeto con modelo propio (`assets/emi_carreras/models/item/moneda_michi.json`, dos caras con la textura `moneda_michi.png`).
+- **Moneda del Michialien (0.3.0/0.3.1)**: las cajas son entidades `item_display` con un objeto con modelo propio (`assets/emi_carreras/models/item/moneda_michi.json`, dos caras con la textura `moneda_michi.png`, 640x640).
+  La textura la genera `moneda/hacer_moneda.py` (necesita numpy, scipy y Pillow): recorta y centra el michi de `moneda/michi_referencia.webp` (pixel art del dueño, tal cual) y le pone un borde dorado grabado dibujado en rejilla de 80x80.
   En 1.21.1 no existe el componente `item_model`, así que se usa `minecraft:nautilus_shell` con `custom_model_data` 7020001 y un *override* en `assets/minecraft/models/item/nautilus_shell.json` (va dentro del mod, no hace falta resource pack; el jugador sí necesita el mod en el cliente).
   La moneda gira porque el servidor le cambia la rotación cada 10 ticks con interpolación.
 - **Presentación (0.3.0)**: no se usa `setCameraEntity` (en vanilla mueve el cuerpo del jugador junto a la cámara y se pierde su sitio): los jugadores pasan a modo **espectador** y el servidor los mueve a ellos mismos por la órbita (`requestTeleport` cada tick),
@@ -70,7 +71,7 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
 
 ## Probado en la 0.3.0
-Con servidor de pruebas y un cliente real (un solo jugador): la **moneda** se ve con su textura por las dos caras y gira; la **presentación** (espera, cámara orbitando al GatitoAlien con su nombre en el título, vuelta al hueco ya transformado y cuenta atrás 5-4-3…) funciona.
+Con servidor de pruebas y un cliente real (un solo jugador): la **moneda** (con el michi del dueño centrado y el borde nuevo, 0.3.1) se ve por las dos caras y gira; la **presentación** (espera, cámara orbitando al GatitoAlien con su nombre en el título, vuelta al hueco ya transformado y cuenta atrás 5-4-3…) funciona.
 **No probado**: la presentación con **varios** jugadores a la vez (todos ven la misma cámara; con 12 son ~18 s), un jugador que mueva el ratón durante la cámara, y la espera de 5 s frente a una carga de dimensión lenta del servidor real.
 
 ## Probado (v0.1.0; la 0.1.1 solo cambia las estatuas y el entorno)
