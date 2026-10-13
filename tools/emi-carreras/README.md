@@ -12,8 +12,10 @@ Se elige con `/carrera abrir [pista]` (sin nombre, la de `pista` en la configura
 | `volcan_cinnabar` | Volcán Cinnabar | **Más difícil**: pista estrecha con desnivel, 2 vueltas, 2 **saltos** sobre lava, un **atajo** con salto largo, **lodo** y **Voltorb fijos**. Volcán con cráter de lava y estatuas de fuego. |
 
 ### Mecánicas del Volcán Cinnabar
-- **Plataforma de salto** (franja verde con flechas blancas, antes de un hueco con lava): al pisarla el servidor te lanza en un **arco** hasta la otra orilla (no hace falta saltar; el salto está desactivado). Los dos saltos del bucle principal son seguros.
-- **Atajo con turbo («como en Crash Team Racing»)**: por el lado derecho sale un camino estrecho por el interior que se salta ~340 bloques de bucle. Hay un hueco de 17 bloques: **solo se cruza si pisas antes la franja azul y amarilla del suelo (3 de ancho)**, que da turbo; con turbo
+- **Plataforma de salto** (franja verde con flechas blancas, antes de un hueco con lava): al pisarla vuelas en arco hasta la otra orilla (no hace falta saltar; el salto está desactivado). El servidor sienta al jugador en un **asiento invisible** (una entidad) y lo mueve por la parábola; el cliente interpola
+  el movimiento de la entidad y sale fluido (versiones anteriores teletransportaban al jugador cada tick o le daban velocidad, y se veía congelado en el aire y de golpe al otro lado, o se quedaba corto con pocos fps). Si pulsas agacharte para bajarte, se te vuelve a montar. Los dos saltos del bucle principal son seguros.
+- **Entrada al atajo (CTR)**: el atajo **ya no está unido a la pista**: sale por el lado derecho y solo se llega con un salto con turbo desde la plataforma del **carril interior** (3 de ancho, pegado al lado oeste), precedida por su franja azul y amarilla. Sin turbo (o fuera del carril) no hay entrada; con la plataforma pero sin turbo el arco acaba en la lava.
+- **Atajo con turbo («como en Crash Team Racing»)**: se salta ~340 bloques del bucle. Dentro hay un segundo hueco de 17 bloques: **solo se cruza si pisas antes la franja azul y amarilla del suelo (3 de ancho)**, que da turbo; con turbo
   (esa franja, una Baya o un Caramelo) el arco llega a la otra orilla; sin turbo el arco acaba en la lava y vuelves al último punto de control. Al aterrizar bien hay un pequeño turbo extra.
 - **Lodo** (marrón): frena un 40-45 %. En el atajo ocupa todo el ancho; en dos curvas del bucle solo media pista (se esquiva).
 - **Voltorb fijos**: explotan al tocarlos (como el poder) y reaparecen a los 12 s. Solo existen mientras hay un corredor cerca.
@@ -93,6 +95,9 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.4.1 (arreglos tras las pruebas del dueño)
+Con servidor de pruebas y cliente real: el salto del bucle (asiento invisible) recorre la parábola exacta (log de posiciones jugador/asiento) y aterriza en la pista; la entrada al atajo con turbo aterriza en el atajo y sin turbo cae a la lava. **No probado**: lo fluido que se ve en un cliente normal con red real (el cliente de pruebas va a pocos fps y sin audio), ni varios jugadores.
 
 ## Probado en la 0.4.0
 Servidor de pruebas y cliente real (un solo jugador):

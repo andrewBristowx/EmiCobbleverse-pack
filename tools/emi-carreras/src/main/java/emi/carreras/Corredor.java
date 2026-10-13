@@ -37,6 +37,7 @@ public final class Corredor {
     public Vec3d vueloA, vueloB;
     public double vueloAltura;
     public boolean vueloTurbo;
+    public net.minecraft.entity.Entity asiento;      // asiento invisible del salto
 
     public Corredor(UUID id, String nombre) { this.id = id; this.nombre = nombre; }
 

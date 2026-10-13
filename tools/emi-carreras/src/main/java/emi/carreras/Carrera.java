@@ -413,6 +413,7 @@ public final class Carrera {
     static void barrerMonedasSueltas(ServerWorld w) {
         Set<UUID> buenas = new HashSet<>();
         for (Caja c : cajas) if (c.uuid != null) buenas.add(c.uuid);
+        for (Corredor c : corr.values()) if (c.asiento != null) buenas.add(c.asiento.getUuid());
         Box zona = new Box(-30000000, -64, -30000000, 30000000, 320, 30000000);
         int n = 0;
         for (var e : w.getEntitiesByClass(net.minecraft.entity.decoration.DisplayEntity.ItemDisplayEntity.class, zona, e -> e.getCommandTags().contains(TAG))) {
@@ -536,6 +537,16 @@ public final class Carrera {
         c.vueloIni = now;
         c.vueloTicks = Math.max(8, turbo && sa.ticks_turbo > 0 ? sa.ticks_turbo : sa.ticks);
         c.saltoCooldown = now + c.vueloTicks + 30;
+        // el jugador va montado en un asiento invisible que el servidor mueve por la parabola: el movimiento de una entidad lo interpola el cliente
+        // (sale fluido) y no depende de la red ni de los fps del jugador, a diferencia de teletransportarlo cada tick o de darle velocidad.
+        try {
+            Entity asiento = EntityType.ITEM_DISPLAY.create(w);
+            asiento.refreshPositionAndAngles(pos.x, pos.y, pos.z, p.getYaw(), 0f);
+            asiento.addCommandTag(TAG);
+            w.spawnEntity(asiento);
+            p.startRiding(asiento, true);
+            c.asiento = asiento;
+        } catch (Throwable t) { EmiCarreras.LOG.warn("no se pudo crear el asiento del salto: {}", t.toString()); c.asiento = null; }
         EmiCarreras.LOG.info("{} salta{} ({} ticks)", c.nombre, turbo ? " con turbo" : "", c.vueloTicks);
         sfx(p, SoundEvents.ENTITY_BREEZE_JUMP, 1f, 1f);
         sfx(p, SoundEvents.BLOCK_SLIME_BLOCK_BREAK, 1f, 0.7f);
@@ -543,26 +554,46 @@ public final class Carrera {
         w.spawnParticles(ParticleTypes.CLOUD, pos.x, pos.y + 0.2, pos.z, 18, 0.4, 0.1, 0.4, 0.08);
     }
 
-    /** Un tick de vuelo: se coloca al jugador en la parabola (el cliente no puede esquivar el arco). */
+    static final boolean DEPURAR = Boolean.getBoolean("emi.carreras.debug");
+
+    static Vec3d arco(Corredor c, double t) {
+        return new Vec3d(c.vueloA.x + (c.vueloB.x - c.vueloA.x) * t,
+                c.vueloA.y + (c.vueloB.y - c.vueloA.y) * t + 4 * c.vueloAltura * t * (1 - t),
+                c.vueloA.z + (c.vueloB.z - c.vueloA.z) * t);
+    }
+
+    /** Un tick de vuelo: se mueve el asiento por la parabola (el jugador va montado). */
     static void volar(ServerPlayerEntity p, Corredor c, ServerWorld w, int now) {
-        double t = (now - c.vueloIni + 1) / (double) c.vueloTicks;
+        int k = now - c.vueloIni, T = c.vueloTicks;
         p.fallDistance = 0;
-        if (t >= 1) {
-            p.networkHandler.requestTeleport(c.vueloB.x, c.vueloB.y, c.vueloB.z, p.getYaw(), p.getPitch());
-            p.setVelocity(0, 0, 0); p.velocityModified = true;
-            c.vueloTicks = 0;
-            if (c.vueloB.y > pista.caidaY + 3) {          // aterrizaje en la pista
-                c.turboHasta = Math.max(c.turboHasta, now + 15); c.turboFactor = Math.max(c.turboFactor, 0.3);
-                sfx(p, SoundEvents.BLOCK_ANVIL_LAND, 0.4f, 1.6f);
-                w.spawnParticles(ParticleTypes.CLOUD, c.vueloB.x, c.vueloB.y + 0.2, c.vueloB.z, 12, 0.4, 0.1, 0.4, 0.06);
-            }
+        if (c.asiento == null || c.asiento.isRemoved()) { c.vueloTicks = 0; c.asiento = null; return; }
+        if (p.getVehicle() != c.asiento) p.startRiding(c.asiento, true);     // si pulsa agacharse para bajar, se le vuelve a montar
+        if (k >= T) {
+            c.asiento.refreshPositionAndAngles(c.vueloB.x, c.vueloB.y, c.vueloB.z, p.getYaw(), 0f);
+            terminarVuelo(p, c, w, now, true);
             return;
         }
-        double x = c.vueloA.x + (c.vueloB.x - c.vueloA.x) * t, z = c.vueloA.z + (c.vueloB.z - c.vueloA.z) * t;
-        double y = c.vueloA.y + (c.vueloB.y - c.vueloA.y) * t + 4 * c.vueloAltura * t * (1 - t);
-        p.networkHandler.requestTeleport(x, y, z, p.getYaw(), p.getPitch());
-        p.setVelocity(0, 0, 0);
-        if (now % 3 == 0) w.spawnParticles(ParticleTypes.CLOUD, x, y, z, 2, 0.15, 0.1, 0.15, 0.01);
+        Vec3d e = arco(c, (k + 1) / (double) T);
+        c.asiento.refreshPositionAndAngles(e.x, e.y, e.z, p.getYaw(), 0f);
+        if (DEPURAR) EmiCarreras.LOG.info("vuelo k={} jugador=({}, {}, {}) asiento=({}, {}, {})", k, String.format("%.1f", p.getX()), String.format("%.1f", p.getY()), String.format("%.1f", p.getZ()), String.format("%.1f", e.x), String.format("%.1f", e.y), String.format("%.1f", e.z));
+        if (now % 3 == 0) w.spawnParticles(ParticleTypes.CLOUD, e.x, e.y, e.z, 2, 0.15, 0.1, 0.15, 0.01);
+    }
+
+    /** Baja al jugador del asiento y lo deja en el sitio exacto del aterrizaje. */
+    static void terminarVuelo(ServerPlayerEntity p, Corredor c, ServerWorld w, int now, boolean normal) {
+        c.vueloTicks = 0;
+        if (p != null) p.stopRiding();
+        if (c.asiento != null) { c.asiento.discard(); c.asiento = null; }
+        if (p == null || !normal) return;
+        p.networkHandler.requestTeleport(c.vueloB.x, c.vueloB.y, c.vueloB.z, p.getYaw(), p.getPitch());
+        Vec3d h = new Vec3d(c.vueloB.x - c.vueloA.x, 0, c.vueloB.z - c.vueloA.z);
+        Vec3d d = h.lengthSquared() > 1e-6 ? h.normalize().multiply(0.3) : Vec3d.ZERO;
+        p.setVelocity(d.x, -0.1, d.z); p.velocityModified = true;
+        if (c.vueloB.y > pista.caidaY + 3) {          // aterrizaje en la pista
+            c.turboHasta = Math.max(c.turboHasta, now + 15); c.turboFactor = Math.max(c.turboFactor, 0.3);
+            sfx(p, SoundEvents.BLOCK_ANVIL_LAND, 0.4f, 1.6f);
+            w.spawnParticles(ParticleTypes.CLOUD, c.vueloB.x, c.vueloB.y + 0.2, c.vueloB.z, 12, 0.4, 0.1, 0.4, 0.06);
+        }
     }
 
     // ------------------------------------------------------------------ Voltorb fijos
@@ -630,7 +661,7 @@ public final class Carrera {
 
     static void reaparecer(ServerPlayerEntity p, Corredor c, ServerWorld w, int now) {
         EmiCarreras.LOG.info("{} se cae de la pista y reaparece en el punto de control", c.nombre);
-        c.vueloTicks = 0;
+        terminarVuelo(p, c, w, now, false);
         p.teleport(w, c.reaparicion.x, c.reaparicion.y, c.reaparicion.z, c.reaparicionYaw, 0f);
         c.paradoHasta = Math.max(c.paradoHasta, now + cfg.respawnSegundos * 20);
         c.turboHasta = 0;
@@ -879,7 +910,7 @@ public final class Carrera {
                 ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
                 if (p != null) {
                     soltar(p.getNameForScoreboard());
-                    p.setGlowing(false);
+                    p.setGlowing(false); if (p.hasVehicle() && c.asiento != null) p.stopRiding();
                     if (!Saved.restore(server, p)) EmiCarreras.LOG.warn("{} no tenia nada guardado que devolver", c.nombre);
                 }
             } catch (Throwable t) { EmiCarreras.LOG.error("No se pudo devolver a {} a su sitio (se le devolvera al volver a entrar)", c.nombre, t); }

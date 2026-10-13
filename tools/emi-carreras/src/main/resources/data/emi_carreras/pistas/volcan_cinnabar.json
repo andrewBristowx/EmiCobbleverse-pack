@@ -1,5 +1,5 @@
 {
- "version": "53f10442f3c2",
+ "version": "d0f9ace3a927",
  "nombre": "Volc\u00e1n Cinnabar",
  "plantilla": "emi_carreras:volcan_cinnabar",
  "origen": [
@@ -344,6 +344,14 @@
    1235,
    98,
    172
+  ],
+  [
+   1265,
+   86,
+   123,
+   1269,
+   89,
+   136
   ]
  ],
  "saltos": [
@@ -415,6 +423,29 @@
    "altura": 5.5,
    "ticks_turbo": 37,
    "ticks": 16
+  },
+  {
+   "zona": [
+    1266,
+    87,
+    144,
+    1269,
+    90,
+    153
+   ],
+   "destino": [
+    1258.23,
+    68,
+    156.68
+   ],
+   "destino_turbo": [
+    1250.74,
+    93,
+    166.93
+   ],
+   "altura": 5.0,
+   "ticks": 30,
+   "ticks_turbo": 53
   }
  ],
  "lodo": [

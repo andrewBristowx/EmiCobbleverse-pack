@@ -28,6 +28,7 @@ VUELTAS = 2
 GAP_A = 12                   # bloques sin pista del primer salto
 GAP_B = 12
 GAP_ATAJO = 17
+GAP_ENTRADA = 15             # hueco entre el bucle principal y el comienzo del atajo (solo se entra con un salto con turbo)
 
 
 def main(destino):
@@ -70,7 +71,11 @@ def main(destino):
     ia = idx(at, 196, 168)
     S = dict(turbo0=ia - int(16 / 0.5), turbo1=ia - int(9 / 0.5) - 1, pad0=ia - int(8 / 0.5), pad1=ia - 1, g0=ia, g1=ia + int(GAP_ATAJO / 0.5) - 1, tierra=ia + int(GAP_ATAJO / 0.5) + int(5 / 0.5))
     saltar_main = set(range(A['g0'], A['g1'] + 1)) | set(range(B['g0'], B['g1'] + 1))
-    saltar_at = set(range(S['g0'], S['g1'] + 1))
+    KE = int(GAP_ENTRADA / 0.5)
+    saltar_at = set(range(S['g0'], S['g1'] + 1)) | set(range(0, KE))        # el atajo NO esta unido al bucle: se entra saltando
+    # plataforma de salto de la entrada del atajo: carril oeste (lado interior) del lado derecho del bucle, con su franja de turbo delante
+    E = dict(turbo0=idx(ms, 247, 120), turbo1=idx(ms, 247, 133), pad0=idx(ms, 247, 141), pad1=idx(ms, 247, 150))
+    sin_muro = set(range(E['pad0'] - 8, E['pad1'] + 10))
     print('huecos: A en s=%d, B en s=%d, atajo en s=%d' % (ms[A['g0']]['s'], ms[B['g0']]['s'], at[S['g0']]['s']))
 
     # ---------- suelo de basalto y blackstone
@@ -110,7 +115,7 @@ def main(destino):
         v.set(c[0], y - 1, c[1], 'polished_blackstone_bricks')
         if (c[0] % 5 == 0 and c[1] % 5 == 0) or d > medio:
             v.fill(c[0], GY + 1, c[1], c[0], y - 2, c[1], 'blackstone')
-        if d > medio:                                   # muro de contencion
+        if d > medio and not (nom == 'm' and i in sin_muro and o > 0):                                   # muro de contencion (con hueco junto a la plataforma de entrada al atajo)
             roj = int(s / 4) % 2 == 0
             v.set(c[0], y + 1, c[1], 'black_concrete' if roj else 'orange_concrete')
             v.set(c[0], y + 2, c[1], 'orange_concrete' if roj else 'black_concrete')
@@ -122,7 +127,7 @@ def main(destino):
     pozos = []
     def pozo(path, g0, g1, ancho):
         celdas_p = set()
-        for i in range(g0 - 2, g1 + 3):
+        for i in range(max(0, g0 - 2), min(len(path), g1 + 3)):
             m = path[i]; nx, nz = -m['tz'], m['tx']
             o = -ancho
             while o <= ancho:
@@ -135,6 +140,7 @@ def main(destino):
     pozo(ms, A["g0"], A["g1"], MEDIO + 9)
     pozo(ms, B["g0"], B["g1"], MEDIO + 9)
     pozo(at, S["g0"], S["g1"], MEDIO_A + 10)
+    pozo(at, 0, KE, MEDIO_A + 10)
 
     # ---------- utilidades de franjas
     def faja(path, nom, i0, i1, ancho, color_fn, extra_y=0):
@@ -198,6 +204,35 @@ def main(destino):
     dS['ticks_turbo'] = int(dist_l / 0.62) + 2
     dS['ticks'] = int(math.hypot(dS['destino'][0] - (m0['x'] + ox + ORIGEN[0]), dS['destino'][2] - (m0['z'] + oz + ORIGEN[2])) / 0.62) + 2
     saltos.append(dS)
+
+    # ---------- entrada al atajo: franja de turbo y plataforma de salto en el carril oeste del bucle (3 de ancho)
+    def carril(i0, i1, f_color, o0=1.2, o1=4.3):
+        pts = []
+        for i in range(i0, i1 + 1):
+            m = ms[i]; nx, nz = -m['tz'], m['tx']
+            o = o0
+            while o <= o1 + 1e-9:
+                px, pz = int(round(m['x'] + ox + nx * o)), int(round(m['z'] + oz + nz * o))
+                v.set(px, sup['m'](i), pz, f_color(i - i0, o)); pts.append((px, sup['m'](i), pz)); o += 0.5
+        return [min(p[0] for p in pts), min(p[1] for p in pts), min(p[2] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts) + 2, max(p[2] for p in pts)]
+    tz_ = carril(E['turbo0'], E['turbo1'], lambda k, o: 'light_blue_concrete' if (k // 2) % 2 == 0 else 'yellow_concrete')
+    turbos.append([tz_[0] + ORIGEN[0], tz_[1] + ORIGEN[1], tz_[2] + ORIGEN[2], tz_[3] + ORIGEN[0], tz_[4] + ORIGEN[1], tz_[5] + ORIGEN[2]])
+    pz_ = carril(E['pad0'], E['pad1'], lambda k, o: 'lime_concrete' if (k // 3) % 2 == 0 else 'green_concrete')
+    for k in range(E['pad0'] + 2, E['pad1'], 6):
+        mm_ = ms[k]; v.set(int(round(mm_['x'] + ox - mm_['tz'] * 2.8)), sup['m'](k), int(round(mm_['z'] + oz + mm_['tx'] * 2.8)), 'white_concrete')
+    ml = at[KE + 10]; yl = sup['a'](KE + 10)
+    mA0 = ms[E['pad0']]
+    ax, az = mA0['x'] + ox - mA0['tz'] * 2.8 + ORIGEN[0], mA0['z'] + oz + mA0['tx'] * 2.8 + ORIGEN[2]
+    bx, bz = ml['x'] + ox + ORIGEN[0] + 0.5, ml['z'] + oz + ORIGEN[2] + 0.5
+    dist_e = math.hypot(bx - ax, bz - az)
+    saltos.append({'zona': [pz_[0] + ORIGEN[0], pz_[1] + ORIGEN[1], pz_[2] + ORIGEN[2], pz_[3] + ORIGEN[0], pz_[4] + ORIGEN[1], pz_[5] + ORIGEN[2]],
+                   'destino': [round(ax + (bx - ax) * 0.55, 2), GY + ORIGEN[1] - 1, round(az + (bz - az) * 0.55, 2)],
+                   'destino_turbo': [round(bx, 2), yl + 1 + ORIGEN[1], round(bz, 2)],
+                   'altura': 5.0, 'ticks': int(dist_e * 0.55 / 0.55) + 2, 'ticks_turbo': int(dist_e / 0.55) + 2})
+    # borde del hueco de entrada (lado del atajo)
+    me = at[KE - 1]; nxe, nze = -me['tz'], me['tx']
+    for o in range(-int(MEDIO_A), int(MEDIO_A) + 1):
+        v.set(int(round(me['x'] + ox + nxe * o)), sup['a'](KE), int(round(me['z'] + oz + nze * o)), 'yellow_concrete' if o % 2 == 0 else 'black_concrete')
 
     # ---------- lodo: tras el salto del atajo (toda la anchura) y una mancha en una curva del principal
     def mancha_lodo(path, nom, i0, i1, ancho, lado=0):
