@@ -23,6 +23,63 @@ def _rot(p, piv, rot):
     return (x + piv[0], y + piv[1], z + piv[2])
 
 
+OCULTOS = ('hidden', 'hide', 'cap', 'hat', 'item', 'locator')
+
+
+def _molang(v, ctx=None):
+    """valor de una expresion de Molang en el instante 0 (sin variables): numeros, 'a+math.sin(q.anim_time*90*4-60)*b'..."""
+    if isinstance(v, (int, float)): return float(v)
+    if isinstance(v, str):
+        import re
+        e = v.replace('math.', 'M_').replace('Math.', 'M_')
+        e = re.sub(r'\b(q|query|v|variable)\.[a-z_0-9]+', '0', e)
+        env = {'M_sin': lambda d: math.sin(math.radians(d)), 'M_cos': lambda d: math.cos(math.radians(d)), 'M_abs': abs, 'M_min': min, 'M_max': max,
+               'M_pi': math.pi, 'M_clamp': lambda a, lo, hi: max(lo, min(hi, a)), 'M_floor': math.floor, 'M_sqrt': math.sqrt,
+               'M_pow': pow, 'M_lerp': lambda a, b, t: a + (b - a) * t, 'M_random': lambda *a: 0.0}
+        try: return float(eval(e, {'__builtins__': {}}, env))
+        except Exception: return 0.0
+    return 0.0
+
+
+def _vec(v):
+    """[x,y,z] de una animacion: lista, o claves de tiempo (se toma la primera), con expresiones"""
+    if v is None: return None
+    if isinstance(v, dict):
+        if 'vector' in v: v = v['vector']
+        else:
+            k = sorted(v, key=lambda t: float(t) if str(t).replace('.', '', 1).replace('-', '', 1).isdigit() else 1e9)[0]
+            v = v[k]
+            if isinstance(v, dict): v = v.get('post', v.get('pre', [0, 0, 0]))
+    if isinstance(v, (int, float, str)): v = [v, v, v]
+    return [_molang(a) for a in v]
+
+
+def cargar_pose(anim_path, nombres=('ground_idle', 'idle', 'battle_idle')):
+    """{hueso: (rotacion, posicion)} de la animacion de reposo en el instante 0"""
+    if not anim_path or not os.path.exists(anim_path): return {}
+    d = json.load(open(anim_path))['animations']
+    for nom in nombres:
+        for k in d:
+            if k.endswith('.' + nom) or k.endswith(nom):
+                if 'hat' in k or 'sleep' in k: continue
+                out = {}
+                for b, x in d[k].get('bones', {}).items():
+                    r, p = _vec(x.get('rotation')), _vec(x.get('position'))
+                    out[b] = (r or [0, 0, 0], p or [0, 0, 0])
+                return out
+    return {}
+
+
+def _rot_inv(p, piv, rot):
+    """inversa de _rot"""
+    x, y, z = p[0] - piv[0], p[1] - piv[1], p[2] - piv[2]
+    rx, ry, rz = (math.radians(a) for a in rot)
+    x, y = x * math.cos(-rz) - y * math.sin(-rz), x * math.sin(-rz) + y * math.cos(-rz)
+    x, z = x * math.cos(-ry) + z * math.sin(-ry), -x * math.sin(-ry) + z * math.cos(-ry)
+    y, z = y * math.cos(-rx) - z * math.sin(-rx), y * math.sin(-rx) + z * math.cos(-rx)
+    return (x + piv[0], y + piv[1], z + piv[2])
+
+
 def _cargar_geo(ruta):
     d = json.load(open(ruta))
     g = d['minecraft:geometry'][0]
@@ -39,14 +96,17 @@ def _cadena(bones, nombre):
     return out        # del hueso hacia la raiz
 
 
-def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, 1), paso_mult=2.0):
+def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, -1), paso_mult=2.0, pose=None, ocultos=OCULTOS):
     g, bones = _cargar_geo(geo_path)
     tex = Image.open(tex_path).convert('RGBA')
     tw, th = g['description']['texture_width'], g['description']['texture_height']
     sx_t, sy_t = tex.width / tw, tex.height / th
     caras = []   # (puntos 3D del modelo, color) sin voxelizar
     pts = []
+    pose = pose or {}
+    cubos_info = []      # (origen, tamaño, cadena, cubo) de cada cubo visible
     for b in g['bones']:
+        if any(h in b['name'] for h in ocultos): continue
         for c in b.get('cubes', []):
             o, sz = c['origin'], c['size']
             inf = c.get('inflate', b.get('inflate', 0)) or 0
@@ -55,6 +115,7 @@ def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, 1), paso_mult=2.0):
             X0, Y0, Z0 = o[0] - inf, o[1] - inf, o[2] - inf
             SX, SY, SZ = sz[0] + 2 * inf, sz[1] + 2 * inf, sz[2] + 2 * inf
             cadena = _cadena(bones, b['name'])
+            cubos_info.append((c, cadena))
             cuadros = {'n': (u0 + sz[2], v0 + sz[2], sz[0], sz[1]), 'e': (u0, v0 + sz[2], sz[2], sz[1]),
                        's': (u0 + sz[2] + sz[0] + sz[2], v0 + sz[2], sz[0], sz[1]), 'w': (u0 + sz[2] + sz[0], v0 + sz[2], sz[2], sz[1]),
                        'u': (u0 + sz[2], v0, sz[0], sz[2]), 'd': (u0 + sz[2] + sz[0], v0, sz[0], sz[2])}
@@ -90,21 +151,48 @@ def voxeles_modelo(geo_path, tex_path, altura, signo=(1, 1, 1), paso_mult=2.0):
                     pts.append((punto(fx, 0, 1 - fz), color('d', fx, fz), cadena, c))
     # aplicar rotaciones (cubo y huesos) y voxelizar
     todos = []
+    todos_cubo = []
     for p, col, cadena, c in pts:
         if col[3] < 40: continue
         if c.get('rotation'):
             p = _rot(p, c.get('pivot', [0, 0, 0]), [a * s for a, s in zip(c['rotation'], signo)])
         for b in cadena:
-            if b.get('rotation'): p = _rot(p, b.get('pivot', [0, 0, 0]), [a * s for a, s in zip(b['rotation'], signo)])
-        todos.append((p, col))
-    ymin = min(p[1] for p, _ in todos); ymax = max(p[1] for p, _ in todos)
+            r0 = b.get('rotation') or [0, 0, 0]
+            r1, d1 = pose.get(b['name'], ([0, 0, 0], [0, 0, 0]))
+            rr = [a + c2 for a, c2 in zip(r0, r1)]
+            if any(rr): p = _rot(p, b.get('pivot', [0, 0, 0]), [a * s for a, s in zip(rr, signo)])
+            if any(d1): p = (p[0] + d1[0], p[1] + d1[1], p[2] + d1[2])
+        todos.append((p, col, (min(c['size']) <= 0.5)))
+        todos_cubo.append(c)
+    def a_local(c, cadena, p):
+        for b in reversed(cadena):
+            r0 = b.get('rotation') or [0, 0, 0]
+            r1, d1 = pose.get(b['name'], ([0, 0, 0], [0, 0, 0]))
+            if any(d1): p = (p[0] - d1[0], p[1] - d1[1], p[2] - d1[2])
+            rr = [a + c2 for a, c2 in zip(r0, r1)]
+            if any(rr): p = _rot_inv(p, b.get('pivot', [0, 0, 0]), [a * s_ for a, s_ in zip(rr, signo)])
+        if c.get('rotation'): p = _rot_inv(p, c.get('pivot', [0, 0, 0]), [a * s_ for a, s_ in zip(c['rotation'], signo)])
+        return p
+    solidos = [(c, ch) for c, ch in cubos_info if min(c['size']) > 0.5]
+    def enterrado(p, propio):
+        for c, ch in solidos:
+            if c is propio: continue
+            q = a_local(c, ch, p)
+            o, sz = c['origin'], c['size']
+            e = 0.03 - (c.get('inflate') or 0)
+            if o[0] + e < q[0] < o[0] + sz[0] - e and o[1] + e < q[1] < o[1] + sz[1] - e and o[2] + e < q[2] < o[2] + sz[2] - e: return True
+        return False
+    todos = [(p, col, d) for (p, col, d), cu in zip(todos, todos_cubo) if not (d and enterrado(p, cu))]
+    ymin = min(p[1] for p, _, _ in todos); ymax = max(p[1] for p, _, _ in todos)
     esc = altura / max(1e-6, ymax - ymin)
     vox = {}
     acum = {}
-    for p, col in todos:
+    for p, col, decal in todos:
         k = (int(math.floor(p[0] * esc)), int(math.floor((p[1] - ymin) * esc)), int(math.floor(p[2] * esc)))
-        acum.setdefault(k, []).append(col)
-    for k, cols in acum.items():
+        acum.setdefault(k, []).append((col, decal))
+    for k, lista in acum.items():
+        deca = [c for c, d in lista if d]
+        cols = deca if deca else [c for c, d in lista]          # los "calcomanias" (cubos sin grosor: ojos, boca, manchas) mandan sobre la superficie
         cubos = {}
         for c in cols: cubos.setdefault((c[0] // 40, c[1] // 40, c[2] // 40), []).append(c)
         mejor = max(cubos.values(), key=len)                      # color mas frecuente (no la media: asi no se emborronan ojos y manchas)
@@ -186,9 +274,15 @@ def buscar(assets, especie):
     return geo, pngs[0]
 
 
-def estatua(assets, tex_dir, especie, altura):
+def anim_de(assets, especie):
+    import glob
+    r = glob.glob(os.path.join(assets, 'bedrock/pokemon/animations/*_%s/%s.animation.json' % (especie, especie)))
+    return r[0] if r else None
+
+
+def estatua(assets, tex_dir, especie, altura, signo=(1, 1, -1)):
     geo, tex = buscar(assets, especie)
-    return a_bloques(voxeles_modelo(geo, tex, altura), tex_dir)
+    return a_bloques(voxeles_modelo(geo, tex, altura, signo=signo, pose=cargar_pose(anim_de(assets, especie))), tex_dir)
 
 
 def girar(bl, veces):

@@ -51,7 +51,9 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 - Los corredores entran en el equipo `emi_carrera` (sin colisión de nombre) **solo si no tienen ya equipo**, para no pisar los prefijos/colores de otros mods.
 - **Estatuas de Pokémon**: `pista/modelo.py` convierte el modelo y la textura reales de Cobblemon (geometría Bedrock) en bloques de color (concreto, lana, terracota; se elige el más parecido) y `pista/catalogo_estatuas.py`
   guarda cada estatua en `pista/estatuas/<especie>_<altura>.json`, de modo que regenerar la pista no necesita Cobblemon. Para crear una nueva: `COBBLEMON_ASSETS=<jar de Cobblemon descomprimido>/assets/cobblemon MC_TEXTURAS=<textures/block del client.jar> python3 generar.py ..`
-  tras añadirla a la lista `figuras` de `generar.py`. Los modelos salen en su postura de reposo (brazos abiertos), y algunos (Bulbasaur, Venusaur, Mewtwo, Machamp) no quedan bien.
+  tras añadirla a la lista `figuras` de `generar.py`. Se aplica la animación de reposo de Cobblemon (`ground_idle` en el instante 0, con sus expresiones de Molang) para que no salgan en T, y se descartan las variantes de la cara que quedan tapadas por otras
+  (párpados, ojos de emoción, boca abierta...) comprobando si cada superficie fina está dentro de otro cubo; los ojos y la boca ("calcomanías") mandan sobre la superficie de la cabeza. Probados y bien: Pikachu, Charmander, Squirtle, Bulbasaur, Charizard, Blastoise,
+  Dragonite, Lapras, Eevee, Psyduck, Jigglypuff, Espeon, Lucario. El Snorlax se dejó como estaba a petición del dueño (su archivo en `estatuas/` no se regenera). Gengar no cupo en la pista.
 - **Pista**: `pista/generar.py` (Python, usa `tools/emi-gimnasios/gymlib.py`) genera la plantilla `data/emi_carreras/structure/circuito_pokeball.nbt` y `data/emi_carreras/pistas/circuito_pokeball.json`
   (parrilla, puntos de control, cajas, turbos, podio). `camino.py` define el trazado (curva Catmull-Rom). La plantilla se coloca sola la primera vez que se empieza una carrera (o con `/carrera instalar`).
 

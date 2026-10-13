@@ -249,8 +249,9 @@ def main(destino):
     estatua('pikachu', 30, pxc - 32, pzc + 16)
     estatua('snorlax', 36, pxc + 12, pzc + 54)
     # el resto, junto al asfalto y mirando a la pista
-    figuras = [('charmander', 24, 0.06), ('squirtle', 22, 0.19), ('dragonite', 34, 0.33), ('lapras', 26, 0.52), ('eevee', 22, 0.60),
-               ('jigglypuff', 22, 0.71), ('gengar', 28, 0.84), ('lucario', 30, 0.93)]
+    figuras = [('charmander', 24, 0.05), ('bulbasaur', 20, 0.12), ('squirtle', 22, 0.19), ('charizard', 34, 0.27), ('dragonite', 34, 0.34),
+               ('lapras', 26, 0.45), ('eevee', 22, 0.53), ('blastoise', 30, 0.60), ('psyduck', 20, 0.67), ('jigglypuff', 22, 0.74),
+               ('espeon', 24, 0.88), ('lucario', 30, 0.95)]
     for especie, alt, fr in figuras:
         k = centro((s_meta + fr * total) % total)
         m = ms[k]
