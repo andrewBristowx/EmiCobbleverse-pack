@@ -105,8 +105,8 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
 
 ## Probado en la 0.5.0
-Servidor de pruebas y cliente real (un solo jugador): el salto **solo** se dispara en el borde azul (de pie sobre el verde no pasa nada; al llegar al azul salta); la entrada al atajo con turbo sigue funcionando; la interfaz sale (posiciones, mapa con la cabeza del jugador, tarjeta del poder con objeto/nombre/descripción), y la lista de Pokémon, el minimapa y el cuadro de Jade desaparecen durante la carrera (capturas antes/durante).
-**No probado**: la interfaz con **varios jugadores** (cabezas moviéndose por el mapa, orden de la tabla), que todo se restaure al terminar la carrera (se probó al salir de la carrera por lo logs, no con capturas), con otras resoluciones o escalas de interfaz, ni el servidor real.
+Servidor de pruebas y cliente real (un solo jugador): el salto **solo** se dispara en el borde azul (de pie sobre el verde no pasa nada; al llegar al azul salta); la entrada al atajo con turbo sigue funcionando; la interfaz sale (posiciones, mapa con la cabeza del jugador, tarjeta del poder con objeto/nombre/descripción), y la lista de Pokémon, el minimapa y el cuadro de Jade desaparecen durante la carrera y **vuelven al cancelarla** (capturas antes/durante/después).
+**No probado**: la interfaz con **varios jugadores** (cabezas moviéndose por el mapa, orden de la tabla), con otras resoluciones o escalas de interfaz, ni el servidor real.
 
 ## Probado en la 0.4.1 (arreglos tras las pruebas del dueño)
 Con servidor de pruebas y cliente real: el salto del bucle (asiento invisible) recorre la parábola exacta (log de posiciones jugador/asiento) y aterriza en la pista; la entrada al atajo con turbo aterriza en el atajo y sin turbo cae a la lava. **No probado**: lo fluido que se ve en un cliente normal con red real (el cliente de pruebas va a pocos fps y sin audio), ni varios jugadores.
