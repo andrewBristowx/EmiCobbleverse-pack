@@ -41,7 +41,7 @@ import java.util.*;
 
 /** Estado y reglas de la carrera. Todo ocurre en la dimension emi_carreras:pista. */
 public final class Carrera {
-    public enum Fase { LIBRE, COLA, CUENTA, CARRERA, FIN }
+    public enum Fase { LIBRE, COLA, PRESENTACION, CUENTA, CARRERA, FIN }
 
     public static final RegistryKey<World> MUNDO = RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_carreras", "pista"));
     static final String TAG = "emi_carrera";
@@ -55,6 +55,9 @@ public final class Carrera {
     static final Random rnd = new Random();
     static int tickCuenta, tickInicio, tickFin, limite = -1, tickAviso, vueltasTotal, graciaHasta;
     static int[] podioTick;
+    static int presIni, presDur;
+    static List<Corredor> presOrden = new ArrayList<>();
+    static List<com.cobblemon.mod.common.entity.pokemon.PokemonEntity> presVisuales = new ArrayList<>();
 
     static final List<Caja> cajas = new ArrayList<>();
     static final List<Bola> bolas = new ArrayList<>();
@@ -208,19 +211,17 @@ public final class Carrera {
             c.poder = null; c.escudoHasta = c.paradoHasta = c.lentoHasta = c.turboHasta = c.ciegoHasta = c.golpeInmuneHasta = 0; c.ultimoModificador = Double.NaN; c.previa = null;
             p.getInventory().clear();
             p.clearStatusEffects();
-            p.changeGameMode(GameMode.ADVENTURE);
+            p.changeGameMode(cfg.presentacion ? GameMode.SPECTATOR : GameMode.ADVENTURE);   // en la presentacion el jugador hace de camara
             p.getAbilities().flying = false; p.sendAbilitiesUpdate();
             p.setHealth(p.getMaxHealth());
             p.teleport(w, g[0], g[1], g[2], (float) g[3], 0f);
-            Montura.prepararJugador(p, cfg.velocidad, !Morph.disponible());
             unir(p.getNameForScoreboard());
-            Morph.transformar(server, p, c.pokemon);
-            p.sendMessage(Msg.say("¡A la parrilla! Cuando acabe la cuenta atrás, corre. Pulsa F5 para verte desde fuera."), false);
+            if (!cfg.presentacion) prepararCorredor(p, c);
         }
         crearCajas(w);
-        fase = Fase.CUENTA;
-        tickCuenta = ahora() + cfg.cuentaAtras * 20;
         graciaHasta = ahora() + 60;
+        if (cfg.presentacion) comenzarPresentacion(w, orden);
+        if (fase != Fase.PRESENTACION) { fase = Fase.CUENTA; tickCuenta = ahora() + cfg.cuentaAtras * 20; }
         EmiCarreras.LOG.info("Carrera en '{}' con {} corredores y {} vueltas", pista.id, corr.size(), vueltasTotal);
         return null;
     }
@@ -273,6 +274,8 @@ public final class Carrera {
         ServerWorld w = mundo();
         if (w == null) { parar("la dimension de la pista ya no existe"); return; }
 
+        if (fase == Fase.PRESENTACION) presentacion(w, now);
+
         if (fase == Fase.CUENTA) {
             int restan = tickCuenta - now;
             if (restan % 20 == 0 && restan > 0) {
@@ -304,7 +307,7 @@ public final class Carrera {
                 EmiCarreras.LOG.info("{} esta fuera de la pista (dimension {}): se le da por retirado", c.nombre, p.getServerWorld().getRegistryKey().getValue());
                 abandonar(c, p, "ha salido de la pista"); continue;
             }
-            mantener(p, c, w, now);
+            if (fase != Fase.PRESENTACION) mantener(p, c, w, now);
         }
 
         if (fase == Fase.CARRERA) {
@@ -389,7 +392,7 @@ public final class Carrera {
     }
 
     static void aplicarVelocidad(ServerPlayerEntity p, Corredor c, int now) {
-        boolean parado = fase == Fase.CUENTA || now < c.paradoHasta;
+        boolean parado = fase == Fase.CUENTA || fase == Fase.PRESENTACION || now < c.paradoHasta;
         double f = 0;
         if (now < c.turboHasta) f += c.turboFactor;
         if (now < c.lentoHasta) f -= c.lentoFactor;
@@ -573,8 +576,96 @@ public final class Carrera {
         return null;
     }
 
+    // ------------------------------------------------------------------ presentacion (camaras)
+
+    static final int PRES_ESPERA = 100;   // ticks de espera: el cliente tarda en cargar la dimension
+
+    /** Deja al jugador listo para correr: modo aventura, velocidad fija y transformado en su Pokemon. */
+    static void prepararCorredor(ServerPlayerEntity p, Corredor c) {
+        Montura.prepararJugador(p, cfg.velocidad, !Morph.disponible());
+        Morph.transformar(server, p, c.pokemon);
+        p.sendMessage(Msg.say("¡A la parrilla! Cuando acabe la cuenta atrás, corre. Pulsa F5 para verte desde fuera."), false);
+    }
+
+    /**
+     * Presentacion: los jugadores van en modo espectador y se les mueve ellos mismos como si fueran la camara (asi no hace falta nada en el cliente);
+     * en cada sitio de la parrilla se pone una copia sin IA del Pokemon de su corredor para poder enfocarla.
+     */
+    static void comenzarPresentacion(ServerWorld w, List<Corredor> orden) {
+        if (orden.isEmpty()) return;
+        presOrden = new ArrayList<>(orden);
+        presOrden.sort(java.util.Comparator.comparingInt(c -> c.hueco));
+        presDur = cfg.presentacionSegundos > 0 ? cfg.presentacionSegundos * 20 : Math.max(24, Math.min(60, 240 / presOrden.size()));
+        presIni = ahora();
+        presVisuales.clear();
+        for (Corredor c : presOrden) {
+            try {
+                var e = Montura.crearVisual(w, c.pokemon, Text.literal(c.nombre), c.reaparicion, c.reaparicionYaw);
+                e.setHeadYaw(c.reaparicionYaw); e.setBodyYaw(c.reaparicionYaw);
+                e.addCommandTag(TAG);
+                presVisuales.add(e);
+            } catch (Throwable t) { EmiCarreras.LOG.warn("presentacion: no se pudo crear el Pokemon de {}: {}", c.nombre, t.toString()); }
+        }
+        fase = Fase.PRESENTACION;
+    }
+
+    /** Un plano por corredor: la camara gira alrededor de su Pokemon y sale su nombre. Al terminar cada uno se transforma en su sitio y empieza la cuenta atras. */
+    static void presentacion(ServerWorld w, int now) {
+        int t = now - presIni;
+        int n = presOrden.size();
+        if (n == 0 || t >= PRES_ESPERA + n * presDur) { terminarPresentacion(now); return; }
+        if (t < PRES_ESPERA) {
+            if (t % 20 == 0) for (ServerPlayerEntity p : jugadores()) Msg.actionBar(p, Text.literal("Preparando la parrilla...").formatted(Formatting.GRAY));
+            return;
+        }
+        int seg = (t - PRES_ESPERA) / presDur;
+        int dentro = (t - PRES_ESPERA) % presDur;
+        Corredor c = presOrden.get(seg);
+        if (dentro == 0) {
+            EmiCarreras.LOG.info("Presentacion: plano {} de {} ({})", seg + 1, n, c.nombre);
+            for (ServerPlayerEntity p : jugadores())
+                Msg.title(p, Text.literal(c.nombre).formatted(Formatting.YELLOW, Formatting.BOLD),
+                        Text.literal(c.pokemon.getSpecies().getName()).formatted(Formatting.GRAY), 2, Math.max(4, presDur - 8), 6);
+        }
+        double f = dentro / (double) presDur;
+        double ang = Math.toRadians(c.reaparicionYaw + 50 - 80 * f);      // barrido desde un lado hacia el otro, delante del corredor
+        double r = 4.0 - 0.8 * f;
+        double objX = c.reaparicion.x, objY = c.reaparicion.y + 0.9, objZ = c.reaparicion.z;
+        double cx = objX - Math.sin(ang) * r, cz = objZ + Math.cos(ang) * r, cy = c.reaparicion.y + 1.7 + 0.5 * f;
+        double dx = objX - cx, dy = objY - cy, dz = objZ - cz;
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+        for (ServerPlayerEntity p : jugadores()) p.networkHandler.requestTeleport(cx, cy - p.getStandingEyeHeight(), cz, yaw, pitch);
+    }
+
+    static void terminarPresentacion(int now) {
+        EmiCarreras.LOG.info("Presentacion terminada");
+        quitarPresentacion();
+        ServerWorld w = mundo();
+        for (Corredor c : corr.values()) {
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+            if (p == null || c.abandono || w == null) continue;
+            p.changeGameMode(GameMode.ADVENTURE);
+            p.getAbilities().flying = false; p.sendAbilitiesUpdate();
+            p.teleport(w, c.reaparicion.x, c.reaparicion.y, c.reaparicion.z, c.reaparicionYaw, 0f);
+            prepararCorredor(p, c);
+            Msg.title(p, Text.literal("¡Preparados!").formatted(Formatting.GOLD, Formatting.BOLD), null, 0, 20, 5);
+        }
+        graciaHasta = now + 20;
+        fase = Fase.CUENTA;
+        tickCuenta = now + cfg.cuentaAtras * 20;
+    }
+
+    /** Quita las copias de los Pokemon de la presentacion. */
+    static void quitarPresentacion() {
+        for (var e : presVisuales) e.discard();
+        presVisuales.clear();
+        presOrden = new ArrayList<>();
+    }
+
     /** Devuelve a todos lo suyo, quita Pokemon, cajas y proyectiles y deja el minijuego libre. */
     static void limpiar() {
+        try { quitarPresentacion(); } catch (Throwable t) { EmiCarreras.LOG.warn("presentacion: {}", t.toString()); }
         for (Corredor c : corr.values()) {
             try {
                 if (c.visual != null) { c.visual.discard(); c.visual = null; }
@@ -678,16 +769,34 @@ public final class Carrera {
         }
     }
 
+    static final int MONEDA_MODELO = 7020001;     // custom_model_data de la moneda del Michialien (assets/minecraft/models/item/nautilus_shell.json)
+
     static void invocarCaja(ServerWorld w, Caja c) {
-        String cmd = String.format(Locale.ROOT, "summon minecraft:item_display %.2f %.2f %.2f {Tags:[\"%s\"],billboard:\"vertical\",item:{id:\"minecraft:sniffer_egg\",count:1},"
-                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0.9f,0f],scale:[1.7f,1.7f,1.7f]},Glowing:1b,glow_color_override:16766720}", c.pos.x, c.pos.y, c.pos.z, TAG);
+        String cmd = String.format(Locale.ROOT, "summon minecraft:item_display %.2f %.2f %.2f {Tags:[\"%s\"],item_display:\"fixed\","
+                + "item:{id:\"minecraft:nautilus_shell\",count:1,components:{\"minecraft:custom_model_data\":%d}},"
+                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,1.1f,0f],scale:[0.9f,0.9f,0.9f]}}", c.pos.x, c.pos.y, c.pos.z, TAG, MONEDA_MODELO);
         try { server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(w).withSilent(), cmd); }
         catch (Exception e) { EmiCarreras.LOG.warn("No se pudo crear una caja", e); return; }
         var l = w.getEntitiesByClass(Entity.class, new Box(c.pos.x - 0.5, c.pos.y - 0.5, c.pos.z - 0.5, c.pos.x + 0.5, c.pos.y + 1.5, c.pos.z + 0.5), e -> e.getCommandTags().contains(TAG));
         c.ent = l.isEmpty() ? null : l.get(0);
     }
 
+    /** Hace girar las monedas: cada medio segundo suman un cuarto de vuelta, suavizado por el cliente (interpolacion de las entidades de pantalla). */
+    static void girarMonedas(ServerWorld w, int now) {
+        if (now % 10 != 0) return;
+        double ang = Math.toRadians(((now / 10) % 4) * 90 + 90) ;   // 90,180,270,360...
+        double paso = (now / 10) * Math.PI / 2;
+        double sn = Math.sin(paso / 2), cs = Math.cos(paso / 2);
+        for (Caja c : cajas) {
+            if (c.ent == null || c.ent.isRemoved()) continue;
+            String cmd = String.format(Locale.ROOT, "data merge entity %s {start_interpolation:0,interpolation_duration:10,transformation:{left_rotation:[0f,%.5ff,0f,%.5ff],right_rotation:[0f,0f,0f,1f],translation:[0f,1.1f,0f],scale:[0.9f,0.9f,0.9f]}}",
+                    c.ent.getUuidAsString(), sn, cs);
+            try { server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(w).withSilent(), cmd); } catch (Exception e) { }
+        }
+    }
+
     static void actualizarCajas(ServerWorld w, int now) {
+        girarMonedas(w, now);
         for (Caja c : cajas) {
             if (c.ent == null || c.ent.isRemoved()) {
                 if (now >= c.libreEn) { c.ent = null; invocarCaja(w, c); }

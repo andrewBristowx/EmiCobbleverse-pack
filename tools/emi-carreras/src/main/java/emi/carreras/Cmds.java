@@ -69,6 +69,7 @@ public final class Cmds {
         String t = switch (Carrera.fase()) {
             case LIBRE -> "No hay ninguna carrera.";
             case COLA -> "Cola abierta: " + Carrera.corr.size() + " corredor(es) apuntado(s).";
+            case PRESENTACION -> "Presentación de los corredores.";
             case CUENTA -> "Cuenta atras en marcha.";
             case CARRERA -> "Carrera en marcha.";
             case FIN -> "La carrera ha terminado.";

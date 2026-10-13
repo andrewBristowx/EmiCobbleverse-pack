@@ -1,0 +1,5 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "minecraft:item/nautilus_shell" },
+  "overrides": [ { "predicate": { "custom_model_data": 7020001 }, "model": "emi_carreras:item/moneda_michi" } ]
+}

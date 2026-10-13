@@ -21,6 +21,8 @@ public final class Cfg {
     public double velocidad = 0.23;              // atributo de velocidad igual para todos (un jugador normal anda a 0.1; 0.23 = unos 10 bloques/s)
     public double adelanto = 3.0;                // ticks que se adelanta el Pokemon visual para compensar el retraso de la red
     public float alturaPokemon = 1.3f;           // todos los Pokemon se escalan a esta altura (bloques)
+    public boolean presentacion = true;          // antes de la cuenta atras, camaras que enfocan a cada corredor
+    public int presentacionSegundos = 0;         // segundos por corredor (0 = automatico: 3 s con uno, menos si hay muchos)
     public int cuentaAtras = 5;                  // segundos
     public int segundosTrasPrimero = 45;         // tras llegar el primero, los demas tienen este tiempo
     public int respawnSegundos = 2;              // parada al caerse de la pista

@@ -8,13 +8,13 @@ vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carre
 1. El organizador escribe **`/carrera abrir`**: aviso a todos con el botón **[UNIRSE]** (se repite cada 60 s).
 2. Cada jugador pulsa el botón o escribe `/carrera unirse`. Sale la lista de su equipo con botones **[ELEGIR]**: **solo valen los Pokémon terrestres**
    (los que caminan y no vuelan ni son de tipo Volador). Si no tiene ninguno se le **presta** uno (`prestados` en la config). Se cambia con `/carrera elegir <1-6>` hasta que empiece.
-3. **`/carrera empezar`**: se guarda en disco el inventario, la posición, el modo de juego y el hambre de cada uno, y todos aparecen en la **parrilla** (cuenta atrás de 5 s).
+3. **`/carrera empezar`**: se guarda en disco el inventario, la posición, el modo de juego y el hambre de cada uno y todos aparecen en la **parrilla**. Antes de la cuenta atrás hay una **presentación**: unos segundos de espera (la dimensión tarda en cargar), y luego una cámara da una vuelta alrededor de cada corredor y de su Pokémon, con su nombre y especie en el título (3 s por corredor, menos si son muchos). Después cada uno vuelve a su sitio, ya transformado, y empieza la **cuenta atrás de 5 s**.
 4. Durante la carrera el jugador va **transformado en su Pokémon** con el mod **CobbleMorph** (que ya está en el pack): el cliente dibuja el modelo del Pokémon en lugar del jugador, con su misma especie, forma y variocolor, y camina con su animación.
    Si CobbleMorph no está instalado, el jugador va invisible y su Pokémon es una **copia visual** que lo acompaña (puede desfasarse al correr).
    **Todos van exactamente a la misma velocidad** (atributo fijo, sin correr, sin saltar). Se maneja con WASD y el ratón; **pulsa F5** para verte desde fuera.
 5. Hay que pasar por todos los **puntos de control en orden** (arcos azules; la meta es el arco rojo con Pokéballs). Tres vueltas por defecto. Si te caes de la pista
    vuelves al último punto de control tras 2 s parado.
-6. Las **cajas** (huevos dorados brillantes en la pista) dan un **poder** al azar, que sale en la ranura 5 de la barra: **clic derecho** para usarlo (también vale el clic izquierdo, o clicar sobre una entidad; agáchate para tirarlo hacia atrás).
+6. Las **cajas** (una **moneda del Michialien** que gira, con el gatito blanco de antenas moradas y la luna) dan un **poder** al azar, que sale en la ranura 5 de la barra: **clic derecho** para usarlo (también vale el clic izquierdo, o clicar sobre una entidad; agáchate para tirarlo hacia atrás).
    Quien va peor clasificado tiene más probabilidad de los poderes fuertes. Se recargan a los 6 s.
 7. Cuando llega el primero, los demás tienen 45 s. Al final: clasificación en el chat, título con el ganador, y a los 10 s todos recuperan lo suyo y vuelven a donde estaban.
 
@@ -35,7 +35,7 @@ Organizador (operador nivel 2 o permiso `emi_carreras.admin` de LuckPerms): `/ca
 Solo pruebas: `/carrera _poder <baya|pokeball|voltorb|escudo|caramelo|trueno>` (durante la carrera, te da ese poder).
 
 ## Configuración (`config/emi_carreras.json`, se crea sola)
-`pista`, `vueltas` (0 = las de la pista), `minPlayers` (1), `maxPlayers` (12), `velocidad` (0.23 ≈ 10 bloques/s), `adelanto`, `alturaPokemon`, `cuentaAtras`, `segundosTrasPrimero`, `respawnSegundos`,
+`pista`, `vueltas` (0 = las de la pista), `minPlayers` (1), `maxPlayers` (12), `velocidad` (0.23 ≈ 10 bloques/s), `adelanto`, `alturaPokemon`, `presentacion` (true/false: la presentación con cámaras), `presentacionSegundos` (por corredor; 0 = automático), `cuentaAtras`, `segundosTrasPrimero`, `respawnSegundos`,
 `queueReminderSeconds`, `poderes`, `cajaRespawnSegundos`, `prestados` (especies prestadas) y **`recompensas`**: lista de comandos por puesto (1.º, 2.º, 3.º…) con `{jugador}`, vacíos por defecto
 (p. ej. `"cobbledollars give {jugador} 500"`: pon el comando real de tu economía).
 Si existe `config/emi_carreras/pistas/<id>.json` se usa en lugar del de dentro del mod (para ajustar la pista sin recompilar).
@@ -59,9 +59,19 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 - **Pista**: `pista/generar.py` (Python, usa `tools/emi-gimnasios/gymlib.py`) genera la plantilla `data/emi_carreras/structure/circuito_pokeball.nbt` y `data/emi_carreras/pistas/circuito_pokeball.json`
   (parrilla, puntos de control, cajas, turbos, podio). `camino.py` define el trazado (curva Catmull-Rom). La plantilla se coloca sola la primera vez que se empieza una carrera (o con `/carrera instalar`).
 
+- **Moneda del Michialien (0.3.0)**: las cajas son entidades `item_display` con un objeto con modelo propio (`assets/emi_carreras/models/item/moneda_michi.json`, dos caras con la textura `moneda_michi.png`).
+  En 1.21.1 no existe el componente `item_model`, así que se usa `minecraft:nautilus_shell` con `custom_model_data` 7020001 y un *override* en `assets/minecraft/models/item/nautilus_shell.json` (va dentro del mod, no hace falta resource pack; el jugador sí necesita el mod en el cliente).
+  La moneda gira porque el servidor le cambia la rotación cada 10 ticks con interpolación.
+- **Presentación (0.3.0)**: no se usa `setCameraEntity` (en vanilla mueve el cuerpo del jugador junto a la cámara y se pierde su sitio): los jugadores pasan a modo **espectador** y el servidor los mueve a ellos mismos por la órbita (`requestTeleport` cada tick),
+  mientras en cada hueco de la parrilla hay una copia sin IA del Pokémon de su corredor. Al terminar se les devuelve a su hueco, pasan a modo aventura y se transforman con CobbleMorph.
+
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.3.0
+Con servidor de pruebas y un cliente real (un solo jugador): la **moneda** se ve con su textura por las dos caras y gira; la **presentación** (espera, cámara orbitando al GatitoAlien con su nombre en el título, vuelta al hueco ya transformado y cuenta atrás 5-4-3…) funciona.
+**No probado**: la presentación con **varios** jugadores a la vez (todos ven la misma cámara; con 12 son ~18 s), un jugador que mueva el ratón durante la cámara, y la espera de 5 s frente a una carga de dimensión lenta del servidor real.
 
 ## Probado (v0.1.0; la 0.1.1 solo cambia las estatuas y el entorno)
 Servidor Fabric de pruebas con todos los mods del pack y un **cliente real** (un solo jugador, administrador):
