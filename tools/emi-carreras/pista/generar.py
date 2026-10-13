@@ -11,6 +11,7 @@ import camino
 import escenario
 import modelo
 import catalogo_estatuas
+import mapa
 
 ID = 'circuito_pokeball'
 MARGEN = 45
@@ -274,6 +275,13 @@ def main(destino):
         x, z = rnd.randint(8, W - 9), rnd.randint(8, L - 9)
         if lejos(x, z, 22): pokeball(v, x, 5, z, 4, hacia=(rnd.choice([-1, 1]), 0)); v.fill(x - 1, 1, z - 1, x + 1, 1, z + 1, 'stone_bricks')
 
+    # ---- mapa para la interfaz del cliente
+    ruta_mapa = os.path.join(destino, 'src/main/resources/assets/emi_carreras/textures/gui/mapa_' + ID + '.png')
+    trazos = [(pts, 2 * MEDIO - 1, (205, 205, 215, 255)) for pts in mapa.partir([{'x': m['x'] + ox, 'z': m['z'] + oz} for m in ms])]
+    cajas_m = [(t[0], t[2], t[3], t[5], (255, 215, 40, 255)) for t in turbos]
+    mp = ms[k_meta]
+    mw_, mh_ = mapa.dibujar(ruta_mapa, W, L, trazos, cajas=cajas_m, meta=(mp['x'] + ox, mp['z'] + oz, mp['tx'], mp['tz'], MEDIO))
+
     # ---- guardar
     caida = ORIGEN[1] + 3
     nbt = os.path.join(destino, 'src/main/resources/data/emi_carreras/structure', ID + '.nbt')
@@ -291,6 +299,7 @@ def main(destino):
         'cajas': [[c[0] + ORIGEN[0], c[1] + ORIGEN[1], c[2] + ORIGEN[2]] for c in cajas],
         'turbos': [[t[0] + ORIGEN[0], t[1] + ORIGEN[1], t[2] + ORIGEN[2], t[3] + ORIGEN[0], t[4] + ORIGEN[1], t[5] + ORIGEN[2]] for t in turbos],
         'caidaY': caida,
+        'mapa': {'x0': ORIGEN[0], 'z0': ORIGEN[2], 'ancho': W, 'largo': L, 'px': mw_, 'py': mh_},
     }
     js = os.path.join(destino, 'src/main/resources/data/emi_carreras/pistas', ID + '.json')
     os.makedirs(os.path.dirname(js), exist_ok=True)

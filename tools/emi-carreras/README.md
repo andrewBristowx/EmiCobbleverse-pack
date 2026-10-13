@@ -12,7 +12,7 @@ Se elige con `/carrera abrir [pista]` (sin nombre, la de `pista` en la configura
 | `volcan_cinnabar` | Volcán Cinnabar | **Más difícil**: pista estrecha con desnivel, 2 vueltas, 2 **saltos** sobre lava, un **atajo** con salto largo, **lodo** y **Voltorb fijos**. Volcán con cráter de lava y estatuas de fuego. |
 
 ### Mecánicas del Volcán Cinnabar
-- **Plataforma de salto** (franja verde con flechas blancas, antes de un hueco con lava): al pisarla vuelas en arco hasta la otra orilla (no hace falta saltar; el salto está desactivado). El servidor sienta al jugador en un **asiento invisible** (una entidad) y lo mueve por la parábola; el cliente interpola
+- **Plataforma de salto** (franja verde con flechas blancas, antes de un hueco con lava; **solo el borde azul de 1 bloque del final dispara el salto**, la parte verde es solo la guía): al pisar el borde azul vuelas en arco hasta la otra orilla (no hace falta saltar; el salto está desactivado). El servidor sienta al jugador en un **asiento invisible** (una entidad) y lo mueve por la parábola; el cliente interpola
   el movimiento de la entidad y sale fluido (versiones anteriores teletransportaban al jugador cada tick o le daban velocidad, y se veía congelado en el aire y de golpe al otro lado, o se quedaba corto con pocos fps). Si pulsas agacharte para bajarte, se te vuelve a montar. Los dos saltos del bucle principal son seguros.
 - **Entrada al atajo (CTR)**: el atajo **ya no está unido a la pista**: sale por el lado derecho y solo se llega con un salto con turbo desde la plataforma del **carril interior** (3 de ancho, pegado al lado oeste), precedida por su franja azul y amarilla. Sin turbo (o fuera del carril) no hay entrada; con la plataforma pero sin turbo el arco acaba en la lava.
 - **Atajo con turbo («como en Crash Team Racing»)**: se salta ~340 bloques del bucle. Dentro hay un segundo hueco de 17 bloques: **solo se cruza si pisas antes la franja azul y amarilla del suelo (3 de ancho)**, que da turbo; con turbo
@@ -21,6 +21,14 @@ Se elige con `/carrera abrir [pista]` (sin nombre, la de `pista` en la configura
 - **Voltorb fijos**: explotan al tocarlos (como el poder) y reaparecen a los 12 s. Solo existen mientras hay un corredor cerca.
 - Caer a la lava (o pisar el suelo fuera de la pista) = volver al último punto de control. El atajo no tiene puntos de control propios: los puntos de control del bucle que se salta no existen (no hay ninguno en ese tramo).
 - Los generadores son `pista/camino_volcan.py` y `pista/volcan.py` (Python; `python3 volcan.py ..`). Los datos nuevos del JSON de pista: `saltos` (zona, destino, destino_turbo, normal, altura, ticks), `lodo`, `voltorbs`, `musica`, `ambiente`.
+
+## Interfaz de la carrera (0.5.0, parte de cliente del mod)
+El servidor manda el estado de la carrera ~4 veces por segundo (`EstadoPayload`) y el poder que llevas (`PoderPayload`) a quien tenga el mod en el cliente (los demás ven solo el texto de la barra). Mientras dura la carrera el cliente:
+- **Oculta** la lista de Pokémon de Cobblemon (`HidePartyBinding`), el minimapa de JourneyMap (`ClientAPI.toggleMinimap`), el cuadro de Jade (`IWailaConfig...setDisplayTooltip`) y los avisos emergentes; al acabar (o al salir del servidor / cerrar el juego) lo deja como estaba. Todo por reflexión: si falta alguno de esos mods no pasa nada. El dinero de CobbleDollars (abajo a la derecha) no se oculta.
+- **Posiciones** (arriba a la derecha): puesto, cabeza, nombre, vuelta y tiempo de cada corredor, ordenado y actualizándose.
+- **Mapa de la pista** (debajo): imagen cenital generada por `pista/mapa.py` (`assets/emi_carreras/textures/gui/mapa_<id>.png`, se sitúa con `mapa` del JSON de la pista) con la **cabeza de cada jugador** donde está (la tuya con borde blanco).
+- **Poder**: al cogerlo sale una tarjeta grande (objeto, nombre, qué hace); mientras lo llevas queda un recordatorio sobre la barra de objetos.
+Se oculta con F1 como cualquier interfaz.
 
 ## Sonido
 - **Música de fondo** durante la carrera (chiptune original hecha con `musica/generar_musica.py`, ogg dentro del mod): «circuito» (alegre, 51,2 s) y «volcan» (oscura y rápida, 40 s). El servidor la relanza en bucle (las duraciones están en `DURACION_MUSICA` de `Carrera.java`); suena en la categoría **Música** del cliente.
@@ -95,6 +103,10 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.5.0
+Servidor de pruebas y cliente real (un solo jugador): el salto **solo** se dispara en el borde azul (de pie sobre el verde no pasa nada; al llegar al azul salta); la entrada al atajo con turbo sigue funcionando; la interfaz sale (posiciones, mapa con la cabeza del jugador, tarjeta del poder con objeto/nombre/descripción), y la lista de Pokémon, el minimapa y el cuadro de Jade desaparecen durante la carrera (capturas antes/durante).
+**No probado**: la interfaz con **varios jugadores** (cabezas moviéndose por el mapa, orden de la tabla), que todo se restaure al terminar la carrera (se probó al salir de la carrera por lo logs, no con capturas), con otras resoluciones o escalas de interfaz, ni el servidor real.
 
 ## Probado en la 0.4.1 (arreglos tras las pruebas del dueño)
 Con servidor de pruebas y cliente real: el salto del bucle (asiento invisible) recorre la parábola exacta (log de posiciones jugador/asiento) y aterriza en la pista; la entrada al atajo con turbo aterriza en el atajo y sin turbo cae a la lava. **No probado**: lo fluido que se ve en un cliente normal con red real (el cliente de pruebas va a pocos fps y sin audio), ni varios jugadores.

@@ -9,6 +9,9 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
 import net.minecraft.item.ItemStack;
+import emi.carreras.net.EstadoPayload;
+import emi.carreras.net.PoderPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.packet.s2c.play.StopSoundS2CPacket;
 import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.sound.SoundEvent;
@@ -92,6 +95,34 @@ public final class Carrera {
     public static void shutdown() { limpiarEntidades(); }
 
     static ServerWorld mundo() { return server.getWorld(MUNDO); }
+
+    // ------------------------------------------------------------------ interfaz del cliente (posiciones, mapa, poder)
+
+    /** Envia el estado de la carrera a los jugadores que tengan el mod en el cliente (los demas siguen viendo solo el texto de la barra). */
+    static void enviarEstado(int now, boolean activo) {
+        if (server == null || pista == null) return;
+        List<EstadoPayload.Jugador> lista = new ArrayList<>();
+        if (activo) {
+            Map<Corredor, Integer> pu = puestos();
+            for (Corredor c : corr.values()) {
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+                if (p == null || c.abandono) continue;
+                lista.add(new EstadoPayload.Jugador(c.id, c.nombre, (float) p.getX(), (float) p.getZ(), c.vuelta, pu.getOrDefault(c, corr.size()), c.finTick >= 0));
+            }
+        }
+        var m = pista.mapa;
+        EstadoPayload pl = new EstadoPayload(activo, pista.id, pista.nombre, m == null ? 0 : (float) m.x0, m == null ? 0 : (float) m.z0, m == null ? 0 : (float) m.ancho, m == null ? 0 : (float) m.largo,
+                m == null ? 0 : m.px, m == null ? 0 : m.py, vueltasTotal, fase == Fase.CARRERA ? now - tickInicio : 0, lista);
+        for (ServerPlayerEntity p : jugadores()) if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) ServerPlayNetworking.send(p, pl);
+    }
+
+    /** Avisa al cliente del poder que lleva (null = ninguno). */
+    static void enviarPoder(ServerPlayerEntity p, Poder pw, boolean nuevo) {
+        if (p == null || !ServerPlayNetworking.canSend(p, PoderPayload.ID)) return;
+        if (pw == null) { ServerPlayNetworking.send(p, PoderPayload.ninguno()); return; }
+        Integer col = pw.color.getColorValue();
+        ServerPlayNetworking.send(p, new PoderPayload(pw.name(), pw.nombre, pw.descripcion, pw.itemId, col == null ? 0xFFFFFF : col, nuevo));
+    }
 
     // ------------------------------------------------------------------ sonido
 
@@ -402,6 +433,7 @@ public final class Carrera {
             if (now >= tickFin) limpiar();
         }
         if (fase == Fase.CARRERA || fase == Fase.FIN) enviarAlPodio(now);
+        if (now % 5 == 0) enviarEstado(now, true);
         if (now % 40 == 0) expulsarIntrusos(w);
         if (now % 20 == 10) barrerMonedasSueltas(w);
     }
@@ -503,9 +535,10 @@ public final class Carrera {
         if (c.vueloTicks > 0) { volar(p, c, w, now); pos = p.getPos(); }
         else {
             if (pos.y < pista.caidaY) { reaparecer(p, c, w, now); return; }
-            var sa = pista.saltoEn(pos);
+            var sa = pista.saltoEntre(c.posAnt, pos);
             if (sa != null && now >= c.saltoCooldown) iniciarVuelo(p, c, sa, w, now);
         }
+        c.posAnt = pos;
         if (pista.enTurbo(pos)) {
             if (now >= c.turboHasta) sfx(p, SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.7f, 1.3f);
             c.turboHasta = Math.max(c.turboHasta, now + 25); c.turboFactor = Math.max(c.turboFactor, 0.45);
@@ -581,7 +614,7 @@ public final class Carrera {
 
     /** Baja al jugador del asiento y lo deja en el sitio exacto del aterrizaje. */
     static void terminarVuelo(ServerPlayerEntity p, Corredor c, ServerWorld w, int now, boolean normal) {
-        c.vueloTicks = 0;
+        c.vueloTicks = 0; c.posAnt = null;
         if (p != null) p.stopRiding();
         if (c.asiento != null) { c.asiento.discard(); c.asiento = null; }
         if (p == null || !normal) return;
@@ -684,7 +717,7 @@ public final class Carrera {
             Msg.broadcastTo(jugadores(), Msg.say("Quedan " + cfg.segundosTrasPrimero + " segundos para que termine la carrera."));
         }
         if (podioTick == null) podioTick = new int[0];
-        c.poder = null;
+        c.poder = null; enviarPoder(p, null, false);
         c.paradoHasta = 0;
         podioPendiente.put(c.id, ahora() + 60);
     }
@@ -902,6 +935,7 @@ public final class Carrera {
 
     /** Devuelve a todos lo suyo, quita Pokemon, cajas y proyectiles y deja el minijuego libre. */
     static void limpiar() {
+        try { enviarEstado(ahora(), false); for (ServerPlayerEntity pj : jugadores()) enviarPoder(pj, null, false); } catch (Throwable t) { EmiCarreras.LOG.warn("interfaz: {}", t.toString()); }
         try { pararMusica(); } catch (Throwable t) { EmiCarreras.LOG.warn("musica: {}", t.toString()); }
         try { quitarPresentacion(); } catch (Throwable t) { EmiCarreras.LOG.warn("presentacion: {}", t.toString()); }
         for (Corredor c : corr.values()) {
@@ -1062,6 +1096,7 @@ public final class Carrera {
                     List<Corredor> orden = ordenados();
                     double rr = orden.size() <= 1 ? 0.5 : orden.indexOf(r) / (double) (orden.size() - 1);
                     r.poder = Poder.sortear(rr, rnd);
+                    enviarPoder(p, r.poder, true);
                     Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.4f);
                     sfx(p, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1.5f);
                     p.sendMessage(Text.literal("¡Has conseguido ").formatted(Formatting.WHITE).append(r.poder.titulo()).append(Text.literal("! ").formatted(Formatting.WHITE)).append(Text.literal(r.poder.descripcion).formatted(Formatting.GRAY)), false);
@@ -1079,6 +1114,7 @@ public final class Carrera {
         if (c == null || fase != Fase.CARRERA) return "Solo durante la carrera.";
         if (que.startsWith("golpe_")) { golpear(c, PELIGRO, que.substring(6), mundo(), ahora()); return null; }   // solo pruebas: te da un golpe (pokeball, voltorb, trueno)
         try { c.poder = Poder.valueOf(que.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException e) { return "Poder desconocido: " + Arrays.toString(Poder.values()); }
+        enviarPoder(p, c.poder, true);
         return null;
     }
 
@@ -1092,6 +1128,7 @@ public final class Carrera {
         ServerWorld w = mundo();
         Poder pw = c.poder;
         c.poder = null;
+        enviarPoder(p, null, false);
         EmiCarreras.LOG.info("{} usa {}", c.nombre, pw);
         p.getInventory().setStack(4, ItemStack.EMPTY);
         boolean atras = p.isSneaking();

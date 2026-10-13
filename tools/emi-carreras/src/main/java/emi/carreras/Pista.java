@@ -36,6 +36,10 @@ public final class Pista {
     public double[][] voltorbs;          // x, y, z de cada Voltorb fijo (explota al tocarlo y reaparece)
     public String musica;                // id de la musica de fondo (emi_carreras:musica.<id>); null = ninguna
     public String ambiente;              // "volcan": sonidos de ambiente
+    /** Mapa de la pista para la interfaz: imagen assets/emi_carreras/textures/gui/mapa_<id>.png (px x py) que cubre desde (x0,z0) del mundo, ancho x largo bloques. */
+    public Mapa mapa;
+
+    public static final class Mapa { public double x0, z0, ancho, largo; public int px, py; }
 
     public static final class Salto {
         public double[] zona;            // caja que activa el salto (x1,y1,z1,x2,y2,z2)
@@ -91,4 +95,10 @@ public final class Pista {
     /** factor de frenada del lodo bajo el jugador (0 = no esta en lodo) */
     public double lodoEn(Vec3d p) { for (int i = 0; i < zonasLodo.length; i++) if (zonasLodo[i].contains(p)) return lodo[i][6]; return 0; }
     public Salto saltoEn(Vec3d p) { if (saltos != null) for (Salto s : saltos) if (s.caja.contains(p)) return s; return null; }
+    /** Como saltoEn, pero mirando todo el trayecto entre dos posiciones (la zona del borde mide un bloque y un corredor con turbo avanza casi uno por tick). */
+    public Salto saltoEntre(Vec3d a, Vec3d b) {
+        if (a == null) return saltoEn(b);
+        for (int i = 0; i <= 4; i++) { Salto s = saltoEn(a.lerp(b, i / 4.0)); if (s != null) return s; }
+        return null;
+    }
 }

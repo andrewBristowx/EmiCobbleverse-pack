@@ -1,5 +1,5 @@
 {
- "version": "d0f9ace3a927",
+ "version": "9871aeaad8ad",
  "nombre": "Volc\u00e1n Cinnabar",
  "plantilla": "emi_carreras:volcan_cinnabar",
  "origen": [
@@ -10,6 +10,14 @@
  "vueltas": 2,
  "musica": "volcan",
  "ambiente": "volcan",
+ "mapa": {
+  "x0": 1000,
+  "z0": 0,
+  "ancho": 314,
+  "largo": 361,
+  "px": 251,
+  "py": 288
+ },
  "parrilla": [
   [
    1117.84,
@@ -357,7 +365,7 @@
  "saltos": [
   {
    "zona": [
-    1140,
+    1148,
     81,
     39,
     1149,
@@ -378,12 +386,12 @@
   },
   {
    "zona": [
-    1043,
+    1044,
     88,
     153,
     1051,
-    92,
-    163
+    90,
+    154
    ],
    "destino": [
     1046.43,
@@ -401,8 +409,8 @@
    "zona": [
     1219,
     96,
-    169,
-    1228,
+    171,
+    1221,
     98,
     175
    ],
@@ -427,16 +435,16 @@
   {
    "zona": [
     1266,
-    87,
-    144,
+    88,
+    153,
     1269,
     90,
     153
    ],
    "destino": [
-    1258.23,
+    1258.43,
     68,
-    156.68
+    160.71
    ],
    "destino_turbo": [
     1250.74,
@@ -444,8 +452,8 @@
     166.93
    ],
    "altura": 5.0,
-   "ticks": 30,
-   "ticks_turbo": 53
+   "ticks": 23,
+   "ticks_turbo": 41
   }
  ],
  "lodo": [

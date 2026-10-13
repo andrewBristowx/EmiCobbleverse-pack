@@ -34,6 +34,7 @@ public final class Corredor {
     public Vec3d previa;
     // vuelo de una plataforma de salto
     public int vueloIni, vueloTicks, saltoCooldown;
+    public Vec3d posAnt;
     public Vec3d vueloA, vueloB;
     public double vueloAltura;
     public boolean vueloTurbo;

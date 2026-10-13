@@ -15,6 +15,7 @@ import camino_volcan as cv
 import escenario
 import modelo
 import catalogo_estatuas
+import mapa
 
 ID = 'volcan_cinnabar'
 ORIGEN = (1000, 64, 0)       # lejos del Circuito Pokéball, que ocupa x 0..300
@@ -160,9 +161,11 @@ def main(destino):
 
     def salto(path, nom, g, ancho_pad, normal_dest=None, turbo_dest=None):
         """pone la plataforma de salto y devuelve el dict del salto (coordenadas de mundo)"""
-        zona = faja(path, nom, g['pad0'], g['pad1'], ancho_pad, lambda k, o: ('lime_concrete' if (k // 3) % 2 == 0 else 'green_concrete') if abs(o) > 0.6 or (k // 3) % 2 == 0 else 'white_concrete')
+        # la plataforma verde solo guia; el salto se dispara en el BORDE AZUL de 1 bloque del final (junto al hueco)
+        faja(path, nom, g['pad0'], g['pad1'] - 2, ancho_pad, lambda k, o: 'lime_concrete' if (k // 3) % 2 == 0 else 'green_concrete')
+        zona = faja(path, nom, g['pad1'] - 1, g['pad1'], ancho_pad, lambda k, o: 'blue_concrete')
         # flechas blancas hacia delante
-        for k in range(g['pad0'] + 2, g['pad1'], 6):
+        for k in range(g['pad0'] + 2, g['pad1'] - 3, 6):
             m = path[k]
             px, pz = int(round(m['x'] + ox)), int(round(m['z'] + oz)); y = sup[nom](k)
             v.set(px, y, pz, 'white_concrete')
@@ -217,11 +220,12 @@ def main(destino):
         return [min(p[0] for p in pts), min(p[1] for p in pts), min(p[2] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts) + 2, max(p[2] for p in pts)]
     tz_ = carril(E['turbo0'], E['turbo1'], lambda k, o: 'light_blue_concrete' if (k // 2) % 2 == 0 else 'yellow_concrete')
     turbos.append([tz_[0] + ORIGEN[0], tz_[1] + ORIGEN[1], tz_[2] + ORIGEN[2], tz_[3] + ORIGEN[0], tz_[4] + ORIGEN[1], tz_[5] + ORIGEN[2]])
-    pz_ = carril(E['pad0'], E['pad1'], lambda k, o: 'lime_concrete' if (k // 3) % 2 == 0 else 'green_concrete')
-    for k in range(E['pad0'] + 2, E['pad1'], 6):
+    carril(E['pad0'], E['pad1'] - 2, lambda k, o: 'lime_concrete' if (k // 3) % 2 == 0 else 'green_concrete')
+    pz_ = carril(E['pad1'] - 1, E['pad1'], lambda k, o: 'blue_concrete')            # borde azul de 1 bloque: aqui se dispara el salto
+    for k in range(E['pad0'] + 2, E['pad1'] - 3, 6):
         mm_ = ms[k]; v.set(int(round(mm_['x'] + ox - mm_['tz'] * 2.8)), sup['m'](k), int(round(mm_['z'] + oz + mm_['tx'] * 2.8)), 'white_concrete')
     ml = at[KE + 10]; yl = sup['a'](KE + 10)
-    mA0 = ms[E['pad0']]
+    mA0 = ms[E['pad1']]
     ax, az = mA0['x'] + ox - mA0['tz'] * 2.8 + ORIGEN[0], mA0['z'] + oz + mA0['tx'] * 2.8 + ORIGEN[2]
     bx, bz = ml['x'] + ox + ORIGEN[0] + 0.5, ml['z'] + oz + ORIGEN[2] + 0.5
     dist_e = math.hypot(bx - ax, bz - az)
@@ -396,6 +400,18 @@ def main(destino):
                         v.set(xx, GY - 3, zz, 'blackstone')
                         for y in range(GY - 2, GY + 1): v.set(xx, y, zz, 'lava')
 
+    # ---------- mapa para la interfaz
+    ruta_mapa = os.path.join(destino, 'src/main/resources/assets/emi_carreras/textures/gui/mapa_' + ID + '.png')
+    lava_cells = set()
+    for ps in pozos: lava_cells |= {c for c in ps if not (c in celdas and celdas[c][3])}
+    trazos = [(pts, 2 * MEDIO, (205, 205, 215, 255)) for pts in mapa.partir([{'x': m['x'] + ox, 'z': m['z'] + oz} for m in ms], saltar_main)]
+    trazos += [(pts, 2 * MEDIO_A, (110, 200, 255, 255)) for pts in mapa.partir([{'x': m['x'] + ox, 'z': m['z'] + oz} for m in at], saltar_at)]
+    cajas_m = [(t[0] - ORIGEN[0], t[2] - ORIGEN[2], t[3] - ORIGEN[0], t[5] - ORIGEN[2], (255, 215, 40, 255)) for t in turbos]
+    cajas_m += [(sa['zona'][0] - ORIGEN[0], sa['zona'][2] - ORIGEN[2], sa['zona'][3] - ORIGEN[0], sa['zona'][5] - ORIGEN[2], (60, 120, 255, 255)) for sa in saltos]
+    mp = ms[k_meta]
+    mw_, mh_ = mapa.dibujar(ruta_mapa, W, L, trazos, lava=lava_cells, cajas=cajas_m, meta=(mp['x'] + ox, mp['z'] + oz, mp['tx'], mp['tz'], MEDIO),
+                            relleno=[(VX, VZ, VR * 0.55, (95, 35, 20, 255)), (VX, VZ, 9, (230, 90, 20, 255))])
+
     # ---------- guardar
     caida = ORIGEN[1] + GY + 1.8      # cualquier cosa que pise el suelo (o la lava) fuera de la pista cuenta como caida
     nbt = os.path.join(destino, 'src/main/resources/data/emi_carreras/structure', ID + '.nbt')
@@ -404,7 +420,7 @@ def main(destino):
     ver = hashlib.sha1(open(nbt, 'rb').read()).hexdigest()[:12]
     datos = {
         'version': ver, 'nombre': 'Volcán Cinnabar', 'plantilla': 'emi_carreras:' + ID, 'origen': list(ORIGEN), 'vueltas': VUELTAS,
-        'musica': 'volcan', 'ambiente': 'volcan',
+        'musica': 'volcan', 'ambiente': 'volcan', 'mapa': {'x0': ORIGEN[0], 'z0': ORIGEN[2], 'ancho': W, 'largo': L, 'px': mw_, 'py': mh_},
         'parrilla': [[round(p[0] + ORIGEN[0], 2), p[1] + ORIGEN[1], round(p[2] + ORIGEN[2], 2), round(p[3], 1)] for p in parrilla],
         'podio': [round(podio[0] + ORIGEN[0], 2), podio[1] + ORIGEN[1], round(podio[2] + ORIGEN[2], 2), podio[3]],
         'checkpoints': [[c['zona'][0] + ORIGEN[0], c['zona'][1] + ORIGEN[1], c['zona'][2] + ORIGEN[2], c['zona'][3] + ORIGEN[0], c['zona'][4] + ORIGEN[1], c['zona'][5] + ORIGEN[2],
