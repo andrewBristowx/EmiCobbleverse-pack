@@ -63,7 +63,7 @@ public final class Carrera {
     static final List<Bola> bolas = new ArrayList<>();
     static final List<Trampa> trampas = new ArrayList<>();
 
-    static final class Caja { Vec3d pos; int libreEn; Entity ent; }
+    static final class Caja { Vec3d pos; int libreEn; Entity ent; UUID uuid; boolean creada; int sinEntidad; }
     static final class Bola { SnowballEntity ent; Corredor dueno; int nace; Vec3d ultima; }
     static final class Trampa { PokemonEntity ent; Corredor dueno; int nace; }
 
@@ -275,6 +275,7 @@ public final class Carrera {
         if (w == null) { parar("la dimension de la pista ya no existe"); return; }
 
         if (fase == Fase.PRESENTACION) presentacion(w, now);
+        if (fase == Fase.PRESENTACION || fase == Fase.CUENTA) girarMonedas(w, now);      // las monedas giran desde el principio
 
         if (fase == Fase.CUENTA) {
             int restan = tickCuenta - now;
@@ -334,6 +335,23 @@ public final class Carrera {
         }
         if (fase == Fase.CARRERA || fase == Fase.FIN) enviarAlPodio(now);
         if (now % 40 == 0) expulsarIntrusos(w);
+        if (now % 20 == 10) barrerMonedasSueltas(w);
+    }
+
+    /**
+     * Quita las monedas (cajas) que no son las de esta carrera: las que quedaron guardadas en el mundo de una carrera anterior (si el servidor
+     * se paro o los trozos de pista estaban descargados al limpiar) reaparecen al cargarse el trozo y se verian quietas, duplicadas.
+     */
+    static void barrerMonedasSueltas(ServerWorld w) {
+        Set<UUID> buenas = new HashSet<>();
+        for (Caja c : cajas) if (c.uuid != null) buenas.add(c.uuid);
+        Box zona = new Box(-30000000, -64, -30000000, 30000000, 320, 30000000);
+        int n = 0;
+        for (var e : w.getEntitiesByClass(net.minecraft.entity.decoration.DisplayEntity.ItemDisplayEntity.class, zona, e -> e.getCommandTags().contains(TAG))) {
+            if (!buenas.contains(e.getUuid())) { e.discard(); n++; }
+        }
+        if (n > 0) EmiCarreras.LOG.info("Se quitaron {} monedas sueltas de una carrera anterior", n);
+        if (ahora() % 200 == 10) { int ok = 0; for (Caja c : cajas) if (c.uuid != null && w.getEntity(c.uuid) != null) ok++; EmiCarreras.LOG.info("Monedas: {} de {} existen (las demas se crean al cargarse su trozo de pista)", ok, cajas.size()); }
     }
 
     /** En la pista no debe haber nada vivo salvo los corredores y lo que pone el minijuego (Pokemon salvajes, mobs...). */
@@ -771,20 +789,28 @@ public final class Carrera {
 
     static final int MONEDA_MODELO = 7020001;     // custom_model_data de la moneda del Michialien (assets/minecraft/models/item/nautilus_shell.json)
 
+    /**
+     * Crea la moneda con un UUID conocido de antemano. No se busca la entidad por zona: una entidad en un trozo cargado "a medias" (lejos del jugador) existe
+     * pero no sale en las busquedas por zona, y asi se creaba una moneda nueva cada tick (miles de monedas quietas y el servidor ahogado).
+     */
     static void invocarCaja(ServerWorld w, Caja c) {
-        String cmd = String.format(Locale.ROOT, "summon minecraft:item_display %.2f %.2f %.2f {Tags:[\"%s\"],item_display:\"fixed\","
+        c.uuid = UUID.randomUUID();
+        int[] u = {(int) (c.uuid.getMostSignificantBits() >> 32), (int) c.uuid.getMostSignificantBits(), (int) (c.uuid.getLeastSignificantBits() >> 32), (int) c.uuid.getLeastSignificantBits()};
+        String cmd = String.format(Locale.ROOT, "summon minecraft:item_display %.2f %.2f %.2f {UUID:[I;%d,%d,%d,%d],Tags:[\"%s\"],item_display:\"fixed\","
                 + "item:{id:\"minecraft:nautilus_shell\",count:1,components:{\"minecraft:custom_model_data\":%d}},"
-                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,1.1f,0f],scale:[0.9f,0.9f,0.9f]}}", c.pos.x, c.pos.y, c.pos.z, TAG, MONEDA_MODELO);
+                + "transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,1.1f,0f],scale:[0.9f,0.9f,0.9f]}}",
+                c.pos.x, c.pos.y, c.pos.z, u[0], u[1], u[2], u[3], TAG, MONEDA_MODELO);
         try { server.getCommandManager().executeWithPrefix(server.getCommandSource().withWorld(w).withSilent(), cmd); }
-        catch (Exception e) { EmiCarreras.LOG.warn("No se pudo crear una caja", e); return; }
-        var l = w.getEntitiesByClass(Entity.class, new Box(c.pos.x - 0.5, c.pos.y - 0.5, c.pos.z - 0.5, c.pos.x + 0.5, c.pos.y + 1.5, c.pos.z + 0.5), e -> e.getCommandTags().contains(TAG));
-        c.ent = l.isEmpty() ? null : l.get(0);
+        catch (Exception e) { EmiCarreras.LOG.warn("No se pudo crear una caja", e); }
+        Entity e = w.getEntity(c.uuid);
+        c.ent = e;
+        c.creada = e != null;
+        c.sinEntidad = 0;
     }
 
-    /** Hace girar las monedas: cada medio segundo suman un cuarto de vuelta, suavizado por el cliente (interpolacion de las entidades de pantalla). */
+    /** Las monedas giran: cada 10 ticks se les cambia la rotacion con interpolacion (media vuelta cada 20 ticks... un cuarto de vuelta por paso). */
     static void girarMonedas(ServerWorld w, int now) {
         if (now % 10 != 0) return;
-        double ang = Math.toRadians(((now / 10) % 4) * 90 + 90) ;   // 90,180,270,360...
         double paso = (now / 10) * Math.PI / 2;
         double sn = Math.sin(paso / 2), cs = Math.cos(paso / 2);
         for (Caja c : cajas) {
@@ -799,8 +825,11 @@ public final class Carrera {
         girarMonedas(w, now);
         for (Caja c : cajas) {
             if (c.ent == null || c.ent.isRemoved()) {
-                if (now >= c.libreEn) { c.ent = null; invocarCaja(w, c); }
-                continue;
+                Entity e = c.uuid == null ? null : w.getEntity(c.uuid);      // puede haber vuelto al cargarse su trozo de pista
+                if (e != null && !e.isRemoved()) { c.ent = e; c.creada = true; c.sinEntidad = 0; }
+                else if (c.uuid == null) { if (now >= c.libreEn && now % 10 == 0) invocarCaja(w, c); continue; }   // cogida y reaparece / aun no creada
+                else if (!c.creada) { if (now % 20 == 0) invocarCaja(w, c); continue; }                            // el trozo no estaba cargado: se reintenta
+                else { if (++c.sinEntidad > 200 && w.isChunkLoaded(net.minecraft.util.math.ChunkPos.toLong((int) Math.floor(c.pos.x) >> 4, (int) Math.floor(c.pos.z) >> 4))) { c.uuid = null; c.creada = false; } continue; }
             }
             if (now % 10 == 0) w.spawnParticles(ParticleTypes.END_ROD, c.pos.x, c.pos.y + 1, c.pos.z, 1, 0.4, 0.4, 0.4, 0.01);
             for (Corredor r : corr.values()) {
@@ -812,7 +841,7 @@ public final class Carrera {
                     r.poder = Poder.sortear(rr, rnd);
                     Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.4f);
                     p.sendMessage(Text.literal("¡Has conseguido ").formatted(Formatting.WHITE).append(r.poder.titulo()).append(Text.literal("! ").formatted(Formatting.WHITE)).append(Text.literal(r.poder.descripcion).formatted(Formatting.GRAY)), false);
-                    c.ent.discard(); c.ent = null; c.libreEn = now + cfg.cajaRespawnSegundos * 20;
+                    c.ent.discard(); c.ent = null; c.uuid = null; c.creada = false; c.libreEn = now + cfg.cajaRespawnSegundos * 20;
                     w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, c.pos.x, c.pos.y + 1, c.pos.z, 12, 0.4, 0.4, 0.4, 0.05);
                     break;
                 }
