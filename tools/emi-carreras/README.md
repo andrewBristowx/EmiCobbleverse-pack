@@ -24,7 +24,10 @@ Se elige con `/carrera abrir [pista]` (sin nombre, la de `pista` en la configura
 
 ## Interfaz de la carrera (0.5.0, parte de cliente del mod)
 El servidor manda el estado de la carrera ~4 veces por segundo (`EstadoPayload`) y el poder que llevas (`PoderPayload`) a quien tenga el mod en el cliente (los demás ven solo el texto de la barra). Mientras dura la carrera el cliente:
-- **Oculta** la lista de Pokémon de Cobblemon (`HidePartyBinding`), el minimapa de JourneyMap (`ClientAPI.toggleMinimap`), el cuadro de Jade (`IWailaConfig...setDisplayTooltip`) y los avisos emergentes; al acabar (o al salir del servidor / cerrar el juego) lo deja como estaba. Todo por reflexión: si falta alguno de esos mods no pasa nada. El dinero de CobbleDollars (abajo a la derecha) no se oculta.
+- **Oculta** la lista de Pokémon de Cobblemon (`HidePartyBinding`), el minimapa de JourneyMap (`ClientAPI.toggleMinimap`), el cuadro de Jade (`IWailaConfig...setDisplayTooltip`) y los avisos emergentes; el contador de CobbleDollars (`ClientConfig.setOverlayPosition(DISABLED)`, solo en memoria; no toca el archivo de configuración); al acabar (o al salir del servidor / cerrar el juego) lo deja como estaba. Todo por reflexión: si falta alguno de esos mods no pasa nada.
+- **Oculta también la interfaz de vainilla** (barra de objetos, corazones, hambre, aire, armadura, nivel y barra de experiencia): `mixin/InGameHudMixin` cancela `InGameHud.renderMainHud` y `renderExperienceLevel` mientras `EmiCarrerasClient.activo()`. La mano/inventario no hacen falta: durante la carrera todo el mundo va en **tercera persona**
+  (el cliente cambia a `THIRD_PERSON_BACK` al empezar la presentación y devuelve la perspectiva anterior al terminar; con F5 se puede cambiar).
+- **Tamaño**: la interfaz se dibuja en un espacio virtual de **300 de alto** (`esc = alto_escalado / 300`, ancho proporcional), así que las proporciones son las mismas con cualquier escala de interfaz y resolución (no depende de «Escala de interfaz»).
 - Distribución **al estilo Mario Kart**: **casilla del poder** arriba a la izquierda (objeto grande con un «pop» al cogerlo, nombre, y durante unos segundos lo que hace; vacía = «Sin poder»; si llevas Protección, sale «Protegido N s»);
   **participantes** justo debajo (puesto, cabeza, nombre y vuelta, ordenados y actualizándose); **mapa de la pista** abajo a la derecha (imagen cenital generada por `pista/mapa.py`, `assets/emi_carreras/textures/gui/mapa_<id>.png`, situada con `mapa` del JSON de la pista)
   con la **cabeza de cada jugador** donde está (la tuya con borde blanco) y tu **puesto en grande** debajo del mapa (1º, 2º… en dorado/plata/bronce); **vuelta y tiempo** abajo a la izquierda (bandera de cuadros + «2/3»).
@@ -104,6 +107,12 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 ## Compilar
 `COBBLEMON_JAR=<Cobblemon-fabric-1.7.3+1.21.1.jar> KOTLIN_JAR=<kotlin-stdlib-*.jar> ./build.sh` (Fabric Loom 1.10.5, Yarn 1.21.1+build.3; Cobblemon y Kotlin solo se usan para compilar).
 El jar sale en `build/libs/`. Para regenerar la pista: `cd pista && python3 generar.py ..`.
+
+## Probado en la 0.5.2 (escalas de interfaz y ocultar la interfaz de vainilla)
+Servidor de pruebas y cliente real (un solo jugador, carrera «Circuito Pokéball» con Protección en la casilla). Con la carrera en marcha no se ven barra de objetos, corazones, hambre, nivel/experiencia, lista de Pokémon, minimapa ni contador de CobbleDollars, y la cámara está en tercera persona; al parar la carrera **todo vuelve** (capturas antes/durante/después).
+Tamaños y escalas probados (la disposición queda igual de proporcionada en todos): 1280×720 con escalas 1, 2 y 4; 1024×768 (4:3) con escalas 1, 2 y 3 (la 4 no existe en esa ventana, Minecraft la baja a 3); 1280×540 (muy ancha) con escalas 1, 2 y 3; 640×360 (ventana pequeña).
+Para probar escalas sin reiniciar: arrancar el cliente con `-Demi.carreras.debug=true` y escribir un número en `<carpeta del juego>/emi_escala.txt` (solo pruebas).
+**No probado**: con varios jugadores a la vez, el servidor real, el sonido (no hay tarjeta de audio en el entorno de pruebas), relaciones de aspecto distintas de las de arriba ni los mods de interfaz que no sean los listados.
 
 ## Probado en la 0.5.1 (interfaz estilo Mario Kart)
 Servidor de pruebas y cliente real (un solo jugador): casilla del poder, participantes, mapa con cabeza, puesto grande y vuelta/tiempo en su sitio; al usar el poder la casilla pasa a «Sin poder» y sale «Protegido N s» (capturas). **No probado**: con varios jugadores a la vez ni otras escalas de interfaz.

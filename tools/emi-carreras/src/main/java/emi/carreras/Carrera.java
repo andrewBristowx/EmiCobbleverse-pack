@@ -112,7 +112,7 @@ public final class Carrera {
         }
         var m = pista.mapa;
         EstadoPayload pl = new EstadoPayload(activo, pista.id, pista.nombre, m == null ? 0 : (float) m.x0, m == null ? 0 : (float) m.z0, m == null ? 0 : (float) m.ancho, m == null ? 0 : (float) m.largo,
-                m == null ? 0 : m.px, m == null ? 0 : m.py, vueltasTotal, fase == Fase.CARRERA ? now - tickInicio : 0, lista);
+                m == null ? 0 : m.px, m == null ? 0 : m.py, vueltasTotal, fase == Fase.CARRERA ? now - tickInicio : 0, fase == Fase.PRESENTACION ? 0 : fase == Fase.CUENTA ? 1 : fase == Fase.CARRERA ? 2 : 3, lista);
         for (ServerPlayerEntity p : jugadores()) if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) ServerPlayNetworking.send(p, pl);
     }
 

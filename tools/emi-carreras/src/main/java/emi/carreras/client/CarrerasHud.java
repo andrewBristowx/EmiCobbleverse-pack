@@ -31,6 +31,7 @@ import java.util.UUID;
 @Environment(EnvType.CLIENT)
 public final class CarrerasHud {
     private static final int FONDO = 0xB0101018, BORDE = 0xFF3A3A55;
+    static final int ALTO_VIRTUAL = 300;
 
     private CarrerasHud() {}
 
@@ -40,14 +41,21 @@ public final class CarrerasHud {
         EstadoPayload e = EmiCarrerasClient.estado;
         if (e == null) return;
         try {
-            int ancho = ctx.getScaledWindowWidth(), alto = ctx.getScaledWindowHeight();
+            // la interfaz se dibuja en un espacio virtual de 300 de alto y se escala a la pantalla: ocupa la misma fraccion con cualquier escala de interfaz o resolucion
+            float esc = ctx.getScaledWindowHeight() / (float) ALTO_VIRTUAL;
+            int ancho = Math.round(ctx.getScaledWindowWidth() / esc), alto = ALTO_VIRTUAL;
             EstadoPayload.Jugador yo = null;
             for (EstadoPayload.Jugador j : e.jugadores()) if (j.id().equals(mc.player.getUuid())) yo = j;
-            int y = casillaPoder(ctx, mc, yo);
-            participantes(ctx, mc, e, 6, y + 6);
-            mapa(ctx, mc, e, ancho, alto);
-            puesto(ctx, mc, e, yo, ancho, alto);
-            vueltas(ctx, mc, e, yo, alto);
+            MatrixStack m = ctx.getMatrices();
+            m.push();
+            m.scale(esc, esc, 1f);
+            try {
+                int y = casillaPoder(ctx, mc, yo);
+                participantes(ctx, mc, e, 6, y + 6);
+                mapa(ctx, mc, e, ancho, alto);
+                puesto(ctx, mc, e, yo, ancho, alto);
+                vueltas(ctx, mc, e, yo, alto);
+            } finally { m.pop(); }
         } catch (Throwable t) { /* una interfaz que falla no debe romper el dibujado del juego */ }
     }
 

@@ -22,5 +22,8 @@
     "minecraft": "~1.21.1",
     "fabric-api": "*",
     "cobblemon": "*"
-  }
+  },
+  "mixins": [
+    "emi_carreras.mixins.json"
+  ]
 }
