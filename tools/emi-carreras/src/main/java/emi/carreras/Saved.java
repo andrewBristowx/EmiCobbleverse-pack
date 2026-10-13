@@ -67,6 +67,7 @@ public final class Saved {
     public static boolean restore(MinecraftServer server, ServerPlayerEntity p) {
         Path f = file(server, p.getUuid());
         if (!Files.exists(f)) return false;
+        p.setGlowing(false);        // por si se quedo brillando por la proteccion
         NbtCompound t;
         try {
             t = NbtIo.readCompressed(f, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes());

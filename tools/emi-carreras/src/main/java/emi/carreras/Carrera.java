@@ -385,6 +385,8 @@ public final class Carrera {
             boolean brilla = now < c.escudoHasta;
             if (c.visual.isGlowing() != brilla) c.visual.setGlowing(brilla);
         }
+        boolean protegido = now < c.escudoHasta;
+        if (p.isGlowing() != protegido) p.setGlowing(protegido);        // con la proteccion el jugador brilla
         if (now % 2 == 0) {          // efectos visibles para todos: turbo, golpe y escudo
             if (now < c.turboHasta && now >= c.paradoHasta) w.spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getY() + 0.3, p.getZ(), 2, 0.25, 0.1, 0.25, 0.02);
             if (now < c.paradoHasta && fase == Fase.CARRERA) w.spawnParticles(ParticleTypes.ELECTRIC_SPARK, p.getX(), p.getY() + 0.8, p.getZ(), 4, 0.4, 0.5, 0.4, 0.3);
@@ -536,7 +538,7 @@ public final class Carrera {
                         .append(Text.literal("   Puesto " + puestos.getOrDefault(c, n) + "/" + n).formatted(Formatting.AQUA))
                         .append(Text.literal("   " + fmt(now - tickInicio)).formatted(Formatting.WHITE));
                 if (c.poder != null) tx.append(Text.literal("   ").append(c.poder.titulo()));
-                if (now < c.escudoHasta) tx.append(Text.literal("  ✔ protegido").formatted(Formatting.GREEN));
+                if (now < c.escudoHasta) tx.append(Text.literal("  ✔ protegido " + ((c.escudoHasta - now + 19) / 20) + " s").formatted(Formatting.GREEN));
                 t = tx;
             }
             Msg.actionBar(p, t);
@@ -690,6 +692,7 @@ public final class Carrera {
                 ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
                 if (p != null) {
                     soltar(p.getNameForScoreboard());
+                    p.setGlowing(false);
                     if (!Saved.restore(server, p)) EmiCarreras.LOG.warn("{} no tenia nada guardado que devolver", c.nombre);
                 }
             } catch (Throwable t) { EmiCarreras.LOG.error("No se pudo devolver a {} a su sitio (se le devolvera al volver a entrar)", c.nombre, t); }
@@ -876,7 +879,13 @@ public final class Carrera {
         switch (pw) {
             case BAYA -> { turbo(c, 0.35, 30, now); Msg.sound(p, SoundEvents.ENTITY_GENERIC_EAT, 1f, 1.2f); }
             case CARAMELO -> { turbo(c, 0.7, 70, now); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.5f); w.spawnParticles(ParticleTypes.FIREWORK, p.getX(), p.getY() + 1, p.getZ(), 20, 0.4, 0.5, 0.4, 0.1); }
-            case ESCUDO -> { c.escudoHasta = now + 160; Msg.sound(p, SoundEvents.ITEM_SHIELD_BLOCK, 1f, 1.2f); }
+            case ESCUDO -> {
+                c.escudoHasta = now + 160;
+                Msg.sound(p, SoundEvents.ITEM_SHIELD_BLOCK, 1f, 1.2f);
+                Msg.sound(p, SoundEvents.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);
+                Msg.title(p, Text.literal("¡Protegido!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("Nada te para durante 8 segundos").formatted(Formatting.GRAY), 0, 25, 8);
+                w.spawnParticles(ParticleTypes.ENCHANTED_HIT, p.getX(), p.getY() + 1, p.getZ(), 40, 0.6, 0.7, 0.6, 0.4);
+            }
             case POKEBALL -> lanzarBola(w, p, c, atras ? dir.multiply(-1) : dir, atras ? 0 : p.getPitch(), now);
             case VOLTORB -> soltarVoltorb(w, p, c, dir, now);
             case TRUENO -> trueno(w, p, c, now);
@@ -976,10 +985,10 @@ public final class Carrera {
     static void golpear(Corredor v, Corredor autor, String tipo, ServerWorld w, int now) {
         ServerPlayerEntity pv = server.getPlayerManager().getPlayer(v.id);
         if (pv == null || now < v.golpeInmuneHasta) return;
-        if (now < v.escudoHasta) {
-            v.escudoHasta = 0; v.golpeInmuneHasta = now + 20;
-            Msg.sound(pv, SoundEvents.ITEM_SHIELD_BREAK, 1f, 1f);
-            pv.sendMessage(Msg.say("¡Tu protección ha parado el ataque de " + autor.nombre + "!"), false);
+        if (now < v.escudoHasta) {          // la proteccion dura todo su tiempo y para todos los ataques
+            Msg.sound(pv, SoundEvents.ITEM_SHIELD_BLOCK, 1f, 1f);
+            w.spawnParticles(ParticleTypes.ENCHANTED_HIT, pv.getX(), pv.getY() + 1, pv.getZ(), 20, 0.5, 0.6, 0.5, 0.3);
+            if (now >= v.golpeInmuneHasta) { pv.sendMessage(Msg.say("¡Tu protección ha parado el ataque de " + autor.nombre + "!"), false); v.golpeInmuneHasta = now + 10; }
             return;
         }
         switch (tipo) {

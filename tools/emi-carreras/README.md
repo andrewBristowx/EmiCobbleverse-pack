@@ -25,7 +25,7 @@ vueltas, cajas de poderes y turbos. Se corre en su propia dimensión, `emi_carre
 | Caramelo Raro | super turbo (3,5 s) |
 | Pokéball | proyectil que sale **hacia donde apuntas** (también un poco arriba/abajo): hay que apuntar; el primer rival que toque queda **capturado** 2,5 s |
 | Voltorb trampa | suelta un Voltorb detrás de ti; explota al tocarlo (parada + ralentización) |
-| Protección | escudo 8 s: absorbe el siguiente ataque (el Pokémon brilla) |
+| Protección | escudo de 8 s: **para todos los ataques** mientras dura (el jugador brilla, sale un título «¡Protegido!» y la cuenta atrás en la barra de abajo) |
 | Trueno | rayo sobre **todos** los que van delante de ti |
 Las franjas amarillas/naranjas del asfalto son **turbos**.
 
@@ -45,6 +45,8 @@ En un mundo de un jugador (con trucos activados para tener operador) o abierto a
 `prism-instance/EmiCobbleverse-Prism-Instance-PRUEBAS.zip`, que se actualiza sola desde la rama de pruebas del repositorio y **no toca la instancia oficial** (que sigue leyendo `main`). Sin probar aún en un mundo de un jugador.
 
 ## Cómo está hecho
+- **Clics en mundo de un jugador / LAN (0.3.3)**: los eventos de clic (`UseItemCallback`, etc.) se ejecutan también en el cliente de Fabric, y si devuelven «FAIL» el cliente **no envía el clic al servidor**. En un servidor de verdad el cliente no sabe quién corre (`participa` da falso) y todo iba bien,
+  pero en un mundo de un jugador o el anfitrión de una LAN el cliente comparte el mismo estado que el servidor integrado y el clic se perdía (el poder se quedaba en la mano). Ahora, si `world.isClient`, siempre se devuelve «PASS». Reproducido con la 0.3.2 y arreglado con la 0.3.3 en un mundo de un jugador.
 - **CobbleMorph (desde la 0.2.0)**: `Morph.java` lo maneja por reflexión y con los comandos `/transform` y `/untransform` (el servidor los ejecuta como consola); la transformación anterior del jugador, si tenía, se guarda con su inventario y se le devuelve al terminar (también tras una caída del servidor). Los efectos de turbo, golpe y escudo salen como partículas.
 - **Montura de reserva**: en Cobblemon solo ~115 de 1025 especies se pueden montar, así que no se usa la monta de Cobblemon. El jugador anda con atributos fijos (velocidad, sin salto, escalón de 1 bloque) y
   su Pokémon es una copia sin IA (`PokemonProperties` → `createEntity`) que se coloca encima cada tick, adelantada según lo que se movió (el servidor no conoce la velocidad de un jugador). El equipo del jugador **no se toca**.

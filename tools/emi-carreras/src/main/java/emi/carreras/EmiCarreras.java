@@ -32,28 +32,28 @@ public class EmiCarreras implements ModInitializer {
 
         // un corredor solo puede usar su poder: no toca bloques, ni objetos, ni entidades
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!Carrera.participa(player)) return TypedActionResult.pass(player.getStackInHand(hand));
+            if (world.isClient || !Carrera.participa(player)) return TypedActionResult.pass(player.getStackInHand(hand));   // en el cliente siempre PASS: si no, en un mundo de un jugador/LAN el clic nunca llega al servidor
             if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return TypedActionResult.fail(player.getStackInHand(hand));
         });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (world.isClient || !Carrera.participa(player)) return ActionResult.PASS;
             if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return ActionResult.FAIL;
         });
         // clic derecho sobre una entidad o clic izquierdo (entidad o bloque): tambien usan el poder (si hay una entidad en la mira, el clic derecho ya no llega al objeto)
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (world.isClient || !Carrera.participa(player)) return ActionResult.PASS;
             if (!world.isClient && hand == net.minecraft.util.Hand.MAIN_HAND && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return ActionResult.FAIL;
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (world.isClient || !Carrera.participa(player)) return ActionResult.PASS;
             if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return ActionResult.FAIL;
         });
         AttackBlockCallback.EVENT.register((player, world, hand, pos, dir) -> {
-            if (!Carrera.participa(player)) return ActionResult.PASS;
+            if (world.isClient || !Carrera.participa(player)) return ActionResult.PASS;
             if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return ActionResult.FAIL;
         });
