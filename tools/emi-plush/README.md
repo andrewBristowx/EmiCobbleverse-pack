@@ -141,3 +141,5 @@ Copia `MichiBlockEntity`/`MichiBlockModel`/`MichiItemModel`, registra el bloque,
 y añade blockstate, modelo de bloque y de objeto, loot table, textos de idioma y su geo+textura.
 
 **Eevee Emi (v1.12.1).** Su pelaje original es marrón y el grupo de color más oscuro (21 % de la textura) se pintaba de negro: salían manchas negras y la cara se perdía. Ahora todo el pelaje es plata y solo la crema (pecho, punta de la cola) va en rosa pálido (`CONFIG['eevee']` en `gen/emi_species.py`). Ojo con esto al añadir especies: si el grupo más oscuro ocupa mucho, no lo pintes de `BLACK`.
+
+**Eevee Emi hembra (v1.12.2).** Se veía sin patas, con orejas finas y sin cara: su resolver tenía el mismo `order` (1) que `1_eevee_female.json` de Cobblemon y ganaba el modelo vanilla de la hembra (textura de 64 de alto) con nuestra textura de 128, así que el UV leía píxeles vacíos. Ahora los resolvers Emi con variantes por aspecto usan `order` 2 (`write_species` en `gen/emi_species.py`). Al probar una especie Emi comprueba **macho y hembra** y con fondo oscuro (el plata se camufla sobre la piedra).

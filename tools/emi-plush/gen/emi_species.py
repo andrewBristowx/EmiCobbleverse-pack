@@ -188,7 +188,9 @@ def write_species(OUT, Z, sp, cfg):
                 if a: sp_[x, y] = (r, int(gg * 0.85), min(255, int(b * 1.1)), a)
         sh.save(f'{tdir}/{tname}_shiny.png')
         res_vars.append({'aspects': ['emi', 'shiny'] + [a for a in aspects], 'texture': f'cobblemon:textures/pokemon/{folder}/{tname}_shiny.png'})
-    json.dump({'species': f'cobblemon:{sp}', 'order': 1, 'variations': res_vars}, open(f'{rdir}/1_{sp}_emi.json', 'w'), indent=2)
+    # orden 2 si hay variantes por aspecto (Eevee hembra): con el mismo orden que el resolver de Cobblemon (1_eevee_female.json) ganaba su modelo vanilla
+    # (textura de 64 de alto) con nuestra textura de 128 y las patas y orejas leian pixeles vacios
+    json.dump({'species': f'cobblemon:{sp}', 'order': 2 if len(variants) > 1 else 1, 'variations': res_vars}, open(f'{rdir}/1_{sp}_emi.json', 'w'), indent=2)
 
 # ---------------------------------------------------------------------------------------------- configuracion por especie
 # map: color objetivo para cada uno de los 6 grupos de color de la textura original, de oscuro a claro (None = no tocar)
