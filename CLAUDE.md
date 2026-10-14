@@ -14,11 +14,11 @@ Repositorio: `andrewBristowx/EmiCobbleverse-pack` (rama principal `main`). Los j
   entorno (`MC`, `GECKO`, `POKEBLOCKS`, `FAPI`, `LIBS`, `OUT`, `COBBLEMON_JAR`); ver `tools/emi-plush/build.sh`.
 - `tools/emipokemon-patches/`: Emipokemon no tiene código fuente; se parchea el jar (clases/recursos inyectados). Ver su README.
 
-## Mods propios (estado en pack 1.0.121)
+## Mods propios (estado en pack 1.0.122)
 - `emi-plush` 1.13.1 (+26 peluches gigantes, peluches llevables en la cabeza y en la ranura sombrero de Accessories): peluches, GatitoAlien (25 formas), Gasha Especial de Eventos (ticket + **máquina** `emi_plush:maquina_gasha_michi`
   con **pantalla propia** `GashaPantalla`, animación normal y de premio mayor). Ver su README. Se quitaron del gasha 4 Pokémon de Emi
   (espurr/zorua/sprigatito/floragato) porque Cobblemon no puede releerlos de los datos guardados (evoluciones con espacio de nombres).
-- `emi-estructuras` 1.3.0: dimensiones `emi_estructuras:plano` y `emi_estructuras:dungeons`, comando `/emiestructuras`. Desde 1.2.0/1.3.0 coloca también los
+- `emi-estructuras` 1.3.1 (+ recetas de los 5 medalleros de Emipokemon: Teselia, Kalos, Galar, Paldea y Alola): dimensiones `emi_estructuras:plano` y `emi_estructuras:dungeons`, comando `/emiestructuras`. Desde 1.2.0/1.3.0 coloca también los
   **gimnasios y ligas de Teselia, Kalos, Galar, Paldea y Alola** (48 plantillas `.nbt` propias; Teselia = `teselia:1..9`, Kalos = `kalos:1..9`, Galar/Paldea/Alola
   detrás de sus ubicaciones previas) y crea a sus líderes NPC dentro (`NpcsGimnasio`, `npcs.json`). Las plantillas las genera `tools/emi-gimnasios/`
   (Python; **lee su README**, y pasa `chequeo_soportes.py` y `chequeo_npc.py` antes de empaquetar). Con las 5 regiones ya no falta ningún edificio de líderes.

@@ -78,3 +78,6 @@ Al arrancar un servidor existente con este mod se generan las 48 estructuras que
 
 ## Compilar
 `gradle --no-daemon build` (Gradle 8.14, Java 21) → `build/libs/emi-estructuras-1.3.0.jar`. `gen_dungeons.py <carpeta con los jars>` regenera la sección Dungeons de `config/emipokemon/extra-locations.json` y de la copia por defecto del mod. Opción de depuración `-Demi.est.test=1` activa `/emiestructuras _foto <id>` (dibuja vistas aérea, lateral y cortes en `world/emi_estructuras/fotos/`) y `/emiestructuras _planta x0 z0 x1 z1 y` (plano de una capa).
+
+## Recetas de los medalleros de las regiones propias (v1.3.1)
+Los estuches de medallas de Emipokemon `emipokemon:{teselia,kalos,galar,paldea,alola}_badge_box` («Medallero de …») no traían receta. Datapack del propio jar (`data/emipokemon/recipe/*_badge_box.json`), con la misma forma que los de Kanto/Johto/Hoenn/Sinnoh de Cobbleverse Badges: **3 lanas + 1 redstone + 2 lingotes de hierro** (`XXX` / `ZYZ`). Lana según la región (los colores que ya usan las otras: amarilla Kanto, verde Hoenn, celeste Johto, magenta Sinnoh): **Teselia** cian, **Kalos** lima, **Galar** morada, **Paldea** naranja, **Alola** azul. Probado: las 5 recetas cargan (`/recipe give`) y se fabricó el Medallero de Paldea en una mesa de crafteo.

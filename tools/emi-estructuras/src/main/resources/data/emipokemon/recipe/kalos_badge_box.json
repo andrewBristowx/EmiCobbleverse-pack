@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "X": {
+      "item": "minecraft:lime_wool"
+    },
+    "Y": {
+      "item": "minecraft:redstone"
+    },
+    "Z": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "pattern": [
+    "XXX",
+    "ZYZ",
+    "   "
+  ],
+  "result": {
+    "id": "emipokemon:kalos_badge_box"
+  }
+}
