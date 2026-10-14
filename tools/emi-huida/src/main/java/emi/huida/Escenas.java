@@ -322,7 +322,7 @@ final class Escenas {
 
     // ---------------------------------------------------------------- escena 2: el michi angel (al llegar a la meta)
 
-    static final int FINAL_ANGEL = 175;
+    static final int FINAL_ANGEL = 266;
 
     /** Donde se queda flotando el angel: a la izquierda de la cabeza del Tyrantrum, de perfil para quien mira de frente, con la boca justo a su lado. */
     static final double ANGEL_ADELANTE = 5.9, ANGEL_DERECHA = -3.8, ANGEL_ALTO = 6.6;
@@ -339,10 +339,43 @@ final class Escenas {
         return ap.add(dx / l * 1.7, 0.9, dz / l * 1.7);
     }
 
+    /** Direccion (horizontal, unitaria) del camino donde esta el jugador. */
+    private static Vec3d adelante(Huida.J j) { double y = Math.toRadians(Nivel.rumbo(j.s)); return new Vec3d(-Math.sin(y), 0, Math.cos(y)); }
+
+    /** Donde se pone el angel para felicitar al jugador: delante de el, a la altura de su cara. */
+    private static Vec3d antePunto(Huida.J j, ServerPlayerEntity p) { return p.getPos().add(adelante(j).multiply(4.5)).add(0, 1.6, 0); }
+
+    /** Vuelo del angel desde donde le da la comida al Tyrantrum hasta delante del jugador: sube, pasa por encima de la puerta y baja. */
+    private static Vec3d vueloAlJugador(PokemonEntity ty, Vec3d ante, Vec3d fw, double u) {
+        Vec3d ini = vueloAngel(ty, 1, false);
+        return bezier(ini, ini.add(fw.multiply(3)).add(0, 8, 0), ante.subtract(fw.multiply(4)).add(0, 5, 0), ante, u);
+    }
+
+    /** Vuelo de salida del angel: se aleja hacia delante y hacia arriba. */
+    private static Vec3d vueloSalidaJugador(Vec3d ante, Vec3d fw, double u) {
+        return bezier(ante, ante.add(fw.multiply(2)).add(0, 4, 0), ante.add(fw.multiply(7)).add(0, 11, 0), ante.add(fw.multiply(14)).add(0, 26, 0), u);
+    }
+
+    /** Un globo de texto flotando (el «¡Bien hecho!» del michi angel). {@code json} = texto en JSON. */
+    static Entity globo(ServerWorld w, Vec3d pos, String json, float escala) {
+        try {
+            Entity e = EntityType.TEXT_DISPLAY.create(w);
+            NbtCompound n = StringNbtReader.parse("{text:'" + json + "',billboard:\"center\",background:0,shadow:1b,alignment:\"center\",line_width:300,transformation:{translation:[0f,0f,0f],left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],scale:["
+                    + escala + "f," + escala + "f," + escala + "f]}}");
+            e.readNbt(n);
+            e.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0f, 0f);
+            w.spawnEntity(e);
+            return e;
+        } catch (Throwable t) {
+            EmiHuida.LOG.error("No se pudo crear el globo de texto", t);
+            return null;
+        }
+    }
+
     static void finalAngel(Huida.J j, ServerPlayerEntity p, ServerWorld w, int t) {
         PokemonEntity ty = j.perseguidor;
         if (ty == null || ty.isRemoved()) { camaraOff(p); return; }
-        int T0 = 8, T_LLEGA = T0 + 40, T_COMIDA = 56, T_ROAR = 62, T_LANZA = 72, T_COME = 82, T_TRAGA = 124, T_SALE = 138;
+        int T0 = 8, T_LLEGA = T0 + 40, T_COMIDA = 56, T_ROAR = 62, T_LANZA = 72, T_COME = 82, T_TRAGA = 124, T_VA = 136, T_ANTE = 168, T_BIEN = 172, T_SALE = 228;
         PokemonEntity a = j.michi;
         if (Huida.DEBUG && t % 10 == 0) EmiHuida.LOG.info("escena angel t={} tyr={} angel={} jugador={}", t, ty.getPos(), j.michi == null ? null : j.michi.getPos(), p.getPos());
         if (t >= T0 && t < T0 + 5 && a == null) j.michi = a = michi(w, "halo", vueloAngel(ty, 0, false), 0f, 3.0f);
@@ -358,25 +391,53 @@ final class Escenas {
                 yaw = yawHacia(ap, sig);
                 if (u > 0.7) yaw = lerpAng(yaw, yawHacia(ap, boca), suave((u - 0.7) / 0.3));
                 if (t % 5 == 0) sonido(w, ap, SoundEvents.ENTITY_PHANTOM_FLAP, 0.9f, 1.9f);
-            } else if (t < T_SALE) {
+            } else if (t < T_VA) {
                 ap = vueloAngel(ty, 1, false).add(0, 0.3 * Math.sin(t * 0.2), 0);
                 yaw = yawHacia(ap, boca);
                 vuela = false;
                 if (t % 8 == 0) sonido(w, ap, SoundEvents.ENTITY_PHANTOM_FLAP, 0.6f, 1.9f);
-            } else {
-                double u = Math.min(1, (t - T_SALE) / 36.0), e = u * u;
-                ap = vueloAngel(ty, e, true);
-                Vec3d sig = vueloAngel(ty, Math.min(1, ((t + 1 - T_SALE) / 36.0) * ((t + 1 - T_SALE) / 36.0)), true);
-                yaw = yawHacia(ap, sig);
+            } else if (t < T_ANTE) {          // despues de dar de comer, vuela hasta delante del jugador
+                Vec3d fw = adelante(j), ante = antePunto(j, p);
+                double u = suave((t - T_VA) / (double) (T_ANTE - T_VA)), u2 = suave((t + 1 - T_VA) / (double) (T_ANTE - T_VA));
+                ap = vueloAlJugador(ty, ante, fw, u);
+                yaw = lerpAng(yawHacia(ap, vueloAlJugador(ty, ante, fw, u2)), yawHacia(ap, p.getPos()), suave((u - 0.6) / 0.4));
+                if (t % 4 == 0) sonido(w, ap, SoundEvents.ENTITY_PHANTOM_FLAP, 0.9f, 1.9f);
+            } else if (t < T_SALE) {          // flota delante del jugador mirandolo
+                ap = antePunto(j, p).add(0, 0.25 * Math.sin(t * 0.2), 0);
+                yaw = yawHacia(ap, p.getPos());
+                vuela = false;
+                if (t % 8 == 0) sonido(w, ap, SoundEvents.ENTITY_PHANTOM_FLAP, 0.6f, 1.9f);
+            } else {                          // se despide y se va
+                Vec3d fw = adelante(j), ante = antePunto(j, p);
+                double u = Math.min(1, (t - T_SALE) / 36.0), e = u * u, u2 = Math.min(1, (t + 1 - T_SALE) / 36.0);
+                ap = vueloSalidaJugador(ante, fw, e);
+                yaw = yawHacia(ap, vueloSalidaJugador(ante, fw, u2 * u2));
             }
-            if (t >= T_SALE + 38) { quitar(a); j.michi = null; a = null; }
+            if (t >= T_SALE + 36) { quitar(a); j.michi = null; a = null; }
             else mover(a, ap, yaw, vuela);
             if (t == T0) { sonido(w, ap, "sfx.angel", 1.6f, 1f); }
             if (t >= T0 && t < T_LLEGA && t % 2 == 0) particulas(w, ParticleTypes.END_ROD, ap, 2, 0.4, 0.4, 0.4, 0.02);
             if (t == T_LLEGA) { anim(a, p, "status"); sonido(w, ap, SoundEvents.ENTITY_CAT_PURREOW, 1.5f, 1.3f); Msg.actionBar(p, Text.literal("¡El Michi Ángel ha venido a ayudarte!").formatted(Formatting.AQUA, Formatting.BOLD)); }
             if (t == T_LANZA) { anim(a, p, "physical"); sonido(w, ap, SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 1.5f); }
             if (t == T_TRAGA + 4) { anim(a, p, "special"); sonido(w, ap, SoundEvents.ENTITY_CAT_AMBIENT, 1.5f, 1.4f); }
-            if (t == T_SALE) { anim(a, p, "cry"); }
+            if (t == T_ANTE) { anim(a, p, "status"); sonido(w, ap, SoundEvents.ENTITY_CAT_PURREOW, 1.4f, 1.4f); }
+            if (t == T_BIEN) {            // «¡Bien hecho!»: globo de texto sobre el angel, maullido, arpa y corazones alrededor del jugador
+                anim(a, p, "special");
+                sonido(w, ap, SoundEvents.ENTITY_CAT_AMBIENT, 1.6f, 1.8f);
+                sonido(w, ap, SoundEvents.ENTITY_PLAYER_LEVELUP, 0.8f, 1.5f);
+                sonido(w, ap, "sfx.angel", 1.3f, 1.1f);
+                particulas(w, ParticleTypes.HEART, p.getPos().add(0, 1.2, 0), 14, 1.4, 0.9, 1.4, 0.05);
+                particulas(w, ParticleTypes.END_ROD, ap.add(0, 1.6, 0), 16, 1.6, 1.2, 1.6, 0.04);
+                j.globo = globo(w, ap.add(0, 4.4, 0), "{\"text\":\"¡Bien hecho!\",\"color\":\"gold\",\"bold\":true}", 4.5f);
+                p.sendMessage(Text.literal("Michi Ángel: ").formatted(Formatting.AQUA, Formatting.BOLD).append(Text.literal("¡Bien hecho, " + j.nombre + "!").formatted(Formatting.GOLD)), false);
+                Msg.actionBar(p, Text.literal("¡Bien hecho!").formatted(Formatting.GOLD, Formatting.BOLD));
+            }
+            if (t == T_SALE) { anim(a, p, "cry"); sonido(w, ap, SoundEvents.ENTITY_CAT_AMBIENT, 1.4f, 1.9f); }
+        }
+
+        if (j.globo != null) {
+            if (a == null || t >= T_SALE || j.globo.isRemoved()) { if (!j.globo.isRemoved()) j.globo.discard(); j.globo = null; }
+            else { Vec3d g = a.getPos().add(0, 4.4, 0); j.globo.refreshPositionAndAngles(g.x, g.y, g.z, 0f, 0f); }
         }
 
         // ---- la comida
@@ -415,9 +476,9 @@ final class Escenas {
             sonido(w, boca, "sfx.glup", 1.8f, 0.6f);
             sonido(w, boca, SoundEvents.ENTITY_PLAYER_BURP, 2.0f, 0.4f);
             particulas(w, ParticleTypes.HEART, T(ty, 4, 0, 8.5), 14, 2.5, 1.0, 1.5, 0.05);
-            Huida.titulosEscape(j, p);
+            Huida.titulosEscape(j, p, 36);
         }
-        if (t > T_TRAGA && t < T_SALE + 10 && t % 6 == 0) particulas(w, ParticleTypes.HEART, T(ty, 4, 0, 9), 2, 2.2, 0.6, 1.2, 0.03);
+        if (t > T_TRAGA && t < T_VA + 20 && t % 6 == 0) particulas(w, ParticleTypes.HEART, T(ty, 4, 0, 9), 2, 2.2, 0.6, 1.2, 0.03);
 
         // ---- la camara (siempre por el pasillo o por encima de los muros: fuera de el hay muros y arboles)
         float temblor = (t >= T_ROAR && t < T_ROAR + 20) ? (float) (0.1 * (1 - (t - T_ROAR) / 20.0)) : 0f;
@@ -429,11 +490,16 @@ final class Escenas {
             double u = suave((t - 56) / 68.0);
             Vec3d cam = lerp(T(ty, 17.5, 1.0, 7.4), T(ty, 15.5, 0.6, 7.2), u);
             camara(p, cam, lerp(T(ty, ANGEL_ADELANTE, ANGEL_DERECHA / 2, ANGEL_ALTO + 0.3), boca, 0.3), 0.95f, temblor, t == 56);
-        } else if (t < 160) {      // otra vez desde arriba, con los corazones
-            double u = suave((t - 124) / 36.0);
-            Vec3d cam = lerp(T(ty, 15.0, -10.0, 16.0), T(ty, 13.5, -9.0, 14.5), u);
-            camara(p, cam, T(ty, 5.0, 0, 6.5), 1.05f, 0f, t == 124);
-        } else if (t == 160) {
+        } else if (t < T_ANTE - 2) {      // otra vez desde arriba, con los corazones; luego sigue al angel mientras vuela hacia el jugador
+            double u = suave((t - 124) / 42.0);
+            Vec3d cam = lerp(T(ty, 15.0, -10.0, 16.0), T(ty, 13.0, -9.0, 15.5), u);
+            camara(p, cam, a != null ? lerp(T(ty, 5.0, 0, 6.5), a.getPos(), 0.5 + 0.4 * suave((t - T_VA) / 22.0)) : T(ty, 5.0, 0, 6.5), 1.05f, 0f, t == 124);
+        } else if (t < T_SALE + 16) {      // por encima del hombro del jugador: el angel baja hasta el y le dice «¡Bien hecho!»
+            Vec3d fw = adelante(j);
+            double u = suave((t - (T_ANTE - 2)) / (double) (T_SALE + 16 - (T_ANTE - 2)));
+            Vec3d cam = p.getPos().subtract(fw.multiply(lerp(4.2, 3.0, u))).add(0, 2.4, 0);
+            camara(p, cam, (a != null ? a.getPos() : antePunto(j, p)).add(0, 1.9, 0), 0.95f, 0f, t == T_ANTE - 2);
+        } else if (t == T_SALE + 16) {
             camaraOff(p);
         }
     }

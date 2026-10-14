@@ -79,6 +79,8 @@ public final class Huida {
         Vec3d escBase;                               // donde estaba el Tyrantrum al atraparte (la escena de que te come lo echa hacia atras para coger carrerilla)
         PokemonEntity michi;                         // el michi de la escena en curso (demonio al empezar, angel al ganar)
         Entity comida;                               // la comida que le da el michi angel al Tyrantrum
+        Entity globo;                                // el «¡Bien hecho!» del michi angel
+        boolean enMeta;                              // ha terminado (escena incluida) y espera en la sala de la meta a que acaben todos y el organizador cierre
         Nivel.Construido nivel;
         int sigObst, sigPuente;                      // primer obstaculo / tabla que el Tyrantrum aun no ha destruido
         java.util.Set<BlockPos> tablas = new java.util.HashSet<>();
@@ -97,6 +99,7 @@ public final class Huida {
     }
 
     private static MinecraftServer server;
+    private static boolean clasifAnunciada;      // ya se ha dicho la clasificacion (cuando acabaron todos)
     private static Fase fase = Fase.LIBRE;
     static final Map<UUID, J> jug = new LinkedHashMap<>();
     private static long cuentaIni, cuentaFin, ultimoAviso, ultimoRecordatorio;
@@ -307,7 +310,7 @@ public final class Huida {
             case COLA -> "Cola abierta: " + jug.size() + " jugador(es) apuntado(s).";
             case LISTOS -> "Esperando a que todos confirmen «listo» (" + listos() + "/" + jug.size() + ").";
             case CUENTA -> "Cuenta atras en marcha.";
-            case CORRIENDO -> "Huida en marcha (" + jug.values().stream().filter(j -> j.est == Est.CORRE).count() + " corriendo).";
+            case CORRIENDO -> "Huida en marcha (" + jug.values().stream().filter(j -> j.est == Est.CORRE).count() + " corriendo, " + jug.values().stream().filter(j -> j.enMeta).count() + " esperando en la meta). El organizador la cierra con /huida terminar.";
         };
     }
 
@@ -513,7 +516,8 @@ public final class Huida {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
             if (j.est == Est.CORRE) tickJugador(w, j, p, now);
-            else if (now >= j.soltarEn) { terminar(j, p, null); }
+            else if (j.enMeta) tickEspera(w, j, p, now);
+            else if (now >= j.soltarEn) esperar(w, j, p, now);
             else {
                 if (Cfg.escenas() && j.perseguidor != null && j.nivel != null) {
                     try { int ti = (int) ((now - j.finTick) / Cfg.escenaLenta()); if (ti != j.escT) { j.escT = ti; if (j.est == Est.ESCAPO) Escenas.finalAngel(j, p, w, ti); else Escenas.comido(j, p, w, ti); } }
@@ -523,6 +527,59 @@ public final class Huida {
             }
         }
         comprobarFin();
+    }
+
+    // ---------------------------------------------------------------- espera en la meta
+
+    /** Donde espera el jugador al terminar: el centro del camino, pasada la puerta dorada (el camino acaba 8 bloques despues con un muro). */
+    private static void colocarEnSala(ServerWorld w, J j, ServerPlayerEntity p, boolean mirarAtras) {
+        double[] e = Nivel.ejePos(j.hueco, Nivel.S_META + 3.0);
+        p.teleport(w, e[0], Nivel.Y0, e[1], mirarAtras ? (float) e[2] + 180f : p.getYaw(), mirarAtras ? 10f : p.getPitch());
+        p.setVelocity(0, 0, 0); p.velocityModified = true;
+        j.s = Nivel.S_META + 3.0; j.idx = Nivel.idxDe(j.s);
+    }
+
+    /** Termina la escena final: el jugador se queda en la meta (no se le devuelve a su sitio hasta que acaben todos y el organizador cierre con /huida terminar o el salga con /huida salir). */
+    private static void esperar(ServerWorld w, J j, ServerPlayerEntity p, long now) {
+        j.enMeta = true;
+        if (j.est == Est.ATRAPADO && j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }      // al que se come ya no lo persigue nadie
+        Escenas.quitar(j.michi); j.michi = null;
+        if (j.comida != null) { j.comida.discard(); j.comida = null; }
+        if (j.globo != null) { j.globo.discard(); j.globo = null; }
+        Escenas.camaraOff(p);
+        p.removeStatusEffect(net.minecraft.entity.effect.StatusEffects.INVISIBILITY);
+        congelar(p, false);
+        ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0, false));      // el cliente vuelve a su camara y a su interfaz de siempre
+        ServerPlayNetworking.send(p, EstrellasPayload.borrar());
+        Sonidos.parar(p, Sonidos.PERSECUCION);
+        colocarEnSala(w, j, p, true);        // mirando hacia la puerta dorada
+        p.sendMessage(Msg.say("Esperas en la meta hasta que terminen todos. El organizador cierra la huida con /huida terminar (o sal tú con /huida salir)."), false);
+        comprobarFin();
+    }
+
+    private static void tickEspera(ServerWorld w, J j, ServerPlayerEntity p, long now) {
+        if (now % 5 == 0) {
+            Nivel.Prog pr = Nivel.proyectar(j.hueco, p.getX(), p.getZ(), j.idx);
+            j.idx = pr.idx(); j.s = pr.s();
+            boolean fuera = pr.s() < Nivel.S_META + 0.2 || pr.s() > Nivel.S_TOTAL - 1.0 || pr.dist() > Nivel.anchoMax(pr.s()) - 1.5 || p.getY() < Nivel.Y0 - 1.0 || p.getY() > Nivel.Y0 + 10;
+            if (fuera) colocarEnSala(w, j, p, false);
+        }
+        if (now % 20 == 0) {
+            long listos = jug.values().stream().filter(x -> x.enMeta).count();
+            Text t = listos < jug.size()
+                    ? Text.literal("Esperando a los demás… han terminado " + listos + " de " + jug.size()).formatted(Formatting.YELLOW)
+                    : Text.literal("¡Todos han terminado! Espera a que el organizador cierre la huida").formatted(Formatting.GREEN, Formatting.BOLD);
+            Msg.actionBar(p, t);
+        }
+    }
+
+    /** El organizador cierra la huida: se dice la clasificacion (si no se ha dicho) y se devuelve a todos a su sitio. */
+    public static String cerrar() {
+        if (fase != Fase.CORRIENDO) return "No hay ninguna huida en marcha (usa /huida parar para cancelar la cola o la cuenta atras).";
+        if (!clasifAnunciada) { clasifAnunciada = true; anunciarClasificacion(); }
+        for (J j : new ArrayList<>(jug.values())) terminar(j, jugador(j), "el organizador ha cerrado la huida");
+        comprobarFin();
+        return null;
     }
 
     private static void tickJugador(ServerWorld w, J j, ServerPlayerEntity p, long now) {
@@ -739,7 +796,7 @@ public final class Huida {
         Sonidos.parar(p, Sonidos.PERSECUCION);
         if (escapo) {
             // con escenas, el titulo y la fanfarria salen al final de la escena del michi angel (Escenas.finalAngel -> titulosEscape)
-            if (!esc) titulosEscape(j, p);
+            if (!esc) titulosEscape(j, p, 100);
         } else {
             if (!esc) {
                 Msg.title(p, Text.literal("¡TE ATRAPÓ!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Aguantaste " + tiempo + " · " + j.errores + " errores").formatted(Formatting.GRAY), 0, 100, 20);
@@ -756,11 +813,11 @@ public final class Huida {
     }
 
     /** Titulo de victoria con la medalla, mensaje en el chat y fanfarria. */
-    static void titulosEscape(J j, ServerPlayerEntity p) {
+    static void titulosEscape(J j, ServerPlayerEntity p, int quedarse) {
         String tiempo = String.format(java.util.Locale.ROOT, "%.1f s", (j.finTick - j.inicioTick) / 20.0);
         String medalla = j.errores == 0 ? "ORO" : j.errores <= 2 ? "PLATA" : "BRONCE";
         Formatting mc = j.errores == 0 ? Formatting.GOLD : j.errores <= 2 ? Formatting.GRAY : Formatting.RED;
-        Msg.title(p, Text.literal("¡ESCAPASTE!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Medalla de " + medalla + " · " + tiempo + " · " + j.errores + " errores").formatted(mc), 0, 100, 20);
+        Msg.title(p, Text.literal("¡ESCAPASTE!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Medalla de " + medalla + " · " + tiempo + " · " + j.errores + " errores").formatted(mc), 0, quedarse, 20);
         p.sendMessage(Msg.say("¡Escapaste del Tyrantrum en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
         Sonidos.sfx(p, Sonidos.VICTORIA, 1f, 1f);
     }
@@ -776,6 +833,7 @@ public final class Huida {
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
+        if (j.globo != null) { j.globo.discard(); j.globo = null; }
         if (p == null) return;
         Escenas.camaraOff(p);
         ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0, false));
@@ -787,7 +845,13 @@ public final class Huida {
 
     private static void comprobarFin() {
         if (fase != Fase.CORRIENDO && fase != Fase.CUENTA && fase != Fase.LISTOS) return;
-        if (jug.isEmpty()) { if (fase == Fase.CORRIENDO) anunciarClasificacion(); limpiar(); }
+        if (jug.isEmpty()) { if (fase == Fase.CORRIENDO) anunciarClasificacion(); limpiar(); return; }
+        // han terminado todos: se dice la clasificacion y se espera a que el organizador cierre
+        if (fase == Fase.CORRIENDO && !clasifAnunciada && jug.values().stream().allMatch(x -> x.enMeta)) {
+            clasifAnunciada = true;
+            anunciarClasificacion();
+            for (ServerPlayerEntity p : online()) p.sendMessage(Msg.say("¡Han terminado todos! Esperad a que el organizador cierre la huida (/huida terminar); quien quiera irse antes: /huida salir."), false);
+        }
     }
 
     /** Cuando ha terminado el ultimo jugador: quien consiguio mas puntos (michiestrellas) gana; a igualdad, menos errores y luego menos tiempo. */
@@ -821,7 +885,7 @@ public final class Huida {
             for (int h = 0; h < Nivel.MAX_HUECOS; h++) Nivel.chunks(w, h, false);
             limpiarEntidades(w);
         }
-        jug.clear(); fase = Fase.LIBRE; pruebaEscena = null; pruebaCongelar = 0;
+        jug.clear(); fase = Fase.LIBRE; pruebaEscena = null; pruebaCongelar = 0; clasifAnunciada = false;
         try { Pausas.reanudar(); } catch (Throwable t) { EmiHuida.LOG.warn("pausas: {}", t.toString()); }
     }
 
@@ -845,6 +909,7 @@ public final class Huida {
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
+        if (j.globo != null) { j.globo.discard(); j.globo = null; }
         j.desconectado = true;
         jug.remove(p.getUuid());      // sus cosas siguen guardadas en disco: se le devuelven al volver a entrar
         comprobarFin();

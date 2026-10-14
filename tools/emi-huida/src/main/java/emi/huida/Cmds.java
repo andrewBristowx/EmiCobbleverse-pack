@@ -35,6 +35,9 @@ public final class Cmds {
         root.then(admin("modoprueba").executes(c -> modoPrueba(c, !Huida.modoPrueba))
                 .then(CommandManager.literal("on").executes(c -> modoPrueba(c, true)))
                 .then(CommandManager.literal("off").executes(c -> modoPrueba(c, false))));
+        // al terminar, los jugadores esperan en la meta: el organizador cierra con /huida terminar (clasificacion y vuelta a su sitio)
+        root.then(admin("terminar").executes(c -> con(c, Huida::cerrar, "Huida cerrada: todos vuelven a su sitio.")));
+        root.then(admin("fin").executes(c -> con(c, Huida::cerrar, "Huida cerrada: todos vuelven a su sitio.")));
         root.then(admin("parar").executes(c -> con(c, () -> Huida.parar(null))));
         d.register(root);
     }
@@ -68,7 +71,7 @@ public final class Cmds {
     private static int ayuda(CommandContext<ServerCommandSource> c) {
         c.getSource().sendFeedback(() -> Msg.say("Huida del Tyrantrum: corre por las ruinas, salta, agáchate (shift) y esquiva antes de que te alcance."), false);
         c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida unirse · /huida listo (o tecla R) · /huida salir · /huida estado"), false);
-        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida parar · /huida cerrar · /huida modoprueba [on|off] (el Tyrantrum no te atrapa, para probar)"), false);
+        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida terminar (cierra al acabar todos) · /huida parar · /huida cerrar · /huida modoprueba [on|off] (el Tyrantrum no te atrapa, para probar)"), false);
         return 1;
     }
 }
