@@ -53,7 +53,7 @@ public final class Huida {
 
     static final boolean DEBUG = Boolean.getBoolean("emi.huida.debug") || Boolean.getBoolean("emi.carreras.debug");
 
-    public enum Fase { LIBRE, COLA, CUENTA, CORRIENDO }
+    public enum Fase { LIBRE, COLA, LISTOS, CUENTA, CORRIENDO }
     enum Est { ESPERA, CORRE, ESCAPO, ATRAPADO }
 
     static final class J {
@@ -71,13 +71,14 @@ public final class Huida {
         final Map<BlockPos, Long> colapsos = new LinkedHashMap<>();   // tablas del puente que se van a romper (cuando)
         boolean desconectado;
         boolean enContacto;                          // estaba pegado a un obstaculo en el tick anterior
+        boolean listo;                               // ha confirmado «listo» (fase LISTOS)
         J(ServerPlayerEntity p) { id = p.getUuid(); nombre = p.getGameProfile().getName(); }
     }
 
     private static MinecraftServer server;
     private static Fase fase = Fase.LIBRE;
     static final Map<UUID, J> jug = new LinkedHashMap<>();
-    private static long cuentaFin, ultimoAviso;
+    private static long cuentaFin, ultimoAviso, ultimoRecordatorio;
     private static final List<UUID> pendientes = new ArrayList<>();      // jugadores a los que hay que devolver sus cosas al entrar
     private static final List<Long> pendientesTick = new ArrayList<>();
 
@@ -147,10 +148,12 @@ public final class Huida {
         if (fase == Fase.COLA) { jug.remove(p.getUuid()); p.sendMessage(Msg.say("Te has salido de la cola."), false); return null; }
         terminar(j, p, "has abandonado");
         comprobarFin();
+        comprobarListos();
         return null;
     }
 
-    public static String empezar() {
+    /** @param ya true = sin pedir confirmacion de «listo»: la cuenta atras empieza en cuanto todos estan en su sitio. */
+    public static String empezar(boolean ya) {
         if (fase != Fase.COLA) return "No hay cola abierta (usa /huida abrir).";
         List<J> lista = new ArrayList<>();
         for (J j : jug.values()) {
@@ -178,18 +181,63 @@ public final class Huida {
             j.tablas.clear(); for (Nivel.Bloque b : j.nivel.puente()) j.tablas.add(b.pos());
             j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
             j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.S_PERSEGUIDOR; j.vPerseguidor = VEL_BASE;
-            j.est = Est.ESPERA; j.errores = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false;
+            j.est = Est.ESPERA; j.errores = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
             colocarEnSalida(p, w, j);
             prepararJugador(p);
             congelar(p, true);
             j.perseguidor = crearPerseguidor(w, j);
-            ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0));
+            ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, !ya));
         }
         if (jug.isEmpty()) { fase = Fase.LIBRE; return "No se pudo preparar a nadie."; }
+        if (ya) { iniciarCuenta(null); return null; }
+        fase = Fase.LISTOS;
+        ultimoRecordatorio = server.getTicks();
+        for (J j : jug.values()) {
+            ServerPlayerEntity p = jugador(j);
+            if (p == null) continue;
+            Msg.title(p, Text.literal("¿Listo?").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Pulsa R o escribe /huida listo").formatted(Formatting.YELLOW), 0, 80, 10);
+            p.sendMessage(Msg.say(Text.literal("Estás en tu pista. Mira el camino y, cuando estés preparado, confirma: ").formatted(Formatting.WHITE)
+                    .append(Msg.button("LISTO", "/huida listo", Formatting.GREEN, "Confirmar que estás listo (también con la tecla R)"))), false);
+        }
+        return null;
+    }
+
+    /** Un jugador confirma que esta listo; cuando lo estan todos empieza la cuenta atras. */
+    public static String listo(ServerPlayerEntity p) {
+        if (fase != Fase.LISTOS) return jug.containsKey(p.getUuid()) ? "Ahora no hay nada que confirmar." : "No estás en ninguna huida.";
+        J j = jug.get(p.getUuid());
+        if (j == null) return "No estás en esta huida.";
+        if (j.listo) return "Ya has confirmado; espera a los demás.";
+        j.listo = true;
+        Msg.broadcastTo(online(), Msg.say(j.nombre + " está listo (" + listos() + "/" + jug.size() + ")."));
+        Msg.sound(p, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
+        comprobarListos();
+        return null;
+    }
+
+    /** El organizador se salta la confirmacion: la cuenta atras empieza ya aunque falte gente por confirmar. */
+    public static String saltar() {
+        if (fase != Fase.LISTOS) return "No hay ninguna confirmación en marcha (solo se puede saltar tras /huida empezar).";
+        iniciarCuenta("El organizador ha saltado la confirmación.");
+        return null;
+    }
+
+    private static int listos() { int n = 0; for (J j : jug.values()) if (j.listo) n++; return n; }
+
+    private static void comprobarListos() {
+        if (fase != Fase.LISTOS || jug.isEmpty()) return;
+        for (J j : jug.values()) if (!j.listo) return;
+        iniciarCuenta(null);
+    }
+
+    private static void iniciarCuenta(String motivo) {
         fase = Fase.CUENTA;
         cuentaFin = server.getTicks() + CUENTA_SEGUNDOS * 20L;
-        Msg.broadcastTo(online(), Msg.say("¡Todos a su sitio! La huida empieza en " + CUENTA_SEGUNDOS + "..."));
-        return null;
+        for (J j : jug.values()) {
+            ServerPlayerEntity p = jugador(j);
+            if (p != null) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, false));
+        }
+        Msg.broadcastTo(online(), Msg.say((motivo == null ? "¡Todos listos! " : motivo + " ") + "La huida empieza en " + CUENTA_SEGUNDOS + "..."));
     }
 
     public static String parar(String motivo) {
@@ -208,6 +256,7 @@ public final class Huida {
         return switch (fase) {
             case LIBRE -> "No hay ninguna huida.";
             case COLA -> "Cola abierta: " + jug.size() + " jugador(es) apuntado(s).";
+            case LISTOS -> "Esperando a que todos confirmen «listo» (" + listos() + "/" + jug.size() + ").";
             case CUENTA -> "Cuenta atras en marcha.";
             case CORRIENDO -> "Huida en marcha (" + jug.values().stream().filter(j -> j.est == Est.CORRE).count() + " corriendo).";
         };
@@ -228,14 +277,43 @@ public final class Huida {
         switch (fase) {
             case LIBRE -> {}
             case COLA -> { if (now - ultimoAviso >= 1200) { ultimoAviso = now; avisoCola(); } }
+            case LISTOS -> tickListos(s, now);
             case CUENTA -> tickCuenta(s, now);
             case CORRIENDO -> tickCorriendo(s, now);
         }
     }
 
+    /** Espera a que todos confirmen: mantiene la camara, muestra cuantos faltan y recuerda a los que no han confirmado. */
+    private static void tickListos(MinecraftServer s, long now) {
+        boolean recordar = now - ultimoRecordatorio >= 400;       // cada 20 s
+        if (recordar) ultimoRecordatorio = now;
+        int n = listos();
+        for (J j : new ArrayList<>(jug.values())) {
+            ServerPlayerEntity p = jugador(j);
+            if (p == null) continue;
+            if (now % 10 == 0) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, true));
+            if (now % 20 == 0) Msg.actionBar(p, j.listo
+                    ? Text.literal("Listo ✔ — esperando a los demás (" + n + "/" + jug.size() + ")").formatted(Formatting.GREEN, Formatting.BOLD)
+                    : Text.literal("Pulsa R o escribe /huida listo  (" + n + "/" + jug.size() + " listos)").formatted(Formatting.YELLOW, Formatting.BOLD));
+            if (recordar && !j.listo) p.sendMessage(Msg.say(Text.literal("Falta tu confirmación: ").formatted(Formatting.WHITE)
+                    .append(Msg.button("LISTO", "/huida listo", Formatting.GREEN, "Confirmar que estás listo (también con la tecla R)"))), false);
+        }
+    }
+
+    /** Animacion de rugido de Cobblemon. {@code cry()} no hace nada si la entidad esta en silencio, asi que se le quita un instante. */
+    private static void rugir(PokemonEntity e) {
+        if (e == null) return;
+        try { e.setSilent(false); e.cry(); e.setSilent(true); } catch (Throwable t) { EmiHuida.LOG.warn("cry: {}", t.toString()); }
+    }
+
     private static void tickCuenta(MinecraftServer s, long now) {
         long resta = cuentaFin - now;
         ServerWorld w = mundo();
+        // el cliente da por terminada la huida si pasan 3 s sin noticias: durante la cuenta atras se le sigue avisando (si no, volvia a la camara normal)
+        if (now % 10 == 0) for (J j : jug.values()) {
+            ServerPlayerEntity p = jugador(j);
+            if (p != null) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, false));
+        }
         // durante la cuenta atras las copias estan quietas; el Tyrantrum ruge al final
         if (resta % 20 == 0 && resta > 0) {
             int seg = (int) (resta / 20);
@@ -249,7 +327,7 @@ public final class Huida {
         }
         if (resta == 46) for (J j : jug.values()) {                    // el Tyrantrum ruge (animacion y grito de Cobblemon) antes de salir
             ServerPlayerEntity p = jugador(j);
-            if (j.perseguidor != null) { try { j.perseguidor.cry(); } catch (Throwable t) { EmiHuida.LOG.warn("cry: {}", t.toString()); } }
+            rugir(j.perseguidor);
             if (p != null) Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.4f, 0.45f);
         }
         if (resta <= 0) {
@@ -274,7 +352,7 @@ public final class Huida {
             if (p == null) continue;
             if (j.est == Est.CORRE) tickJugador(w, j, p, now);
             else if (now >= j.soltarEn) { terminar(j, p, null); }
-            else if (now % 10 == 0) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores));   // la camara sigue mientras ves el final
+            else if (now % 10 == 0) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores, false));   // la camara sigue mientras ves el final
         }
         comprobarFin();
     }
@@ -332,6 +410,9 @@ public final class Huida {
             float yaw = Nivel.rumbo(j.sPerseguidor);
             j.perseguidor.refreshPositionAndAngles(e[0], Nivel.Y0, e[1], yaw, 0f);
             j.perseguidor.setHeadYaw(yaw); j.perseguidor.setBodyYaw(yaw);
+            // Cobblemon elige «correr» con la pose de andar (dato sincronizado MOVING, que sale de la distancia caminada, ver LivingEntityMixin) mas el sprint
+            ((Corredor) (Object) j.perseguidor).emi_huida$setPaso((float) (0.6 * j.vPerseguidor / 20.0));
+            j.perseguidor.setSprinting(true);
             j.perseguidor.setVelocity(Math.sin(Math.toRadians(-yaw)) * j.vPerseguidor / 20.0, 0, Math.cos(Math.toRadians(yaw)) * j.vPerseguidor / 20.0);
         }
         romper(w, j);
@@ -347,7 +428,7 @@ public final class Huida {
         if (j.s >= Nivel.S_META) { acabar(j, p, now, true); return; }
 
         if (now % 2 == 0) {
-            ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores));
+            ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores, false));
             if (now % 4 == 0) Msg.actionBar(p, barra(j, dist, now));
         }
     }
@@ -418,6 +499,11 @@ public final class Huida {
     private static void acabar(J j, ServerPlayerEntity p, long now, boolean escapo) {
         j.est = escapo ? Est.ESCAPO : Est.ATRAPADO;
         j.finTick = now; j.soltarEn = now + ESPERA_FIN;
+        if (j.perseguidor != null) {      // el Tyrantrum se para (deja de correr) y, si te ha atrapado, ruge
+            ((Corredor) (Object) j.perseguidor).emi_huida$setPaso(0f);
+            j.perseguidor.setSprinting(false);
+            if (!escapo) rugir(j.perseguidor);
+        }
         double t = (now - j.inicioTick) / 20.0;
         String tiempo = String.format(java.util.Locale.ROOT, "%.1f s", t);
         if (escapo) {
@@ -446,13 +532,13 @@ public final class Huida {
     private static void restaurar(J j, ServerPlayerEntity p) {
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         if (p == null) return;
-        ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0));
+        ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0, false));
         congelar(p, false);
         if (!Saved.restore(server, p)) quitarEfectos(p);
     }
 
     private static void comprobarFin() {
-        if (fase != Fase.CORRIENDO && fase != Fase.CUENTA) return;
+        if (fase != Fase.CORRIENDO && fase != Fase.CUENTA && fase != Fase.LISTOS) return;
         if (jug.isEmpty()) limpiar();
     }
 
@@ -486,6 +572,7 @@ public final class Huida {
         j.desconectado = true;
         jug.remove(p.getUuid());      // sus cosas siguen guardadas en disco: se le devuelven al volver a entrar
         comprobarFin();
+        comprobarListos();
     }
 
     // ---------------------------------------------------------------- ayudas

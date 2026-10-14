@@ -14,13 +14,29 @@ public final class CamaraHuida {
     private CamaraHuida() {}
 
     /** bloques por delante del jugador, altura sobre sus pies y bloques por detras del jugador a los que mira la camara */
-    static final double ADELANTE = 6.0, ALTURA = 3.8, MIRA_ATRAS = 8.0, MIRA_ALTO = 2.3;
+    static final double ADELANTE = 8.0, ALTURA = 4.2, MIRA_ATRAS = 9.0, MIRA_ALTO = 2.4;
 
     /** Prueba: si existe el archivo indicado con -Demi.huida.dbgfile, la camara va al lado del Tyrantrum (para revisar sus animaciones). */
+    private static double[] ladoCfg = {15, 10, 4};      // distancia lateral, altura y altura a la que mira (se pueden cambiar escribiendolos en el archivo: «15 10 4»)
+    private static long ladoComprobado;
     private static boolean debugLado() {
         String f = System.getProperty("emi.huida.dbgfile");
-        return f != null && new java.io.File(f).exists();
+        if (f == null) return false;
+        long t = System.currentTimeMillis();
+        java.io.File fi = new java.io.File(f);
+        if (t - ladoComprobado > 1000) {
+            ladoComprobado = t;
+            if (!fi.exists()) { ladoOn = false; }
+            else {
+                ladoOn = true;
+                try { String[] a = java.nio.file.Files.readString(fi.toPath()).trim().split("\\s+"); if (a.length >= 3) ladoCfg = new double[]{Double.parseDouble(a[0]), Double.parseDouble(a[1]), Double.parseDouble(a[2])}; } catch (Exception ignored) {}
+            }
+        }
+        return ladoOn;
     }
+    private static boolean ladoOn;
+    private static final boolean DEBUG = Boolean.getBoolean("emi.huida.debug");
+    private static int nCalc;
     private static float yaw;
     private static long ultimo;
     private static boolean listo;
@@ -52,9 +68,10 @@ public final class CamaraHuida {
             var ch = st.perseguidor() >= 0 ? mc.world.getEntityById(st.perseguidor()) : null;
             if (ch != null) {
                 Vec3d c = ch.getLerpedPos(tickDelta);
-                cx = c.x + fz * 11; cz = c.z - fx * 11; cy = c.y + 4; lx = c.x; lz = c.z; ly = c.y + 3;
+                cx = c.x + fz * ladoCfg[0]; cz = c.z - fx * ladoCfg[0]; cy = c.y + ladoCfg[1]; lx = c.x; lz = c.z; ly = c.y + ladoCfg[2];
             }
         }
+        if (DEBUG && (nCalc++ % 120) == 0) emi.huida.EmiHuida.LOG.info("camdbg yaw={} rumbo={} jugador=({}, {}, {}) camara=({}, {}, {}) persp={}", yaw, st.rumbo(), p.x, p.y, p.z, cx, cy, cz, mc.options.getPerspective());
         double dx = lx - cx, dy = ly - cy, dz = lz - cz, h = Math.sqrt(dx * dx + dz * dz);
         return new double[]{cx, cy, cz, Math.toDegrees(Math.atan2(-dx, dz)), -Math.toDegrees(Math.atan2(dy, h))};
     }

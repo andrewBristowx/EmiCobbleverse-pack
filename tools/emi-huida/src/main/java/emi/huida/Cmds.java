@@ -17,13 +17,18 @@ public final class Cmds {
         // --- jugadores
         root.then(CommandManager.literal("unirse").executes(c -> con(c, () -> Huida.unirse(c.getSource().getPlayerOrThrow()))));
         root.then(CommandManager.literal("salir").executes(c -> con(c, () -> Huida.salir(c.getSource().getPlayerOrThrow()))));
+        root.then(CommandManager.literal("listo").executes(c -> con(c, () -> Huida.listo(c.getSource().getPlayerOrThrow()))));
         root.then(CommandManager.literal("estado").executes(c -> { c.getSource().sendFeedback(() -> Msg.say(Huida.estado()), false); return 1; }));
         root.then(CommandManager.literal("ayuda").executes(Cmds::ayuda));
         root.executes(Cmds::ayuda);
         // --- organizador
         root.then(admin("abrir").executes(c -> con(c, Huida::abrir, "Cola abierta: se ha avisado a todos.")));
         root.then(admin("cerrar").executes(c -> con(c, Huida::cerrarCola)));
-        root.then(admin("empezar").executes(c -> con(c, Huida::empezar, "Preparando la huida...")));
+        // /huida empezar = lleva a todos a su pista y espera a que confirmen «listo»; /huida empezar ya = sin confirmacion
+        root.then(admin("empezar").executes(c -> con(c, () -> Huida.empezar(false), "Preparando la huida: se espera a que todos confirmen «listo» (/huida saltar para no esperar)..."))
+                .then(CommandManager.literal("ya").executes(c -> con(c, () -> Huida.empezar(true), "Preparando la huida (sin confirmación)..."))));
+        root.then(admin("saltar").executes(c -> con(c, Huida::saltar, "Confirmación saltada.")));
+        root.then(admin("forzar").executes(c -> con(c, Huida::saltar, "Confirmación saltada.")));
         root.then(admin("parar").executes(c -> con(c, () -> Huida.parar(null))));
         d.register(root);
     }
@@ -47,8 +52,8 @@ public final class Cmds {
 
     private static int ayuda(CommandContext<ServerCommandSource> c) {
         c.getSource().sendFeedback(() -> Msg.say("Huida del Tyrantrum: corre por las ruinas, salta, agáchate (shift) y esquiva antes de que te alcance."), false);
-        c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida unirse · /huida salir · /huida estado"), false);
-        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir · /huida empezar · /huida parar · /huida cerrar"), false);
+        c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida unirse · /huida listo (o tecla R) · /huida salir · /huida estado"), false);
+        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida parar · /huida cerrar"), false);
         return 1;
     }
 }
