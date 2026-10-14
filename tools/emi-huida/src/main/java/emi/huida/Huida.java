@@ -3,6 +3,7 @@ package emi.huida;
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import emi.huida.net.EstadoPayload;
+import emi.huida.net.EstrellasPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -10,6 +11,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -22,6 +24,8 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,6 +76,13 @@ public final class Huida {
         boolean desconectado;
         boolean enContacto;                          // estaba pegado a un obstaculo en el tick anterior
         boolean listo;                               // ha confirmado «listo» (fase LISTOS)
+        int puntos, nEstrellas, sigEst, combo, racha;       // michiestrellas: puntos y cuantas, siguiente por mirar, combo de recogida seguida y racha de obstaculos limpios
+        long ultimaEst;
+        final BitSet cogidas = new BitSet();
+        double[][] estPos = new double[0][];         // posicion en el mundo de cada estrella de su copia
+        final BitSet malezaRota = new BitSet(); int sigMaleza;      // maleza de los desvios que el Tyrantrum ya ha roto / primera que aun puede quedar
+        int sigMod, erroresAlEntrar; boolean dentro;  // obstaculo que viene, y errores que llevaba al entrar en su zona (para saber si lo paso limpio)
+        long proxAmbiente;
         J(ServerPlayerEntity p) { id = p.getUuid(); nombre = p.getGameProfile().getName(); }
     }
 
@@ -79,6 +90,12 @@ public final class Huida {
     private static Fase fase = Fase.LIBRE;
     static final Map<UUID, J> jug = new LinkedHashMap<>();
     private static long cuentaFin, ultimoAviso, ultimoRecordatorio;
+    private static String musicaActual; private static long musicaProx;
+    private static final java.util.Random RND = new java.util.Random();
+    private static final Nivel.Mod[] MODS_ORD = java.util.Arrays.stream(Nivel.MODS).sorted(Comparator.comparingDouble(Nivel.Mod::s0)).toArray(Nivel.Mod[]::new);
+    /** Resultado de cada jugador que ha terminado en esta partida (para la clasificacion final). */
+    record Resultado(UUID id, String nombre, int puntos, int estrellas, int errores, double tiempo, boolean escapo) {}
+    private static final List<Resultado> resultados = new ArrayList<>();
     private static final List<UUID> pendientes = new ArrayList<>();      // jugadores a los que hay que devolver sus cosas al entrar
     private static final List<Long> pendientesTick = new ArrayList<>();
 
@@ -90,6 +107,10 @@ public final class Huida {
         fase = Fase.LIBRE;
         jug.clear();
         if (mundo() == null) EmiHuida.LOG.warn("No existe la dimension emi_huida:selva: /huida empezar no funcionara.");
+        try {
+            int pts = 0; for (Nivel.Estrella e : Nivel.ESTRELLAS) pts += e.valor();
+            EmiHuida.LOG.info("Huida: nivel de {} bloques, {} michiestrellas ({} puntos), {} desvios de puente", (int) Nivel.S_TOTAL, Nivel.ESTRELLAS.length, pts, Nivel.DESVIOS.size());
+        } catch (Throwable t) { EmiHuida.LOG.error("El nivel de la huida no se pudo preparar", t); }
     }
 
     static void shutdown() {
@@ -165,6 +186,7 @@ public final class Huida {
         if (w == null) return "No existe la dimension emi_huida:selva.";
         jug.keySet().retainAll(lista.stream().map(j -> j.id).toList());
         limpiarEntidades(w);
+        resultados.clear();
         // primero se construye todo (si falla, nadie ha sido tocado) y despues se guarda y se mueve a cada jugador
         int h = 0;
         try {
@@ -179,9 +201,18 @@ public final class Huida {
             ServerPlayerEntity p = server.getPlayerManager().getPlayer(j.id);
             try { Saved.save(server, p); } catch (RuntimeException e) { jug.remove(j.id); p.sendMessage(Msg.err("No se pudo guardar tu inventario: no entras."), false); continue; }
             j.tablas.clear(); for (Nivel.Bloque b : j.nivel.puente()) j.tablas.add(b.pos());
-            j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
+            j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.malezaRota.clear(); j.sigMaleza = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
             j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.S_PERSEGUIDOR; j.vPerseguidor = VEL_BASE;
             j.est = Est.ESPERA; j.errores = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
+            j.puntos = 0; j.nEstrellas = 0; j.sigEst = 0; j.combo = 0; j.racha = 0; j.ultimaEst = 0; j.cogidas.clear(); j.sigMod = 0; j.dentro = false; j.erroresAlEntrar = 0;
+            j.estPos = new double[Nivel.ESTRELLAS.length][];
+            float[] datos = new float[Nivel.ESTRELLAS.length * 4];
+            for (int i = 0; i < Nivel.ESTRELLAS.length; i++) {
+                double[] q = Nivel.estrellaPos(j.hueco, Nivel.ESTRELLAS[i]);
+                j.estPos[i] = q;
+                datos[i * 4] = (float) q[0]; datos[i * 4 + 1] = (float) q[1]; datos[i * 4 + 2] = (float) q[2]; datos[i * 4 + 3] = Nivel.ESTRELLAS[i].valor();
+            }
+            ServerPlayNetworking.send(p, EstrellasPayload.lista(datos));
             colocarEnSalida(p, w, j);
             prepararJugador(p);
             congelar(p, true);
@@ -192,6 +223,7 @@ public final class Huida {
         if (ya) { iniciarCuenta(null); return null; }
         fase = Fase.LISTOS;
         ultimoRecordatorio = server.getTicks();
+        musicaActual = null;
         for (J j : jug.values()) {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
@@ -210,7 +242,7 @@ public final class Huida {
         if (j.listo) return "Ya has confirmado; espera a los demás.";
         j.listo = true;
         Msg.broadcastTo(online(), Msg.say(j.nombre + " está listo (" + listos() + "/" + jug.size() + ")."));
-        Msg.sound(p, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
+        Sonidos.sfx(p, Sonidos.LISTO, 1f, 1f);
         comprobarListos();
         return null;
     }
@@ -288,15 +320,51 @@ public final class Huida {
         boolean recordar = now - ultimoRecordatorio >= 400;       // cada 20 s
         if (recordar) ultimoRecordatorio = now;
         int n = listos();
+        musica(now, Sonidos.ESPERA);
         for (J j : new ArrayList<>(jug.values())) {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
+            ambiente(j, p, now);
             if (now % 10 == 0) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, true));
             if (now % 20 == 0) Msg.actionBar(p, j.listo
                     ? Text.literal("Listo ✔ — esperando a los demás (" + n + "/" + jug.size() + ")").formatted(Formatting.GREEN, Formatting.BOLD)
                     : Text.literal("Pulsa R o escribe /huida listo  (" + n + "/" + jug.size() + " listos)").formatted(Formatting.YELLOW, Formatting.BOLD));
             if (recordar && !j.listo) p.sendMessage(Msg.say(Text.literal("Falta tu confirmación: ").formatted(Formatting.WHITE)
                     .append(Msg.button("LISTO", "/huida listo", Formatting.GREEN, "Confirmar que estás listo (también con la tecla R)"))), false);
+        }
+    }
+
+    // ---------------------------------------------------------------- musica y sonidos
+
+    /** Musica de fondo en bucle: {@code id} = pista que debe sonar (null = ninguna). Se relanza cuando acaba. */
+    private static void musica(long now, String id) {
+        if (id == null) { pararMusica(); return; }
+        if (!id.equals(musicaActual)) { pararMusica(); musicaActual = id; musicaProx = 0; }
+        if (now < musicaProx) return;
+        musicaProx = now + Sonidos.duracion(id) - 2;
+        List<ServerPlayerEntity> ps = new ArrayList<>();
+        for (J j : jug.values()) {
+            ServerPlayerEntity p = jugador(j);
+            if (p != null && (!Sonidos.PERSECUCION.equals(id) || j.est == Est.CORRE)) ps.add(p);
+        }
+        Sonidos.musica(ps, id, Cfg.volumenMusica());
+    }
+
+    private static void pararMusica() {
+        if (musicaActual != null && server != null) for (J j : jug.values()) Sonidos.parar(jugador(j), musicaActual);
+        musicaActual = null;
+    }
+
+    /** Sonidos de la selva y del Tyrantrum a lo lejos, de vez en cuando (todos de vanilla, bajitos). */
+    private static void ambiente(J j, ServerPlayerEntity p, long now) {
+        if (now < j.proxAmbiente) return;
+        j.proxAmbiente = now + 70 + RND.nextInt(110);
+        switch (RND.nextInt(5)) {
+            case 0 -> Sonidos.sfx(p, SoundEvents.ENTITY_PARROT_AMBIENT, 0.5f, 0.8f + RND.nextFloat() * 0.5f);
+            case 1 -> Sonidos.sfx(p, SoundEvents.ENTITY_PARROT_IMITATE_RAVAGER, 0.35f, 0.7f);
+            case 2 -> Sonidos.sfx(p, SoundEvents.ENTITY_BAT_AMBIENT, 0.3f, 0.6f + RND.nextFloat() * 0.3f);
+            case 3 -> Sonidos.sfx(p, SoundEvents.ENTITY_RAVAGER_ROAR, 0.18f, 0.4f);
+            default -> Sonidos.sfx(p, SoundEvents.ENTITY_FROG_AMBIENT, 0.4f, 0.6f);
         }
     }
 
@@ -333,6 +401,7 @@ public final class Huida {
         if (resta <= 0) {
             fase = Fase.CORRIENDO;
             EmiHuida.LOG.info("Huida: ¡YA! ({} jugador(es))", jug.size());
+            pararMusica();
             for (J j : jug.values()) {
                 ServerPlayerEntity p = jugador(j);
                 if (p == null) continue;
@@ -342,11 +411,13 @@ public final class Huida {
                 Msg.title(p, Text.literal("¡CORRE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Llega a la puerta dorada").formatted(Formatting.WHITE), 0, 30, 10);
                 Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.4f);
             }
+            musica(now, Sonidos.PERSECUCION);
         }
     }
 
     private static void tickCorriendo(MinecraftServer s, long now) {
         ServerWorld w = mundo();
+        musica(now, Sonidos.PERSECUCION);
         for (J j : new ArrayList<>(jug.values())) {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
@@ -382,7 +453,7 @@ public final class Huida {
         if (pr.dist() > Nivel.anchoMax(pr.s()) + 0.5 && p.getY() >= Nivel.Y0 - 1.5) { reponer(w, j, p); }
         // caida a la lava
         else if (p.getY() < Nivel.Y0 - 1.5) {
-            error(j, p, now, "¡Caiste!");
+            error(j, p, now, "¡Caiste!", true);
             reponer(w, j, p);
         }
         // choque con un obstaculo
@@ -390,13 +461,17 @@ public final class Huida {
             boolean toca = tocaObstaculo(j, p);
             // solo cuenta error al EMPEZAR a tocar (si sigues pegado al obstaculo no se repite cada segundo)
             if (toca && !j.enContacto && now - j.ultimoError >= 10) {
-                error(j, p, now, "¡Tropezaste!");
+                error(j, p, now, "¡Tropezaste!", false);
                 double yaw = Math.toRadians(Nivel.rumbo(j.s));
                 p.setVelocity(Math.sin(yaw) * 0.4, 0.12, -Math.cos(yaw) * 0.4);      // te empuja hacia atras
                 p.velocityModified = true;
             }
             j.enContacto = toca;
         }
+
+        recogerEstrellas(w, j, p, now);
+        valorarObstaculos(j, p);
+        ambiente(j, p, now);
 
         // el perseguidor sigue el trazado y destruye lo que encuentra
         // el Tyrantrum intenta mantenerse a una distancia que se acorta con el tiempo; si te adelantas de mas acelera, si fallas no te espera
@@ -406,20 +481,21 @@ public final class Huida {
         j.vPerseguidor = Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
         j.sPerseguidor += j.vPerseguidor / 20.0;
         if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
-            double[] e = Nivel.ejePos(j.hueco, j.sPerseguidor);
-            float yaw = Nivel.rumbo(j.sPerseguidor);
-            j.perseguidor.refreshPositionAndAngles(e[0], Nivel.Y0, e[1], yaw, 0f);
+            double[] e = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);       // en los puentes rodea el hueco por la selva
+            float yaw = (float) e[3];
+            j.perseguidor.refreshPositionAndAngles(e[0], e[1], e[2], yaw, 0f);
             j.perseguidor.setHeadYaw(yaw); j.perseguidor.setBodyYaw(yaw);
             // Cobblemon elige «correr» con la pose de andar (dato sincronizado MOVING, que sale de la distancia caminada, ver LivingEntityMixin) mas el sprint
             ((Corredor) (Object) j.perseguidor).emi_huida$setPaso((float) (0.6 * j.vPerseguidor / 20.0));
             j.perseguidor.setSprinting(true);
             j.perseguidor.setVelocity(Math.sin(Math.toRadians(-yaw)) * j.vPerseguidor / 20.0, 0, Math.cos(Math.toRadians(yaw)) * j.vPerseguidor / 20.0);
+            romperMaleza(w, j, e[0], e[2]);
         }
         romper(w, j);
         double dist = j.s - j.sPerseguidor;
         if (now % 8 == 0) {
             float vol = (float) Math.max(0.2, Math.min(1.4, 1.5 - dist / 25.0));
-            Msg.sound(p, SoundEvents.ENTITY_IRON_GOLEM_STEP, vol, 0.45f);
+            Sonidos.sfx(p, Sonidos.PISADA, vol, (now / 8) % 2 == 0 ? 0.92f : 1.05f);
             if (dist < 14) Msg.sound(p, SoundEvents.ENTITY_WARDEN_HEARTBEAT, 0.8f, 0.9f);
         }
 
@@ -458,11 +534,47 @@ public final class Huida {
         return false;
     }
 
-    private static void error(J j, ServerPlayerEntity p, long now, String msg) {
-        j.errores++; j.ultimoError = now;
+    private static void error(J j, ServerPlayerEntity p, long now, String msg, boolean caida) {
+        j.errores++; j.ultimoError = now; j.racha = 0;
         EmiHuida.LOG.info("Huida: {} error {} ({}) en s={}", j.nombre, j.errores, msg, (int) j.s);
         Msg.title(p, Text.literal(msg).formatted(Formatting.RED, Formatting.BOLD), Text.literal("Errores: " + j.errores).formatted(Formatting.GRAY), 0, 15, 5);
-        Msg.sound(p, SoundEvents.ENTITY_PLAYER_HURT, 0.8f, 0.8f);
+        Sonidos.sfx(p, caida ? Sonidos.CAIDA : Sonidos.FALLO, 1f, 1f);
+    }
+
+    /** Recoge las michiestrellas que toca el jugador (las de s cerca de la suya; las que se pasan sin coger se pierden). */
+    private static void recogerEstrellas(ServerWorld w, J j, ServerPlayerEntity p, long now) {
+        Nivel.Estrella[] es = Nivel.ESTRELLAS;
+        for (int i = j.sigEst; i < es.length; i++) {
+            Nivel.Estrella e = es[i];
+            if (e.s() > j.s + 3) break;
+            if (e.s() < j.s - 3.5) { if (i == j.sigEst) j.sigEst++; continue; }
+            if (j.cogidas.get(i)) continue;
+            double[] q = j.estPos[i];
+            double dx = p.getX() - q[0], dz = p.getZ() - q[2], dy = q[1] - p.getY();
+            if (dx * dx + dz * dz > 2.6 || dy < -0.5 || dy > 2.3) continue;
+            j.cogidas.set(i);
+            j.puntos += e.valor(); j.nEstrellas++;
+            j.combo = now - j.ultimaEst <= 30 ? Math.min(j.combo + 1, 10) : 0;
+            j.ultimaEst = now;
+            ServerPlayNetworking.send(p, EstrellasPayload.cogida(i));
+            boolean grande = e.valor() >= 5;
+            Sonidos.sfx(p, grande ? Sonidos.ESTRELLA_GRANDE : Sonidos.ESTRELLA, grande ? 1f : 0.8f, 1f + j.combo * 0.055f);
+            w.spawnParticles(p, grande ? ParticleTypes.TOTEM_OF_UNDYING : ParticleTypes.END_ROD, false, q[0], q[1], q[2], grande ? 14 : 5, 0.25, 0.25, 0.25, grande ? 0.25 : 0.04);
+        }
+    }
+
+    /** Premia (con un sonido) pasar un obstaculo sin tocarlo ni caerse; cada obstaculo limpio seguido sube el tono (la racha se pierde al fallar). */
+    private static void valorarObstaculos(J j, ServerPlayerEntity p) {
+        while (j.sigMod < MODS_ORD.length) {
+            Nivel.Mod m = MODS_ORD[j.sigMod];
+            if (!j.dentro && j.s >= m.s0() - 4) { j.dentro = true; j.erroresAlEntrar = j.errores; }
+            if (j.s <= m.s0() + m.filas() + 0.5) break;
+            if (j.errores == j.erroresAlEntrar) {
+                j.racha++;
+                Sonidos.sfx(p, Sonidos.BIEN, 0.8f, 1f + Math.min(j.racha - 1, 8) * 0.06f);
+            }
+            j.sigMod++; j.dentro = false;
+        }
     }
 
     /** Tras una caida: de vuelta al ultimo punto seguro (antes del hueco o del puente en el que caiste). */
@@ -477,6 +589,17 @@ public final class Huida {
         j.idx = Nivel.idxDe(c == null ? Nivel.S_SALIDA : c.s());
         // tras una caida el Tyrantrum no esta encima: se queda al menos a 9 bloques del punto de regreso
         j.sPerseguidor = Math.min(j.sPerseguidor, (c == null ? Nivel.S_SALIDA : c.s()) - 9);
+        // se puede volver a intentar: las estrellas no cogidas de ese tramo siguen ahi y se recomponen las tablas del puente que aun no ha roto el Tyrantrum
+        double sc = c == null ? Nivel.S_SALIDA : c.s();
+        j.sigEst = 0; while (j.sigEst < Nivel.ESTRELLAS.length && Nivel.ESTRELLAS[j.sigEst].s() < sc - 3.5) j.sigEst++;
+        j.combo = 0; j.racha = 0;
+        List<Nivel.Bloque> pu = j.nivel.puente();
+        for (int i = j.sigPuente; i < pu.size(); i++) {
+            BlockPos pos = pu.get(i).pos();
+            if (w.getBlockState(pos).isAir()) w.setBlockState(pos, net.minecraft.block.Blocks.JUNGLE_PLANKS.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS | net.minecraft.block.Block.FORCE_STATE);
+            j.tablas.add(pos);
+        }
+        j.colapsos.clear();
     }
 
     /** El Tyrantrum destruye los obstaculos y las tablas que alcanza su boca. */
@@ -487,13 +610,29 @@ public final class Huida {
         while (j.sigPuente < pu.size() && pu.get(j.sigPuente).s() <= frente) { w.breakBlock(pu.get(j.sigPuente).pos(), false); j.tablas.remove(pu.get(j.sigPuente).pos()); j.sigPuente++; }
     }
 
+    /** Al salir al sendero o volver al camino el Tyrantrum destroza la maleza que cierra el muro (las hojas que quedan a menos de ~5 bloques de el). */
+    private static void romperMaleza(ServerWorld w, J j, double cx, double cz) {
+        List<Nivel.Bloque> ma = j.nivel.maleza();
+        while (j.sigMaleza < ma.size() && ma.get(j.sigMaleza).s() < j.sPerseguidor - 10) j.sigMaleza++;
+        for (int i = j.sigMaleza; i < ma.size(); i++) {
+            Nivel.Bloque b = ma.get(i);
+            if (b.s() > j.sPerseguidor + 10) break;
+            if (j.malezaRota.get(i)) continue;
+            double dx = b.pos().getX() + 0.5 - cx, dz = b.pos().getZ() + 0.5 - cz;
+            if (dx * dx + dz * dz > 25.0) continue;
+            j.malezaRota.set(i);
+            w.breakBlock(b.pos(), false);
+        }
+    }
+
     private static Text barra(J j, double dist, long now) {
         int n = (int) Math.max(0, Math.min(10, Math.round(dist / 2.0)));
         Formatting c = dist < 8 ? Formatting.RED : dist < 16 ? Formatting.GOLD : Formatting.GREEN;
         String bar = "■".repeat(n) + "□".repeat(10 - n);
         Text base = Text.literal("Tyrantrum a " + Math.max(0, (int) dist) + " m  " ).formatted(c, Formatting.BOLD).append(Text.literal(bar).formatted(c));
         double tiempo = (now - j.inicioTick) / 20.0;
-        return base.copy().append(Text.literal("   Errores: " + j.errores + "   " + String.format(java.util.Locale.ROOT, "%.1f", tiempo) + " s").formatted(Formatting.WHITE));
+        return base.copy().append(Text.literal("   ★ " + j.puntos).formatted(Formatting.GOLD, Formatting.BOLD))
+                .append(Text.literal("   Errores: " + j.errores + "   " + String.format(java.util.Locale.ROOT, "%.1f", tiempo) + " s").formatted(Formatting.WHITE));
     }
 
     private static void acabar(J j, ServerPlayerEntity p, long now, boolean escapo) {
@@ -506,19 +645,21 @@ public final class Huida {
         }
         double t = (now - j.inicioTick) / 20.0;
         String tiempo = String.format(java.util.Locale.ROOT, "%.1f s", t);
+        resultados.add(new Resultado(j.id, j.nombre, j.puntos, j.nEstrellas, j.errores, t, escapo));
+        Sonidos.parar(p, Sonidos.PERSECUCION);
         if (escapo) {
             String medalla = j.errores == 0 ? "ORO" : j.errores <= 2 ? "PLATA" : "BRONCE";
             Formatting mc = j.errores == 0 ? Formatting.GOLD : j.errores <= 2 ? Formatting.GRAY : Formatting.RED;
-            Msg.title(p, Text.literal("¡ESCAPASTE!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("Medalla de " + medalla + " · " + tiempo + " · " + j.errores + " errores").formatted(mc), 0, 100, 20);
-            p.sendMessage(Msg.say("¡Escapaste del Tyrantrum en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + "."), false);
-            Msg.sound(p, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+            Msg.title(p, Text.literal("¡ESCAPASTE!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Medalla de " + medalla + " · " + tiempo + " · " + j.errores + " errores").formatted(mc), 0, 100, 20);
+            p.sendMessage(Msg.say("¡Escapaste del Tyrantrum en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
+            Sonidos.sfx(p, Sonidos.VICTORIA, 1f, 1f);
         } else {
-            Msg.title(p, Text.literal("¡TE ATRAPÓ!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Aguantaste " + tiempo + " · " + j.errores + " errores").formatted(Formatting.GRAY), 0, 100, 20);
-            p.sendMessage(Msg.say("El Tyrantrum te atrapó tras " + tiempo + "."), false);
+            Msg.title(p, Text.literal("¡TE ATRAPÓ!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Aguantaste " + tiempo + " · " + j.errores + " errores").formatted(Formatting.GRAY), 0, 100, 20);
+            p.sendMessage(Msg.say("El Tyrantrum te atrapó tras " + tiempo + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
             Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.5f);
-            Msg.sound(p, SoundEvents.ENTITY_PLAYER_HURT, 1f, 0.6f);
+            Sonidos.sfx(p, Sonidos.DERROTA, 1f, 1f);
         }
-        EmiHuida.LOG.info("Huida: {} {} en {} con {} errores", j.nombre, escapo ? "ESCAPO" : "ATRAPADO", tiempo, j.errores);
+        EmiHuida.LOG.info("Huida: {} {} en {} con {} errores y {} puntos ({} estrellas)", j.nombre, escapo ? "ESCAPO" : "ATRAPADO", tiempo, j.errores, j.puntos, j.nEstrellas);
         if (!escapo) congelar(p, true);
     }
 
@@ -533,13 +674,40 @@ public final class Huida {
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         if (p == null) return;
         ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0, false));
+        ServerPlayNetworking.send(p, EstrellasPayload.borrar());
+        Sonidos.parar(p, Sonidos.PERSECUCION); Sonidos.parar(p, Sonidos.ESPERA);
         congelar(p, false);
         if (!Saved.restore(server, p)) quitarEfectos(p);
     }
 
     private static void comprobarFin() {
         if (fase != Fase.CORRIENDO && fase != Fase.CUENTA && fase != Fase.LISTOS) return;
-        if (jug.isEmpty()) limpiar();
+        if (jug.isEmpty()) { if (fase == Fase.CORRIENDO) anunciarClasificacion(); limpiar(); }
+    }
+
+    /** Cuando ha terminado el ultimo jugador: quien consiguio mas puntos (michiestrellas) gana; a igualdad, menos errores y luego menos tiempo. */
+    private static void anunciarClasificacion() {
+        if (resultados.isEmpty()) return;
+        List<Resultado> orden = new ArrayList<>(resultados);
+        orden.sort(Comparator.comparingInt((Resultado r) -> -r.puntos()).thenComparingInt(Resultado::errores).thenComparingDouble(Resultado::tiempo));
+        List<ServerPlayerEntity> todos = new ArrayList<>();
+        for (Resultado r : orden) { ServerPlayerEntity p = server.getPlayerManager().getPlayer(r.id()); if (p != null) todos.add(p); }
+        List<Text> lineas = new ArrayList<>();
+        lineas.add(Msg.say(Text.literal(orden.size() == 1 ? "Tu puntuación de la huida:" : "¡Clasificación de la huida! (gana quien consigue más michiestrellas)").formatted(Formatting.GOLD, Formatting.BOLD)));
+        String[] medallas = {"1º", "2º", "3º"};
+        for (int i = 0; i < orden.size(); i++) {
+            Resultado r = orden.get(i);
+            Formatting c = i == 0 ? Formatting.GOLD : i == 1 ? Formatting.GRAY : i == 2 ? Formatting.RED : Formatting.WHITE;
+            lineas.add(Text.literal("  " + (i < 3 ? medallas[i] : (i + 1) + "º") + "  " + r.nombre() + "  —  ★ " + r.puntos() + " puntos (" + r.estrellas() + " estrellas) · " + r.errores() + " errores · "
+                    + String.format(java.util.Locale.ROOT, "%.1f s", r.tiempo()) + (r.escapo() ? " · escapó" : " · atrapado")).formatted(c));
+        }
+        for (ServerPlayerEntity p : todos) for (Text t : lineas) p.sendMessage(t, false);
+        if (orden.size() > 1) {
+            Resultado g = orden.get(0);
+            for (ServerPlayerEntity p : todos) Msg.title(p, Text.literal("¡Gana " + g.nombre() + "!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("★ " + g.puntos() + " michiestrellas").formatted(Formatting.YELLOW), 5, 80, 20);
+        }
+        EmiHuida.LOG.info("Huida: clasificacion: {}", orden.stream().map(r -> r.nombre() + "=" + r.puntos()).toList());
+        resultados.clear();
     }
 
     private static void limpiar() {

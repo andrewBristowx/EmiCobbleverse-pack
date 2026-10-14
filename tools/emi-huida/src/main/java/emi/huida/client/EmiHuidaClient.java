@@ -48,7 +48,10 @@ public final class EmiHuidaClient implements ClientModInitializer {
                 net.minecraft.client.option.KeyBinding.updatePressedStates();      // devuelve la tecla de correr a lo que el jugador tenga pulsado de verdad
             }
         });
-        ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> { estado = null; poner(false); });
+        ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.EstrellasPayload.ID, (p, ctx) -> ctx.client().execute(() -> EstrellasCliente.recibir(p)));
+        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_TRANSLUCENT.register(EstrellasCliente::dibujar);
+        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_ENTITIES.register(EstrellasCliente::dibujarConProveedor);
+        ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> { estado = null; poner(false); EstrellasCliente.recibir(emi.huida.net.EstrellasPayload.borrar()); });
     }
 
     private static void poner(boolean on) {

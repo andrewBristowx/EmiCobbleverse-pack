@@ -44,7 +44,7 @@ final class Nivel {
     // ---------------------------------------------------------------- la ruta
     /** S = recta de ese largo; L / R = arco de 90 grados a la izquierda / derecha con ese radio. */
     private static final char[] TIPO = {'S', 'L', 'S', 'R', 'L', 'S', 'L', 'S', 'L', 'R', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'L', 'S', 'R', 'S'};
-    private static final int[] VAL = {100, 16, 44, 12, 12, 56, 16, 40, 12, 12, 64, 16, 50, 12, 36, 12, 44, 16, 84, 12, 72};
+    private static final int[] VAL = {100, 16, 44, 12, 12, 70, 16, 40, 12, 12, 64, 16, 50, 12, 36, 12, 60, 16, 84, 12, 72};
     private static final int NSEG = TIPO.length;
     static final double[] SEG_S0 = new double[NSEG + 1];
 
@@ -57,12 +57,12 @@ final class Nivel {
     static final Mod[] MODS = {
             new Mod(0, 58, 'T'), new Mod(0, 78, 'B'),
             new Mod(2, 8, 'L'), new Mod(2, 15, 'R'), new Mod(2, 22, 'L'), new Mod(2, 29, 'R'), new Mod(2, 35, 'H'),
-            new Mod(5, 8, 'P'), new Mod(5, 32, 'T'), new Mod(5, 42, 'C'),
+            new Mod(5, 16, 'P'), new Mod(5, 46, 'T'), new Mod(5, 56, 'C'),
             new Mod(7, 8, 'H'), new Mod(7, 15, 'T'), new Mod(7, 24, 'B'),
             new Mod(10, 8, 'L'), new Mod(10, 14, 'R'), new Mod(10, 20, 'L'), new Mod(10, 26, 'R'), new Mod(10, 34, 'T'), new Mod(10, 40, 'T'), new Mod(10, 50, 'B'),
             new Mod(12, 8, 'H'), new Mod(12, 15, 'T'), new Mod(12, 24, 'C'), new Mod(12, 32, 'B'), new Mod(12, 40, 'T'),
             new Mod(14, 8, 'T'), new Mod(14, 13, 'T'), new Mod(14, 18, 'T'), new Mod(14, 26, 'B'),
-            new Mod(16, 8, 'P'), new Mod(16, 26, 'R'), new Mod(16, 33, 'L'),
+            new Mod(16, 14, 'P'), new Mod(16, 44, 'R'), new Mod(16, 52, 'L'),
             new Mod(18, 8, 'B'), new Mod(18, 16, 'C'), new Mod(18, 24, 'T'), new Mod(18, 32, 'H'), new Mod(18, 42, 'L'), new Mod(18, 48, 'R'),
             new Mod(18, 56, 'T'), new Mod(18, 62, 'B'), new Mod(18, 70, 'T'),
             new Mod(20, 10, 'T'), new Mod(20, 18, 'H'), new Mod(20, 28, 'B'), new Mod(20, 36, 'R'), new Mod(20, 44, 'T'), new Mod(20, 54, 'C')};
@@ -81,7 +81,32 @@ final class Nivel {
     private static final byte[] CAT, HOYO;                 // categoria (0 nada, 1 suelo, 2 muro, 3 selva) y tipo de hueco (1 hueco, 2 puente)
     private static final byte[] ALT;                       // altura del muro sobre Y0 (1..9)
     private static final byte[] OBS;                       // tipo de obstaculo en la celda (0 ninguno)
+    private static final byte[] CARRIL;                    // 1 = camino del Tyrantrum por la selva, 2 = maleza que cierra el hueco del muro, 3 = sin arboles
     static final Set<Long> CHUNKS_LOCALES = new HashSet<>();
+
+    /**
+     * Camino del Tyrantrum alrededor de un puente: sale del camino por un lado (atravesando una maleza en el muro), rodea el hueco por la selva
+     * por un sendero de tierra y vuelve. {@code a0..a1} es la rampa de salida, {@code b0..b1} la de vuelta y {@code lateral} lo que se aparta del eje.
+     */
+    record Desvio(double a0, double a1, double b0, double b1, int lado, double lateral) {}
+    static final List<Desvio> DESVIOS = new ArrayList<>();
+    static final double RAMPA = 8, MARGEN_DESVIO = 2, RADIO_CARRIL = 3.7;
+
+    /** Una michiestrella: distancia s a lo largo del camino, lateral v (positivo = derecha del jugador), altura h sobre los pies y puntos que da. */
+    record Estrella(double s, double v, double h, int valor) {}
+    static final Estrella[] ESTRELLAS;
+
+    private static double suave(double t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+
+    /** Lo que se aparta el Tyrantrum del eje del camino a distancia s (positivo = a la derecha del jugador): 0 salvo en los desvios de los puentes. */
+    static double desfase(double s) {
+        for (Desvio d : DESVIOS) {
+            if (s <= d.a0() || s >= d.b1()) continue;
+            double f = s < d.a1() ? suave((s - d.a0()) / (d.a1() - d.a0())) : s <= d.b0() ? 1 : 1 - suave((s - d.b0()) / (d.b1() - d.b0()));
+            return d.lado() * d.lateral() * f;
+        }
+        return 0;
+    }
 
     static {
         // --- muestras
@@ -182,6 +207,103 @@ final class Nivel {
             } else if (d <= hw + wt + ANCHO_SELVA) CAT[id] = 3;
             if (CAT[id] != 0) CHUNKS_LOCALES.add(clave(Math.floorDiv(ix, 16), Math.floorDiv(iz, 16)));
         }
+        // --- desvios del Tyrantrum alrededor de los puentes
+        CARRIL = new byte[GW * GH];
+        for (Mod m : MODS) {
+            if (m.tipo() != 'P') continue;
+            double a1 = m.s0() - MARGEN_DESVIO, b0 = m.s0() + m.filas() + MARGEN_DESVIO;
+            double lat = 0;
+            for (double ss = a1; ss <= b0; ss += 1) lat = Math.max(lat, anchoMax(ss) + 4.6);
+            int mejor = 0, malos = Integer.MAX_VALUE;
+            for (int lado : new int[]{1, -1}) {
+                int n = marcarDesvio(new Desvio(a1 - RAMPA, a1, b0, b0 + RAMPA, lado, lat), false);
+                if (n < malos) { malos = n; mejor = lado; }
+            }
+            if (malos > 0) throw new IllegalStateException("El desvio del puente en s=" + m.s0() + " choca con otra parte del camino (" + malos + " celdas)");
+            Desvio d = new Desvio(a1 - RAMPA, a1, b0, b0 + RAMPA, mejor, lat);
+            DESVIOS.add(d);
+            marcarDesvio(d, true);
+        }
+        ESTRELLAS = disenarEstrellas();
+    }
+
+    /**
+     * Reparte las michiestrellas por el camino: arcos sobre troncos y huecos (hay que saltar para cogerlas), filas bajo las barras (hay que agacharse),
+     * estrellas en el lado libre de los pilares (hay que esquivar), un rastro sobre los puentes y grupos ondulados en los tramos libres.
+     * Las grandes (5 puntos) estan en lo alto del salto de cada hueco, al final de cada puente y cerca de la meta.
+     */
+    private static Estrella[] disenarEstrellas() {
+        List<Estrella> l = new ArrayList<>();
+        List<Mod> mods = new ArrayList<>(List.of(MODS));
+        mods.sort((a, b) -> Double.compare(a.s0(), b.s0()));
+        int alt = 0;
+        for (Mod m : mods) {
+            double a = m.s0(), n = m.filas();
+            switch (m.tipo()) {
+                case 'T' -> { double[][] arco = {{-2.6, 1.7}, {-1.3, 2.5}, {0.5, 2.9}, {2.3, 2.5}, {3.6, 1.7}}; for (double[] q : arco) l.add(new Estrella(a + q[0], 0, q[1], 1)); }
+                case 'B' -> { for (double q : new double[]{-1.2, 0.6, 2.4}) l.add(new Estrella(a + q, 0, 1.0, 1)); }
+                case 'L' -> { for (double q : new double[]{-1.0, 1.0, 3.0}) l.add(new Estrella(a + q, 1.9, 1.0, 1)); }
+                case 'R' -> { for (double q : new double[]{-1.0, 1.0, 3.0}) l.add(new Estrella(a + q, -1.9, 1.0, 1)); }
+                case 'C' -> { double lado = (alt++ % 2 == 0) ? 2.4 : -2.4; for (double q : new double[]{-1.0, 1.0, 3.0}) l.add(new Estrella(a + q, lado, 1.0, 1)); }
+                case 'H', 'W' -> {
+                    l.add(new Estrella(a - 2.6, 0, 1.7, 1)); l.add(new Estrella(a - 1.2, 0, 2.6, 1));
+                    l.add(new Estrella(a + n / 2, 0, 3.3, 5));
+                    l.add(new Estrella(a + n + 1.2, 0, 2.6, 1)); l.add(new Estrella(a + n + 2.6, 0, 1.7, 1));
+                }
+                case 'P' -> { for (double q = 2; q <= n - 2; q += 2.6) l.add(new Estrella(a + q, 0, 1.0, 1)); l.add(new Estrella(a + n + 2.5, 0, 1.0, 5)); }
+                default -> {}
+            }
+        }
+        // tramos libres: grupos de 4 estrellas con ondulacion, lejos de los obstaculos
+        double s = S_SALIDA + 6; int g = 0;
+        while (s < S_META - 14) {
+            Mod ocup = null;
+            for (Mod m : mods) if (s + 8 > m.s0() - 6 && s < m.s0() + m.filas() + 6) { ocup = m; break; }
+            if (ocup != null) { s = ocup.s0() + ocup.filas() + 6; continue; }
+            for (int k = 0; k < 4; k++) {
+                double ss = s + k * 2.4, lim = mediaAncho(ss) - 1.4;
+                l.add(new Estrella(ss, Math.max(-lim, Math.min(lim, 1.7 * Math.sin(g * 1.7 + k * 0.9))), 1.0, 1));
+            }
+            s += 4 * 2.4 + 6; g++;
+        }
+        l.add(new Estrella(S_META - 12, 0, 1.0, 5));
+        l.sort((x, y) -> Double.compare(x.s(), y.s()));
+        return l.toArray(new Estrella[0]);
+    }
+
+    /** {x, y, z} en el mundo de una michiestrella de la copia {@code hueco}. */
+    static double[] estrellaPos(int hueco, Estrella e) {
+        double[] c = ejePos(hueco, e.s());
+        int i = indice(e.s());
+        return new double[]{c[0] + e.v() * -MTZ[i], Y0 + e.h(), c[1] + e.v() * MTX[i]};
+    }
+
+    /** Marca (si aplicar) las celdas por las que pasa el Tyrantrum en un desvio y cuenta las que chocarian con otra parte del camino. */
+    private static int marcarDesvio(Desvio d, boolean aplicar) {
+        int malos = 0;
+        DESVIOS.add(d);                                 // desfase() lo usa
+        try {
+            for (double ss = d.a0() - 2; ss <= d.b1() + 2; ss += 0.5) {
+                int k = Math.max(0, Math.min(NM - 1, (int) Math.round(ss / PASO)));
+                double off = desfase(ss);
+                double cx = MX[k] + off * -MTZ[k], cz = MZ[k] + off * MTX[k];
+                int ix0 = (int) Math.floor(cx), iz0 = (int) Math.floor(cz), R = (int) Math.ceil(RADIO_CARRIL + 3);
+                for (int iz = iz0 - R; iz <= iz0 + R; iz++) for (int ix = ix0 - R; ix <= ix0 + R; ix++) {
+                    int x = ix - GX0, z = iz - GZ0;
+                    if (x < 0 || z < 0 || x >= GW || z >= GH) continue;
+                    int id = x + z * GW;
+                    double dist = Math.hypot(ix + 0.5 - cx, iz + 0.5 - cz);
+                    if (dist > RADIO_CARRIL + 3) continue;
+                    boolean ajeno = GS[id] < d.a0() - 8 || GS[id] > d.b1() + 8;
+                    if (dist <= RADIO_CARRIL) {
+                        if (((CAT[id] == 1 || CAT[id] == 2) && ajeno) || CAT[id] == 0) malos++;
+                        if (aplicar && CAT[id] == 3) CARRIL[id] = 1;
+                        else if (aplicar && CAT[id] == 2 && !ajeno) CARRIL[id] = 2;
+                    } else if (aplicar && CARRIL[id] == 0) CARRIL[id] = 3;
+                }
+            }
+        } finally { DESVIOS.remove(DESVIOS.size() - 1); }
+        return malos;
     }
 
     private static void validar() {
@@ -220,7 +342,14 @@ final class Nivel {
 
     private static long clave(int x, int z) { return ((long) x << 32) | (z & 0xffffffffL); }
 
-    static int ox(int hueco) { return hueco * SEP; }
+    /**
+     * Desplazamiento en x de cada copia. El mundo de la huida se guarda en disco y el terreno viejo NO se borra al construir: si cambia la forma del
+     * camino, los bloques de la version anterior (muros, columnas) se quedan y cierran el camino nuevo. Por eso {@code BASE_X} hay que SUBIRLO (en
+     * multiplos de 16 y mas alla de lo ocupado: 12 copias * SEP) cada vez que cambie la ruta o los muros; asi las copias nuevas salen en terreno virgen.
+     * (0.2.0 y 0.3.0: 0; 0.4.0: 8192.)
+     */
+    static final int BASE_X = 8192;
+    static int ox(int hueco) { return BASE_X + hueco * SEP; }
 
     // ---------------------------------------------------------------- geometria (servidor)
 
@@ -232,6 +361,20 @@ final class Nivel {
         int i = indice(s);
         double f = Math.max(0, Math.min(1, (s - MS[i]) / (MS[i + 1] - MS[i])));
         return new double[]{ox(hueco) + MX[i] + (MX[i + 1] - MX[i]) * f, MZ[i] + (MZ[i + 1] - MZ[i]) * f, rumbo(s)};
+    }
+
+    /** {x, y, z, yaw} del Tyrantrum a distancia s: el eje del camino y, en los puentes, su desvio por la selva (mas bajo, a nivel del suelo de la selva). */
+    static double[] perseguidorPos(int hueco, double s) {
+        double[] e = ejePos(hueco, s);
+        double off = desfase(s);
+        if (off == 0) return new double[]{e[0], Y0, e[1], e[2]};
+        int i = indice(Math.max(0, Math.min(S_TOTAL, s)));
+        double x = e[0] + off * -MTZ[i], z = e[1] + off * MTX[i];
+        double pend = desfase(s + 0.5) - desfase(s - 0.5);                          // lateral que gana por bloque avanzado
+        double yaw = e[2] + Math.toDegrees(Math.atan(pend));
+        double hw = mediaAncho(s), wt = grosorMuro(s);
+        double y = Y0 - 2 * suave((Math.abs(off) - (hw - 1.0)) / (wt + 3.0));
+        return new double[]{x, y, z, yaw};
     }
 
     /** Direccion del camino (yaw de Minecraft) a distancia s; en los arcos va girando de forma continua. */
@@ -265,7 +408,7 @@ final class Nivel {
     record Bloque(BlockPos pos, double s) {}
     /** Punto seguro al que se vuelve tras caer (x, z locales de la copia). */
     record Check(double s, double x, double z, float yaw) {}
-    record Construido(List<Bloque> obstaculos, List<Bloque> puente, List<Check> checks) {}
+    record Construido(List<Bloque> obstaculos, List<Bloque> puente, List<Check> checks, List<Bloque> maleza) {}
 
     private static final Block[] MURO = {Blocks.STONE_BRICKS, Blocks.MOSSY_STONE_BRICKS, Blocks.CRACKED_STONE_BRICKS, Blocks.MOSSY_COBBLESTONE, Blocks.MOSSY_STONE_BRICKS, Blocks.STONE_BRICKS};
     private static final Block[] SUELO = {Blocks.MOSSY_STONE_BRICKS, Blocks.STONE_BRICKS, Blocks.MOSSY_COBBLESTONE, Blocks.COARSE_DIRT, Blocks.MOSSY_STONE_BRICKS, Blocks.STONE_BRICKS, Blocks.MOSS_BLOCK};
@@ -315,6 +458,10 @@ final class Nivel {
                         }
                     }
                     case 2 -> {
+                        if (CARRIL[id] == 2) {          // el Tyrantrum atraviesa el muro por aqui: maleza en vez de piedra (se pone en cada partida y el la destroza al pasar); aqui solo la base
+                            w.setBlockState(p.set(ox + ix, Y_SELVA, iz), Blocks.MOSS_BLOCK.getDefaultState(), F);
+                            break;
+                        }
                         int alto = ALT[id];
                         boolean junto = hoyoEn(ix + 1, iz) || hoyoEn(ix - 1, iz) || hoyoEn(ix, iz + 1) || hoyoEn(ix, iz - 1);
                         for (int y = junto ? -7 : Y_SELVA - Y0; y < alto; y++) {
@@ -325,9 +472,16 @@ final class Nivel {
                     }
                     case 3 -> {
                         int y = Y_SELVA - (hash(ix, iz, 3) % 5 == 0 ? 1 : 0);
+                        if (CARRIL[id] == 1) {          // sendero del Tyrantrum alrededor del puente
+                            y = Y_SELVA;
+                            int h = hash(ix, iz, 4) % 6;
+                            w.setBlockState(p.set(ox + ix, y, iz), h == 0 ? Blocks.COARSE_DIRT.getDefaultState() : h == 1 ? Blocks.MOSSY_COBBLESTONE.getDefaultState() : Blocks.DIRT_PATH.getDefaultState(), F);
+                            w.setBlockState(p.set(ox + ix, y - 1, iz), Blocks.DIRT.getDefaultState(), F);
+                            break;
+                        }
                         w.setBlockState(p.set(ox + ix, y, iz), Blocks.GRASS_BLOCK.getDefaultState(), F);
                         w.setBlockState(p.set(ox + ix, y - 1, iz), Blocks.DIRT.getDefaultState(), F);
-                        if (hash(ix, iz, 7) % 52 == 0 && GD[id] > mediaAncho(GS[id]) + grosorMuro(GS[id]) + 3) arbol(w, p, ox + ix, y + 1, iz, hash(ix, iz, 9));
+                        if (CARRIL[id] == 0 && hash(ix, iz, 7) % 52 == 0 && GD[id] > mediaAncho(GS[id]) + grosorMuro(GS[id]) + 3) arbol(w, p, ox + ix, y + 1, iz, hash(ix, iz, 9));
                     }
                     default -> {}
                 }
@@ -356,7 +510,13 @@ final class Nivel {
         }
 
         // obstaculos y tablas (se vuelven a poner en cada partida)
-        List<Bloque> obst = new ArrayList<>(), puente = new ArrayList<>();
+        List<Bloque> obst = new ArrayList<>(), puente = new ArrayList<>(), maleza = new ArrayList<>();
+        BlockState hoja = Blocks.JUNGLE_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true);
+        for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
+            int id = (ix - GX0) + (iz - GZ0) * GW;
+            if (CAT[id] != 2 || CARRIL[id] != 2) continue;
+            for (int y = Y_SELVA - Y0 + 1; y < 4; y++) maleza.add(poner(w, ox + ix, Y0 + y, iz, hoja, GS[id]));
+        }
         BlockState roca = Blocks.MOSSY_COBBLESTONE.getDefaultState();
         BlockState losa = Blocks.DARK_OAK_SLAB.getDefaultState().with(SlabBlock.TYPE, SlabType.TOP);
         BlockState tablon = Blocks.JUNGLE_PLANKS.getDefaultState();
@@ -389,10 +549,11 @@ final class Nivel {
         for (Mod m : MODS) if (m.tipo() == 'H' || m.tipo() == 'W' || m.tipo() == 'P') {
             double sc = m.s0() - 4;
             double[] e = ejePos(0, sc);
-            checks.add(new Check(sc, e[0], e[1], (float) e[2]));
+            checks.add(new Check(sc, e[0] - ox(0), e[1], (float) e[2]));      // x local de la copia
         }
         checks.sort((a, b) -> Double.compare(a.s(), b.s()));
-        return new Construido(obst, puente, checks);
+        maleza.sort((a, b) -> Double.compare(a.s(), b.s()));
+        return new Construido(obst, puente, checks, maleza);
     }
 
     private static Bloque poner(ServerWorld w, int x, int y, int z, BlockState s, double sd) {

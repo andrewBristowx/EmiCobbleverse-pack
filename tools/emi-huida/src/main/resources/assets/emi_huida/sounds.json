@@ -1,0 +1,74 @@
+{
+  "musica.persecucion": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_persecucion",
+        "stream": true
+      }
+    ]
+  },
+  "musica.espera": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_espera",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.estrella": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:estrella"
+    ]
+  },
+  "sfx.estrella_grande": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:estrella_grande"
+    ]
+  },
+  "sfx.bien": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:bien"
+    ]
+  },
+  "sfx.fallo": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:fallo"
+    ]
+  },
+  "sfx.caida": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:caida"
+    ]
+  },
+  "sfx.pisada": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:pisada"
+    ]
+  },
+  "sfx.victoria": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:victoria"
+    ]
+  },
+  "sfx.derrota": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:derrota"
+    ]
+  },
+  "sfx.listo": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:listo"
+    ]
+  }
+}
