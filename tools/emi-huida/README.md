@@ -1,4 +1,4 @@
-# Emi Huida (`emi_huida`) — 0.6.1 (prototipo)
+# Emi Huida (`emi_huida`) — 0.6.2 (prototipo)
 
 Minijuego de **huida de un Pokémon perseguidor** al estilo Crash Bandicoot (plan del documento «Plan evento persecución»: «Nivel 1: La huida del Tyrantrum»).
 Mod de servidor + parte de cliente (cámara, teclas e interfaz). **Hay que instalarlo también en los clientes** (ya va en el pack): un cliente sin el mod no puede jugar (no tendría la cámara ni el control).
@@ -22,6 +22,7 @@ Tres escenas con cámara de cine, hechas con **michis de verdad** (el Pokémon `
 - **Mordisco** (`Escenas.comido`, 175 ticks, si **te alcanza**): el Tyrantrum retrocede 3 bloques, echa la cabeza atrás y **muerde** (`physical`; con la mandíbula cerrada a 1,33 s) donde estás; el jugador se vuelve **invisible** y se coloca dentro de la boca, el Tyrantrum **mastica** (4 `recoil`), título «¡TE COMIÓ!», sonido de derrota (`sfx.derrota_comido`) y traga. Planos: el normal, frontal bajo, 3/4 desde arriba y primer plano de la cara.
 - Medidas del Tyrantrum (hechas en el juego con una regla de bloques, escala 9/4,65): de pie la **boca está ~6 bloques por delante** y a ~5,6 de altura; rugiendo sube a ~7,2; en el mordisco queda a ~9 por delante y ~2 de altura. Están en `Escenas` (`BOCA_*`). La barra de peligro del HUD cuenta ahora la distancia **desde la boca** (te atrapa a 6 bloques: `HudPayload.CAPTURA`).
 - **Nivel**: la entrada se alarga (`PRE=44`, antes 30) para que quepan la reja y el michi. Como cambia la ruta, `BASE_X` sube a **16384** (el terreno viejo se queda sin usar en el disco).
+- **Modo prueba** (0.6.2, `/huida modoprueba [on|off]`, admin; sin argumento alterna): el Tyrantrum **no te atrapa** (se queda a `DIST_CAPTURA + DIST_PRUEBA` = 9 bloques como mínimo, aunque te quedes parado) y la carrera **no cuenta en la clasificación** (aviso en el chat al empezar y al terminar). Sirve para llegar al final y ver la escena del michi ángel con un equipo que va con lag. Solo en memoria (se apaga al reiniciar el servidor); `/huida estado` avisa si está encendido. Las pruebas de escena (`/huida prueba …`) lo ignoran.
 - **Comandos de prueba** (admin): `/huida prueba intro|angel|comido` (arranca la escena en un nivel con el flujo normal de «listo»: `/huida saltar` la lanza), `intro_<tick>` / `angel_<tick>` (congelan la escena en ese tick; `angel_fin` la termina), `michis` (fila con los michis demonio/ángel volando, flotando y de pie), `medir` (Tyrantrum parado a 25 por delante), `anim_<nombre>`, `limpiar`. `-Demi.huida.escena_lenta=N` (solo pruebas) alarga las escenas N veces; **ojo**: las animaciones de los Pokémon siguen a velocidad normal, así que con N>1 el rugido/boca no coinciden con la tarta.
 
 ## Cámara (estilo Crash)

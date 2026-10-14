@@ -31,6 +31,10 @@ public final class Cmds {
         root.then(admin("forzar").executes(c -> con(c, Huida::saltar, "Confirmación saltada.")));
         root.then(admin("prueba").then(CommandManager.argument("escena", com.mojang.brigadier.arguments.StringArgumentType.word())
                 .executes(c -> con(c, () -> Huida.prueba(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "escena")), "Preparando la prueba..."))));
+        // modo prueba: el Tyrantrum no te atrapa (para probar el final con un equipo que va con lag); sin argumento se alterna
+        root.then(admin("modoprueba").executes(c -> modoPrueba(c, !Huida.modoPrueba))
+                .then(CommandManager.literal("on").executes(c -> modoPrueba(c, true)))
+                .then(CommandManager.literal("off").executes(c -> modoPrueba(c, false))));
         root.then(admin("parar").executes(c -> con(c, () -> Huida.parar(null))));
         d.register(root);
     }
@@ -52,10 +56,19 @@ public final class Cmds {
         return 1;
     }
 
+    private static int modoPrueba(CommandContext<ServerCommandSource> c, boolean on) {
+        Huida.modoPrueba = on;
+        EmiHuida.LOG.info("Huida: modo prueba {} por {}", on ? "ACTIVADO" : "desactivado", c.getSource().getName());
+        c.getSource().sendFeedback(() -> Msg.say(on
+                ? "MODO PRUEBA ACTIVADO: el Tyrantrum ya no te atrapa (se queda a unos 9 bloques) y las carreras no cuentan en la clasificación. Se apaga con /huida modoprueba off (y al reiniciar el servidor)."
+                : "Modo prueba desactivado: el Tyrantrum vuelve a atraparte."), true);
+        return 1;
+    }
+
     private static int ayuda(CommandContext<ServerCommandSource> c) {
         c.getSource().sendFeedback(() -> Msg.say("Huida del Tyrantrum: corre por las ruinas, salta, agáchate (shift) y esquiva antes de que te alcance."), false);
         c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida unirse · /huida listo (o tecla R) · /huida salir · /huida estado"), false);
-        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida parar · /huida cerrar"), false);
+        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida parar · /huida cerrar · /huida modoprueba [on|off] (el Tyrantrum no te atrapa, para probar)"), false);
         return 1;
     }
 }

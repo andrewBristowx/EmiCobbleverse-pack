@@ -55,6 +55,9 @@ public final class Huida {
     static final double DIST_CAPTURA = HudPayload.CAPTURA;     // distancia entre el centro del Tyrantrum (mide ~15 de largo: boca a ~6 por delante del centro, hocico a ~7, cola a ~8,5 por detras) y el jugador a la que te atrapa
     static final double FRENTE_PERSEGUIDOR = 6.5;      // hasta donde alcanza su boca por delante de su centro: destruye lo que haya ahi
     static final int CUENTA_SEGUNDOS = 5;
+    /** Modo prueba (/huida modoprueba): el Tyrantrum nunca baja de esta distancia EXTRA sobre la de captura, asi que no te atrapa (para probar el final aunque el equipo vaya con lag). Solo en memoria. */
+    static final double DIST_PRUEBA = 3.0;
+    static volatile boolean modoPrueba;
     static final int ESPERA_FIN = 140;                 // ticks antes de devolver al jugador a su sitio
     static final float ALTURA_PERSEGUIDOR = 9.0f;
 
@@ -299,7 +302,7 @@ public final class Huida {
     }
 
     static String estado() {
-        return switch (fase) {
+        return (modoPrueba ? "[MODO PRUEBA: el Tyrantrum no atrapa] " : "") + switch (fase) {
             case LIBRE -> "No hay ninguna huida.";
             case COLA -> "Cola abierta: " + jug.size() + " jugador(es) apuntado(s).";
             case LISTOS -> "Esperando a que todos confirmen «listo» (" + listos() + "/" + jug.size() + ").";
@@ -496,6 +499,7 @@ public final class Huida {
                 j.est = Est.CORRE; j.inicioTick = now;
                 if (pruebaEscena != null && !pruebaEscena.equals("intro")) j.inicioTick = now - 400;
                 Msg.title(p, Text.literal("¡CORRE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Llega a la puerta dorada").formatted(Formatting.WHITE), 0, 30, 10);
+                if (modoPrueba && pruebaEscena == null) p.sendMessage(Msg.say("MODO PRUEBA: el Tyrantrum no te atrapa y esta carrera no cuenta en la clasificación. Se apaga con /huida modoprueba off."), false);
                 Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.4f);
             }
             musica(now, Sonidos.PERSECUCION);
@@ -573,6 +577,7 @@ public final class Huida {
         double hueco = j.s - j.sPerseguidor;
         j.vPerseguidor = Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
         j.sPerseguidor += j.vPerseguidor / 20.0;
+        if (modoPrueba && pruebaEscena == null && j.s - j.sPerseguidor < DIST_CAPTURA + DIST_PRUEBA) j.sPerseguidor = j.s - (DIST_CAPTURA + DIST_PRUEBA);      // modo prueba: no te alcanza
         if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
             double[] e = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);       // en los puentes rodea el hueco por la selva
             float yaw = (float) e[3];
@@ -729,7 +734,8 @@ public final class Huida {
         }
         double t = (now - j.inicioTick) / 20.0;
         String tiempo = String.format(java.util.Locale.ROOT, "%.1f s", t);
-        resultados.add(new Resultado(j.id, j.nombre, j.puntos, j.nEstrellas, j.errores, t, escapo));
+        if (!modoPrueba || pruebaEscena != null) resultados.add(new Resultado(j.id, j.nombre, j.puntos, j.nEstrellas, j.errores, t, escapo));      // en modo prueba no cuenta en la clasificacion
+        else p.sendMessage(Msg.say("Modo prueba: este resultado no cuenta en la clasificación."), false);
         Sonidos.parar(p, Sonidos.PERSECUCION);
         if (escapo) {
             // con escenas, el titulo y la fanfarria salen al final de la escena del michi angel (Escenas.finalAngel -> titulosEscape)
