@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "emi.huida.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "emi-huida-refmap.json",
+  "mixins": [],
+  "client": ["CameraMixin", "KeyboardInputMixin", "InGameHudMixin", "BossBarHudMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

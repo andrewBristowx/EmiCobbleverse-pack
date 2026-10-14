@@ -16,5 +16,6 @@
     "minecraft": "~1.21.1",
     "fabric-api": "*",
     "cobblemon": "*"
-  }
+  },
+  "mixins": ["emi_huida.mixins.json"]
 }

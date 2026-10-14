@@ -36,7 +36,7 @@ public final class Cmds {
     private static int con(CommandContext<ServerCommandSource> c, Tarea f, String ok) {
         String r;
         try { r = f.run(); } catch (CommandSyntaxException cs) { c.getSource().sendError(Text.literal(cs.getMessage())); return 0; }
-        catch (RuntimeException e) {
+        catch (Throwable e) {
             EmiHuida.LOG.error("Error en /huida", e);
             c.getSource().sendError(Text.literal("Error interno: " + e)); return 0;
         }
