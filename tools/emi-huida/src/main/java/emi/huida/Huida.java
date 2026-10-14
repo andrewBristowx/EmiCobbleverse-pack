@@ -4,6 +4,8 @@ import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import emi.huida.net.EstadoPayload;
 import emi.huida.net.EstrellasPayload;
+import emi.huida.net.HudPayload;
+import emi.huida.net.MapaPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -120,6 +122,7 @@ public final class Huida {
             if (p != null && Saved.exists(server, j.id)) Saved.restore(server, p);
         }
         jug.clear(); fase = Fase.LIBRE;
+        try { Pausas.reanudar(); } catch (Throwable t) { }
     }
 
     public static boolean participa(net.minecraft.entity.player.PlayerEntity p) {
@@ -213,6 +216,7 @@ public final class Huida {
                 datos[i * 4] = (float) q[0]; datos[i * 4 + 1] = (float) q[1]; datos[i * 4 + 2] = (float) q[2]; datos[i * 4 + 3] = Nivel.ESTRELLAS[i].valor();
             }
             ServerPlayNetworking.send(p, EstrellasPayload.lista(datos));
+            ServerPlayNetworking.send(p, new MapaPayload((float) Nivel.PASO_MAPA, (float) Nivel.S_TOTAL, (float) Nivel.S_META, Nivel.puntosTotal(), Nivel.mapa(j.hueco)));
             colocarEnSalida(p, w, j);
             prepararJugador(p);
             congelar(p, true);
@@ -220,6 +224,7 @@ public final class Huida {
             ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, !ya));
         }
         if (jug.isEmpty()) { fase = Fase.LIBRE; return "No se pudo preparar a nadie."; }
+        Pausas.pausar();      // sin limpieza de objetos ni bosses de Emipokemon mientras dura la huida
         if (ya) { iniciarCuenta(null); return null; }
         fase = Fase.LISTOS;
         ultimoRecordatorio = server.getTicks();
@@ -325,13 +330,32 @@ public final class Huida {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
             ambiente(j, p, now);
-            if (now % 10 == 0) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, true));
+            if (now % 10 == 0) { ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, true)); enviarHud(p, j, now); }
             if (now % 20 == 0) Msg.actionBar(p, j.listo
                     ? Text.literal("Listo ✔ — esperando a los demás (" + n + "/" + jug.size() + ")").formatted(Formatting.GREEN, Formatting.BOLD)
                     : Text.literal("Pulsa R o escribe /huida listo  (" + n + "/" + jug.size() + " listos)").formatted(Formatting.YELLOW, Formatting.BOLD));
             if (recordar && !j.listo) p.sendMessage(Msg.say(Text.literal("Falta tu confirmación: ").formatted(Formatting.WHITE)
                     .append(Msg.button("LISTO", "/huida listo", Formatting.GREEN, "Confirmar que estás listo (también con la tecla R)"))), false);
         }
+    }
+
+    // ---------------------------------------------------------------- interfaz (cliente)
+
+    /** {puesto, jugadores, puntos del primero}: se ordena solo por puntos (la clasificacion final desempata por errores y tiempo). */
+    private static int[] clasificacionDe(J yo) {
+        Map<UUID, Integer> pts = new LinkedHashMap<>();
+        for (Resultado r : resultados) pts.put(r.id(), r.puntos());
+        for (J k : jug.values()) pts.put(k.id, k.puntos);
+        int mejores = 0, lider = yo.puntos;
+        for (var en : pts.entrySet()) { lider = Math.max(lider, en.getValue()); if (!en.getKey().equals(yo.id) && en.getValue() > yo.puntos) mejores++; }
+        return new int[]{mejores + 1, Math.max(1, pts.size()), lider};
+    }
+
+    private static void enviarHud(ServerPlayerEntity p, J j, long now) {
+        int[] c = clasificacionDe(j);
+        int fin = j.est == Est.ESCAPO ? 1 : j.est == Est.ATRAPADO ? 2 : 0;
+        long ticks = j.est == Est.CORRE ? now - j.inicioTick : j.est == Est.ESPERA ? 0 : j.finTick - j.inicioTick;
+        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin));
     }
 
     // ---------------------------------------------------------------- musica y sonidos
@@ -380,7 +404,7 @@ public final class Huida {
         // el cliente da por terminada la huida si pasan 3 s sin noticias: durante la cuenta atras se le sigue avisando (si no, volvia a la camara normal)
         if (now % 10 == 0) for (J j : jug.values()) {
             ServerPlayerEntity p = jugador(j);
-            if (p != null) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, false));
+            if (p != null) { ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, false)); enviarHud(p, j, now); }
         }
         // durante la cuenta atras las copias estan quietas; el Tyrantrum ruge al final
         if (resta % 20 == 0 && resta > 0) {
@@ -423,7 +447,7 @@ public final class Huida {
             if (p == null) continue;
             if (j.est == Est.CORRE) tickJugador(w, j, p, now);
             else if (now >= j.soltarEn) { terminar(j, p, null); }
-            else if (now % 10 == 0) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores, false));   // la camara sigue mientras ves el final
+            else if (now % 10 == 0) { ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores, false)); enviarHud(p, j, now); }   // la camara y la interfaz siguen mientras ves el final
         }
         comprobarFin();
     }
@@ -505,7 +529,7 @@ public final class Huida {
 
         if (now % 2 == 0) {
             ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores, false));
-            if (now % 4 == 0) Msg.actionBar(p, barra(j, dist, now));
+            enviarHud(p, j, now);
         }
     }
 
@@ -625,16 +649,6 @@ public final class Huida {
         }
     }
 
-    private static Text barra(J j, double dist, long now) {
-        int n = (int) Math.max(0, Math.min(10, Math.round(dist / 2.0)));
-        Formatting c = dist < 8 ? Formatting.RED : dist < 16 ? Formatting.GOLD : Formatting.GREEN;
-        String bar = "■".repeat(n) + "□".repeat(10 - n);
-        Text base = Text.literal("Tyrantrum a " + Math.max(0, (int) dist) + " m  " ).formatted(c, Formatting.BOLD).append(Text.literal(bar).formatted(c));
-        double tiempo = (now - j.inicioTick) / 20.0;
-        return base.copy().append(Text.literal("   ★ " + j.puntos).formatted(Formatting.GOLD, Formatting.BOLD))
-                .append(Text.literal("   Errores: " + j.errores + "   " + String.format(java.util.Locale.ROOT, "%.1f", tiempo) + " s").formatted(Formatting.WHITE));
-    }
-
     private static void acabar(J j, ServerPlayerEntity p, long now, boolean escapo) {
         j.est = escapo ? Est.ESCAPO : Est.ATRAPADO;
         j.finTick = now; j.soltarEn = now + ESPERA_FIN;
@@ -717,6 +731,7 @@ public final class Huida {
             limpiarEntidades(w);
         }
         jug.clear(); fase = Fase.LIBRE;
+        try { Pausas.reanudar(); } catch (Throwable t) { EmiHuida.LOG.warn("pausas: {}", t.toString()); }
     }
 
     private static void limpiarEntidades(ServerWorld w) {

@@ -271,6 +271,18 @@ final class Nivel {
         return l.toArray(new Estrella[0]);
     }
 
+    static final double PASO_MAPA = 4.0;
+
+    /** Puntos (x, z del mundo) del eje del camino de la copia {@code hueco}, uno cada {@link #PASO_MAPA} bloques desde s=0 hasta el final: para el minimapa. */
+    static float[] mapa(int hueco) {
+        int n = (int) Math.ceil(S_TOTAL / PASO_MAPA) + 1;
+        float[] r = new float[n * 2];
+        for (int i = 0; i < n; i++) { double[] e = ejePos(hueco, Math.min(S_TOTAL, i * PASO_MAPA)); r[i * 2] = (float) e[0]; r[i * 2 + 1] = (float) e[1]; }
+        return r;
+    }
+
+    static int puntosTotal() { int t = 0; for (Estrella e : ESTRELLAS) t += e.valor(); return t; }
+
     /** {x, y, z} en el mundo de una michiestrella de la copia {@code hueco}. */
     static double[] estrellaPos(int hueco, Estrella e) {
         double[] c = ejePos(hueco, e.s());
