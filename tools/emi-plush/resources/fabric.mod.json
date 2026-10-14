@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "emi_plush",
-  "version": "1.12.0",
+  "version": "1.13.1",
   "name": "Emi Plush",
   "description": "Peluche y Pokémon propios de Emi (Michi Dramático) hechos con Pokeblocks y Cobblemon.",
   "authors": [
@@ -25,5 +25,8 @@
     "geckolib": ">=4.7.3",
     "pokeblocks": "*",
     "cobblemon": ">=1.7.0"
+  },
+  "suggests": {
+    "accessories": "*"
   }
 }

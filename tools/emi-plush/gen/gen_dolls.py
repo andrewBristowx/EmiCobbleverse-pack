@@ -166,6 +166,10 @@ for acc, fn, es, en in ACC:
 MICHI_NOMBRES = [(i, es, en) for i, _, _, es, en in MICHI]
 IDS = [f'{sp}_emi' for sp, *_ in ESPECIES] + [i for i, *_ in MICHI]
 KU = 4
+# Peluches GIGANTES (solo la familia del GatitoAlien): mismo modelo y textura que el peluche normal, dibujados al doble (como los gigantes de Pokeblocks).
+# id gigante_<id> -> modelo base. La clase de su entidad de bloque lleva «Gigantic» en el nombre: Pokeblocks usa eso para darles su forma grande.
+GIGANTES = [('gigante_michi_dramatico', 'michi_dramatico')] + [(f'gigante_{i}', i) for i, *_ in MICHI]
+ESCALA_GIGANTE = 2.0
 
 def build_michi(ident, acc, dorado):
     base = f'{B}/bedrock/pokemon/models/michi_dramatico/michi_dramatico' + (f'_{acc}' if acc else '') + '.geo.json'
@@ -194,11 +198,13 @@ def build_michi(ident, acc, dorado):
     Image.new('RGBA', (16, 16), (236, 220, 240, 255)).save(f'{A}/textures/block/{ident}_particle.png')
 
 
-def recursos(n):
+def recursos(n, base=None):
+    """`base`: id del peluche normal cuyo modelo de bloque (y particula) comparte este (los gigantes)."""
     os.makedirs(f'{A}/blockstates', exist_ok=True); os.makedirs(f'{A}/models/block', exist_ok=True); os.makedirs(f'{A}/models/item', exist_ok=True)
     os.makedirs(f'{RES}/data/emi_plush/loot_table/blocks', exist_ok=True)
     json.dump({'variants': {'': {'model': f'emi_plush:block/{n}'}}}, open(f'{A}/blockstates/{n}.json', 'w'), indent=2)
-    json.dump({'parent': 'builtin/entity', 'texture_size': [16, 16], 'textures': {'particle': f'emi_plush:block/{n}_particle'}}, open(f'{A}/models/block/{n}.json', 'w'), indent=2)
+    part = base or n
+    json.dump({'parent': 'builtin/entity', 'texture_size': [16, 16], 'textures': {'particle': f'emi_plush:block/{part}_particle'}}, open(f'{A}/models/block/{n}.json', 'w'), indent=2)
     item = json.load(open(f'{A}/models/item/michi_dramatico.json')); item['parent'] = f'emi_plush:block/{n}'
     json.dump(item, open(f'{A}/models/item/{n}.json', 'w'), indent=2)
     json.dump({'type': 'minecraft:block', 'pools': [{'bonus_rolls': 0.0, 'conditions': [{'condition': 'minecraft:survives_explosion'}], 'entries': [{'type': 'minecraft:item', 'name': f'emi_plush:{n}'}], 'rolls': 1.0}]}, open(f'{RES}/data/emi_plush/loot_table/blocks/{n}.json', 'w'), indent=2)
@@ -214,39 +220,51 @@ def lang():
         for n, es, en in MICHI_NOMBRES:
             t = f'{en} Plush' if code == 'en_us' else f'Peluche {es}'
             d[f'block.emi_plush.{n}'] = t; d[f'item.emi_plush.{n}'] = t
+        gb = {'michi_dramatico': ('Michi Dramático', 'Dramatic Kitty')}
+        gb.update({n: (es, en) for n, es, en in MICHI_NOMBRES})
+        for gid, base in GIGANTES:
+            es, en = gb[base]
+            t = f'Giant {en} Plush' if code == 'en_us' else f'Peluche Gigante {es}'
+            d[f'block.emi_plush.{gid}'] = t; d[f'item.emi_plush.{gid}'] = t
         json.dump(d, open(p, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
     # el resto de variantes del español (Argentina, Chile, Ecuador, Uruguay, Venezuela) usan los mismos textos que es_mx
     for v in ('es_ar', 'es_cl', 'es_ec', 'es_uy', 'es_ve'):
         shutil.copy(f'{A}/lang/es_mx.json', f'{A}/lang/{v}.json')
 
-def java():
-    os.makedirs(SRC, exist_ok=True)
-    for f in os.listdir(SRC):
-        if f.endswith('.java'): os.remove(f'{SRC}/{f}')
-    for sp in IDS:
-        cls = 'Doll_' + sp
-        open(f'{SRC}/{cls}.java', 'w').write(f'''package emi.plush.gen;
+def clase_be(cls, sp, doc):
+    return f'''package emi.plush.gen;
 
 import dev.mrshawn.pokeblocks.block.entity.BlockEntityTypeRegistry;
 import dev.mrshawn.pokeblocks.block.entity.PokedollBlockEntity;
 import net.minecraft.class_2338;
 import net.minecraft.class_2680;
 
-/** Entidad de bloque del peluche {sp} (generada por gen_dolls.py). */
+/** {doc} (generada por gen_dolls.py). */
 public class {cls} extends PokedollBlockEntity {{
     public {cls}(class_2338 pos, class_2680 state) {{
         super(BlockEntityTypeRegistry.get({cls}.class), pos, state);
     }}
 }}
-''')
+'''
+
+def java():
+    os.makedirs(SRC, exist_ok=True)
+    for f in os.listdir(SRC):
+        if f.endswith('.java'): os.remove(f'{SRC}/{f}')
+    for sp in IDS:
+        open(f'{SRC}/Doll_{sp}.java', 'w').write(clase_be(f'Doll_{sp}', sp, f'Entidad de bloque del peluche {sp}'))
+    for gid, base in GIGANTES:
+        cls = 'Gigantic_' + gid[len('gigante_'):]      # «Gigantic» en el nombre = forma de bloque grande de Pokeblocks
+        open(f'{SRC}/{cls}.java', 'w').write(clase_be(cls, gid, f'Entidad de bloque del peluche gigante {gid}'))
     regs = '\n'.join(f'        reg("{sp}", Doll_{sp}.class, Doll_{sp}::new);' for sp in IDS)
+    regs_g = '\n'.join(f'        regGigante("{gid}", "{base}", Gigantic_{gid[len("gigante_"):]}.class, Gigantic_{gid[len("gigante_"):]}::new);' for gid, base in GIGANTES)
     open(f'{SRC}/DollRegistry.java', 'w').write(f'''package emi.plush.gen;
 
 import dev.mrshawn.pokeblocks.block.custom.PokedollBlock;
 import dev.mrshawn.pokeblocks.block.entity.BlockEntityTypeRegistry;
 import dev.mrshawn.pokeblocks.block.entity.PokedollBlockEntity;
 import dev.mrshawn.pokeblocks.item.DollRarity;
-import dev.mrshawn.pokeblocks.item.custom.PokedollBlockItem;
+import dev.mrshawn.pokeblocks.item.custom.WearablePokedollBlockItem;
 import emi.plush.EmiDollItemModel;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.class_1792;
@@ -262,28 +280,45 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-/** Registro de todos los peluches Emi (generado por gen_dolls.py). */
+/** Registro de todos los peluches Emi (generado por gen_dolls.py). Los objetos son «llevables» (se ponen en la cabeza, como los de Pokeblocks). */
 public final class DollRegistry {{
     private DollRegistry() {{}}
 
     public static final Map<String, class_2591<? extends PokedollBlockEntity>> TIPOS = new LinkedHashMap<>();
     public static final Map<String, class_1792> OBJETOS = new LinkedHashMap<>();
+    /** peluches gigantes: id -> tipo de entidad de bloque, e id -> nombre del modelo (geo/textura) que comparten con el peluche normal */
+    public static final Map<String, class_2591<? extends PokedollBlockEntity>> TIPOS_GIGANTES = new LinkedHashMap<>();
+    public static final Map<String, String> MODELO_GIGANTE = new LinkedHashMap<>();
 
-    private static <T extends PokedollBlockEntity> void reg(String nombre, Class<T> clase, BiFunction<class_2338, class_2680, T> ctor) {{
+    private static <T extends PokedollBlockEntity> class_2591<T> reg(String nombre, String modelo, Class<T> clase, BiFunction<class_2338, class_2680, T> ctor) {{
         class_2960 id = class_2960.method_60655("emi_plush", nombre);
         class_2248 bloque = class_2378.method_10230(class_7923.field_41175, id, new PokedollBlock<T>(() -> clase));
-        class_1792 objeto = class_2378.method_10230(class_7923.field_41178, id, new PokedollBlockItem(bloque, DollRarity.NONE, 0, () -> new EmiDollItemModel(nombre)));
+        class_1792 objeto = class_2378.method_10230(class_7923.field_41178, id, new WearablePokedollBlockItem(bloque, DollRarity.NONE, 0, () -> new EmiDollItemModel(modelo)));
         class_2591<T> tipo = class_2378.method_10230(class_7923.field_41181, id, FabricBlockEntityTypeBuilder.create(ctor::apply, bloque).build());
         BlockEntityTypeRegistry.register(clase, tipo);
-        TIPOS.put(nombre, tipo);
         OBJETOS.put(nombre, objeto);
+        return tipo;
+    }}
+
+    private static <T extends PokedollBlockEntity> void reg(String nombre, Class<T> clase, BiFunction<class_2338, class_2680, T> ctor) {{
+        TIPOS.put(nombre, reg(nombre, nombre, clase, ctor));
+    }}
+
+    private static <T extends PokedollBlockEntity> void regGigante(String nombre, String modelo, Class<T> clase, BiFunction<class_2338, class_2680, T> ctor) {{
+        TIPOS_GIGANTES.put(nombre, reg(nombre, modelo, clase, ctor));
+        MODELO_GIGANTE.put(nombre, modelo);
     }}
 
     public static void registrar() {{
 {regs}
+{regs_g}
     }}
 }}
 ''')
+    # Accessories: los peluches se pueden poner en la ranura «hat» (cabeza) de Accessories / su capa de cosmeticos
+    ids = ['michi_dramatico'] + IDS + [g for g, _ in GIGANTES]
+    os.makedirs(f'{RES}/data/accessories/tags/item', exist_ok=True)
+    json.dump({'replace': False, 'values': [f'emi_plush:{i}' for i in ids]}, open(f'{RES}/data/accessories/tags/item/hat.json', 'w'), indent=2)
 
 for sp, folder, model, tex, nombre, alto in ESPECIES:
     f = build(sp, folder, model, tex, nombre, alto)
@@ -293,5 +328,8 @@ for ident, acc, dorado, *_ in MICHI:
     build_michi(ident, acc, dorado)
     recursos(ident)
 print(f'{len(MICHI)} peluches de formas del GatitoAlien')
+for gid, base in GIGANTES:
+    recursos(gid, base)
+print(f'{len(GIGANTES)} peluches gigantes')
 lang()
 java()

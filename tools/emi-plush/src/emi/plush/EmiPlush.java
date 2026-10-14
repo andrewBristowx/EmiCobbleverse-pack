@@ -3,7 +3,7 @@ package emi.plush;
 import dev.mrshawn.pokeblocks.block.custom.PokedollBlock;
 import dev.mrshawn.pokeblocks.block.entity.BlockEntityTypeRegistry;
 import dev.mrshawn.pokeblocks.item.DollRarity;
-import dev.mrshawn.pokeblocks.item.custom.PokedollBlockItem;
+import dev.mrshawn.pokeblocks.item.custom.WearablePokedollBlockItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.class_1792;
@@ -35,7 +35,7 @@ public class EmiPlush implements ModInitializer {
         class_2960 id = class_2960.method_60655(ID, "michi_dramatico");
         MICHI = class_2378.method_10230(class_7923.field_41175, id, new PokedollBlock<MichiBlockEntity>(() -> MichiBlockEntity.class));
         MICHI_ITEM = class_2378.method_10230(class_7923.field_41178, id,
-                new PokedollBlockItem(MICHI, DollRarity.NONE, 0, () -> new MichiItemModel()));
+                new WearablePokedollBlockItem(MICHI, DollRarity.NONE, 0, () -> new MichiItemModel()));
         MICHI_BE = class_2378.method_10230(class_7923.field_41181, id,
                 FabricBlockEntityTypeBuilder.create(MichiBlockEntity::new, MICHI).build());
         BlockEntityTypeRegistry.register(MichiBlockEntity.class, MICHI_BE);
