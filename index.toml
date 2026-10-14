@@ -1853,8 +1853,8 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-huida-0.6.0.jar"
-hash = "0a925d556c470dfc960e093806caa536ad59628dbf4bdcc61628c1b5ad642caa"
+file = "mods/emi-huida-0.6.1.jar"
+hash = "ddf8e2475bc5c363b3d402bb8a8e9bbd79e5d99eb7fb84059b25adeee35f394f"
 
 [[files]]
 file = "mods/emi-plush-1.14.0.jar"

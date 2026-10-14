@@ -4,7 +4,7 @@
   "package": "emi.huida.mixin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "emi-huida-refmap.json",
-  "mixins": ["LivingEntityMixin"],
+  "mixins": ["LivingEntityMixin", "DiagnosticoRedMixin"],
   "client": ["CameraMixin", "KeyboardInputMixin", "InGameHudMixin", "BossBarHudMixin", "BetterThirdPersonMixin", "GameRendererMixin"],
   "injectors": { "defaultRequire": 1 }
 }
