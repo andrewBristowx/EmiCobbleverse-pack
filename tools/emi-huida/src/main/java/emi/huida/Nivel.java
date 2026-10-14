@@ -34,7 +34,7 @@ final class Nivel {
     static final int Y0 = 64;                 // altura de los pies del jugador (el camino va a Y0-1)
     static final int Y_SELVA = Y0 - 3;        // superficie del terreno de selva alrededor
     static final int MAX_HUECOS = 12;
-    static final int PRE = 30;                // bloques de camino detras del punto de partida del jugador
+    static final int PRE = 44;                // bloques de camino detras del punto de partida del jugador (la jaula del Tyrantrum, que mide ~20 de largo, cabe detras de la entrada)
     static final int PUENTE_LARGO = 14;
     static final double PASO = 0.5;
     static final int PAD = 27;                // alcance maximo del terreno desde la linea central
@@ -44,7 +44,7 @@ final class Nivel {
     // ---------------------------------------------------------------- la ruta
     /** S = recta de ese largo; L / R = arco de 90 grados a la izquierda / derecha con ese radio. */
     private static final char[] TIPO = {'S', 'L', 'S', 'R', 'L', 'S', 'L', 'S', 'L', 'R', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'L', 'S', 'R', 'S'};
-    private static final int[] VAL = {100, 16, 44, 12, 12, 70, 16, 40, 12, 12, 64, 16, 50, 12, 36, 12, 60, 16, 84, 12, 72};
+    private static final int[] VAL = {114, 16, 44, 12, 12, 70, 16, 40, 12, 12, 64, 16, 50, 12, 36, 12, 60, 16, 84, 12, 72};
     private static final int NSEG = TIPO.length;
     static final double[] SEG_S0 = new double[NSEG + 1];
 
@@ -55,7 +55,7 @@ final class Nivel {
         double s0() { return SEG_S0[seg] + u; }
     }
     static final Mod[] MODS = {
-            new Mod(0, 58, 'T'), new Mod(0, 78, 'B'),
+            new Mod(0, 72, 'T'), new Mod(0, 92, 'B'),
             new Mod(2, 8, 'L'), new Mod(2, 15, 'R'), new Mod(2, 22, 'L'), new Mod(2, 29, 'R'), new Mod(2, 35, 'H'),
             new Mod(5, 16, 'P'), new Mod(5, 46, 'T'), new Mod(5, 56, 'C'),
             new Mod(7, 8, 'H'), new Mod(7, 15, 'T'), new Mod(7, 24, 'B'),
@@ -72,7 +72,9 @@ final class Nivel {
     static final double[] MX, MZ, MTX, MTZ, MS, MYAW;
     static final double S_TOTAL;
     static final double S_SALIDA = PRE;                    // distancia en la que empieza el jugador
-    static final double S_PERSEGUIDOR = PRE - 11;          // y en la que nace el Tyrantrum (11 bloques por detras)
+    static final double S_PERSEGUIDOR = 14;                // y en la que nace el Tyrantrum, encerrado detras de la entrada (22 bloques por detras del jugador)
+    static final double S_ENTRADA = 25;                    // la entrada (reja que levanta el michi demonio): el Tyrantrum esta detras, entre ella y el muro del fondo
+    static final int ENTRADA_ALTO = 11;                    // filas de barrotes de la reja
     static final double S_META;                            // la puerta dorada, en la ultima recta
 
     // rejilla de celdas (coordenadas locales de la copia)
@@ -358,9 +360,9 @@ final class Nivel {
      * Desplazamiento en x de cada copia. El mundo de la huida se guarda en disco y el terreno viejo NO se borra al construir: si cambia la forma del
      * camino, los bloques de la version anterior (muros, columnas) se quedan y cierran el camino nuevo. Por eso {@code BASE_X} hay que SUBIRLO (en
      * multiplos de 16 y mas alla de lo ocupado: 12 copias * SEP) cada vez que cambie la ruta o los muros; asi las copias nuevas salen en terreno virgen.
-     * (0.2.0 y 0.3.0: 0; 0.4.0: 8192.)
+     * (0.2.0 y 0.3.0: 0; 0.4.0 y 0.5.0: 8192; 0.6.0: 16384.)
      */
-    static final int BASE_X = 8192;
+    static final int BASE_X = 16384;
     static int ox(int hueco) { return BASE_X + hueco * SEP; }
 
     // ---------------------------------------------------------------- geometria (servidor)
@@ -420,7 +422,7 @@ final class Nivel {
     record Bloque(BlockPos pos, double s) {}
     /** Punto seguro al que se vuelve tras caer (x, z locales de la copia). */
     record Check(double s, double x, double z, float yaw) {}
-    record Construido(List<Bloque> obstaculos, List<Bloque> puente, List<Check> checks, List<Bloque> maleza) {}
+    record Construido(List<Bloque> obstaculos, List<Bloque> puente, List<Check> checks, List<Bloque> maleza, List<Bloque> entrada) {}
 
     private static final Block[] MURO = {Blocks.STONE_BRICKS, Blocks.MOSSY_STONE_BRICKS, Blocks.CRACKED_STONE_BRICKS, Blocks.MOSSY_COBBLESTONE, Blocks.MOSSY_STONE_BRICKS, Blocks.STONE_BRICKS};
     private static final Block[] SUELO = {Blocks.MOSSY_STONE_BRICKS, Blocks.STONE_BRICKS, Blocks.MOSSY_COBBLESTONE, Blocks.COARSE_DIRT, Blocks.MOSSY_STONE_BRICKS, Blocks.STONE_BRICKS, Blocks.MOSS_BLOCK};
@@ -508,6 +510,18 @@ final class Nivel {
                     break;
                 }
             }
+            // la entrada: dos torres de piedra a los lados del camino y un dintel por encima de la reja (los barrotes se ponen en cada partida)
+            for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
+                int id = (ix - GX0) + (iz - GZ0) * GW;
+                if (Math.abs(GS[id] - S_ENTRADA) > 1.5) continue;
+                if (CAT[id] == 2) {
+                    for (int y = ALT[id]; y <= 14; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), y == 14 || y == 10 && hash(ix, iz, 3) % 2 == 0 ? Blocks.CHISELED_STONE_BRICKS.getDefaultState() : MURO[hash(ix, iz, y + 5) % MURO.length].getDefaultState(), F);
+                    if (hash(ix, iz, 17) % 3 == 0) w.setBlockState(p.set(ox + ix, Y0 + 15, iz), Blocks.LANTERN.getDefaultState(), F);
+                } else if (CAT[id] == 1) {
+                    w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO, iz), (Math.abs(GS[id] - S_ENTRADA) < 0.5 ? Blocks.CHISELED_STONE_BRICKS : Blocks.MOSSY_STONE_BRICKS).getDefaultState(), F);
+                    w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO + 1, iz), Blocks.STONE_BRICKS.getDefaultState(), F);
+                }
+            }
             // la puerta dorada de la meta
             for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
                 int id = (ix - GX0) + (iz - GZ0) * GW;
@@ -522,7 +536,13 @@ final class Nivel {
         }
 
         // obstaculos y tablas (se vuelven a poner en cada partida)
-        List<Bloque> obst = new ArrayList<>(), puente = new ArrayList<>(), maleza = new ArrayList<>();
+        List<Bloque> obst = new ArrayList<>(), puente = new ArrayList<>(), maleza = new ArrayList<>(), entrada = new ArrayList<>();
+        BlockState barrote = Blocks.IRON_BARS.getDefaultState().with(net.minecraft.block.PaneBlock.EAST, true).with(net.minecraft.block.PaneBlock.WEST, true);
+        for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
+            int id = (ix - GX0) + (iz - GZ0) * GW;
+            if (CAT[id] != 1 || Math.abs(GS[id] - S_ENTRADA) > 0.5) continue;
+            for (int y = 0; y < ENTRADA_ALTO; y++) entrada.add(poner(w, ox + ix, Y0 + y, iz, barrote, y));       // «s» = fila (0 = abajo): la reja sube quitando filas desde abajo
+        }
         BlockState hoja = Blocks.JUNGLE_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true);
         for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
             int id = (ix - GX0) + (iz - GZ0) * GW;
@@ -565,7 +585,7 @@ final class Nivel {
         }
         checks.sort((a, b) -> Double.compare(a.s(), b.s()));
         maleza.sort((a, b) -> Double.compare(a.s(), b.s()));
-        return new Construido(obst, puente, checks, maleza);
+        return new Construido(obst, puente, checks, maleza, entrada);
     }
 
     private static Bloque poner(ServerWorld w, int x, int y, int z, BlockState s, double sd) {

@@ -37,6 +37,7 @@ HUESOS = [
     ("eyelid_left", "head", (-2.25, 6.5, -4.4)), ("eyelid_right", "head", (2.25, 6.5, -4.4)),
     ("happy_left", "head", (-2.25, 5.25, -4.4)), ("happy_right", "head", (2.25, 5.25, -4.4)),
     ("mouth_open", "head", (0, 4.0, -4.4)), ("mouth_yawn", "head", (0, 3.7, -4.4)),
+    ("acc_wing_left", "head", (-4.75, 5.0, 1.6)), ("acc_wing_right", "head", (4.75, 5.0, 1.6)),     # alas (vacias; solo las formas halo y devil_horns les ponen cubos): en las escenas de la huida el michi vuela
     ("tail1", "head", (3.2, 1.5, 4.9)), ("tail2", "tail1", (3.6, 3.0, 5.4)), ("tail3", "tail2", (4.1, 5.5, 5.4)),
 ]
 
@@ -276,6 +277,34 @@ def animaciones():
             if r:
                 for k in r: r[k][2] = -r[k][2] if r[k][2] else 0
     dbg = os.environ.get("MICHI_DEBUG")      # solo para pruebas: repite esa animacion en bucle
+    # alas plegadas (a escala 0) en todas las poses salvo las de volar; los huesos estan vacios salvo en las formas halo y devil_horns
+    A["wings_off"] = anim(1.0, {"acc_wing_left": {"scale": lambda t: [0, 0, 0]}, "acc_wing_right": {"scale": lambda t: [0, 0, 0]}})
+    # volar (pose FLY: se mueve): inclinado hacia delante, brazos adelante, alas batiendo rapido (las usa la huida con el michi demonio y el angel)
+    P = 0.6
+    A["fly"] = anim(P, {
+        "body": {"position": lambda t: [0, 0.7 * E * S(t, P), 0], "rotation": lambda t: [14 + 3 * S(t, P, 1.0), 0, 2.5 * S(t, P * 2)]},
+        "head": {"rotation": lambda t: [-10 + 3 * S(t, P, 0.5), 0, 0]},
+        "acc_wing_left": {"rotation": lambda t: [0, 0, 20 + 36 * S(t, P)], "scale": lambda t: [1, 1, 1]},
+        "acc_wing_right": {"rotation": lambda t: [0, 0, -20 - 36 * S(t, P)], "scale": lambda t: [1, 1, 1]},
+        "arm_left": {"rotation": lambda t: [-65, 0, -8 + 6 * S(t, P, 0.4)]}, "arm_right": {"rotation": lambda t: [-65, 0, 8 - 6 * S(t, P, 0.4)]},
+        "foot_left": {"rotation": lambda t: [26 + 6 * S(t, P, 0.2), 0, 0]}, "foot_right": {"rotation": lambda t: [26 - 6 * S(t, P, 0.2), 0, 0]},
+        "antenna_left": {"rotation": lambda t: [-16 + 6 * S(t, P, 0.8), 0, 10]}, "antenna_right": {"rotation": lambda t: [-16 + 6 * S(t, P, 0.8), 0, -10]},
+        "ear_left": {"rotation": lambda t: [0, 0, 12 + 6 * S(t, P, 1.2)]}, "ear_right": {"rotation": lambda t: [0, 0, -12 - 6 * S(t, P, 1.2)]},
+        "tail1": {"rotation": lambda t: [0, 14 * S(t, P * 2), 0]}, "tail2": {"rotation": lambda t: [0, 16 * S(t, P * 2, -0.8), 0]}, "tail3": {"rotation": lambda t: [0, 20 * S(t, P * 2, -1.6), 0]},
+    })
+    # flotar quieto (pose HOVER): bamboleo suave, alas lentas, brazos abiertos
+    P = 1.2
+    A["hover"] = anim(P, {
+        "body": {"position": lambda t: [0, 0.9 * E * S(t, P), 0], "rotation": lambda t: [3 * S(t, P, 0.5), 0, 2 * S(t, P * 2)]},
+        "head": {"rotation": lambda t: [-2 * S(t, P), 3 * S(t, P * 2), 0]},
+        "acc_wing_left": {"rotation": lambda t: [0, 0, 24 + 22 * S(t, P / 2)], "scale": lambda t: [1, 1, 1]},
+        "acc_wing_right": {"rotation": lambda t: [0, 0, -24 - 22 * S(t, P / 2)], "scale": lambda t: [1, 1, 1]},
+        "arm_left": {"rotation": lambda t: [-15, 0, -30 + 6 * S(t, P)]}, "arm_right": {"rotation": lambda t: [-15, 0, 30 - 6 * S(t, P)]},
+        "foot_left": {"rotation": lambda t: [10 + 5 * S(t, P, 0.3), 0, 0]}, "foot_right": {"rotation": lambda t: [10 - 5 * S(t, P, 0.3), 0, 0]},
+        "antenna_left": {"rotation": lambda t: [3 * S(t, P / 2), 0, 6 + 5 * S(t, P)]}, "antenna_right": {"rotation": lambda t: [3 * S(t, P / 2), 0, -6 - 5 * S(t, P)]},
+        "ear_left": {"rotation": lambda t: [0, 0, 5 * S(t, P, 0.5)]}, "ear_right": {"rotation": lambda t: [0, 0, -5 * S(t, P, 0.5)]},
+        "tail1": {"rotation": lambda t: [0, 14 * S(t, P), 0]}, "tail2": {"rotation": lambda t: [0, 16 * S(t, P, -0.8), 0]}, "tail3": {"rotation": lambda t: [0, 20 * S(t, P, -1.6), 0]},
+    })
     if dbg and dbg in A: A[dbg]["loop"] = True
     return {"format_version": "1.8.0", "animations": {"animation.michi_dramatico." + k: v for k, v in A.items()}}
 
@@ -298,10 +327,12 @@ def poser():
             "status": "q.bedrock_primary('%s', 'status', q.curve('symmetrical_wide'))" % n,
         },
         "poses": {
-            "battle-standing": {"poseTypes": ["STAND"], "isBattle": True, "animations": ["q.look('head')", q("battle_idle")], "quirks": [blink, orejas]},
-            "standing": {"poseTypes": ["STAND", "FLOAT", "NONE", "PORTRAIT", "PROFILE"], "isBattle": False, "animations": ["q.look('head')", q(dbg or "ground_idle")], "quirks": [blink, orejas, cola, bostezo]},
-            "walking": {"poseTypes": ["WALK", "SWIM"], "animations": ["q.look('head')", q("ground_walk")], "quirks": [blink]},
-            "sleep": {"poseTypes": ["SLEEP"], "animations": [q("sleep")]},
+            "battle-standing": {"poseTypes": ["STAND"], "isBattle": True, "animations": ["q.look('head')", q("battle_idle"), q("wings_off")], "quirks": [blink, orejas]},
+            "standing": {"poseTypes": ["STAND", "FLOAT", "NONE", "PORTRAIT", "PROFILE"], "isBattle": False, "animations": ["q.look('head')", q(dbg or "ground_idle"), q("wings_off")], "quirks": [blink, orejas, cola, bostezo]},
+            "walking": {"poseTypes": ["WALK", "SWIM"], "animations": ["q.look('head')", q("ground_walk"), q("wings_off")], "quirks": [blink]},
+            "sleep": {"poseTypes": ["SLEEP"], "animations": [q("sleep"), q("wings_off")]},
+            "flying": {"poseTypes": ["FLY"], "animations": ["q.look('head')", q("fly")], "quirks": [blink]},
+            "hovering": {"poseTypes": ["HOVER"], "animations": ["q.look('head')", q("hover")], "quirks": [blink, orejas]},
         }}
 
 def resolver():

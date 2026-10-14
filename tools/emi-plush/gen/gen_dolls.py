@@ -175,6 +175,8 @@ def build_michi(ident, acc, dorado):
     base = f'{B}/bedrock/pokemon/models/michi_dramatico/michi_dramatico' + (f'_{acc}' if acc else '') + '.geo.json'
     geo = json.load(open(base))['minecraft:geometry'][0]
     bs = sin_ocultos(geo['bones'])
+    for b in bs:
+        if b['name'].startswith('acc_wing'): b.pop('cubes', None)       # las alas del halo y los cuernos de demonio solo se ven al volar (animacion fly): el peluche no las lleva
     names = {b['name'] for b in bs}
     out = []
     for b in bs:

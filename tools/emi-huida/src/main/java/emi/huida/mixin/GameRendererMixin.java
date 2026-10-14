@@ -20,6 +20,6 @@ public abstract class GameRendererMixin {
 
     @Inject(method = "updateFovMultiplier", at = @At("TAIL"))
     private void emi_huida$fovFijo(CallbackInfo ci) {
-        if (CamaraHuida.activa()) { fovMultiplier = 1.15f; lastFovMultiplier = 1.15f; }
+        if (CamaraHuida.activa()) { float f = emi.huida.client.CineCamara.fov(1.15f); fovMultiplier = f; lastFovMultiplier = f; }
     }
 }

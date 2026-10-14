@@ -49,7 +49,12 @@ public final class CamaraHuida {
     /** {x, y, z, yaw, pitch} de la camara, o null si no hay huida. */
     public static double[] calcular(float tickDelta) {
         var st = EmiHuidaClient.estado();
-        if (st == null) { listo = false; return null; }
+        if (st == null) { listo = false; CineCamara.reiniciar(); return null; }
+        double[] normal = calcularNormal(st, tickDelta);
+        return CineCamara.mezclar(normal);
+    }
+
+    private static double[] calcularNormal(emi.huida.net.EstadoPayload st, float tickDelta) {
         MinecraftClient mc = MinecraftClient.getInstance();
         ClientPlayerEntity pl = mc.player;
         if (pl == null || mc.world == null) return null;

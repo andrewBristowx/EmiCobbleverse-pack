@@ -347,11 +347,58 @@ def fx_listo():
     return normalizar(con_reverb(mz.estereo(), 0.1, 0.4, 0.12), 0.7, False)
 
 
+def fx_burla():
+    """pedorreta de burla («prrrrt» con la lengua): tren de pulsos irregulares que se espacian, mas un chasquido final"""
+    dur = 1.0; n = int(dur * SR); x = np.zeros(n)
+    tp = 0.02
+    while tp < 0.84:
+        fr = max(15.0, 44 - 20 * (tp / 0.84) + RNG.normal(0, 2.5))
+        m = int(0.014 * SR); tt = tvec(m)
+        f0 = RNG.uniform(300, 560)
+        burst = np.sin(2 * np.pi * f0 * tt) * np.exp(-tt / 0.0045) + 0.6 * lp(RNG.uniform(-1, 1, m), 2200) * np.exp(-tt / 0.006)
+        i = int(tp * SR); x[i:i + m] += burst[: n - i]
+        tp += 1.0 / fr
+    t = tvec(n)
+    env = np.minimum(t / 0.03, 1) * np.where(t < 0.84, 1.0, np.exp(-(t - 0.84) * 60))
+    x = bp(x, 160, 3000) * env
+    pop = lp(ruido(0.04), 1500) * np.exp(-tvec(int(0.04 * SR)) * 120) * 2.0
+    i = int(0.87 * SR); x[i:i + len(pop)] += pop[: n - i]
+    return normalizar(mono2(x), 0.85, True)
+
+def fx_angel():
+    """llegada del michi angel: arpegio de arpa subiendo, pad de coro suave y destellos"""
+    mz = Mezcla(3.2)
+    for k, m in enumerate((72, 76, 79, 84, 88, 91, 96, 100)): mz.poner(k * 0.085, campana(hz(m), 2.0, 2.4), 0.5 - 0.02 * k)
+    for m in (60, 67, 72, 76):
+        pad = (sinus(hz(m), 3.0, 0.004) + 0.4 * sinus(hz(m + 12), 3.0, 0.003)) * adsr(int(3.0 * SR), 0.6, 0.6, 0.7, 1.2)
+        mz.poner(0.15, pad, 0.11)
+    mz.poner(0.6, hp(ruido(1.5), 6000) * np.exp(-tvec(int(1.5 * SR)) * 2.5), 0.05)
+    return normalizar(con_reverb(mz.estereo(), 0.35, 2.0, 0.9), 0.85, False)
+
+def fx_glup():
+    """trago: burbuja que baja de tono y un chasquido"""
+    dur = 0.4; n = int(dur * SR); t = tvec(n)
+    f = 110 + 520 * np.exp(-t * 9)
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 8) * np.minimum(t / 0.004, 1)
+    x2 = lp(ruido(dur), 1400) * np.exp(-t * 60) * 0.6
+    return normalizar(mono2(x + x2), 0.85, True)
+
+def fx_derrota_comido():
+    """«te comieron»: golpe grave, trombon que cae y un redoble corto"""
+    mz = Mezcla(2.4)
+    mz.poner(0.0, taiko(46, 1.0), 1.0)
+    for k, ms in enumerate(([52, 55, 59], [50, 53, 57], [47, 50, 54])): mz.poner(0.2 + k * 0.4, metal(ms, 0.8), 0.6)
+    mz.poner(1.2, cuerdas([36, 43, 46], 1.0), 0.5)
+    mz.poner(0.0, rumor_grave(2.0, 80, 26), 0.6)
+    return normalizar(con_reverb(mz.estereo(), 0.25, 1.5, 0.6), 0.88)
+
+
 def main():
     guardar('musica_persecucion', musica_persecucion())
     guardar('musica_espera', musica_espera())
     for nombre, fx in (('estrella', fx_estrella), ('estrella_grande', fx_estrella_grande), ('bien', fx_bien), ('fallo', fx_fallo), ('caida', fx_caida),
-                       ('pisada', fx_pisada), ('victoria', fx_victoria), ('derrota', fx_derrota), ('listo', fx_listo)):
+                       ('pisada', fx_pisada), ('victoria', fx_victoria), ('derrota', fx_derrota), ('listo', fx_listo),
+                       ('burla', fx_burla), ('angel', fx_angel), ('glup', fx_glup), ('derrota_comido', fx_derrota_comido)):
         guardar(nombre, fx())
 
 if __name__ == '__main__':

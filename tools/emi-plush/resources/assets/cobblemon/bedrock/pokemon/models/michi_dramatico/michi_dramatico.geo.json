@@ -650,6 +650,24 @@
      ]
     },
     {
+     "name": "acc_wing_left",
+     "pivot": [
+      -19.0,
+      20.0,
+      6.4
+     ],
+     "parent": "head"
+    },
+    {
+     "name": "acc_wing_right",
+     "pivot": [
+      19.0,
+      20.0,
+      6.4
+     ],
+     "parent": "head"
+    },
+    {
      "name": "tail1",
      "pivot": [
       12.8,

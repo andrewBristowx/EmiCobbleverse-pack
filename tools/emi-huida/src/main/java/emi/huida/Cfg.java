@@ -8,5 +8,9 @@ final class Cfg {
     static float volumenMusica() { return Float.parseFloat(System.getProperty("emi.huida.vol_musica", "0.8")); }
     /** durante la huida se paran la limpieza de objetos y los bosses/eventos de Emipokemon (solo en memoria); -Demi.huida.pausar_eventos=false para no hacerlo */
     static boolean pausarEventos() { return !"false".equals(System.getProperty("emi.huida.pausar_eventos")); }
+    /** escenas con camara (entrada con el michi demonio, michi angel, mordisco); -Demi.huida.escenas=false para quitarlas (la huida empieza en 5 s sin presentacion) */
+    static boolean escenas() { return !"false".equals(System.getProperty("emi.huida.escenas")); }
+    /** solo para pruebas en equipos lentos: -Demi.huida.escena_lenta=3 hace que las escenas vayan 3 veces mas despacio (el cliente de pruebas, con grafica por software, no llega a 20 ticks/s) */
+    static int escenaLenta() { return Math.max(1, Integer.getInteger("emi.huida.escena_lenta", 1)); }
     static double velBase() { return Double.parseDouble(System.getProperty("emi.huida.vel_base", String.valueOf(Huida.VEL_BASE))); }
 }

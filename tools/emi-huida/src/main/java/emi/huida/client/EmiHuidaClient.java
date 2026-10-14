@@ -55,13 +55,14 @@ public final class EmiHuidaClient implements ClientModInitializer {
                 net.minecraft.client.option.KeyBinding.updatePressedStates();      // devuelve la tecla de correr a lo que el jugador tenga pulsado de verdad
             }
         });
+        ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.CamaraPayload.ID, (p, ctx) -> CineCamara.recibir(p));
         ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.MapaPayload.ID, (p, ctx) -> mapa = p);
         ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.HudPayload.ID, (p, ctx) -> { hud = p; hudDesde = System.currentTimeMillis(); });
         net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register(HuidaHud::render);
         ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.EstrellasPayload.ID, (p, ctx) -> ctx.client().execute(() -> EstrellasCliente.recibir(p)));
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_TRANSLUCENT.register(EstrellasCliente::dibujar);
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_ENTITIES.register(EstrellasCliente::dibujarConProveedor);
-        ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> { estado = null; hud = null; mapa = null; Ocultar.restaurar(); poner(false); EstrellasCliente.recibir(emi.huida.net.EstrellasPayload.borrar()); });
+        ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> { CineCamara.reiniciar(); estado = null; hud = null; mapa = null; Ocultar.restaurar(); poner(false); EstrellasCliente.recibir(emi.huida.net.EstrellasPayload.borrar()); });
     }
 
     private static void poner(boolean on) {

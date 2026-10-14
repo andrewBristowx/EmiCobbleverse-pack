@@ -19,7 +19,7 @@ TEX = f'{B}/textures/pokemon/michi_dramatico'
 def mix(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 BLACK = (30, 28, 38); PINK = (240, 98, 156); PINK_L = (250, 170, 205); GOLD = (240, 196, 60); GOLD_D = (190, 140, 30); STRAW = (232, 200, 120); STRAW_D = (205, 170, 90)
 WHITE = (250, 247, 250)
-RED = (214, 52, 62); RED_D = (156, 30, 44); GREEN = (96, 170, 84); GREEN_D = (62, 130, 62); PURPLE = (92, 56, 140); PURPLE_D = (58, 34, 98)
+RED = (214, 52, 62); RED_D = (156, 30, 44); RED_L = (236, 92, 96); GREEN = (96, 170, 84); GREEN_D = (62, 130, 62); PURPLE = (92, 56, 140); PURPLE_D = (58, 34, 98)
 YELLOW = (252, 218, 84); ORANGE = (244, 150, 52); HALO = (255, 238, 150)
 
 # ---------------------------------------------------------------- shiny dorado
@@ -69,7 +69,14 @@ def cube(geo, free, name, origin, size, painter, rotation=None, pivot=None):
         b = {'name': name, 'parent': 'head', 'pivot': [0, 14, 0], 'cubes': []}; bones.append(b)
     c = {'origin': list(origin), 'size': list(size), 'uv': [ux, uy]}
     if rotation: c['pivot'] = list(pivot); c['rotation'] = list(rotation)
-    b['cubes'].append(c)
+    b.setdefault('cubes', []).append(c)
+
+def ala(g, free, cubos):
+    """Pone un ala en cada lado: `cubos` = [(origen, tamaño, pintor)] del ala izquierda (x negativo, saliendo de la cabeza); la derecha es su espejo.
+    Los huesos acc_wing_left / acc_wing_right salen del modelo base (vacios) y solo las formas con alas les ponen cubos."""
+    for o, s, p in cubos:
+        cube(g, free, 'acc_wing_left', o, s, p)
+        cube(g, free, 'acc_wing_right', (-(o[0] + s[0]), o[1], o[2]), s, p)
 
 def flat(c): return lambda face, i, j, w, h: c + (255,)
 def lens(face, i, j, w, h):
@@ -94,6 +101,10 @@ def golden(face, i, j, w, h):
 def fur(base, dark):
     def f(face, i, j, w, h): return (dark if (i * 3 + j * 5) % 7 == 0 else base) + (255,)
     return f
+def membrana(face, i, j, w, h): return (RED_D if (i % 7 == 3 or j % 5 == 0) else (RED if (i + j) % 11 else RED_L)) + (255,)
+def pluma(face, i, j, w, h): return ((222, 228, 245) if (i % 6 == 4) else (WHITE if (i + 2 * j) % 9 else (236, 238, 250))) + (255,)
+def pluma_punta(face, i, j, w, h): return ((246, 226, 150) if (i % 6 == 4) else (255, 244, 205)) + (255,)
+
 def glow(face, i, j, w, h): return mix(HALO, (255, 255, 235), 0.5 * ((i + j) % 2)) + (255,)
 def flower(petal):
     def f(face, i, j, w, h):
@@ -124,6 +135,15 @@ def corona(g, f):
             c((-1.5, 33, 18.6), (3, 3, 1), flat(PINK))]                                 # gema trasera
     return out
 
+# alas (solo se ven al volar: fuera de eso estan a escala 0 por la animacion wings_off). Salen de los lados de la cabeza (x = -20), detras de los brazos.
+ALAS_DEMONIO = [   # de murcielago: brazo con garra, tres varillas y membrana roja (las membranas vecinas van a distinta profundidad y las varillas suben hasta dentro del brazo para que no haya z-fighting)
+    ((-46, 24, 5), (26, 3, 4), fur(RED_D, BLACK)), ((-50, 26, 6), (4, 5, 2), flat(BLACK)),
+    ((-44, 15, 6), (24, 9, 1), membrana), ((-38, 8, 6.5), (18, 7, 1), membrana), ((-30, 3, 6), (10, 5, 1), membrana), ((-48, 18, 6.5), (3, 6, 1), membrana),
+    ((-45, 11, 5.5), (2, 14, 3), flat(RED_D)), ((-37, 6, 5.5), (2, 19, 3), flat(RED_D)), ((-28, 2.5, 5.5), (2, 22, 3), flat(RED_D))]
+ALAS_ANGEL = [     # de plumas: seis hileras que se acortan hacia abajo (cada una a distinta profundidad que la vecina)
+    ((-38, 26, 5.0), (18, 5, 3), pluma), ((-46, 21, 5.6), (26, 5, 3), pluma), ((-52, 16, 5.0), (32, 5, 3), pluma),
+    ((-48, 11, 5.6), (28, 5, 3), pluma_punta), ((-42, 6, 5.0), (22, 5, 3), pluma_punta), ((-34, 1, 5.6), (14, 5, 3), pluma_punta)]
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -145,11 +165,13 @@ ACCESORIOS = {
         cube(g, f, 'acc_scarf', (6, 1, -19.5), (7, 11, 3), band(PINK, WHITE))],
     'halo': lambda g, f: [   # aro dorado que descansa sobre las bolitas de las antenas (se solapa con ellas: no flota suelto)
         cube(g, f, 'acc_halo', (-14.5, 53.6, -13), (29, 2, 3), glow), cube(g, f, 'acc_halo', (-14.5, 53.6, 10), (29, 2, 3), glow),
-        cube(g, f, 'acc_halo', (-14, 53.6, -10), (4, 2, 20), glow), cube(g, f, 'acc_halo', (10, 53.6, -10), (4, 2, 20), glow)],
+        cube(g, f, 'acc_halo', (-14, 53.6, -10), (4, 2, 20), glow), cube(g, f, 'acc_halo', (10, 53.6, -10), (4, 2, 20), glow),
+        ala(g, f, ALAS_ANGEL)],
     'devil_horns': lambda g, f: [
         cube(g, f, 'acc_devil_horns', (9, 31, -13), (6, 4, 6), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-15, 31, -13), (6, 4, 6), fur(RED, RED_D)),
         cube(g, f, 'acc_devil_horns', (10, 35, -12), (4, 6, 4), fur(RED, RED_D)), cube(g, f, 'acc_devil_horns', (-14, 35, -12), (4, 6, 4), fur(RED, RED_D)),
-        cube(g, f, 'acc_devil_horns', (11, 41, -11), (2, 5, 2), flat(RED_D)), cube(g, f, 'acc_devil_horns', (-13, 41, -11), (2, 5, 2), flat(RED_D))],
+        cube(g, f, 'acc_devil_horns', (11, 41, -11), (2, 5, 2), flat(RED_D)), cube(g, f, 'acc_devil_horns', (-13, 41, -11), (2, 5, 2), flat(RED_D)),
+        ala(g, f, ALAS_DEMONIO)],
     'witch_hat': lambda g, f: [
         cube(g, f, 'acc_witch_hat', (-22, 32, -22), (44, 2, 44), flat(PURPLE_D)),
         cube(g, f, 'acc_witch_hat', (-12, 32.5, -12), (24, 6, 24), flat(PURPLE)),
@@ -188,7 +210,7 @@ def main():
         g = copy.deepcopy(geo0)
         g['minecraft:geometry'][0]['description']['identifier'] = f'geometry.michi_dramatico_{nombre}'
         fn(g, free)
-        malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b['cubes'] if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
+        malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b.get('cubes', []) if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
         assert not malos, f'{nombre}: caras coplanares (z-fighting) en {malos}'
         json.dump(g, open(f'{GEO}/michi_dramatico_{nombre}.geo.json', 'w'), separators=(',', ':'))
         variantes.append({'aspects': [f'{nombre}-accessory'], 'model': f'cobblemon:michi_dramatico_{nombre}.geo'})

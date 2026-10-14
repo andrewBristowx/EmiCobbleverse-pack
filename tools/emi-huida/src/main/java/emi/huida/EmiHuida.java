@@ -27,6 +27,7 @@ public class EmiHuida implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(emi.huida.net.EstrellasPayload.ID, emi.huida.net.EstrellasPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(emi.huida.net.MapaPayload.ID, emi.huida.net.MapaPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(emi.huida.net.HudPayload.ID, emi.huida.net.HudPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(emi.huida.net.CamaraPayload.ID, emi.huida.net.CamaraPayload.CODEC);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(Huida::init);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Huida.shutdown());

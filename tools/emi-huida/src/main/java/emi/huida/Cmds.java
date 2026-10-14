@@ -29,6 +29,8 @@ public final class Cmds {
                 .then(CommandManager.literal("ya").executes(c -> con(c, () -> Huida.empezar(true), "Preparando la huida (sin confirmación)..."))));
         root.then(admin("saltar").executes(c -> con(c, Huida::saltar, "Confirmación saltada.")));
         root.then(admin("forzar").executes(c -> con(c, Huida::saltar, "Confirmación saltada.")));
+        root.then(admin("prueba").then(CommandManager.argument("escena", com.mojang.brigadier.arguments.StringArgumentType.word())
+                .executes(c -> con(c, () -> Huida.prueba(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "escena")), "Preparando la prueba..."))));
         root.then(admin("parar").executes(c -> con(c, () -> Huida.parar(null))));
         d.register(root);
     }

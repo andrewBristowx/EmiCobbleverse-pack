@@ -70,5 +70,29 @@
     "sounds": [
       "emi_huida:listo"
     ]
+  },
+  "sfx.burla": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:burla"
+    ]
+  },
+  "sfx.angel": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:angel"
+    ]
+  },
+  "sfx.glup": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:glup"
+    ]
+  },
+  "sfx.derrota_comido": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:derrota_comido"
+    ]
   }
 }

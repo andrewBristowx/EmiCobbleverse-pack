@@ -1853,12 +1853,12 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-huida-0.5.0.jar"
-hash = "cb6630ad4198f6097860d44a62a969c037dadb45f78d6f5a078b9510c8f1db46"
+file = "mods/emi-huida-0.6.0.jar"
+hash = "0a925d556c470dfc960e093806caa536ad59628dbf4bdcc61628c1b5ad642caa"
 
 [[files]]
-file = "mods/emi-plush-1.13.1.jar"
-hash = "c7a80157fa878bdefbfee3250e0c17fd6e64ff8ad4bfba00b3af21f721d16a1d"
+file = "mods/emi-plush-1.14.0.jar"
+hash = "c3d659c9ff69d4876f0fafacd352f7d7557a3d90bfed91572184ea6d069eb6e2"
 
 [[files]]
 file = "mods/emi-streamlabs-1.1.0.jar"

@@ -129,17 +129,17 @@ public final class HuidaHud {
     private static void peligro(DrawContext ctx, MinecraftClient mc, HudPayload h, int ancho) {
         if (h.fin() != 0) return;
         TextRenderer tr = mc.textRenderer;
-        double dist = Math.max(0, h.s() - h.sCh());
+        double dist = Math.max(0, h.s() - h.sCh() - HudPayload.CAPTURA);      // de la boca del Tyrantrum a ti
         int w = 170, alto = 15, x = (ancho - w) / 2, y = 6;
-        int col = dist < 8 ? 0xFFEE3B3B : dist < 14 ? 0xFFF0A020 : 0xFF45C060;
-        caja(ctx, x, y, w, alto, dist < 8 ? 0xFFEE3B3B : BORDE);
+        int col = dist < 2 ? 0xFFEE3B3B : dist < 8 ? 0xFFF0A020 : 0xFF45C060;
+        caja(ctx, x, y, w, alto, dist < 2 ? 0xFFEE3B3B : BORDE);
         marcadorTyrantrum(ctx, tr, x + 9, y + 7, 10);
         int bx = x + 22, bw = w - 26;
         ctx.fill(bx, y + 9, bx + bw, y + 12, 0xFF22222E);
-        int lleno = (int) Math.round(bw * Math.max(0.04, Math.min(1.0, dist / 26.0)));
+        int lleno = (int) Math.round(bw * Math.max(0.04, Math.min(1.0, dist / 20.0)));
         ctx.fill(bx, y + 9, bx + lleno, y + 12, col);
         String t = "Tyrantrum a " + (int) dist + " m";
-        ctx.drawText(tr, t, bx, y + 1, dist < 8 ? 0xFF8888 : 0xFFFFFF, true);
+        ctx.drawText(tr, t, bx, y + 1, dist < 2 ? 0xFF8888 : 0xFFFFFF, true);
     }
 
     // ------------------------------------------------------------ minimapa (abajo a la derecha)
