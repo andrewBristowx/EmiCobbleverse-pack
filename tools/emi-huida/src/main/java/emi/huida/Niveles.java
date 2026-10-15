@@ -18,12 +18,22 @@ final class Niveles {
      * @param anchoBase, anchoVar  el camino mide 2 * (anchoBase + anchoVar * (algo entre 0 y 1)) de ancho (nivel 1: 7 a 9,4; nivel 2: mas estrecho)
      * @param gapMin   distancia minima (en bloques) entre dos obstaculos seguidos de la misma recta
      * @param vel      velocidad base del perseguidor (bloques/s; el jugador corre a ~5,6)
+     * @param holguraIni, holguraFin  distancia extra sobre {@code captura} que intenta mantener el perseguidor al empezar y a los {@code Huida.SEG_HASTA_FIN} s (nivel 3: mas justa)
      */
     record Def(String id, String titulo, String dimension, int baseX, char[] tipo, int[] val, Nivel.Mod[] mods, boolean desvios, boolean entrada,
                String especie, float alto, double captura, double frente, double flota,
-               double anchoBase, double anchoVar, int gapMin, double vel,
+               double anchoBase, double anchoVar, int gapMin, double vel, double holguraIni, double holguraFin,
                String el, String El, String come, int introTicks, int finalTicks, int comidoTicks) {
         boolean calabaza() { return id.equals("calabaza"); }
+        /** Nivel 3 (el final): una horda de michialiens, en el espacio. */
+        boolean cosmos() { return id.equals("cosmos"); }
+        /** 1 = Tyrantrum, 2 = calabaza, 3 = cosmos. */
+        int num() { return cosmos() ? 3 : calabaza() ? 2 : 1; }
+        /** El perseguidor es un grupo (la horda): los textos van en plural. */
+        boolean plural() { return cosmos(); }
+        String alcanzo() { return plural() ? "alcanzaron" : "alcanzó"; }
+        String lanza() { return plural() ? "se lanzan" : "se lanza"; }
+        String atrapo() { return plural() ? "te atraparon" : "te atrapó"; }
     }
 
     // ---------------------------------------------------------------- nivel 1: la huida del Tyrantrum (selva)
@@ -43,7 +53,7 @@ final class Niveles {
                     new Nivel.Mod(18, 56, 'T'), new Nivel.Mod(18, 62, 'B'), new Nivel.Mod(18, 70, 'T'),
                     new Nivel.Mod(20, 10, 'T'), new Nivel.Mod(20, 18, 'H'), new Nivel.Mod(20, 28, 'B'), new Nivel.Mod(20, 36, 'R'), new Nivel.Mod(20, 44, 'T'), new Nivel.Mod(20, 54, 'C')},
             true, true, "tyrantrum level=60", 9.0f, 6.0, 6.5, 0.0,
-            3.5, 1.2, 4, 5.3,
+            3.5, 1.2, 4, 5.3, 6.0, 2.5,
             "el Tyrantrum", "El Tyrantrum", "come", 200, 266, 175);
 
     // ---------------------------------------------------------------- nivel 2: la huida de la calabaza (Halloween, Pumpkaboo)
@@ -69,16 +79,44 @@ final class Niveles {
                     new Nivel.Mod(18, 6, 'Z'),
                     new Nivel.Mod(20, 8, 'F'), new Nivel.Mod(20, 20, 'T'), new Nivel.Mod(20, 25, 'B'), new Nivel.Mod(20, 31, 'K'), new Nivel.Mod(20, 51, 'H'), new Nivel.Mod(20, 57, 'W'), new Nivel.Mod(20, 64, 'T')},
             false, false, "pumpkaboo level=60", 5.4f, 3.6, 3.4, 0.9,
-            3.1, 0.7, 4, 5.45,
+            3.1, 0.7, 4, 5.45, 6.0, 2.5,
             "el Pumpkaboo", "El Pumpkaboo", "convierte en calabaza", 184, 250, 130);
 
-    static final Def[] TODOS = {TYRANTRUM, CALABAZA};
+    // ---------------------------------------------------------------- nivel 3: la huida de los michialiens (el final: el espacio, una horda de michialiens, Emi)
+    /**
+     * El ultimo nivel (el dueño pidio que fuera mas dificil que el de la calabaza): un camino flotando en el espacio (tematica espacial y tierna: suelo de
+     * hormigon rosa y lila, cristal de colores, estrellas y planetas debajo), 706 bloques con 11 curvas, camino aun mas estrecho (5,8 a 6,8), una horda de
+     * michialiens de todos los aspectos que corre a la misma velocidad que tu y se acerca mas rapido que en los otros niveles, y 41 obstaculos: los de siempre
+     * mas islas {@code Z}, aspas {@code F} y calabazas rodantes {@code K} (aqui planetas), y la lluvia de meteoritos {@code M}, que solo hay en este nivel.
+     */
+    static final Def COSMOS = new Def("cosmos", "la huida de los michialiens", "cosmos", 8192,
+            new char[]{'S', 'L', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'L', 'S', 'R', 'S', 'L', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'R', 'S'},
+            new int[]{100, 8, 26, 8, 30, 12, 28, 12, 52, 8, 24, 8, 24, 14, 56, 10, 36, 10, 40, 12, 28, 8, 90},
+            new Nivel.Mod[]{
+                    new Nivel.Mod(0, 70, 'T'), new Nivel.Mod(0, 75, 'B'), new Nivel.Mod(0, 81, 'T'), new Nivel.Mod(0, 85, 'T'), new Nivel.Mod(0, 89, 'C'),
+                    new Nivel.Mod(2, 6, 'L'), new Nivel.Mod(2, 12, 'R'), new Nivel.Mod(2, 17, 'T'),
+                    new Nivel.Mod(4, 6, 'H'), new Nivel.Mod(4, 12, 'T'), new Nivel.Mod(4, 17, 'W'), new Nivel.Mod(4, 23, 'T'),
+                    new Nivel.Mod(6, 6, 'F'), new Nivel.Mod(6, 17, 'B'),
+                    new Nivel.Mod(8, 6, 'Z'), new Nivel.Mod(8, 33, 'T'), new Nivel.Mod(8, 38, 'T'), new Nivel.Mod(8, 42, 'B'),
+                    new Nivel.Mod(10, 6, 'L'), new Nivel.Mod(10, 11, 'R'), new Nivel.Mod(10, 16, 'T'),
+                    new Nivel.Mod(12, 6, 'C'), new Nivel.Mod(12, 11, 'L'), new Nivel.Mod(12, 16, 'R'),
+                    new Nivel.Mod(14, 6, 'K'), new Nivel.Mod(14, 25, 'F'), new Nivel.Mod(14, 36, 'W'), new Nivel.Mod(14, 42, 'T'), new Nivel.Mod(14, 46, 'H'),
+                    new Nivel.Mod(16, 6, 'M'), new Nivel.Mod(16, 27, 'B'),
+                    new Nivel.Mod(18, 6, 'P'), new Nivel.Mod(18, 23, 'T'), new Nivel.Mod(18, 27, 'R'), new Nivel.Mod(18, 32, 'L'),
+                    new Nivel.Mod(20, 6, 'K'),
+                    new Nivel.Mod(22, 8, 'F'), new Nivel.Mod(22, 19, 'T'), new Nivel.Mod(22, 23, 'B'), new Nivel.Mod(22, 28, 'Z'), new Nivel.Mod(22, 55, 'M')},
+            false, true, "gatitoalien level=50", 3.0f, 2.6, 2.6, 0.0,
+            2.9, 0.5, 3, 5.6, 4.5, 1.3,
+            "los michialiens", "Los michialiens", "aplastan", 210, 660, 190);
+
+    static final Def[] TODOS = {TYRANTRUM, CALABAZA, COSMOS};
 
     static Def porNombre(String n) {
         if (n == null) return TYRANTRUM;
         String s = n.toLowerCase(java.util.Locale.ROOT);
         for (Def d : TODOS) if (d.id().equals(s)) return d;
         if (s.equals("pumpkaboo") || s.equals("halloween") || s.equals("2")) return CALABAZA;
+        if (s.equals("michialien") || s.equals("michialiens") || s.equals("espacio") || s.equals("3")) return COSMOS;
         if (s.equals("1") || s.equals("selva")) return TYRANTRUM;
         return null;
     }

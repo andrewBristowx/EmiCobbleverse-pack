@@ -25,14 +25,18 @@ final class Sonidos {
     static final String PERSECUCION = "musica.persecucion", ESPERA = "musica.espera";
     /** Nivel de la calabaza: «La calabaza» (cancion del dueno) partida en el principio (hasta que sube) y el resto, y una musica de espera propia. */
     static final String CALABAZA_INTRO = "musica.calabaza_intro", CALABAZA = "musica.calabaza", ESPERA_CALABAZA = "musica.espera_calabaza";
-    static String persecucion() { return Nivel.calabaza() ? CALABAZA : PERSECUCION; }
-    static String espera() { return Nivel.calabaza() ? ESPERA_CALABAZA : ESPERA; }
-    static boolean esPersecucion(String id) { return PERSECUCION.equals(id) || CALABAZA.equals(id); }
+    /** Nivel 3 (el espacio): una presentacion de 10,5 s que crece hasta el «¡CORRE!», la persecucion (2 min, en bucle) y la musica de espera. */
+    static final String COSMOS_INTRO = "musica.cosmos_intro", COSMOS = "musica.cosmos", ESPERA_COSMOS = "musica.espera_cosmos";
+    static String persecucion() { return Nivel.cosmos() ? COSMOS : Nivel.calabaza() ? CALABAZA : PERSECUCION; }
+    static String espera() { return Nivel.cosmos() ? ESPERA_COSMOS : Nivel.calabaza() ? ESPERA_CALABAZA : ESPERA; }
+    static String introMusica() { return Nivel.cosmos() ? COSMOS_INTRO : CALABAZA_INTRO; }
+    static boolean esPersecucion(String id) { return PERSECUCION.equals(id) || CALABAZA.equals(id) || COSMOS.equals(id); }
     /** Duracion de cada pista en ticks. */
     static int duracion(String id) {
-        return switch (id) { case PERSECUCION -> 1280; case CALABAZA_INTRO -> 184; case CALABAZA -> DUR_CALABAZA; default -> 640; };
+        return switch (id) { case PERSECUCION -> 1280; case CALABAZA_INTRO -> 184; case CALABAZA -> DUR_CALABAZA; case COSMOS_INTRO -> 210; case COSMOS -> DUR_COSMOS; default -> 640; };
     }
     static final int DUR_CALABAZA = 2215;
+    static final int DUR_COSMOS = 2400;
 
     static void sfx(ServerPlayerEntity p, SoundEvent e, float vol, float pitch) {
         if (p != null) p.playSoundToPlayer(e, SoundCategory.MASTER, vol, pitch);
@@ -45,7 +49,7 @@ final class Sonidos {
 
     /** Para toda la musica de la huida (la del nivel 1 y la del 2). */
     static void pararTodo(ServerPlayerEntity p) {
-        for (String id : new String[]{PERSECUCION, ESPERA, CALABAZA_INTRO, CALABAZA, ESPERA_CALABAZA}) parar(p, id);
+        for (String id : new String[]{PERSECUCION, ESPERA, CALABAZA_INTRO, CALABAZA, ESPERA_CALABAZA, COSMOS_INTRO, COSMOS, ESPERA_COSMOS}) parar(p, id);
     }
 
     static void parar(ServerPlayerEntity p, String id) {

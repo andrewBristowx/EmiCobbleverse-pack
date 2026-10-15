@@ -52,8 +52,8 @@ public final class Huida {
     // el jugador corre siempre (el cliente fuerza el sprint): velocidad normal de Minecraft, 5,6 bloques/s corriendo y un salto largo de ~4 bloques
     static final double VEL_BASE = 5.3;                // velocidad del Tyrantrum si va a la distancia que toca (un poco menos que el jugador)
     // distancia (entre centros) que intenta mantener el perseguidor: empieza a 6 bloques de la captura y acaba a 2,5 (con el Tyrantrum, 12 -> 8,5)
-    static double distIni() { return Nivel.DEF.captura() + 6.0; }
-    static double distFin() { return Nivel.DEF.captura() + 2.5; }
+    static double distIni() { return Nivel.DEF.captura() + Nivel.DEF.holguraIni(); }
+    static double distFin() { return Nivel.DEF.captura() + Nivel.DEF.holguraFin(); }
     static final double SEG_HASTA_FIN = 150.0;
     static final double CATCH_UP = 0.8;                // blocs/s extra por cada bloque que le saques de mas (para que no te escapes del todo)
     /** Distancia entre el centro del perseguidor y el jugador a la que te atrapa (Tyrantrum: mide ~15 de largo, boca a ~6 por delante del centro; Pumpkaboo: su radio y un poco mas). */
@@ -80,6 +80,9 @@ public final class Huida {
         int idx;                                     // muestra del camino en la que va (para proyectar su posicion)
         double s, sPerseguidor, vPerseguidor;        // distancia recorrida por el jugador y por el Tyrantrum a lo largo del trazado
         PokemonEntity perseguidor;
+        Entity emi;                                  // nivel 3: Emi (la entidad con la skin del dueno) en la escena final
+        final List<EscenasCosmos.Burbuja> burbujas = new ArrayList<>();      // nivel 3: globos de texto que siguen a un michi o a Emi
+        Horda horda;                                 // nivel 3: la horda de michialiens (el michi de delante en el centro es `perseguidor`)
         int escT = -1;                               // ultimo tick de escena ejecutado (con escena lenta no se repite)
         Vec3d escBase;                               // donde estaba el Tyrantrum al atraparte (la escena de que te come lo echa hacia atras para coger carrerilla)
         PokemonEntity michi;                         // el michi de la escena en curso (demonio al empezar, angel al ganar)
@@ -238,7 +241,7 @@ public final class Huida {
             try { Saved.save(server, p); } catch (RuntimeException e) { jug.remove(j.id); p.sendMessage(Msg.err("No se pudo guardar tu inventario: no entras."), false); continue; }
             j.tablas.clear(); for (Nivel.Bloque b : j.nivel.puente()) j.tablas.add(b.pos());
             j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.malezaRota.clear(); j.sigMaleza = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
-            j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.S_PERSEGUIDOR; j.vPerseguidor = VEL_BASE;
+            j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.sInicioPerseguidor(); j.vPerseguidor = VEL_BASE;
             j.est = Est.ESPERA; j.errores = 0; j.devorado = false; j.pausaTyr = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
             j.puntos = 0; j.nEstrellas = 0; j.sigEst = 0; j.combo = 0; j.racha = 0; j.ultimaEst = 0; j.cogidas.clear(); j.sigMod = 0; j.dentro = false; j.erroresAlEntrar = 0;
             Dinamicos.quitar(j); j.dins.clear(); j.dins.addAll(Dinamicos.crear());
@@ -304,9 +307,9 @@ public final class Huida {
     private static void iniciarCuenta(String motivo) {
         fase = Fase.CUENTA;
         cuentaIni = server.getTicks();
-        if (Nivel.calabaza()) {          // la presentacion tiene su propia musica (el principio de la cancion, hasta que sube: coincide con el «¡CORRE!»)
+        if (Nivel.calabaza() || Nivel.cosmos()) {          // la presentacion tiene su propia musica (calabaza: el principio de la cancion, hasta que sube: coincide con el «¡CORRE!»)
             pararMusica();
-            if (conIntro()) { musicaActual = Sonidos.CALABAZA_INTRO; musicaProx = Long.MAX_VALUE; Sonidos.musica(online(), Sonidos.CALABAZA_INTRO, Cfg.volumenMusica()); }
+            if (conIntro()) { musicaActual = Sonidos.introMusica(); musicaProx = Long.MAX_VALUE; Sonidos.musica(online(), musicaActual, Cfg.volumenMusica()); }
         }
         cuentaFin = cuentaIni + (conIntro() ? Nivel.DEF.introTicks() * (long) Cfg.escenaLenta() : pruebaEscena != null ? 5 : CUENTA_SEGUNDOS * 20L);
         for (J j : jug.values()) {
@@ -395,7 +398,7 @@ public final class Huida {
         int[] c = clasificacionDe(j);
         int fin = j.est == Est.ESCAPO ? 1 : j.est == Est.ATRAPADO ? 2 : 0;
         long ticks = j.est == Est.CORRE ? now - j.inicioTick : j.est == Est.ESPERA ? 0 : j.finTick - j.inicioTick;
-        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin, Cfg.maxErrores(), Nivel.calabaza() ? 1 : 0, (float) dCaptura()));
+        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin, Cfg.maxErrores(), Nivel.DEF.num() - 1, (float) dCaptura()));
     }
 
     // ---------------------------------------------------------------- musica y sonidos
@@ -423,6 +426,17 @@ public final class Huida {
     private static void ambiente(J j, ServerPlayerEntity p, long now) {
         if (now < j.proxAmbiente) return;
         j.proxAmbiente = now + 70 + RND.nextInt(110);
+        if (Nivel.cosmos()) {          // el espacio: campanitas de amatista, maullidos lejanos, notas suaves y destellos
+            switch (RND.nextInt(6)) {
+                case 0 -> Sonidos.sfx(p, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.5f, 0.8f + RND.nextFloat() * 0.8f);
+                case 1 -> Sonidos.sfx(p, SoundEvents.ENTITY_CAT_AMBIENT, 0.25f, 1.1f + RND.nextFloat() * 0.5f);
+                case 2 -> Sonidos.sfx(p, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 0.3f, 0.9f + RND.nextFloat() * 0.7f);
+                case 3 -> Sonidos.sfx(p, SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, 0.4f, 1.0f + RND.nextFloat() * 0.5f);
+                case 4 -> Sonidos.sfx(p, SoundEvents.ENTITY_CAT_PURR, 0.25f, 1.3f);
+                default -> Sonidos.sfx(p, SoundEvents.BLOCK_AMETHYST_CLUSTER_PLACE, 0.4f, 1.5f);
+            }
+            return;
+        }
         if (Nivel.calabaza()) {          // Halloween: murcielagos, brujas lejanas, gemidos, un lobo aullando y campanas
             switch (RND.nextInt(6)) {
                 case 0 -> Sonidos.sfx(p, SoundEvents.ENTITY_BAT_AMBIENT, 0.4f, 0.6f + RND.nextFloat() * 0.3f);
@@ -449,10 +463,11 @@ public final class Huida {
         try { e.setSilent(false); e.cry(); e.setSilent(true); } catch (Throwable t) { EmiHuida.LOG.warn("cry: {}", t.toString()); }
     }
 
-    private static void escenaIntro(J j, ServerPlayerEntity p, ServerWorld w, int t) { if (Nivel.calabaza()) EscenasCalabaza.intro(j, p, w, t); else Escenas.intro(j, p, w, t); }
+    private static void escenaIntro(J j, ServerPlayerEntity p, ServerWorld w, int t) { if (Nivel.cosmos()) EscenasCosmos.intro(j, p, w, t); else if (Nivel.calabaza()) EscenasCalabaza.intro(j, p, w, t); else Escenas.intro(j, p, w, t); }
 
     private static void escenaFinal(J j, ServerPlayerEntity p, ServerWorld w, int t, boolean escapo) {
-        if (Nivel.calabaza()) { if (escapo) EscenasCalabaza.finalSnorlax(j, p, w, t); else EscenasCalabaza.tragado(j, p, w, t); }
+        if (Nivel.cosmos()) { if (escapo) EscenasCosmos.finalEmi(j, p, w, t); else EscenasCosmos.aplastado(j, p, w, t); }
+        else if (Nivel.calabaza()) { if (escapo) EscenasCalabaza.finalSnorlax(j, p, w, t); else EscenasCalabaza.tragado(j, p, w, t); }
         else if (escapo) Escenas.finalAngel(j, p, w, t); else Escenas.comido(j, p, w, t);
     }
 
@@ -464,6 +479,7 @@ public final class Huida {
     public static String prueba(ServerPlayerEntity p, String escena, Niveles.Def nivel) {
         if (escena.equals("michis")) return Escenas.banco(p);
         if (escena.equals("banco2")) return EscenasCalabaza.banco(p);
+        if (escena.equals("banco3")) return EscenasCosmos.banco(p);
         if (escena.equals("limpiar")) { Escenas.quitarBanco(p.getServerWorld()); return null; }
         if (escena.equals("angel_fin")) { Escenas.demoFin(); return null; }
         if (escena.startsWith("angel_")) return Escenas.demoAngel(p, Integer.parseInt(escena.substring(6)));      // angel_<tick>: la escena del angel sin camara de escena, congelada en ese tick (0 = entera)
@@ -525,7 +541,7 @@ public final class Huida {
         if (resta <= 0) {
             fase = Fase.CORRIENDO;
             EmiHuida.LOG.info("Huida: ¡YA! ({} jugador(es))", jug.size());
-            if (Nivel.calabaza() && conIntro()) musicaActual = null;          // la musica de la presentacion acaba justo aqui: no se corta
+            if ((Nivel.calabaza() || Nivel.cosmos()) && conIntro()) musicaActual = null;          // la musica de la presentacion acaba justo aqui: no se corta
             else pararMusica();
             for (J j : jug.values()) {
                 ServerPlayerEntity p = jugador(j);
@@ -541,9 +557,15 @@ public final class Huida {
                     double[] e = Nivel.ejePos(j.hueco, sObj);
                     if ("angel".equals(pruebaEscena)) {
                         p.teleport(w, e[0], Nivel.Y0, e[1], (float) e[2], 0f); j.s = sObj; j.idx = Nivel.idxDe(sObj); j.sPerseguidor = sObj - (dCaptura() + 6.5);
-                        if (j.perseguidor != null) j.perseguidor.discard();          // un Tyrantrum nuevo junto al jugador (el que se queda lejos tras un teletransporte de ~800 bloques no le llega al cliente)
-                        double[] q = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);
-                        j.perseguidor = nuevoPerseguidor(w, q[0], q[1], q[2], (float) q[3]);
+                        if (!Nivel.cosmos()) {          // (la horda del nivel 3 se recoloca sola en el tick siguiente)
+                            if (j.perseguidor != null) j.perseguidor.discard();          // un Tyrantrum nuevo junto al jugador (el que se queda lejos tras un teletransporte de ~800 bloques no le llega al cliente)
+                            double[] q = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);
+                            j.perseguidor = nuevoPerseguidor(w, q[0], q[1], q[2], (float) q[3]);
+                        } else {                // la horda se vuelve a crear junto al jugador (tras un teletransporte de ~700 bloques no le llegarian al cliente)
+                            quitarHorda(j);
+                            j.horda = Horda.crear(w, j, j.sPerseguidor);
+                            j.perseguidor = j.horda == null ? null : j.horda.lider().e;
+                        }
                     }
                     else if ("comido".equals(pruebaEscena)) j.sPerseguidor = j.s - (dCaptura() + 0.2);
                 }
@@ -568,7 +590,7 @@ public final class Huida {
             else if (j.enMeta) tickEspera(w, j, p, now);
             else if (now >= j.soltarEn) esperar(w, j, p, now);
             else {
-                if (Cfg.escenas() && (j.perseguidor != null || Nivel.calabaza()) && j.nivel != null) {
+                if (Cfg.escenas() && (j.perseguidor != null || Nivel.calabaza() || Nivel.cosmos()) && j.nivel != null) {
                     try { int ti = (int) ((now - j.finTick) / Cfg.escenaLenta()); if (ti != j.escT) { j.escT = ti; escenaFinal(j, p, w, ti, j.est == Est.ESCAPO); } }
                     catch (Throwable t) { EmiHuida.LOG.error("escena final", t); }
                 }
@@ -604,6 +626,7 @@ public final class Huida {
     /** Termina la escena final: el jugador se queda en la meta (no se le devuelve a su sitio hasta que acaben todos y el organizador cierre con /huida terminar o el salga con /huida salir). */
     private static void esperar(ServerWorld w, J j, ServerPlayerEntity p, long now) {
         j.enMeta = true;
+        if (Nivel.cosmos()) { quitarHorda(j); j.perseguidor = null; }          // la horda y Emi no se quedan en la sala de espera
         if (j.est == Est.ATRAPADO && j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }      // al que se come ya no lo persigue nadie
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
@@ -710,7 +733,9 @@ public final class Huida {
         j.vPerseguidor = j.devorado ? VEL_ATAQUE : now < j.pausaTyr ? 0 : Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
         j.sPerseguidor += j.vPerseguidor / 20.0;
         if (modoPrueba && pruebaEscena == null && j.s - j.sPerseguidor < dCaptura() + DIST_PRUEBA) j.sPerseguidor = j.s - (dCaptura() + DIST_PRUEBA);      // modo prueba: no te alcanza
-        if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
+        if (j.horda != null) {
+            j.horda.mover(j, j.sPerseguidor, now, j.vPerseguidor > 0.1, j.vPerseguidor);       // la horda de michialiens: todos corren detras de la primera fila
+        } else if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
             double[] e = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);       // en los puentes rodea el hueco por la selva
             float yaw = (float) e[3];
             j.perseguidor.refreshPositionAndAngles(e[0], e[1], e[2], yaw, 0f);
@@ -733,7 +758,7 @@ public final class Huida {
         if (dist <= dCaptura() && (j.devorado || now >= j.pausaTyr)) {
             // con limite de errores, que el Tyrantrum te alcance cuenta como un error (no es el fin): se queda parado rugiendo un momento y tienes que seguir corriendo; solo te come cuando se te acaban los errores
             if (Cfg.maxErrores() < 0 || modoPrueba || pruebaEscena != null || j.devorado) { acabar(j, p, now, false); return; }
-            error(j, p, now, "¡" + Nivel.DEF.El() + " te alcanzó!", false);
+            error(j, p, now, "¡" + Nivel.DEF.El() + " te " + Nivel.DEF.alcanzo() + "!", false);
             if (j.devorado) { acabar(j, p, now, false); return; }
             j.pausaTyr = now + PAUSA_ALCANCE;
             if (j.perseguidor != null) rugir(j.perseguidor);
@@ -782,7 +807,7 @@ public final class Huida {
             // el ultimo error: el Tyrantrum se lanza a por ti (corre mucho mas rapido hasta alcanzarte) y la escena de que te come empieza en cuanto te toca
             j.devorado = true;
             congelar(p, true);
-            Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal(Nivel.DEF.El() + " se lanza a por ti").formatted(Formatting.RED), 0, 40, 10);
+            Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal(Nivel.DEF.El() + " " + Nivel.DEF.lanza() + " a por ti").formatted(Formatting.RED), 0, 40, 10);
             Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.8f, 0.5f);
             if (j.perseguidor != null) rugir(j.perseguidor);
             return;
@@ -902,7 +927,7 @@ public final class Huida {
                 Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.5f);
                 Sonidos.sfx(p, Sonidos.DERROTA, 1f, 1f);
             }
-            p.sendMessage(Msg.say(Nivel.DEF.El() + " te atrapó tras " + tiempo + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
+            p.sendMessage(Msg.say(Nivel.DEF.El() + " " + Nivel.DEF.atrapo() + " tras " + tiempo + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
         }
         EmiHuida.LOG.info("Huida: {} {} en {} con {} errores y {} puntos ({} estrellas)", j.nombre, escapo ? "ESCAPO" : "ATRAPADO", tiempo, j.errores, j.puntos, j.nEstrellas);
         if (!escapo || esc) congelar(p, true);
@@ -917,7 +942,7 @@ public final class Huida {
         String medalla = j.errores == 0 ? "ORO" : j.errores <= 2 ? "PLATA" : "BRONCE";
         Formatting mc = j.errores == 0 ? Formatting.GOLD : j.errores <= 2 ? Formatting.GRAY : Formatting.RED;
         Msg.title(p, Text.literal("¡ESCAPASTE!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Medalla de " + medalla + " · " + tiempo + " · " + j.errores + " errores").formatted(mc), 0, quedarse, 20);
-        p.sendMessage(Msg.say("¡Escapaste de" + (Nivel.calabaza() ? "l Pumpkaboo" : "l Tyrantrum") + " en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
+        p.sendMessage(Msg.say("¡Escapaste de" + (Nivel.cosmos() ? " los michialiens" : Nivel.calabaza() ? "l Pumpkaboo" : "l Tyrantrum") + " en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
         Sonidos.sfx(p, Sonidos.VICTORIA, 1f, 1f);
     }
 
@@ -928,7 +953,10 @@ public final class Huida {
         if (p != null && motivo != null) p.sendMessage(Msg.say("Sales de la huida: " + motivo + "."), false);
     }
 
+    static void quitarHorda(J j) { if (j.horda != null) { j.horda.quitar(); j.horda = null; } }
+
     private static void restaurar(J j, ServerPlayerEntity p) {
+        quitarHorda(j);
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
@@ -991,7 +1019,7 @@ public final class Huida {
 
     private static void limpiarEntidades(ServerWorld w) {
         List<Entity> borrar = new ArrayList<>();
-        for (Entity e : w.iterateEntities()) if (e instanceof PokemonEntity || e instanceof net.minecraft.entity.decoration.DisplayEntity) borrar.add(e);
+        for (Entity e : w.iterateEntities()) if (e instanceof PokemonEntity || e instanceof net.minecraft.entity.decoration.DisplayEntity || e instanceof EmiEntity) borrar.add(e);
         for (Entity e : borrar) e.discard();
     }
 
@@ -1006,6 +1034,7 @@ public final class Huida {
         J j = jug.get(p.getUuid());
         if (j == null) return;
         if (fase == Fase.COLA) { jug.remove(p.getUuid()); return; }
+        quitarHorda(j);
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
@@ -1023,6 +1052,10 @@ public final class Huida {
     static void quitarExtras(J j) {
         for (Entity e : j.extras) if (e != null && !e.isRemoved()) e.discard();
         j.extras.clear();
+        for (EscenasCosmos.Burbuja b : j.burbujas) if (b.e != null && !b.e.isRemoved()) b.e.discard();
+        j.burbujas.clear();
+        if (j.emi != null && !j.emi.isRemoved()) j.emi.discard();
+        j.emi = null;
         Dinamicos.quitar(j);
     }
 
@@ -1089,6 +1122,11 @@ public final class Huida {
     private static PokemonEntity crearPerseguidor(ServerWorld w, J j) { return crearPerseguidor(w, j, false); }
 
     private static PokemonEntity crearPerseguidor(ServerWorld w, J j, boolean ya) {
+        if (Nivel.cosmos()) {          // la horda espera detras de la entrada desde el principio (la escena de entrada la despierta)
+            quitarHorda(j);
+            j.horda = Horda.crear(w, j, Nivel.sInicioPerseguidor());
+            return j.horda == null ? null : j.horda.lider().e;
+        }
         if (!ya && Nivel.calabaza() && conIntro()) return null;        // al principio es una calabaza (la escena de entrada); el Pumpkaboo aparece cuando el michi la transforma
         double[] ep = Nivel.ejePos(j.hueco, Nivel.S_PERSEGUIDOR);
         return nuevoPerseguidor(w, ep[0], Nivel.Y0, ep[1], (float) ep[2]);

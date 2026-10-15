@@ -41,6 +41,8 @@ public final class HuidaHud {
     private static final Identifier ICONO_TYRANTRUM = Identifier.of("emi_huida", "textures/gui/tyrantrum.png");
     /** Retrato del Pumpkaboo (nivel de la calabaza), igual que el del Tyrantrum. */
     private static final Identifier ICONO_PUMPKABOO = Identifier.of("emi_huida", "textures/gui/pumpkaboo.png");
+    /** Retrato de un michialien (nivel 3: la horda). */
+    private static final Identifier ICONO_MICHI = Identifier.of("emi_huida", "textures/gui/michialien.png");
 
     public static void render(DrawContext ctx, RenderTickCounter tick) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -140,7 +142,7 @@ public final class HuidaHud {
         ctx.fill(bx, y + 9, bx + bw, y + 12, 0xFF22222E);
         int lleno = (int) Math.round(bw * Math.max(0.04, Math.min(1.0, dist / 20.0)));
         ctx.fill(bx, y + 9, bx + lleno, y + 12, col);
-        String t = (h.nivel() == 1 ? "Pumpkaboo" : "Tyrantrum") + " a " + (int) dist + " m";
+        String t = (h.nivel() == 2 ? "Michialiens" : h.nivel() == 1 ? "Pumpkaboo" : "Tyrantrum") + " a " + (int) dist + " m";
         ctx.drawText(tr, t, bx, y + 1, dist < 2 ? 0xFF8888 : 0xFFFFFF, true);
     }
 
@@ -172,7 +174,7 @@ public final class HuidaHud {
 
     /** El retrato del Tyrantrum centrado en (cx, cy), de {@code 2*r} de lado. */
     private static void marcadorTyrantrum(DrawContext ctx, TextRenderer tr, int cx, int cy, int r, int nivel) {
-        ctx.drawTexture(nivel == 1 ? ICONO_PUMPKABOO : ICONO_TYRANTRUM, cx - r, cy - r, 2 * r, 2 * r, 0f, 0f, 64, 64, 64, 64);
+        ctx.drawTexture(nivel == 2 ? ICONO_MICHI : nivel == 1 ? ICONO_PUMPKABOO : ICONO_TYRANTRUM, cx - r, cy - r, 2 * r, 2 * r, 0f, 0f, 64, 64, 64, 64);
     }
 
     private static void minimapa(DrawContext ctx, MinecraftClient mc, HudPayload h, MapaPayload mp, int ancho, int alto) {

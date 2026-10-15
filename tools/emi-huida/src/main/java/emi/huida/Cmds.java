@@ -22,13 +22,13 @@ public final class Cmds {
         root.then(CommandManager.literal("ayuda").executes(Cmds::ayuda));
         root.executes(Cmds::ayuda);
         // --- organizador
-        // /huida abrir [nivel]: tyrantrum (por defecto) o calabaza (Halloween, Pumpkaboo)
+        // /huida abrir [nivel]: tyrantrum (por defecto), calabaza (Halloween, Pumpkaboo) o cosmos (los michialiens, el nivel final)
         root.then(admin("abrir").executes(c -> con(c, Huida::abrir, "Cola abierta: se ha avisado a todos."))
                 .then(CommandManager.argument("nivel", com.mojang.brigadier.arguments.StringArgumentType.word())
-                        .suggests((c, b) -> net.minecraft.command.CommandSource.suggestMatching(java.util.List.of("tyrantrum", "calabaza"), b))
+                        .suggests((c, b) -> net.minecraft.command.CommandSource.suggestMatching(java.util.List.of("tyrantrum", "calabaza", "cosmos"), b))
                         .executes(c -> {
                             Niveles.Def niv = Niveles.porNombre(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nivel"));
-                            if (niv == null) { c.getSource().sendError(Text.literal("Niveles: tyrantrum, calabaza.")); return 0; }
+                            if (niv == null) { c.getSource().sendError(Text.literal("Niveles: tyrantrum, calabaza, cosmos (los michialiens).")); return 0; }
                             return con(c, () -> Huida.abrir(niv), "Cola abierta (" + niv.titulo() + "): se ha avisado a todos.");
                         })));
         root.then(admin("cerrar").executes(c -> con(c, Huida::cerrarCola)));
@@ -42,7 +42,7 @@ public final class Cmds {
                 .then(CommandManager.argument("nivel", com.mojang.brigadier.arguments.StringArgumentType.word())
                         .executes(c -> {
                             Niveles.Def niv = Niveles.porNombre(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nivel"));
-                            if (niv == null) { c.getSource().sendError(Text.literal("Niveles: tyrantrum, calabaza.")); return 0; }
+                            if (niv == null) { c.getSource().sendError(Text.literal("Niveles: tyrantrum, calabaza, cosmos (los michialiens).")); return 0; }
                             return con(c, () -> Huida.prueba(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "escena"), niv), "Preparando la prueba...");
                         }))));
         // /huida ir <s>: lleva al organizador (que esta corriendo) a esa distancia del recorrido, para probar un obstaculo sin correr todo el nivel
@@ -88,7 +88,7 @@ public final class Cmds {
     private static int ayuda(CommandContext<ServerCommandSource> c) {
         c.getSource().sendFeedback(() -> Msg.say("La huida: corre por las ruinas (o por el cementerio de Halloween), salta, agáchate (shift) y esquiva antes de que te alcance el Tyrantrum (o el Pumpkaboo)."), false);
         c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida unirse · /huida listo (o tecla R) · /huida salir · /huida estado"), false);
-        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir [tyrantrum|calabaza] · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida terminar (cierra al acabar todos) · /huida parar · /huida cerrar · /huida modoprueba [on|off] (el Tyrantrum no te atrapa, para probar)"), false);
+        if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir [tyrantrum|calabaza|cosmos] · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida terminar (cierra al acabar todos) · /huida parar · /huida cerrar · /huida modoprueba [on|off] (el Tyrantrum no te atrapa, para probar)"), false);
         return 1;
     }
 }

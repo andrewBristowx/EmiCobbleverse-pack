@@ -37,7 +37,7 @@ final class Nivel {
     static final int PRE = 44;                // bloques de camino detras del punto de partida del jugador (la jaula del Tyrantrum, que mide ~20 de largo, cabe detras de la entrada)
     static final int PUENTE_LARGO = 14;
     /** Obstaculos del nivel 2: Z islas de piedra sobre lava (zigzag), K zona por la que bajan calabazas rodantes, F aspas giratorias alrededor de un pilar (bloques de largo de cada uno). */
-    static final int Z_LARGO = 24, K_LARGO = 16, F_LARGO = 8;
+    static final int Z_LARGO = 24, K_LARGO = 16, F_LARGO = 8, M_LARGO = 18;
     static final double F_HUB = 4.0, F_RADIO = 3.3;          // el pilar de las aspas esta a F_HUB del principio de su zona; las aspas miden F_RADIO a cada lado
     static final double PASO = 0.5;
     static final int PAD = 27;                // alcance maximo del terreno desde la linea central
@@ -56,7 +56,7 @@ final class Nivel {
      *  H hueco de 2 con lava y W hueco ancho de 3 (saltar), P puente de tablas que se derrumba; solo en el nivel 2: Z islas de piedra sobre lava, K calabazas rodantes, F aspas giratorias.
      *  `seg` = indice de la recta en la ruta, `u` = distancia desde su inicio. */
     record Mod(int seg, int u, char tipo) {
-        int filas() { return switch (tipo) { case 'H' -> 2; case 'W' -> 3; case 'P' -> PUENTE_LARGO; case 'B', 'L', 'R', 'C' -> 2; case 'Z' -> Z_LARGO; case 'K' -> K_LARGO; case 'F' -> F_LARGO; default -> 1; }; }
+        int filas() { return switch (tipo) { case 'H' -> 2; case 'W' -> 3; case 'P' -> PUENTE_LARGO; case 'B', 'L', 'R', 'C' -> 2; case 'Z' -> Z_LARGO; case 'K' -> K_LARGO; case 'F' -> F_LARGO; case 'M' -> M_LARGO; default -> 1; }; }
         double s0() { return SEG_S0[seg] + u; }
     }
     static Mod[] MODS;
@@ -67,6 +67,8 @@ final class Nivel {
     static double S_TOTAL;
     static final double S_SALIDA = PRE;                    // distancia en la que empieza el jugador
     static final double S_PERSEGUIDOR = 14;                // y en la que nace el perseguidor (Tyrantrum: encerrado detras de la entrada, 22 bloques por detras del jugador; calabaza: la calabaza gigante)
+    /** Donde empieza la primera fila del perseguidor: 14 (nivel 3: la horda, que es larga, mas cerca de la entrada). */
+    static double sInicioPerseguidor() { return cosmos() ? 21 : S_PERSEGUIDOR; }
     static final double S_ENTRADA = 25;                    // la entrada (nivel 1: reja que levanta el michi demonio; nivel 2: arco abierto): el perseguidor esta detras
     static final int ENTRADA_ALTO = 11;                    // filas de barrotes de la reja
     static double S_META;                                  // la puerta dorada, en la ultima recta
@@ -93,6 +95,8 @@ final class Nivel {
     static Estrella[] ESTRELLAS;
 
     static boolean calabaza() { return DEF != null && DEF.calabaza(); }
+    /** El nivel 3: el espacio (camino flotando, cristal de colores, estrellas y planetas) y la horda de michialiens. */
+    static boolean cosmos() { return DEF != null && DEF.cosmos(); }
 
     private static double suave(double t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
 
@@ -230,6 +234,7 @@ final class Nivel {
             DESVIOS.add(d);
             marcarDesvio(d, true);
         }
+        if (cosmos()) chunksPlanetas();
         ESTRELLAS = disenarEstrellas();
     }
 
@@ -276,6 +281,23 @@ final class Nivel {
         l.add(new Estrella(S_META - 12, 0, 1.0, 5));
         l.sort((x, y) -> Double.compare(x.s(), y.s()));
         return l.toArray(new Estrella[0]);
+    }
+
+    /** Altura extra (saltito) de la horda de michialiens sobre los huecos (arco por encima) y entre las islas (nivel 3); 0 en el resto del camino. */
+    static double saltoHueco(double s) {
+        if (!cosmos()) return 0;
+        for (Mod m : MODS) {
+            double a = m.s0();
+            switch (m.tipo()) {
+                case 'H', 'W' -> { double u = (s - (a - 2.0)) / (m.filas() + 4.0); if (u > 0 && u < 1) return 2.6 * Math.sin(Math.PI * u); }
+                case 'Z' -> {
+                    double u = s - a;
+                    if (u > -2 && u < Z_LARGO) { double v = Math.floorMod((long) Math.floor((u - 3.5) * 100), 550) / 100.0; if (v < 4.0) return 1.9 * Math.sin(Math.PI * v / 4.0); }
+                }
+                default -> {}
+            }
+        }
+        return 0;
     }
 
     static final double PASO_MAPA = 4.0;
@@ -452,14 +474,17 @@ final class Nivel {
     // Halloween: piedra oscura de cementerio (el suelo un poco mas claro que los muros para que se lea el camino de noche)
     private static final Block[] MURO_H = {Blocks.DEEPSLATE_BRICKS, Blocks.CRACKED_DEEPSLATE_BRICKS, Blocks.COBBLED_DEEPSLATE, Blocks.BLACKSTONE, Blocks.DEEPSLATE_BRICKS, Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS};
     private static final Block[] SUELO_H = {Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.DEEPSLATE_TILES, Blocks.CRACKED_DEEPSLATE_TILES, Blocks.COBBLED_DEEPSLATE, Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.DEEPSLATE_BRICKS, Blocks.COARSE_DIRT, Blocks.DEEPSLATE_TILES};
+    // Espacio (nivel 3): camino de hormigon rosa, lila y blanco con paredes de cristal de colores (se ve el vacio con estrellas y los planetas de debajo)
+    private static final Block[] MURO_C = {Blocks.PURPLE_STAINED_GLASS, Blocks.PINK_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS, Blocks.AMETHYST_BLOCK, Blocks.WHITE_STAINED_GLASS, Blocks.PURPUR_BLOCK, Blocks.MAGENTA_STAINED_GLASS};
+    private static final Block[] SUELO_C = {Blocks.PINK_CONCRETE, Blocks.WHITE_CONCRETE, Blocks.LIGHT_BLUE_CONCRETE, Blocks.PINK_CONCRETE, Blocks.PURPLE_CONCRETE, Blocks.WHITE_CONCRETE, Blocks.MAGENTA_CONCRETE, Blocks.PINK_CONCRETE};
     private static final int F = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;     // sin actualizar vecinos: mucho mas rapido
     private static final java.util.Map<String, Set<Integer>> CONSTRUIDOS = new java.util.HashMap<>();
 
-    private static Block[] muro() { return calabaza() ? MURO_H : MURO; }
-    private static Block[] suelo() { return calabaza() ? SUELO_H : SUELO; }
-    private static Block cincel() { return calabaza() ? Blocks.CHISELED_DEEPSLATE : Blocks.CHISELED_STONE_BRICKS; }
+    private static Block[] muro() { return cosmos() ? MURO_C : calabaza() ? MURO_H : MURO; }
+    private static Block[] suelo() { return cosmos() ? SUELO_C : calabaza() ? SUELO_H : SUELO; }
+    private static Block cincel() { return cosmos() ? Blocks.CHISELED_QUARTZ_BLOCK : calabaza() ? Blocks.CHISELED_DEEPSLATE : Blocks.CHISELED_STONE_BRICKS; }
     /** Tablas del puente que se derrumba (las repone Huida.reponer tras una caida). */
-    static BlockState tablon() { return (calabaza() ? Blocks.ACACIA_PLANKS : Blocks.JUNGLE_PLANKS).getDefaultState(); }
+    static BlockState tablon() { return (cosmos() ? Blocks.PINK_STAINED_GLASS : calabaza() ? Blocks.ACACIA_PLANKS : Blocks.JUNGLE_PLANKS).getDefaultState(); }
     /** Direccion cardinal en la que mira el camino en la celda de distancia s (una calabaza tallada puesta asi mira hacia quien viene corriendo: hacia la camara). */
     private static Direction haciaAdelante(double s) { int k = indice(s); return Direction.getFacing(MTX[k], 0, MTZ[k]); }
     /** Direccion cardinal desde una celda del muro hacia el camino. */
@@ -496,7 +521,7 @@ final class Nivel {
         chunks(w, hueco, true);
         boolean primera = CONSTRUIDOS.computeIfAbsent(DEF.id(), k -> new HashSet<>()).add(hueco);
         BlockPos.Mutable p = new BlockPos.Mutable();
-        BlockState aire = Blocks.AIR.getDefaultState(), lava = Blocks.LAVA.getDefaultState(), piedra = (calabaza() ? Blocks.BLACKSTONE : Blocks.STONE_BRICKS).getDefaultState();
+        BlockState aire = Blocks.AIR.getDefaultState(), lava = Blocks.LAVA.getDefaultState(), piedra = (cosmos() ? Blocks.PURPUR_BLOCK : calabaza() ? Blocks.BLACKSTONE : Blocks.STONE_BRICKS).getDefaultState();
         if (primera) {
             long t0 = System.nanoTime();
             for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
@@ -505,12 +530,13 @@ final class Nivel {
                     case 1 -> {
                         for (int y = -5; y <= 6; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), aire, F);          // limpia lo que hubiera de una version anterior del nivel (si no, un hueco nuevo podria quedar tapado por el suelo viejo)
                         if (HOYO[id] != 0) {
+                            if (cosmos()) break;                                      // en el espacio un hueco es un hueco: el vacio (se cae sin fin)
                             w.setBlockState(p.set(ox + ix, Y0 - 6, iz), lava, F);
                             w.setBlockState(p.set(ox + ix, Y0 - 7, iz), piedra, F);
                         } else {
                             w.setBlockState(p.set(ox + ix, Y0 - 1, iz), suelo()[hash(ix, iz, 1) % suelo().length].getDefaultState(), F);
-                            w.setBlockState(p.set(ox + ix, Y0 - 2, iz), piedra, F);
-                            if (hoyoEn(ix + 1, iz) || hoyoEn(ix - 1, iz) || hoyoEn(ix, iz + 1) || hoyoEn(ix, iz - 1))
+                            w.setBlockState(p.set(ox + ix, Y0 - 2, iz), cosmos() && hash(ix, iz, 8) % 9 == 0 ? Blocks.SEA_LANTERN.getDefaultState() : piedra, F);      // en el espacio, de vez en cuando una luz bajo el suelo
+                            if (!cosmos() && (hoyoEn(ix + 1, iz) || hoyoEn(ix - 1, iz) || hoyoEn(ix, iz + 1) || hoyoEn(ix, iz - 1)))
                                 for (int y = -5; y <= -3; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), piedra, F);   // la pared del hueco
                         }
                     }
@@ -526,11 +552,13 @@ final class Nivel {
                             w.setBlockState(p.set(ox + ix, Y0 + y, iz), b.getDefaultState(), F);
                         }
                         for (int y = alto; y <= 12; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), aire, F);       // lo que quedara de una version anterior
-                        if (calabaza()) decorarMuro(w, p, ox + ix, Y0 + alto, iz, ix, iz, id, alto);
+                        if (cosmos()) decorarMuroCosmos(w, p, ox + ix, Y0 + alto, iz, ix, iz, alto);
+                        else if (calabaza()) decorarMuro(w, p, ox + ix, Y0 + alto, iz, ix, iz, id, alto);
                         else if (alto <= 5 && hash(ix, iz, 77) % 4 == 0) w.setBlockState(p.set(ox + ix, Y0 + alto, iz), Blocks.JUNGLE_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true), F);
                     }
                     case 3 -> {
                         int y = Y_SELVA - (hash(ix, iz, 3) % 5 == 0 ? 1 : 0);
+                        if (cosmos()) { terrenoCosmos(w, p, ox + ix, iz, ix, iz); break; }
                         if (calabaza()) { terrenoHalloween(w, p, ox + ix, y, iz, ix, iz, id); break; }
                         if (CARRIL[id] == 1) {          // sendero del Tyrantrum alrededor del puente
                             y = Y_SELVA;
@@ -549,9 +577,10 @@ final class Nivel {
             // antorchas en las paredes (en la celda del suelo pegada a un muro alto)
             for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
                 int id = (ix - GX0) + (iz - GZ0) * GW;
-                if (CAT[id] != 1 || HOYO[id] != 0 || OBS[id] != 0 || hash(ix, iz, 21) % (calabaza() ? 13 : 40) != 0) continue;
+                if (CAT[id] != 1 || HOYO[id] != 0 || OBS[id] != 0 || hash(ix, iz, 21) % (cosmos() ? 12 : calabaza() ? 13 : 40) != 0) continue;
                 for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                     if (!muroEn(ix + d.getOffsetX(), iz + d.getOffsetZ())) continue;
+                    if (cosmos()) { w.setBlockState(p.set(ox + ix, Y0 + 2, iz), Blocks.END_ROD.getDefaultState().with(net.minecraft.state.property.Properties.FACING, d.getOpposite()), F); break; }       // en el espacio, varitas de luz pegadas al cristal
                     Block antorcha = calabaza() && hash(ix, iz, 23) % 2 == 0 ? Blocks.SOUL_WALL_TORCH : Blocks.WALL_TORCH;       // en Halloween, mitad de fuego normal y mitad de fuego de almas
                     w.setBlockState(p.set(ox + ix, Y0 + 2, iz), antorcha.getDefaultState().with(WallTorchBlock.FACING, d.getOpposite()), F);
                     break;
@@ -563,10 +592,10 @@ final class Nivel {
                 if (Math.abs(GS[id] - S_ENTRADA) > 1.5) continue;
                 if (CAT[id] == 2) {
                     for (int y = ALT[id]; y <= 14; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), y == 14 || y == 10 && hash(ix, iz, 3) % 2 == 0 ? cincel().getDefaultState() : muro()[hash(ix, iz, y + 5) % muro().length].getDefaultState(), F);
-                    if (hash(ix, iz, 17) % 3 == 0) w.setBlockState(p.set(ox + ix, Y0 + 15, iz), calabaza() ? farol(haciaAdelante(GS[id])) : Blocks.LANTERN.getDefaultState(), F);
+                    if (hash(ix, iz, 17) % 3 == 0) w.setBlockState(p.set(ox + ix, Y0 + 15, iz), cosmos() ? Blocks.SEA_LANTERN.getDefaultState() : calabaza() ? farol(haciaAdelante(GS[id])) : Blocks.LANTERN.getDefaultState(), F);
                 } else if (CAT[id] == 1) {
-                    w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO, iz), (Math.abs(GS[id] - S_ENTRADA) < 0.5 ? cincel() : calabaza() ? Blocks.POLISHED_BLACKSTONE_BRICKS : Blocks.MOSSY_STONE_BRICKS).getDefaultState(), F);
-                    w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO + 1, iz), (calabaza() ? Blocks.DEEPSLATE_BRICKS : Blocks.STONE_BRICKS).getDefaultState(), F);
+                    w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO, iz), (Math.abs(GS[id] - S_ENTRADA) < 0.5 ? cincel() : cosmos() ? Blocks.PURPUR_BLOCK : calabaza() ? Blocks.POLISHED_BLACKSTONE_BRICKS : Blocks.MOSSY_STONE_BRICKS).getDefaultState(), F);
+                    w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO + 1, iz), (cosmos() ? Blocks.PURPUR_PILLAR : calabaza() ? Blocks.DEEPSLATE_BRICKS : Blocks.STONE_BRICKS).getDefaultState(), F);
                     if (calabaza()) {          // telaranas colgando del dintel del arco
                         if (hash(ix, iz, 31) % 2 == 0) w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO - 1, iz), Blocks.COBWEB.getDefaultState(), F);
                         if (hash(ix, iz, 32) % 4 == 0) w.setBlockState(p.set(ox + ix, Y0 + ENTRADA_ALTO - 2, iz), Blocks.COBWEB.getDefaultState(), F);
@@ -577,13 +606,13 @@ final class Nivel {
             for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
                 int id = (ix - GX0) + (iz - GZ0) * GW;
                 if (CAT[id] != 1 || GS[id] < S_META - 0.5 || GS[id] > S_META + 0.5) continue;
-                w.setBlockState(p.set(ox + ix, Y0 - 1, iz), (calabaza() ? Blocks.ORANGE_CONCRETE : Blocks.EMERALD_BLOCK).getDefaultState(), F);
+                w.setBlockState(p.set(ox + ix, Y0 - 1, iz), (cosmos() ? Blocks.YELLOW_CONCRETE : calabaza() ? Blocks.ORANGE_CONCRETE : Blocks.EMERALD_BLOCK).getDefaultState(), F);
                 w.setBlockState(p.set(ox + ix, Y0 + 4, iz), Blocks.GOLD_BLOCK.getDefaultState(), F);
                 boolean borde = GD[id] > mediaAncho(GS[id]) - 1;
                 if (borde) for (int y = 0; y <= 3; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), Blocks.GOLD_BLOCK.getDefaultState(), F);
                 else w.setBlockState(p.set(ox + ix, Y0 + 3, iz), (calabaza() ? Blocks.SHROOMLIGHT : Blocks.SEA_LANTERN).getDefaultState(), F);
             }
-            if (calabaza()) {          // luces invisibles (bloques «light») sobre el centro del camino para que se vean bien la calabaza, el Pumpkaboo y el final aunque sea de noche
+            if (calabaza() || cosmos()) {          // luces invisibles (bloques «light») sobre el centro del camino para que se vean bien la calabaza, el Pumpkaboo y el final aunque sea de noche
                 BlockState luz = Blocks.LIGHT.getDefaultState().with(net.minecraft.block.LightBlock.LEVEL_15, 10);
                 double[] puntos = {S_PERSEGUIDOR, S_PERSEGUIDOR + 8, S_META - 12, S_META - 4, S_META + 4};
                 for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
@@ -592,12 +621,13 @@ final class Nivel {
                     for (double sp : puntos) if (Math.abs(GS[id] - sp) <= 0.5) w.setBlockState(p.set(ox + ix, Y0 + 8, iz), luz, F);
                 }
             }
+            if (cosmos()) planetas(w, p, ox);
             EmiHuida.LOG.info("Huida: copia {} del nivel construida en {} ms", hueco, (System.nanoTime() - t0) / 1_000_000);
         }
 
         // obstaculos y tablas (se vuelven a poner en cada partida)
         List<Bloque> obst = new ArrayList<>(), puente = new ArrayList<>(), maleza = new ArrayList<>(), entrada = new ArrayList<>();
-        BlockState barrote = Blocks.IRON_BARS.getDefaultState().with(net.minecraft.block.PaneBlock.EAST, true).with(net.minecraft.block.PaneBlock.WEST, true);
+        BlockState barrote = (cosmos() ? Blocks.PINK_STAINED_GLASS_PANE : Blocks.IRON_BARS).getDefaultState().with(net.minecraft.block.PaneBlock.EAST, true).with(net.minecraft.block.PaneBlock.WEST, true);
         for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
             int id = (ix - GX0) + (iz - GZ0) * GW;
             if (!DEF.entrada() || CAT[id] != 1 || Math.abs(GS[id] - S_ENTRADA) > 0.5) continue;
@@ -624,6 +654,12 @@ final class Nivel {
             switch (OBS[id]) {
                 case 'T' -> {
                     int k = indice(sc);
+                    if (cosmos()) {            // una fila de «cajas de regalo» de colores y estrellas (terracota esmaltada con dibujos) de lado a lado
+                        int h = hash(ix, iz, 41) % 12;
+                        Block b = h < 3 ? Blocks.PINK_GLAZED_TERRACOTTA : h < 6 ? Blocks.MAGENTA_GLAZED_TERRACOTTA : h < 8 ? Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA : h < 10 ? Blocks.PURPLE_GLAZED_TERRACOTTA : Blocks.SEA_LANTERN;
+                        obst.add(poner(w, ox + ix, Y0, iz, b.getDefaultState(), sc));
+                        break;
+                    }
                     if (calabaza()) {          // una fila de calabazas de lado a lado (casi todas talladas y encendidas, mirando a quien viene)
                         int h = hash(ix, iz, 41) % 10;
                         BlockState b = h < 6 ? farol(haciaAdelante(sc)) : h < 8 ? calabazaTallada(haciaAdelante(sc)) : Blocks.PUMPKIN.getDefaultState();
@@ -634,16 +670,20 @@ final class Nivel {
                     obst.add(poner(w, ox + ix, Y0, iz, Blocks.JUNGLE_LOG.getDefaultState().with(PillarBlock.AXIS, eje), sc));
                 }
                 case 'B' -> {
-                    obst.add(poner(w, ox + ix, Y0 + 1, iz, losa, sc));                                     // la barra: hay que agacharse
+                    obst.add(poner(w, ox + ix, Y0 + 1, iz, cosmos() ? Blocks.PURPUR_SLAB.getDefaultState().with(SlabBlock.TYPE, SlabType.TOP) : losa, sc));                                     // la barra: hay que agacharse
+                    if (cosmos()) break;
                     if (hash(ix, iz, 13) % 2 == 0) obst.add(poner(w, ox + ix, Y0, iz, Blocks.HANGING_ROOTS.getDefaultState(), sc));   // raices colgando (sin colision)
                 }
                 case 'p' -> {          // pilar de las aspas giratorias (3 de alto, con una calabaza encendida encima)
-                    obst.add(poner(w, ox + ix, Y0, iz, Blocks.CHISELED_DEEPSLATE.getDefaultState(), sc));
-                    obst.add(poner(w, ox + ix, Y0 + 1, iz, Blocks.DEEPSLATE_BRICKS.getDefaultState(), sc));
-                    obst.add(poner(w, ox + ix, Y0 + 2, iz, farol(haciaAdelante(sc)), sc));
+                    obst.add(poner(w, ox + ix, Y0, iz, (cosmos() ? Blocks.PURPUR_PILLAR : Blocks.CHISELED_DEEPSLATE).getDefaultState(), sc));
+                    obst.add(poner(w, ox + ix, Y0 + 1, iz, (cosmos() ? Blocks.AMETHYST_BLOCK : Blocks.DEEPSLATE_BRICKS).getDefaultState(), sc));
+                    obst.add(poner(w, ox + ix, Y0 + 2, iz, cosmos() ? Blocks.SEA_LANTERN.getDefaultState() : farol(haciaAdelante(sc)), sc));
                 }
                 case 'r' -> {
-                    if (calabaza()) {          // «espantapajaros»: un pilar de piedra oscura con una calabaza encendida encima
+                    if (cosmos()) {            // «farolas de estrellas»: un pilar de amatista con una luz encima
+                        obst.add(poner(w, ox + ix, Y0, iz, (hash(ix, iz, 43) % 3 == 0 ? Blocks.PINK_GLAZED_TERRACOTTA : Blocks.AMETHYST_BLOCK).getDefaultState(), sc));
+                        obst.add(poner(w, ox + ix, Y0 + 1, iz, Blocks.SEA_LANTERN.getDefaultState(), sc));
+                    } else if (calabaza()) {          // «espantapajaros»: un pilar de piedra oscura con una calabaza encendida encima
                         obst.add(poner(w, ox + ix, Y0, iz, (hash(ix, iz, 43) % 3 == 0 ? Blocks.CRACKED_DEEPSLATE_BRICKS : Blocks.DEEPSLATE_BRICKS).getDefaultState(), sc));
                         obst.add(poner(w, ox + ix, Y0 + 1, iz, farol(haciaAdelante(sc)), sc));
                     } else { obst.add(poner(w, ox + ix, Y0, iz, roca, sc)); obst.add(poner(w, ox + ix, Y0 + 1, iz, roca, sc)); }
@@ -702,6 +742,86 @@ final class Nivel {
         if (d == null) return;
         for (int k = 0; k < alto; k++) w.setBlockState(p.set(x, y + 1 + k, z), d, F);
         if (h >= 80 && h < 84) w.setBlockState(p.set(x, y + 3, z), farol(Direction.Type.HORIZONTAL.random(RAND(ix, iz))), F);
+    }
+
+
+    // ---------------------------------------------------------------- el espacio (nivel 3)
+
+    /** Una celda alta del muro de cristal (espacio): de vez en cuando una luz, un cristal de amatista, una varita de luz o unas velas rosas encima. */
+    private static void decorarMuroCosmos(ServerWorld w, BlockPos.Mutable p, int x, int y, int z, int ix, int iz, int alto) {
+        int h = hash(ix, iz, 77) % 30;
+        BlockState b = null;
+        if (h == 0 || h == 1) b = Blocks.SEA_LANTERN.getDefaultState();
+        else if (h == 2 && alto <= 6) b = Blocks.AMETHYST_CLUSTER.getDefaultState();
+        else if (h == 3 && alto <= 6) b = Blocks.END_ROD.getDefaultState();
+        else if (h == 4 && alto <= 6) b = Blocks.PINK_CANDLE.getDefaultState().with(net.minecraft.block.CandleBlock.CANDLES, 3).with(net.minecraft.block.CandleBlock.LIT, true);
+        else if (h == 5 && alto <= 6) b = Blocks.LIGHT_BLUE_CANDLE.getDefaultState().with(net.minecraft.block.CandleBlock.CANDLES, 2).with(net.minecraft.block.CandleBlock.LIT, true);
+        if (b != null) w.setBlockState(p.set(x, y, z), b, F);
+    }
+
+    /** Fuera de los muros (espacio): vacio con asteroides pequenos de roca rosa y lila (con cristales) y estrellitas sueltas (varitas de luz) a distintas alturas. */
+    private static void terrenoCosmos(ServerWorld w, BlockPos.Mutable p, int x, int z, int ix, int iz) {
+        int h = hash(ix, iz, 7) % 900;
+        if (h < 2) {
+            int r = 2 + hash(ix, iz, 8) % 3, cy = Y0 - 8 + hash(ix, iz, 9) % 14;
+            Block[] mat = {Blocks.END_STONE, Blocks.PURPUR_BLOCK, Blocks.AMETHYST_BLOCK, Blocks.PINK_TERRACOTTA, Blocks.MAGENTA_TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.CALCITE};
+            for (int dy = -r; dy <= r; dy++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+                int d2 = dx * dx + dy * dy * 2 + dz * dz;
+                if (d2 > r * r + 1 || (d2 > r * r - 2 && hash(x + dx, z + dz, cy + dy) % 3 == 0)) continue;
+                w.setBlockState(p.set(x + dx, cy + dy, z + dz), mat[hash(x + dx, z + dz, cy + dy + 5) % mat.length].getDefaultState(), F);
+            }
+            w.setBlockState(p.set(x, cy + r, z), Blocks.AMETHYST_CLUSTER.getDefaultState(), F);
+            if (hash(ix, iz, 10) % 2 == 0) w.setBlockState(p.set(x + 1, cy + r, z), Blocks.AMETHYST_CLUSTER.getDefaultState().with(net.minecraft.block.AmethystClusterBlock.FACING, Direction.UP), F);
+        } else if (h < 14) {
+            w.setBlockState(p.set(x, Y0 - 14 + hash(ix, iz, 11) % 44, z), (hash(ix, iz, 12) % 5 == 0 ? Blocks.SEA_LANTERN : Blocks.END_ROD).getDefaultState(), F);
+        }
+    }
+
+    /** Planetas de fondo (nivel 3): {s del camino, lateral, radio, altura sobre Y0 del centro, tipo 0 rosa / 1 azul / 2 luna creciente / 3 lila / 4 verde-azulado, anillo (0/1)}. Los de dy>0 quedan por encima de los muros, los de dy<0 por debajo del suelo. */
+    private static final double[][] PLANETAS = {
+            {60, 16, 9, 21, 0, 1}, {170, -17, 12, -20, 1, 0}, {300, 15, 8, 20, 2, 0}, {420, -18, 13, 25, 3, 1},
+            {520, 14, 10, -18, 4, 0}, {610, -16, 9, 21, 0, 0}, {690, 15, 11, 23, 1, 1}};
+    private static final Block[][] PAL_PLANETA = {
+            {Blocks.PINK_CONCRETE, Blocks.WHITE_CONCRETE, Blocks.MAGENTA_CONCRETE, Blocks.PINK_CONCRETE, Blocks.PINK_TERRACOTTA},
+            {Blocks.LIGHT_BLUE_CONCRETE, Blocks.WHITE_CONCRETE, Blocks.CYAN_CONCRETE, Blocks.LIGHT_BLUE_CONCRETE, Blocks.BLUE_CONCRETE},
+            {Blocks.YELLOW_CONCRETE, Blocks.WHITE_CONCRETE},
+            {Blocks.PURPLE_CONCRETE, Blocks.MAGENTA_CONCRETE, Blocks.PINK_CONCRETE, Blocks.PURPLE_CONCRETE, Blocks.WHITE_CONCRETE},
+            {Blocks.CYAN_CONCRETE, Blocks.LIME_CONCRETE, Blocks.WHITE_CONCRETE, Blocks.LIGHT_BLUE_CONCRETE}};
+
+    /** {x, z} locales del centro de un planeta. */
+    private static double[] centroPlaneta(double[] d) {
+        int k = indice(d[0]);
+        return new double[]{MX[k] + d[1] * -MTZ[k], MZ[k] + d[1] * MTX[k]};
+    }
+
+    private static void chunksPlanetas() {
+        for (double[] d : PLANETAS) {
+            double[] c = centroPlaneta(d); int R = (int) Math.ceil(d[2] * (d[5] > 0 ? 2.1 : 1.1)) + 1;
+            for (int cx = Math.floorDiv((int) c[0] - R, 16); cx <= Math.floorDiv((int) c[0] + R, 16); cx++)
+                for (int cz = Math.floorDiv((int) c[1] - R, 16); cz <= Math.floorDiv((int) c[1] + R, 16); cz++) CHUNKS_LOCALES.add(clave(cx, cz));
+        }
+    }
+
+    private static void planetas(ServerWorld w, BlockPos.Mutable p, int ox) {
+        for (double[] d : PLANETAS) {
+            double[] c = centroPlaneta(d);
+            int cx = ox + (int) Math.round(c[0]), cz = (int) Math.round(c[1]), cy = Y0 + (int) d[3], r = (int) d[2], tipo = (int) d[4];
+            Block[] pal = PAL_PLANETA[tipo];
+            for (int dy = -r; dy <= r; dy++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+                double d2 = dx * dx + dy * dy + dz * dz;
+                if (d2 > r * r || d2 < (r - 1.7) * (r - 1.7)) continue;                    // solo la cascara
+                if (tipo == 2 && Math.pow(dx - 0.62 * r, 2) + (double) dy * dy + dz * dz < (0.88 * r) * (0.88 * r)) continue;       // luna creciente: se le quita otra esfera
+                int banda = (int) ((dy + r) * pal.length / (2.0 * r + 1) + 0.5 * Math.sin(dx * 0.5 + dz * 0.4)) ;
+                w.setBlockState(p.set(cx + dx, cy + dy, cz + dz), pal[Math.floorMod(banda, pal.length)].getDefaultState(), F);
+            }
+            if (d[5] > 0) {                                                               // anillo inclinado
+                Block anillo = tipo == 1 ? Blocks.WHITE_CONCRETE : Blocks.LIGHT_BLUE_CONCRETE;
+                for (double a = 0; a < 2 * Math.PI; a += 0.5 / (r * 1.8)) for (double rr = 1.45 * r; rr <= 1.85 * r; rr += 0.5) {
+                    int ax = (int) Math.round(rr * Math.cos(a)), az = (int) Math.round(rr * Math.sin(a) * 0.93), ay = (int) Math.round(rr * Math.sin(a) * 0.36);
+                    w.setBlockState(p.set(cx + ax, cy + ay, cz + az), anillo.getDefaultState(), F);
+                }
+            }
+        }
     }
 
     private static net.minecraft.util.math.random.Random RAND(int a, int b) { return net.minecraft.util.math.random.Random.create(hash(a, b, 99)); }

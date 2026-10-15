@@ -28,6 +28,12 @@ public class EmiHuida implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(emi.huida.net.MapaPayload.ID, emi.huida.net.MapaPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(emi.huida.net.HudPayload.ID, emi.huida.net.HudPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(emi.huida.net.CamaraPayload.ID, emi.huida.net.CamaraPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(emi.huida.net.EfectoPayload.ID, emi.huida.net.EfectoPayload.CODEC);
+        // Emi (nivel 3): una entidad con forma de jugador que solo hace gestos (ver EmiEntity)
+        EmiEntity.TIPO = net.minecraft.registry.Registry.register(net.minecraft.registry.Registries.ENTITY_TYPE, net.minecraft.util.Identifier.of("emi_huida", "emi"),
+                net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder.<EmiEntity>create(net.minecraft.entity.SpawnGroup.MISC, EmiEntity::new)
+                        .dimensions(net.minecraft.entity.EntityDimensions.fixed(0.6f, 1.8f)).trackRangeBlocks(160).trackedUpdateRate(2).build());
+        net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry.register(EmiEntity.TIPO, net.minecraft.entity.mob.MobEntity.createMobAttributes());
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(Huida::init);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Huida.shutdown());

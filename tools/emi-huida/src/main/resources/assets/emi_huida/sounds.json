@@ -139,5 +139,50 @@
     "sounds": [
       "emi_huida:derrota_calabaza"
     ]
+  },
+  "musica.cosmos_intro": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:cosmos_intro",
+        "stream": true
+      }
+    ]
+  },
+  "musica.cosmos": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:cosmos",
+        "stream": true
+      }
+    ]
+  },
+  "musica.espera_cosmos": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_espera_cosmos",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.horda": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:horda"
+    ]
+  },
+  "sfx.aplastado": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:aplastado"
+    ]
+  },
+  "sfx.aparece": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:aparece"
+    ]
   }
 }
