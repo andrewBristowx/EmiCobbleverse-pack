@@ -12,5 +12,7 @@ final class Cfg {
     static boolean escenas() { return !"false".equals(System.getProperty("emi.huida.escenas")); }
     /** solo para pruebas en equipos lentos: -Demi.huida.escena_lenta=3 hace que las escenas vayan 3 veces mas despacio (el cliente de pruebas, con grafica por software, no llega a 20 ticks/s) */
     static int escenaLenta() { return Math.max(1, Integer.getInteger("emi.huida.escena_lenta", 1)); }
+    /** Errores que se pueden cometer sin pasar nada: al siguiente (el cuarto con 3) el Tyrantrum se lanza y te come. -1 = sin limite; -Demi.huida.max_errores=5 para cambiarlo. */
+    static int maxErrores() { return Integer.getInteger("emi.huida.max_errores", 3); }
     static double velBase() { return Double.parseDouble(System.getProperty("emi.huida.vel_base", String.valueOf(Huida.VEL_BASE))); }
 }

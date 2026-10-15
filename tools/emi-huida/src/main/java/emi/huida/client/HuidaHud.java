@@ -231,12 +231,14 @@ public final class HuidaHud {
     private static void tiempo(DrawContext ctx, MinecraftClient mc, HudPayload h) {
         TextRenderer tr = mc.textRenderer;
         int x = 6, y = 52, w = 124, hh = 22;
-        caja(ctx, x, y, w, hh, h.errores() == 0 ? BORDE : 0xFF8A3A3A);
+        int max = h.maxErrores();
+        boolean ultimo = max >= 0 && h.errores() >= max;      // un fallo mas y te come
+        caja(ctx, x, y, w, hh, h.errores() == 0 ? BORDE : ultimo ? 0xFFE03030 : 0xFF8A3A3A);
         MatrixStack m = ctx.getMatrices();
         m.push(); m.translate(x + 6, y + 6, 0); m.scale(1.3f, 1.3f, 1f);
         ctx.drawText(tr, tiempo(h.ticks()), 0, 0, 0xFFFFFF, true);
         m.pop();
-        String e = "Errores " + h.errores();
-        ctx.drawText(tr, e, x + w - 6 - tr.getWidth(e), y + 7, h.errores() == 0 ? 0x88DD88 : 0xFF8888, true);
+        String e = "Errores " + h.errores() + (max >= 0 ? "/" + max : "");
+        ctx.drawText(tr, e, x + w - 6 - tr.getWidth(e), y + 7, h.errores() == 0 ? 0x88DD88 : ultimo ? 0xFF5555 : 0xFF8888, true);
     }
 }

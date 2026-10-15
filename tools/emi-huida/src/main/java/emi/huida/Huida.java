@@ -55,6 +55,7 @@ public final class Huida {
     static final double DIST_CAPTURA = HudPayload.CAPTURA;     // distancia entre el centro del Tyrantrum (mide ~15 de largo: boca a ~6 por delante del centro, hocico a ~7, cola a ~8,5 por detras) y el jugador a la que te atrapa
     static final double FRENTE_PERSEGUIDOR = 6.5;      // hasta donde alcanza su boca por delante de su centro: destruye lo que haya ahi
     static final int CUENTA_SEGUNDOS = 5;
+    static final double VEL_ATAQUE = 24.0;             // velocidad (bloques/s) del Tyrantrum cuando se lanza a comerte tras pasarte de errores
     /** Modo prueba (/huida modoprueba): el Tyrantrum nunca baja de esta distancia EXTRA sobre la de captura, asi que no te atrapa (para probar el final aunque el equipo vaya con lag). Solo en memoria. */
     static final double DIST_PRUEBA = 3.0;
     static volatile boolean modoPrueba;
@@ -80,6 +81,7 @@ public final class Huida {
         PokemonEntity michi;                         // el michi de la escena en curso (demonio al empezar, angel al ganar)
         Entity comida;                               // la comida que le da el michi angel al Tyrantrum
         Entity globo;                                // el «¡Bien hecho!» del michi angel
+        boolean devorado;                            // ha pasado de los errores permitidos: el Tyrantrum se lanza a por el y lo come
         boolean enMeta;                              // ha terminado (escena incluida) y espera en la sala de la meta a que acaben todos y el organizador cierre
         Nivel.Construido nivel;
         int sigObst, sigPuente;                      // primer obstaculo / tabla que el Tyrantrum aun no ha destruido
@@ -220,7 +222,7 @@ public final class Huida {
             j.tablas.clear(); for (Nivel.Bloque b : j.nivel.puente()) j.tablas.add(b.pos());
             j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.malezaRota.clear(); j.sigMaleza = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
             j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.S_PERSEGUIDOR; j.vPerseguidor = VEL_BASE;
-            j.est = Est.ESPERA; j.errores = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
+            j.est = Est.ESPERA; j.errores = 0; j.devorado = false; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
             j.puntos = 0; j.nEstrellas = 0; j.sigEst = 0; j.combo = 0; j.racha = 0; j.ultimaEst = 0; j.cogidas.clear(); j.sigMod = 0; j.dentro = false; j.erroresAlEntrar = 0;
             j.estPos = new double[Nivel.ESTRELLAS.length][];
             float[] datos = new float[Nivel.ESTRELLAS.length * 4];
@@ -371,7 +373,7 @@ public final class Huida {
         int[] c = clasificacionDe(j);
         int fin = j.est == Est.ESCAPO ? 1 : j.est == Est.ATRAPADO ? 2 : 0;
         long ticks = j.est == Est.CORRE ? now - j.inicioTick : j.est == Est.ESPERA ? 0 : j.finTick - j.inicioTick;
-        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin));
+        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin, Cfg.maxErrores()));
     }
 
     // ---------------------------------------------------------------- musica y sonidos
@@ -604,7 +606,8 @@ public final class Huida {
         }
 
         // fuera del camino (no deberia poder): de vuelta al ultimo punto seguro
-        if (pr.dist() > Nivel.anchoMax(pr.s()) + 0.5 && p.getY() >= Nivel.Y0 - 1.5) { reponer(w, j, p); }
+        if (j.devorado) { }          // ya no importa: el Tyrantrum viene a por el
+        else if (pr.dist() > Nivel.anchoMax(pr.s()) + 0.5 && p.getY() >= Nivel.Y0 - 1.5) { reponer(w, j, p); }
         // caida a la lava
         else if (p.getY() < Nivel.Y0 - 1.5) {
             error(j, p, now, "¡Caiste!", true);
@@ -632,7 +635,7 @@ public final class Huida {
         double seg = (now - j.inicioTick) / 20.0;
         double objetivo = DIST_INI + (DIST_FIN - DIST_INI) * Math.min(1.0, seg / SEG_HASTA_FIN);
         double hueco = j.s - j.sPerseguidor;
-        j.vPerseguidor = Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
+        j.vPerseguidor = j.devorado ? VEL_ATAQUE : Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
         j.sPerseguidor += j.vPerseguidor / 20.0;
         if (modoPrueba && pruebaEscena == null && j.s - j.sPerseguidor < DIST_CAPTURA + DIST_PRUEBA) j.sPerseguidor = j.s - (DIST_CAPTURA + DIST_PRUEBA);      // modo prueba: no te alcanza
         if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
@@ -692,8 +695,23 @@ public final class Huida {
     private static void error(J j, ServerPlayerEntity p, long now, String msg, boolean caida) {
         j.errores++; j.ultimoError = now; j.racha = 0;
         EmiHuida.LOG.info("Huida: {} error {} ({}) en s={}", j.nombre, j.errores, msg, (int) j.s);
-        Msg.title(p, Text.literal(msg).formatted(Formatting.RED, Formatting.BOLD), Text.literal("Errores: " + j.errores).formatted(Formatting.GRAY), 0, 15, 5);
+        int max = Cfg.maxErrores();
+        String cuenta = max >= 0 ? j.errores + "/" + max : String.valueOf(j.errores);
         Sonidos.sfx(p, caida ? Sonidos.CAIDA : Sonidos.FALLO, 1f, 1f);
+        if (max >= 0 && j.errores > max && !modoPrueba && pruebaEscena == null) {
+            // demasiados errores: el Tyrantrum se lanza a por ti (corre mucho mas rapido hasta alcanzarte) y la escena de que te come empieza en cuanto te toca
+            j.devorado = true;
+            congelar(p, true);
+            Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal("El Tyrantrum se lanza a por ti").formatted(Formatting.RED), 0, 40, 10);
+            Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.8f, 0.5f);
+            if (j.perseguidor != null) rugir(j.perseguidor);
+            return;
+        }
+        boolean ultimo = max >= 0 && j.errores == max;
+        Msg.title(p, Text.literal(msg).formatted(Formatting.RED, Formatting.BOLD),
+                ultimo ? Text.literal("Errores: " + cuenta + " · ¡un fallo más y te come!").formatted(Formatting.DARK_RED, Formatting.BOLD) : Text.literal("Errores: " + cuenta).formatted(Formatting.GRAY),
+                0, ultimo ? 35 : 15, 5);
+        if (ultimo) Msg.sound(p, SoundEvents.ENTITY_WARDEN_HEARTBEAT, 1.4f, 0.8f);
     }
 
     /** Recoge las michiestrellas que toca el jugador (las de s cerca de la suya; las que se pasan sin coger se pierden). */

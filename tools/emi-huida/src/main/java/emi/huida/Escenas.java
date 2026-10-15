@@ -543,7 +543,7 @@ final class Escenas {
             sonido(w, T(ty, BOCA_ADELANTE, 0, BOCA_ALTO), SoundEvents.ENTITY_GENERIC_EAT, 1.8f, 0.45f + 0.04f * (c / 18));
             particulas(w, ParticleTypes.CRIT, T(ty, BOCA_ADELANTE, 0, BOCA_ALTO), 4, 0.4, 0.2, 0.4, 0.2);
         }
-        if (t == T_MUERDE + 76) Msg.title(p, Text.literal("¡TE COMIÓ!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Errores: " + j.errores).formatted(Formatting.GRAY), 0, 50, 20);
+        if (t == T_MUERDE + 76) Msg.title(p, Text.literal("¡TE COMIÓ!").formatted(Formatting.RED, Formatting.BOLD), Text.literal(j.devorado ? "★ " + j.puntos + " · ¡Demasiados errores!" : "★ " + j.puntos + " · Errores: " + j.errores).formatted(Formatting.GRAY), 0, 50, 20);
         if (t == T_MUERDE + 100) {
             sonido(w, T(ty, 8, 0, 4), "sfx.glup", 1.8f, 0.6f);
             sonido(w, T(ty, 8, 0, 4), SoundEvents.ENTITY_PLAYER_BURP, 2.0f, 0.4f);
