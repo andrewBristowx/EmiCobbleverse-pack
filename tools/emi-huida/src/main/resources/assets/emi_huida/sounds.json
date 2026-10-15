@@ -94,5 +94,50 @@
     "sounds": [
       "emi_huida:derrota_comido"
     ]
+  },
+  "musica.calabaza_intro": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:calabaza_intro",
+        "stream": true
+      }
+    ]
+  },
+  "musica.calabaza": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:calabaza",
+        "stream": true
+      }
+    ]
+  },
+  "musica.espera_calabaza": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_espera_calabaza",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.hechizo": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:hechizo"
+    ]
+  },
+  "sfx.transformacion": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:transformacion"
+    ]
+  },
+  "sfx.derrota_calabaza": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:derrota_calabaza"
+    ]
   }
 }

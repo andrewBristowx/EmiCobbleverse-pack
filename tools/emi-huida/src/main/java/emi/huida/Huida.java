@@ -44,16 +44,20 @@ import java.util.UUID;
 public final class Huida {
     private Huida() {}
 
-    public static final RegistryKey<World> MUNDO = RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_huida", "selva"));
+    /** Dimension del nivel cargado (emi_huida:selva o emi_huida:calabazar). */
+    static RegistryKey<World> mundoKey() { return RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_huida", Nivel.DEF.dimension())); }
+    static boolean esMundoHuida(RegistryKey<World> k) { return k.getValue().getNamespace().equals("emi_huida"); }
 
     // ---- ajustes del prototipo (mas adelante iran a un archivo de configuracion)
     // el jugador corre siempre (el cliente fuerza el sprint): velocidad normal de Minecraft, 5,6 bloques/s corriendo y un salto largo de ~4 bloques
     static final double VEL_BASE = 5.3;                // velocidad del Tyrantrum si va a la distancia que toca (un poco menos que el jugador)
-    static final double DIST_INI = 12.0, DIST_FIN = 8.5;   // distancia que intenta mantener: empieza lejos y se va acercando con el tiempo
+    // distancia (entre centros) que intenta mantener el perseguidor: empieza a 6 bloques de la captura y acaba a 2,5 (con el Tyrantrum, 12 -> 8,5)
+    static double distIni() { return Nivel.DEF.captura() + 6.0; }
+    static double distFin() { return Nivel.DEF.captura() + 2.5; }
     static final double SEG_HASTA_FIN = 150.0;
     static final double CATCH_UP = 0.8;                // blocs/s extra por cada bloque que le saques de mas (para que no te escapes del todo)
-    static final double DIST_CAPTURA = HudPayload.CAPTURA;     // distancia entre el centro del Tyrantrum (mide ~15 de largo: boca a ~6 por delante del centro, hocico a ~7, cola a ~8,5 por detras) y el jugador a la que te atrapa
-    static final double FRENTE_PERSEGUIDOR = 6.5;      // hasta donde alcanza su boca por delante de su centro: destruye lo que haya ahi
+    /** Distancia entre el centro del perseguidor y el jugador a la que te atrapa (Tyrantrum: mide ~15 de largo, boca a ~6 por delante del centro; Pumpkaboo: su radio y un poco mas). */
+    static double dCaptura() { return Nivel.DEF.captura(); }
     static final int CUENTA_SEGUNDOS = 5;
     static final int PAUSA_ALCANCE = 40;               // ticks que el Tyrantrum se queda parado rugiendo tras alcanzarte sin que sea tu ultimo error
     static final double VEL_ATAQUE = 24.0;             // velocidad (bloques/s) del Tyrantrum cuando se lanza a comerte tras pasarte de errores
@@ -61,7 +65,6 @@ public final class Huida {
     static final double DIST_PRUEBA = 3.0;
     static volatile boolean modoPrueba;
     static final int ESPERA_FIN = 140;                 // ticks antes de devolver al jugador a su sitio
-    static final float ALTURA_PERSEGUIDOR = 9.0f;
 
     static final boolean DEBUG = Boolean.getBoolean("emi.huida.debug") || Boolean.getBoolean("emi.carreras.debug");
 
@@ -82,6 +85,7 @@ public final class Huida {
         PokemonEntity michi;                         // el michi de la escena en curso (demonio al empezar, angel al ganar)
         Entity comida;                               // la comida que le da el michi angel al Tyrantrum
         Entity globo;                                // el «¡Bien hecho!» del michi angel
+        final List<Entity> extras = new ArrayList<>();      // otras entidades de las escenas (la calabaza gigante, su tapa, globos de texto...): se quitan al terminar
         long pausaTyr;                               // hasta que tick el Tyrantrum esta parado (se queda rugiendo tras alcanzarte; mientras tanto no cuenta como alcance)
         boolean devorado;                            // ha pasado de los errores permitidos: el Tyrantrum se lanza a por el y lo come
         boolean enMeta;                              // ha terminado (escena incluida) y espera en la sala de la meta a que acaben todos y el organizador cierre
@@ -112,7 +116,7 @@ public final class Huida {
     private static int pruebaCongelar;         // intro_<tick>: la presentacion se queda parada en ese tick (para mirarla con calma)
     private static String musicaActual; private static long musicaProx;
     private static final java.util.Random RND = new java.util.Random();
-    private static final Nivel.Mod[] MODS_ORD = java.util.Arrays.stream(Nivel.MODS).sorted(Comparator.comparingDouble(Nivel.Mod::s0)).toArray(Nivel.Mod[]::new);
+    private static Nivel.Mod[] MODS_ORD = new Nivel.Mod[0];       // los obstaculos del nivel cargado, por orden (se calcula al abrir la cola)
     /** Resultado de cada jugador que ha terminado en esta partida (para la clasificacion final). */
     record Resultado(UUID id, String nombre, int puntos, int estrellas, int errores, double tiempo, boolean escapo) {}
     private static final List<Resultado> resultados = new ArrayList<>();
@@ -120,17 +124,24 @@ public final class Huida {
     private static final List<Long> pendientesTick = new ArrayList<>();
 
     public static Fase fase() { return fase; }
-    static ServerWorld mundo() { return server.getWorld(MUNDO); }
+    static ServerWorld mundo() { return server.getWorld(mundoKey()); }
+    private static void modsOrdenados() { MODS_ORD = java.util.Arrays.stream(Nivel.MODS).sorted(Comparator.comparingDouble(Nivel.Mod::s0)).toArray(Nivel.Mod[]::new); }
 
     static void init(MinecraftServer s) {
         server = s;
         fase = Fase.LIBRE;
         jug.clear();
-        if (mundo() == null) EmiHuida.LOG.warn("No existe la dimension emi_huida:selva: /huida empezar no funcionara.");
-        try {
-            int pts = 0; for (Nivel.Estrella e : Nivel.ESTRELLAS) pts += e.valor();
-            EmiHuida.LOG.info("Huida: nivel de {} bloques, {} michiestrellas ({} puntos), {} desvios de puente", (int) Nivel.S_TOTAL, Nivel.ESTRELLAS.length, pts, Nivel.DESVIOS.size());
-        } catch (Throwable t) { EmiHuida.LOG.error("El nivel de la huida no se pudo preparar", t); }
+        // se prepara cada nivel una vez para que cualquier error de la ruta salga en el registro al arrancar, y se deja cargado el primero
+        for (int i = Niveles.TODOS.length - 1; i >= 0; i--) {
+            Niveles.Def d = Niveles.TODOS[i];
+            try {
+                Nivel.cargar(d);
+                if (mundo() == null) EmiHuida.LOG.warn("No existe la dimension emi_huida:{}: la huida de {} no funcionara.", d.dimension(), d.titulo());
+                int pts = 0; for (Nivel.Estrella e : Nivel.ESTRELLAS) pts += e.valor();
+                EmiHuida.LOG.info("Huida: nivel «{}» de {} bloques, {} michiestrellas ({} puntos), {} desvios de puente", d.id(), (int) Nivel.S_TOTAL, Nivel.ESTRELLAS.length, pts, Nivel.DESVIOS.size());
+            } catch (Throwable t) { EmiHuida.LOG.error("El nivel «" + d.id() + "» de la huida no se pudo preparar", t); }
+        }
+        modsOrdenados();
     }
 
     static void shutdown() {
@@ -150,16 +161,19 @@ public final class Huida {
 
     // ---------------------------------------------------------------- comandos
 
-    public static String abrir() {
+    public static String abrir() { return abrir(Niveles.TYRANTRUM); }
+
+    public static String abrir(Niveles.Def nivel) {
         if (fase != Fase.LIBRE) return "Ya hay una huida en marcha o una cola abierta.";
-        if (mundo() == null) return "No existe la dimension emi_huida:selva (¿esta instalado el mod en el servidor?).";
+        Nivel.cargar(nivel); modsOrdenados();
+        if (mundo() == null) return "No existe la dimension emi_huida:" + nivel.dimension() + " (¿esta instalado el mod en el servidor?).";
         fase = Fase.COLA; jug.clear(); ultimoAviso = server.getTicks();
         avisoCola();
         return null;
     }
 
     private static void avisoCola() {
-        Text t = Msg.say(Text.literal("¡Se abre la huida del Tyrantrum! ").formatted(Formatting.WHITE)
+        Text t = Msg.say(Text.literal("¡Se abre " + Nivel.DEF.titulo() + "! ").formatted(Formatting.WHITE)
                 .append(Msg.button("UNIRSE", "/huida unirse", Formatting.GREEN, "Apuntarte a la huida")));
         Msg.broadcast(server, t);
     }
@@ -175,7 +189,7 @@ public final class Huida {
         if (fase != Fase.COLA) return "No hay ninguna huida abierta ahora mismo.";
         if (jug.containsKey(p.getUuid())) return "Ya estas apuntado.";
         if (jug.size() >= Nivel.MAX_HUECOS) return "La huida esta llena (" + Nivel.MAX_HUECOS + " jugadores).";
-        if (p.getServerWorld().getRegistryKey().equals(MUNDO)) return "Ya estas en la dimension de la huida.";
+        if (esMundoHuida(p.getServerWorld().getRegistryKey())) return "Ya estas en la dimension de la huida.";
         if (Morph.transformado(p.getUuid())) return "Destransformate antes (/untransform) para jugar la huida.";
         if (p.hasVehicle()) return "Bajate de lo que montas.";
         jug.put(p.getUuid(), new J(p));
@@ -204,7 +218,7 @@ public final class Huida {
         }
         if (lista.isEmpty()) return "No hay nadie apuntado.";
         ServerWorld w = mundo();
-        if (w == null) return "No existe la dimension emi_huida:selva.";
+        if (w == null) return "No existe la dimension emi_huida:" + Nivel.DEF.dimension() + ".";
         jug.keySet().retainAll(lista.stream().map(j -> j.id).toList());
         limpiarEntidades(w);
         resultados.clear();
@@ -288,7 +302,11 @@ public final class Huida {
     private static void iniciarCuenta(String motivo) {
         fase = Fase.CUENTA;
         cuentaIni = server.getTicks();
-        cuentaFin = cuentaIni + (conIntro() ? Escenas.INTRO * (long) Cfg.escenaLenta() : pruebaEscena != null ? 5 : CUENTA_SEGUNDOS * 20L);
+        if (Nivel.calabaza()) {          // la presentacion tiene su propia musica (el principio de la cancion, hasta que sube: coincide con el «¡CORRE!»)
+            pararMusica();
+            if (conIntro()) { musicaActual = Sonidos.CALABAZA_INTRO; musicaProx = Long.MAX_VALUE; Sonidos.musica(online(), Sonidos.CALABAZA_INTRO, Cfg.volumenMusica()); }
+        }
+        cuentaFin = cuentaIni + (conIntro() ? Nivel.DEF.introTicks() * (long) Cfg.escenaLenta() : pruebaEscena != null ? 5 : CUENTA_SEGUNDOS * 20L);
         for (J j : jug.values()) {
             ServerPlayerEntity p = jugador(j);
             if (p != null) ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), 0, false));
@@ -309,7 +327,7 @@ public final class Huida {
     }
 
     static String estado() {
-        return (modoPrueba ? "[MODO PRUEBA: el Tyrantrum no atrapa] " : "") + switch (fase) {
+        return (modoPrueba ? "[MODO PRUEBA: " + Nivel.DEF.el() + " no atrapa] " : "") + switch (fase) {
             case LIBRE -> "No hay ninguna huida.";
             case COLA -> "Cola abierta: " + jug.size() + " jugador(es) apuntado(s).";
             case LISTOS -> "Esperando a que todos confirmen «listo» (" + listos() + "/" + jug.size() + ").";
@@ -345,7 +363,7 @@ public final class Huida {
         boolean recordar = now - ultimoRecordatorio >= 400;       // cada 20 s
         if (recordar) ultimoRecordatorio = now;
         int n = listos();
-        musica(now, Sonidos.ESPERA);
+        musica(now, Sonidos.espera());
         for (J j : new ArrayList<>(jug.values())) {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
@@ -375,7 +393,7 @@ public final class Huida {
         int[] c = clasificacionDe(j);
         int fin = j.est == Est.ESCAPO ? 1 : j.est == Est.ATRAPADO ? 2 : 0;
         long ticks = j.est == Est.CORRE ? now - j.inicioTick : j.est == Est.ESPERA ? 0 : j.finTick - j.inicioTick;
-        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin, Cfg.maxErrores()));
+        ServerPlayNetworking.send(p, new HudPayload((float) j.s, (float) j.sPerseguidor, j.puntos, c[0], c[1], c[2], j.errores, (int) Math.max(0, ticks), fin, Cfg.maxErrores(), Nivel.calabaza() ? 1 : 0, (float) dCaptura()));
     }
 
     // ---------------------------------------------------------------- musica y sonidos
@@ -389,7 +407,7 @@ public final class Huida {
         List<ServerPlayerEntity> ps = new ArrayList<>();
         for (J j : jug.values()) {
             ServerPlayerEntity p = jugador(j);
-            if (p != null && (!Sonidos.PERSECUCION.equals(id) || j.est == Est.CORRE)) ps.add(p);
+            if (p != null && (!Sonidos.esPersecucion(id) || j.est == Est.CORRE)) ps.add(p);
         }
         Sonidos.musica(ps, id, Cfg.volumenMusica());
     }
@@ -403,6 +421,17 @@ public final class Huida {
     private static void ambiente(J j, ServerPlayerEntity p, long now) {
         if (now < j.proxAmbiente) return;
         j.proxAmbiente = now + 70 + RND.nextInt(110);
+        if (Nivel.calabaza()) {          // Halloween: murcielagos, brujas lejanas, gemidos, un lobo aullando y campanas
+            switch (RND.nextInt(6)) {
+                case 0 -> Sonidos.sfx(p, SoundEvents.ENTITY_BAT_AMBIENT, 0.4f, 0.6f + RND.nextFloat() * 0.3f);
+                case 1 -> Sonidos.sfx(p, SoundEvents.ENTITY_WITCH_AMBIENT, 0.35f, 0.7f + RND.nextFloat() * 0.4f);
+                case 2 -> Sonidos.sfx(p, SoundEvents.ENTITY_GHAST_AMBIENT, 0.25f, 0.5f);
+                case 3 -> Sonidos.sfx(p, SoundEvents.ENTITY_WOLF_HOWL, 0.3f, 0.7f + RND.nextFloat() * 0.3f);
+                case 4 -> Sonidos.sfx(p, SoundEvents.ENTITY_VEX_AMBIENT, 0.3f, 0.6f);
+                default -> Sonidos.sfx(p, SoundEvents.BLOCK_BELL_RESONATE, 0.3f, 0.5f);
+            }
+            return;
+        }
         switch (RND.nextInt(5)) {
             case 0 -> Sonidos.sfx(p, SoundEvents.ENTITY_PARROT_AMBIENT, 0.5f, 0.8f + RND.nextFloat() * 0.5f);
             case 1 -> Sonidos.sfx(p, SoundEvents.ENTITY_PARROT_IMITATE_RAVAGER, 0.35f, 0.7f);
@@ -418,11 +447,21 @@ public final class Huida {
         try { e.setSilent(false); e.cry(); e.setSilent(true); } catch (Throwable t) { EmiHuida.LOG.warn("cry: {}", t.toString()); }
     }
 
+    private static void escenaIntro(J j, ServerPlayerEntity p, ServerWorld w, int t) { if (Nivel.calabaza()) EscenasCalabaza.intro(j, p, w, t); else Escenas.intro(j, p, w, t); }
+
+    private static void escenaFinal(J j, ServerPlayerEntity p, ServerWorld w, int t, boolean escapo) {
+        if (Nivel.calabaza()) { if (escapo) EscenasCalabaza.finalSnorlax(j, p, w, t); else EscenasCalabaza.tragado(j, p, w, t); }
+        else if (escapo) Escenas.finalAngel(j, p, w, t); else Escenas.comido(j, p, w, t);
+    }
+
     private static boolean conIntro() { return Cfg.escenas() && (pruebaEscena == null || pruebaEscena.equals("intro")); }
 
     /** Prueba de una escena sin jugar el nivel: lleva al organizador a su pista y, segun la escena, lo pone en la meta («angel») o con el Tyrantrum pegado («comido»). */
-    public static String prueba(ServerPlayerEntity p, String escena) {
+    public static String prueba(ServerPlayerEntity p, String escena) { return prueba(p, escena, Niveles.TYRANTRUM); }
+
+    public static String prueba(ServerPlayerEntity p, String escena, Niveles.Def nivel) {
         if (escena.equals("michis")) return Escenas.banco(p);
+        if (escena.equals("banco2")) return EscenasCalabaza.banco(p);
         if (escena.equals("limpiar")) { Escenas.quitarBanco(p.getServerWorld()); return null; }
         if (escena.equals("angel_fin")) { Escenas.demoFin(); return null; }
         if (escena.startsWith("angel_")) return Escenas.demoAngel(p, Integer.parseInt(escena.substring(6)));      // angel_<tick>: la escena del angel sin camara de escena, congelada en ese tick (0 = entera)
@@ -433,16 +472,17 @@ public final class Huida {
         if (escena.equals("medir")) {            // un Tyrantrum parado a 25 bloques delante del jugador, mirando en su direccion (para medirlo con una regla de bloques)
             ServerWorld w = p.getServerWorld();
             double r = Math.toRadians(p.getYaw());
-            PokemonEntity e = nuevoTyrantrum(w, p.getX() - Math.sin(r) * 25, p.getY(), p.getZ() + Math.cos(r) * 25, p.getYaw());
+            PokemonEntity e = nuevoPerseguidor(w, p.getX() - Math.sin(r) * 25, p.getY(), p.getZ() + Math.cos(r) * 25, p.getYaw());
             if (e == null) return "No se pudo crear al Tyrantrum.";
             e.addCommandTag("emi_huida_banco");
             return null;
         }
         int congelar = 0;
         if (escena.startsWith("intro_")) { congelar = Integer.parseInt(escena.substring(6)); escena = "intro"; }
-        if (!java.util.List.of("intro", "angel", "comido").contains(escena)) return "Escenas: intro, angel, comido (y michis / limpiar para ver los modelos).";
+        if (escena.equals("final")) escena = "angel";                  // en el nivel de la calabaza el final es el de Snorlax Emi
+        if (!java.util.List.of("intro", "angel", "comido").contains(escena)) return "Escenas: intro, angel (o final), comido (y michis / limpiar para ver los modelos).";
         if (fase != Fase.LIBRE) return "Ya hay una huida en marcha (/huida parar).";
-        String r = abrir();
+        String r = abrir(nivel);
         if (r == null) r = unirse(p);
         if (r == null) { pruebaEscena = escena; pruebaCongelar = congelar; r = empezar(false); }      // con confirmacion de «listo»: asi se puede esperar a que el cliente termine de cargar el terreno y soltarla con /huida saltar
         if (r != null) { pruebaEscena = null; if (fase != Fase.LIBRE) parar("prueba fallida"); return r; }
@@ -461,7 +501,7 @@ public final class Huida {
         if (esc) for (J j : new ArrayList<>(jug.values())) {
             ServerPlayerEntity p = jugador(j);
             if (p != null && j.nivel != null) {
-                try { int ti = (int) ((now - cuentaIni) / Cfg.escenaLenta()); if (pruebaCongelar > 0 && ti >= pruebaCongelar) { ti = pruebaCongelar; cuentaFin = now + 100; } if (ti != j.escT) { j.escT = ti; Escenas.intro(j, p, w, ti); } } catch (Throwable t) { EmiHuida.LOG.error("escena de entrada", t); }
+                try { int ti = (int) ((now - cuentaIni) / Cfg.escenaLenta()); if (pruebaCongelar > 0 && ti >= pruebaCongelar) { ti = pruebaCongelar; cuentaFin = now + 100; } if (ti != j.escT || (pruebaCongelar > 0 && ti >= pruebaCongelar)) {          /* congelada en un tick de prueba se repite cada tick (para seguir mandando la camara) */ j.escT = ti; escenaIntro(j, p, w, ti); } } catch (Throwable t) { EmiHuida.LOG.error("escena de entrada", t); }
             }
         }
         // durante la cuenta atras las copias estan quietas; el Tyrantrum ruge al final
@@ -471,7 +511,7 @@ public final class Huida {
             for (J j : jug.values()) {
                 ServerPlayerEntity p = jugador(j);
                 if (p == null) continue;
-                Msg.title(p, t, Text.literal("¡El Tyrantrum despierta!").formatted(Formatting.YELLOW), 0, 22, 4);
+                Msg.title(p, t, Text.literal("¡" + Nivel.DEF.El() + " despierta!").formatted(Formatting.YELLOW), 0, 22, 4);
                 Msg.sound(p, net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), 1f, 0.6f);
             }
         }
@@ -483,10 +523,13 @@ public final class Huida {
         if (resta <= 0) {
             fase = Fase.CORRIENDO;
             EmiHuida.LOG.info("Huida: ¡YA! ({} jugador(es))", jug.size());
-            pararMusica();
+            if (Nivel.calabaza() && conIntro()) musicaActual = null;          // la musica de la presentacion acaba justo aqui: no se corta
+            else pararMusica();
             for (J j : jug.values()) {
                 ServerPlayerEntity p = jugador(j);
                 if (j.michi != null) { Escenas.quitar(j.michi); j.michi = null; }
+                quitarExtras(j);
+                if (j.perseguidor == null && j.nivel != null) j.perseguidor = crearPerseguidor(mundo(), j, true);     // por si la presentacion se salto o fallo
                 if (j.nivel != null) for (Nivel.Bloque b : j.nivel.entrada()) w.breakBlock(b.pos(), false);      // por si la presentacion se salto o se corto
                 if (p == null) continue;
                 Escenas.camaraOff(p);
@@ -495,27 +538,27 @@ public final class Huida {
                     double sObj = "angel".equals(pruebaEscena) ? Nivel.S_META + 0.6 : j.s;
                     double[] e = Nivel.ejePos(j.hueco, sObj);
                     if ("angel".equals(pruebaEscena)) {
-                        p.teleport(w, e[0], Nivel.Y0, e[1], (float) e[2], 0f); j.s = sObj; j.idx = Nivel.idxDe(sObj); j.sPerseguidor = sObj - 12.5;
+                        p.teleport(w, e[0], Nivel.Y0, e[1], (float) e[2], 0f); j.s = sObj; j.idx = Nivel.idxDe(sObj); j.sPerseguidor = sObj - (dCaptura() + 6.5);
                         if (j.perseguidor != null) j.perseguidor.discard();          // un Tyrantrum nuevo junto al jugador (el que se queda lejos tras un teletransporte de ~800 bloques no le llega al cliente)
                         double[] q = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);
-                        j.perseguidor = nuevoTyrantrum(w, q[0], q[1], q[2], (float) q[3]);
+                        j.perseguidor = nuevoPerseguidor(w, q[0], q[1], q[2], (float) q[3]);
                     }
-                    else if ("comido".equals(pruebaEscena)) j.sPerseguidor = j.s - (DIST_CAPTURA + 0.2);
+                    else if ("comido".equals(pruebaEscena)) j.sPerseguidor = j.s - (dCaptura() + 0.2);
                 }
                 if (j.perseguidor != null) j.perseguidor.setSprinting(true);      // pose de correr de Cobblemon («ground_run»)
                 j.est = Est.CORRE; j.inicioTick = now;
                 if (pruebaEscena != null && !pruebaEscena.equals("intro")) j.inicioTick = now - 400;
                 Msg.title(p, Text.literal("¡CORRE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Llega a la puerta dorada").formatted(Formatting.WHITE), 0, 30, 10);
-                if (modoPrueba && pruebaEscena == null) p.sendMessage(Msg.say("MODO PRUEBA: el Tyrantrum no te atrapa y esta carrera no cuenta en la clasificación. Se apaga con /huida modoprueba off."), false);
+                if (modoPrueba && pruebaEscena == null) p.sendMessage(Msg.say("MODO PRUEBA: " + Nivel.DEF.el() + " no te atrapa y esta carrera no cuenta en la clasificación. Se apaga con /huida modoprueba off."), false);
                 Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.4f);
             }
-            musica(now, Sonidos.PERSECUCION);
+            musica(now, Sonidos.persecucion());
         }
     }
 
     private static void tickCorriendo(MinecraftServer s, long now) {
         ServerWorld w = mundo();
-        musica(now, Sonidos.PERSECUCION);
+        musica(now, Sonidos.persecucion());
         for (J j : new ArrayList<>(jug.values())) {
             ServerPlayerEntity p = jugador(j);
             if (p == null) continue;
@@ -523,8 +566,8 @@ public final class Huida {
             else if (j.enMeta) tickEspera(w, j, p, now);
             else if (now >= j.soltarEn) esperar(w, j, p, now);
             else {
-                if (Cfg.escenas() && j.perseguidor != null && j.nivel != null) {
-                    try { int ti = (int) ((now - j.finTick) / Cfg.escenaLenta()); if (ti != j.escT) { j.escT = ti; if (j.est == Est.ESCAPO) Escenas.finalAngel(j, p, w, ti); else Escenas.comido(j, p, w, ti); } }
+                if (Cfg.escenas() && (j.perseguidor != null || Nivel.calabaza()) && j.nivel != null) {
+                    try { int ti = (int) ((now - j.finTick) / Cfg.escenaLenta()); if (ti != j.escT) { j.escT = ti; escenaFinal(j, p, w, ti, j.est == Est.ESCAPO); } }
                     catch (Throwable t) { EmiHuida.LOG.error("escena final", t); }
                 }
                 if (now % 10 == 0) { ServerPlayNetworking.send(p, new EstadoPayload(true, j.perseguidor == null ? -1 : j.perseguidor.getId(), Nivel.rumbo(j.s), j.errores, false)); enviarHud(p, j, now); }   // la camara y la interfaz siguen mientras ves el final
@@ -550,12 +593,13 @@ public final class Huida {
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
         if (j.globo != null) { j.globo.discard(); j.globo = null; }
+        quitarExtras(j);
         Escenas.camaraOff(p);
         p.removeStatusEffect(net.minecraft.entity.effect.StatusEffects.INVISIBILITY);
         congelar(p, false);
         ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0, false));      // el cliente vuelve a su camara y a su interfaz de siempre
         ServerPlayNetworking.send(p, EstrellasPayload.borrar());
-        Sonidos.parar(p, Sonidos.PERSECUCION);
+        Sonidos.pararTodo(p);
         colocarEnSala(w, j, p, true);        // mirando hacia la puerta dorada
         p.sendMessage(Msg.say("Esperas en la meta hasta que terminen todos. El organizador cierra la huida con /huida terminar (o sal tú con /huida salir)."), false);
         comprobarFin();
@@ -635,11 +679,11 @@ public final class Huida {
         // el perseguidor sigue el trazado y destruye lo que encuentra
         // el Tyrantrum intenta mantenerse a una distancia que se acorta con el tiempo; si te adelantas de mas acelera, si fallas no te espera
         double seg = (now - j.inicioTick) / 20.0;
-        double objetivo = DIST_INI + (DIST_FIN - DIST_INI) * Math.min(1.0, seg / SEG_HASTA_FIN);
+        double objetivo = distIni() + (distFin() - distIni()) * Math.min(1.0, seg / SEG_HASTA_FIN);
         double hueco = j.s - j.sPerseguidor;
         j.vPerseguidor = j.devorado ? VEL_ATAQUE : now < j.pausaTyr ? 0 : Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
         j.sPerseguidor += j.vPerseguidor / 20.0;
-        if (modoPrueba && pruebaEscena == null && j.s - j.sPerseguidor < DIST_CAPTURA + DIST_PRUEBA) j.sPerseguidor = j.s - (DIST_CAPTURA + DIST_PRUEBA);      // modo prueba: no te alcanza
+        if (modoPrueba && pruebaEscena == null && j.s - j.sPerseguidor < dCaptura() + DIST_PRUEBA) j.sPerseguidor = j.s - (dCaptura() + DIST_PRUEBA);      // modo prueba: no te alcanza
         if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
             double[] e = Nivel.perseguidorPos(j.hueco, j.sPerseguidor);       // en los puentes rodea el hueco por la selva
             float yaw = (float) e[3];
@@ -660,10 +704,10 @@ public final class Huida {
         }
 
         // atrapado / meta
-        if (dist <= DIST_CAPTURA && (j.devorado || now >= j.pausaTyr)) {
+        if (dist <= dCaptura() && (j.devorado || now >= j.pausaTyr)) {
             // con limite de errores, que el Tyrantrum te alcance cuenta como un error (no es el fin): se queda parado rugiendo un momento y tienes que seguir corriendo; solo te come cuando se te acaban los errores
             if (Cfg.maxErrores() < 0 || modoPrueba || pruebaEscena != null || j.devorado) { acabar(j, p, now, false); return; }
-            error(j, p, now, "¡El Tyrantrum te alcanzó!", false);
+            error(j, p, now, "¡" + Nivel.DEF.El() + " te alcanzó!", false);
             if (j.devorado) { acabar(j, p, now, false); return; }
             j.pausaTyr = now + PAUSA_ALCANCE;
             if (j.perseguidor != null) rugir(j.perseguidor);
@@ -712,14 +756,14 @@ public final class Huida {
             // el ultimo error: el Tyrantrum se lanza a por ti (corre mucho mas rapido hasta alcanzarte) y la escena de que te come empieza en cuanto te toca
             j.devorado = true;
             congelar(p, true);
-            Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal("El Tyrantrum se lanza a por ti").formatted(Formatting.RED), 0, 40, 10);
+            Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal(Nivel.DEF.El() + " se lanza a por ti").formatted(Formatting.RED), 0, 40, 10);
             Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.8f, 0.5f);
             if (j.perseguidor != null) rugir(j.perseguidor);
             return;
         }
         boolean ultimo = max > 0 && j.errores == max - 1;
         Msg.title(p, Text.literal(msg).formatted(Formatting.RED, Formatting.BOLD),
-                ultimo ? Text.literal("Errores: " + cuenta + " · ¡un fallo más y te come!").formatted(Formatting.DARK_RED, Formatting.BOLD) : Text.literal("Errores: " + cuenta).formatted(Formatting.GRAY),
+                ultimo ? Text.literal("Errores: " + cuenta + " · ¡un fallo más y te " + Nivel.DEF.come() + "!").formatted(Formatting.DARK_RED, Formatting.BOLD) : Text.literal("Errores: " + cuenta).formatted(Formatting.GRAY),
                 0, ultimo ? 35 : 15, 5);
         if (ultimo) Msg.sound(p, SoundEvents.ENTITY_WARDEN_HEARTBEAT, 1.4f, 0.8f);
     }
@@ -771,7 +815,7 @@ public final class Huida {
         j.enContacto = false;
         j.idx = Nivel.idxDe(c == null ? Nivel.S_SALIDA : c.s());
         // tras una caida el Tyrantrum no esta encima: se queda al menos a 9 bloques del punto de regreso
-        j.sPerseguidor = Math.min(j.sPerseguidor, (c == null ? Nivel.S_SALIDA : c.s()) - 9);
+        j.sPerseguidor = Math.min(j.sPerseguidor, (c == null ? Nivel.S_SALIDA : c.s()) - (dCaptura() + 3));
         // se puede volver a intentar: las estrellas no cogidas de ese tramo siguen ahi y se recomponen las tablas del puente que aun no ha roto el Tyrantrum
         double sc = c == null ? Nivel.S_SALIDA : c.s();
         j.sigEst = 0; while (j.sigEst < Nivel.ESTRELLAS.length && Nivel.ESTRELLAS[j.sigEst].s() < sc - 3.5) j.sigEst++;
@@ -779,7 +823,7 @@ public final class Huida {
         List<Nivel.Bloque> pu = j.nivel.puente();
         for (int i = j.sigPuente; i < pu.size(); i++) {
             BlockPos pos = pu.get(i).pos();
-            if (w.getBlockState(pos).isAir()) w.setBlockState(pos, net.minecraft.block.Blocks.JUNGLE_PLANKS.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS | net.minecraft.block.Block.FORCE_STATE);
+            if (w.getBlockState(pos).isAir()) w.setBlockState(pos, Nivel.tablon(), net.minecraft.block.Block.NOTIFY_LISTENERS | net.minecraft.block.Block.FORCE_STATE);
             j.tablas.add(pos);
         }
         j.colapsos.clear();
@@ -787,7 +831,7 @@ public final class Huida {
 
     /** El Tyrantrum destruye los obstaculos y las tablas que alcanza su boca. */
     private static void romper(ServerWorld w, J j) {
-        double frente = j.sPerseguidor + FRENTE_PERSEGUIDOR;
+        double frente = j.sPerseguidor + Nivel.DEF.frente();
         List<Nivel.Bloque> ob = j.nivel.obstaculos(), pu = j.nivel.puente();
         while (j.sigObst < ob.size() && ob.get(j.sigObst).s() <= frente) { w.breakBlock(ob.get(j.sigObst).pos(), false); j.sigObst++; }
         while (j.sigPuente < pu.size() && pu.get(j.sigPuente).s() <= frente) { w.breakBlock(pu.get(j.sigPuente).pos(), false); j.tablas.remove(pu.get(j.sigPuente).pos()); j.sigPuente++; }
@@ -811,7 +855,7 @@ public final class Huida {
     private static void acabar(J j, ServerPlayerEntity p, long now, boolean escapo) {
         boolean esc = Cfg.escenas() && j.perseguidor != null && j.nivel != null;
         j.est = escapo ? Est.ESCAPO : Est.ATRAPADO;
-        j.finTick = now; j.escT = 0; j.soltarEn = now + (esc ? (escapo ? Escenas.FINAL_ANGEL : Escenas.FINAL_COMIDO) * (long) Cfg.escenaLenta() : ESPERA_FIN);
+        j.finTick = now; j.escT = 0; j.soltarEn = now + (esc ? (escapo ? Nivel.DEF.finalTicks() : Nivel.DEF.comidoTicks()) * (long) Cfg.escenaLenta() : ESPERA_FIN);
         if (j.perseguidor != null) {      // el Tyrantrum se para (deja de correr) y, si te ha atrapado, ruge
             ((Corredor) (Object) j.perseguidor).emi_huida$setPaso(0f);
             j.perseguidor.setSprinting(false);
@@ -821,7 +865,7 @@ public final class Huida {
         String tiempo = String.format(java.util.Locale.ROOT, "%.1f s", t);
         if (!modoPrueba || pruebaEscena != null) resultados.add(new Resultado(j.id, j.nombre, j.puntos, j.nEstrellas, j.errores, t, escapo));      // en modo prueba no cuenta en la clasificacion
         else p.sendMessage(Msg.say("Modo prueba: este resultado no cuenta en la clasificación."), false);
-        Sonidos.parar(p, Sonidos.PERSECUCION);
+        Sonidos.pararTodo(p);
         if (escapo) {
             // con escenas, el titulo y la fanfarria salen al final de la escena del michi angel (Escenas.finalAngel -> titulosEscape)
             if (!esc) titulosEscape(j, p, 100);
@@ -831,12 +875,12 @@ public final class Huida {
                 Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.5f);
                 Sonidos.sfx(p, Sonidos.DERROTA, 1f, 1f);
             }
-            p.sendMessage(Msg.say("El Tyrantrum te atrapó tras " + tiempo + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
+            p.sendMessage(Msg.say(Nivel.DEF.El() + " te atrapó tras " + tiempo + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
         }
         EmiHuida.LOG.info("Huida: {} {} en {} con {} errores y {} puntos ({} estrellas)", j.nombre, escapo ? "ESCAPO" : "ATRAPADO", tiempo, j.errores, j.puntos, j.nEstrellas);
         if (!escapo || esc) congelar(p, true);
         if (esc) {      // la escena empieza ya (t = 0); los ticks siguientes los lleva tickCorriendo
-            try { if (escapo) Escenas.finalAngel(j, p, mundo(), 0); else Escenas.comido(j, p, mundo(), 0); } catch (Throwable ex) { EmiHuida.LOG.error("escena final", ex); }
+            try { escenaFinal(j, p, mundo(), 0, escapo); } catch (Throwable ex) { EmiHuida.LOG.error("escena final", ex); }
         }
     }
 
@@ -846,7 +890,7 @@ public final class Huida {
         String medalla = j.errores == 0 ? "ORO" : j.errores <= 2 ? "PLATA" : "BRONCE";
         Formatting mc = j.errores == 0 ? Formatting.GOLD : j.errores <= 2 ? Formatting.GRAY : Formatting.RED;
         Msg.title(p, Text.literal("¡ESCAPASTE!").formatted(Formatting.GREEN, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Medalla de " + medalla + " · " + tiempo + " · " + j.errores + " errores").formatted(mc), 0, quedarse, 20);
-        p.sendMessage(Msg.say("¡Escapaste del Tyrantrum en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
+        p.sendMessage(Msg.say("¡Escapaste de" + (Nivel.calabaza() ? "l Pumpkaboo" : "l Tyrantrum") + " en " + tiempo + " con " + j.errores + " error(es)! Medalla de " + medalla + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);
         Sonidos.sfx(p, Sonidos.VICTORIA, 1f, 1f);
     }
 
@@ -862,11 +906,12 @@ public final class Huida {
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
         if (j.globo != null) { j.globo.discard(); j.globo = null; }
+        quitarExtras(j);
         if (p == null) return;
         Escenas.camaraOff(p);
         ServerPlayNetworking.send(p, new EstadoPayload(false, -1, 0f, 0, false));
         ServerPlayNetworking.send(p, EstrellasPayload.borrar());
-        Sonidos.parar(p, Sonidos.PERSECUCION); Sonidos.parar(p, Sonidos.ESPERA);
+        Sonidos.pararTodo(p);
         congelar(p, false);
         if (!Saved.restore(server, p)) quitarEfectos(p);
     }
@@ -938,6 +983,7 @@ public final class Huida {
         Escenas.quitar(j.michi); j.michi = null;
         if (j.comida != null) { j.comida.discard(); j.comida = null; }
         if (j.globo != null) { j.globo.discard(); j.globo = null; }
+        quitarExtras(j);
         j.desconectado = true;
         jug.remove(p.getUuid());      // sus cosas siguen guardadas en disco: se le devuelven al volver a entrar
         comprobarFin();
@@ -945,6 +991,12 @@ public final class Huida {
     }
 
     // ---------------------------------------------------------------- ayudas
+
+    /** Quita las entidades sueltas de las escenas (calabaza gigante, tapa, globos de texto...). */
+    static void quitarExtras(J j) {
+        for (Entity e : j.extras) if (e != null && !e.isRemoved()) e.discard();
+        j.extras.clear();
+    }
 
     private static ServerPlayerEntity jugador(J j) {
         ServerPlayerEntity p = server.getPlayerManager().getPlayer(j.id);
@@ -1006,22 +1058,29 @@ public final class Huida {
         atributo(p, EntityAttributes.GENERIC_JUMP_STRENGTH, ID_SALTO_EXTRA, 0, EntityAttributeModifier.Operation.ADD_VALUE, false);
     }
 
-    private static PokemonEntity crearPerseguidor(ServerWorld w, J j) {
+    private static PokemonEntity crearPerseguidor(ServerWorld w, J j) { return crearPerseguidor(w, j, false); }
+
+    private static PokemonEntity crearPerseguidor(ServerWorld w, J j, boolean ya) {
+        if (!ya && Nivel.calabaza() && conIntro()) return null;        // al principio es una calabaza (la escena de entrada); el Pumpkaboo aparece cuando el michi la transforma
         double[] ep = Nivel.ejePos(j.hueco, Nivel.S_PERSEGUIDOR);
-        return nuevoTyrantrum(w, ep[0], Nivel.Y0, ep[1], (float) ep[2]);
+        return nuevoPerseguidor(w, ep[0], Nivel.Y0, ep[1], (float) ep[2]);
     }
 
     private static List<Entity> mundoEntidades(ServerWorld w) { List<Entity> l = new ArrayList<>(); for (Entity e : w.iterateEntities()) l.add(e); return l; }
 
-    /** Un Tyrantrum gigante (~9 de alto) sin IA ni gravedad ni sonido. */
-    static PokemonEntity nuevoTyrantrum(ServerWorld w, double x, double y, double z, float yaw) {
+    /** El perseguidor del nivel cargado (Tyrantrum ~9 de alto / Pumpkaboo ~6,5), gigante, sin IA ni gravedad ni sonido. */
+    static PokemonEntity nuevoPerseguidor(ServerWorld w, double x, double y, double z, float yaw) { return nuevoPerseguidorDe(w, Nivel.DEF, new Vec3d(x, y, z), yaw); }
+
+    /** El perseguidor del nivel {@code nivel} (aunque no sea el cargado: para el banco de pruebas). */
+    static PokemonEntity nuevoPerseguidorDe(ServerWorld w, Niveles.Def nivel, Vec3d pos, float yaw) {
+        double x = pos.x, y = pos.y, z = pos.z;
         try {
-            PokemonProperties props = PokemonProperties.Companion.parse("tyrantrum level=60");
+            PokemonProperties props = PokemonProperties.Companion.parse(nivel.especie());
             PokemonEntity e = props.createEntity(w);
             var sp = e.getPokemon().getSpecies();
             float h = Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale();
-            if (h > 0.01f) e.getPokemon().setScaleModifier(Math.max(0.3f, Math.min(8f, ALTURA_PERSEGUIDOR / h)));
-            e.getPokemon().setNickname(Text.literal("Tyrantrum furioso").formatted(Formatting.RED));
+            if (h > 0.01f) e.getPokemon().setScaleModifier(Math.max(0.3f, Math.min(16f, nivel.alto() / h)));
+            e.getPokemon().setNickname(Text.literal(nivel.calabaza() ? "Pumpkaboo embrujado" : "Tyrantrum furioso").formatted(Formatting.RED));
             e.setAiDisabled(true);
             e.setInvulnerable(true);
             e.setNoGravity(true);
@@ -1032,7 +1091,7 @@ public final class Huida {
             w.spawnEntity(e);
             return e;
         } catch (Throwable t) {
-            EmiHuida.LOG.error("No se pudo crear al Tyrantrum", t);
+            EmiHuida.LOG.error("No se pudo crear al perseguidor", t);
             return null;
         }
     }

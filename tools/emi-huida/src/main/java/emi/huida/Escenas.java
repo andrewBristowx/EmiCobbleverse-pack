@@ -149,7 +149,7 @@ final class Escenas {
         ServerWorld w = p.getServerWorld();
         demoFin();
         double r = Math.toRadians(p.getYaw());
-        PokemonEntity ty = Huida.nuevoTyrantrum(w, p.getX() - Math.sin(r) * 22, p.getY(), p.getZ() + Math.cos(r) * 22, p.getYaw() + 180f);       // mirando hacia el jugador
+        PokemonEntity ty = Huida.nuevoPerseguidor(w, p.getX() - Math.sin(r) * 22, p.getY(), p.getZ() + Math.cos(r) * 22, p.getYaw() + 180f);       // mirando hacia el jugador
         if (ty == null) return "No se pudo crear al Tyrantrum.";
         ty.addCommandTag("emi_huida_banco");
         demoJ = new Huida.J(p); demoJ.perseguidor = ty; demoJ.nivel = null; demoP = p; demoT = 0; demoCongelar = congelarEn;
@@ -360,7 +360,7 @@ final class Escenas {
     static Entity globo(ServerWorld w, Vec3d pos, String json, float escala) {
         try {
             Entity e = EntityType.TEXT_DISPLAY.create(w);
-            NbtCompound n = StringNbtReader.parse("{text:'" + json + "',billboard:\"center\",background:0,shadow:1b,alignment:\"center\",line_width:300,transformation:{translation:[0f,0f,0f],left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],scale:["
+            NbtCompound n = StringNbtReader.parse("{text:'" + json + "',billboard:\"center\",background:0,shadow:1b,alignment:\"center\",line_width:300,brightness:{block:15,sky:15},transformation:{translation:[0f,0f,0f],left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],scale:["
                     + escala + "f," + escala + "f," + escala + "f]}}");
             e.readNbt(n);
             e.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0f, 0f);

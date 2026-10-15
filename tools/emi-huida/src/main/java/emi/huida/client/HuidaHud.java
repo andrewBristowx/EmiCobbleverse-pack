@@ -39,6 +39,8 @@ public final class HuidaHud {
     private static ItemStack iconoEstrella;
     /** Retrato redondo del Tyrantrum (recortado de su modelo en el juego), 64x64 con filtro suave (.mcmeta). */
     private static final Identifier ICONO_TYRANTRUM = Identifier.of("emi_huida", "textures/gui/tyrantrum.png");
+    /** Retrato del Pumpkaboo (nivel de la calabaza), igual que el del Tyrantrum. */
+    private static final Identifier ICONO_PUMPKABOO = Identifier.of("emi_huida", "textures/gui/pumpkaboo.png");
 
     public static void render(DrawContext ctx, RenderTickCounter tick) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -129,16 +131,16 @@ public final class HuidaHud {
     private static void peligro(DrawContext ctx, MinecraftClient mc, HudPayload h, int ancho) {
         if (h.fin() != 0) return;
         TextRenderer tr = mc.textRenderer;
-        double dist = Math.max(0, h.s() - h.sCh() - HudPayload.CAPTURA);      // de la boca del Tyrantrum a ti
+        double dist = Math.max(0, h.s() - h.sCh() - h.captura());      // de la boca del perseguidor (Tyrantrum) o de su borde (Pumpkaboo) a ti
         int w = 170, alto = 15, x = (ancho - w) / 2, y = 6;
         int col = dist < 2 ? 0xFFEE3B3B : dist < 8 ? 0xFFF0A020 : 0xFF45C060;
         caja(ctx, x, y, w, alto, dist < 2 ? 0xFFEE3B3B : BORDE);
-        marcadorTyrantrum(ctx, tr, x + 9, y + 7, 10);
+        marcadorTyrantrum(ctx, tr, x + 9, y + 7, 10, h.nivel());
         int bx = x + 22, bw = w - 26;
         ctx.fill(bx, y + 9, bx + bw, y + 12, 0xFF22222E);
         int lleno = (int) Math.round(bw * Math.max(0.04, Math.min(1.0, dist / 20.0)));
         ctx.fill(bx, y + 9, bx + lleno, y + 12, col);
-        String t = "Tyrantrum a " + (int) dist + " m";
+        String t = (h.nivel() == 1 ? "Pumpkaboo" : "Tyrantrum") + " a " + (int) dist + " m";
         ctx.drawText(tr, t, bx, y + 1, dist < 2 ? 0xFF8888 : 0xFFFFFF, true);
     }
 
@@ -169,8 +171,8 @@ public final class HuidaHud {
     }
 
     /** El retrato del Tyrantrum centrado en (cx, cy), de {@code 2*r} de lado. */
-    private static void marcadorTyrantrum(DrawContext ctx, TextRenderer tr, int cx, int cy, int r) {
-        ctx.drawTexture(ICONO_TYRANTRUM, cx - r, cy - r, 2 * r, 2 * r, 0f, 0f, 64, 64, 64, 64);
+    private static void marcadorTyrantrum(DrawContext ctx, TextRenderer tr, int cx, int cy, int r, int nivel) {
+        ctx.drawTexture(nivel == 1 ? ICONO_PUMPKABOO : ICONO_TYRANTRUM, cx - r, cy - r, 2 * r, 2 * r, 0f, 0f, 64, 64, 64, 64);
     }
 
     private static void minimapa(DrawContext ctx, MinecraftClient mc, HudPayload h, MapaPayload mp, int ancho, int alto) {
@@ -202,7 +204,7 @@ public final class HuidaHud {
             else { ux = ddx / dd; uy = ddy / dd; }
             t[0] = yo[0] + (int) Math.round(ux * 14); t[1] = yo[1] + (int) Math.round(uy * 14);
         }
-        marcadorTyrantrum(ctx, mc.textRenderer, x + t[0], y + t[1], 8);
+        marcadorTyrantrum(ctx, mc.textRenderer, x + t[0], y + t[1], 8, h.nivel());
         ctx.fill(x + yo[0] - 5, y + yo[1] - 5, x + yo[0] + 5, y + yo[1] + 5, 0xFFFFFFFF);
         cabeza(ctx, mc, mc.player.getUuid(), x + yo[0] - 4, y + yo[1] - 4, 8);
     }
