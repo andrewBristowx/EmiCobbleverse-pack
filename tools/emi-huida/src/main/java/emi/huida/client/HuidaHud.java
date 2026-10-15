@@ -232,7 +232,7 @@ public final class HuidaHud {
         TextRenderer tr = mc.textRenderer;
         int x = 6, y = 52, w = 124, hh = 22;
         int max = h.maxErrores();
-        boolean ultimo = max >= 0 && h.errores() >= max;      // un fallo mas y te come
+        boolean ultimo = max > 0 && h.errores() >= max - 1 && h.errores() > 0;      // un fallo mas y te come
         caja(ctx, x, y, w, hh, h.errores() == 0 ? BORDE : ultimo ? 0xFFE03030 : 0xFF8A3A3A);
         MatrixStack m = ctx.getMatrices();
         m.push(); m.translate(x + 6, y + 6, 0); m.scale(1.3f, 1.3f, 1f);

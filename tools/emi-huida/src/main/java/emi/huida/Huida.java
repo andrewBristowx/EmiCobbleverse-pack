@@ -55,6 +55,7 @@ public final class Huida {
     static final double DIST_CAPTURA = HudPayload.CAPTURA;     // distancia entre el centro del Tyrantrum (mide ~15 de largo: boca a ~6 por delante del centro, hocico a ~7, cola a ~8,5 por detras) y el jugador a la que te atrapa
     static final double FRENTE_PERSEGUIDOR = 6.5;      // hasta donde alcanza su boca por delante de su centro: destruye lo que haya ahi
     static final int CUENTA_SEGUNDOS = 5;
+    static final int PAUSA_ALCANCE = 40;               // ticks que el Tyrantrum se queda parado rugiendo tras alcanzarte sin que sea tu ultimo error
     static final double VEL_ATAQUE = 24.0;             // velocidad (bloques/s) del Tyrantrum cuando se lanza a comerte tras pasarte de errores
     /** Modo prueba (/huida modoprueba): el Tyrantrum nunca baja de esta distancia EXTRA sobre la de captura, asi que no te atrapa (para probar el final aunque el equipo vaya con lag). Solo en memoria. */
     static final double DIST_PRUEBA = 3.0;
@@ -81,6 +82,7 @@ public final class Huida {
         PokemonEntity michi;                         // el michi de la escena en curso (demonio al empezar, angel al ganar)
         Entity comida;                               // la comida que le da el michi angel al Tyrantrum
         Entity globo;                                // el «¡Bien hecho!» del michi angel
+        long pausaTyr;                               // hasta que tick el Tyrantrum esta parado (se queda rugiendo tras alcanzarte; mientras tanto no cuenta como alcance)
         boolean devorado;                            // ha pasado de los errores permitidos: el Tyrantrum se lanza a por el y lo come
         boolean enMeta;                              // ha terminado (escena incluida) y espera en la sala de la meta a que acaben todos y el organizador cierre
         Nivel.Construido nivel;
@@ -222,7 +224,7 @@ public final class Huida {
             j.tablas.clear(); for (Nivel.Bloque b : j.nivel.puente()) j.tablas.add(b.pos());
             j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.malezaRota.clear(); j.sigMaleza = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
             j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.S_PERSEGUIDOR; j.vPerseguidor = VEL_BASE;
-            j.est = Est.ESPERA; j.errores = 0; j.devorado = false; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
+            j.est = Est.ESPERA; j.errores = 0; j.devorado = false; j.pausaTyr = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
             j.puntos = 0; j.nEstrellas = 0; j.sigEst = 0; j.combo = 0; j.racha = 0; j.ultimaEst = 0; j.cogidas.clear(); j.sigMod = 0; j.dentro = false; j.erroresAlEntrar = 0;
             j.estPos = new double[Nivel.ESTRELLAS.length][];
             float[] datos = new float[Nivel.ESTRELLAS.length * 4];
@@ -635,7 +637,7 @@ public final class Huida {
         double seg = (now - j.inicioTick) / 20.0;
         double objetivo = DIST_INI + (DIST_FIN - DIST_INI) * Math.min(1.0, seg / SEG_HASTA_FIN);
         double hueco = j.s - j.sPerseguidor;
-        j.vPerseguidor = j.devorado ? VEL_ATAQUE : Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
+        j.vPerseguidor = j.devorado ? VEL_ATAQUE : now < j.pausaTyr ? 0 : Math.min(8.5, Cfg.velBase() + CATCH_UP * Math.max(0, hueco - objetivo));
         j.sPerseguidor += j.vPerseguidor / 20.0;
         if (modoPrueba && pruebaEscena == null && j.s - j.sPerseguidor < DIST_CAPTURA + DIST_PRUEBA) j.sPerseguidor = j.s - (DIST_CAPTURA + DIST_PRUEBA);      // modo prueba: no te alcanza
         if (j.perseguidor != null && !j.perseguidor.isRemoved()) {
@@ -658,7 +660,15 @@ public final class Huida {
         }
 
         // atrapado / meta
-        if (dist <= DIST_CAPTURA) { acabar(j, p, now, false); return; }
+        if (dist <= DIST_CAPTURA && (j.devorado || now >= j.pausaTyr)) {
+            // con limite de errores, que el Tyrantrum te alcance cuenta como un error (no es el fin): se queda parado rugiendo un momento y tienes que seguir corriendo; solo te come cuando se te acaban los errores
+            if (Cfg.maxErrores() < 0 || modoPrueba || pruebaEscena != null || j.devorado) { acabar(j, p, now, false); return; }
+            error(j, p, now, "¡El Tyrantrum te alcanzó!", false);
+            if (j.devorado) { acabar(j, p, now, false); return; }
+            j.pausaTyr = now + PAUSA_ALCANCE;
+            if (j.perseguidor != null) rugir(j.perseguidor);
+            Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.3f, 0.6f);
+        }
         if (j.s >= Nivel.S_META) { acabar(j, p, now, true); return; }
 
         if (now % 2 == 0) {
@@ -698,8 +708,8 @@ public final class Huida {
         int max = Cfg.maxErrores();
         String cuenta = max >= 0 ? j.errores + "/" + max : String.valueOf(j.errores);
         Sonidos.sfx(p, caida ? Sonidos.CAIDA : Sonidos.FALLO, 1f, 1f);
-        if (max >= 0 && j.errores > max && !modoPrueba && pruebaEscena == null) {
-            // demasiados errores: el Tyrantrum se lanza a por ti (corre mucho mas rapido hasta alcanzarte) y la escena de que te come empieza en cuanto te toca
+        if (max >= 0 && j.errores >= max && !modoPrueba && pruebaEscena == null) {
+            // el ultimo error: el Tyrantrum se lanza a por ti (corre mucho mas rapido hasta alcanzarte) y la escena de que te come empieza en cuanto te toca
             j.devorado = true;
             congelar(p, true);
             Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal("El Tyrantrum se lanza a por ti").formatted(Formatting.RED), 0, 40, 10);
@@ -707,7 +717,7 @@ public final class Huida {
             if (j.perseguidor != null) rugir(j.perseguidor);
             return;
         }
-        boolean ultimo = max >= 0 && j.errores == max;
+        boolean ultimo = max > 0 && j.errores == max - 1;
         Msg.title(p, Text.literal(msg).formatted(Formatting.RED, Formatting.BOLD),
                 ultimo ? Text.literal("Errores: " + cuenta + " · ¡un fallo más y te come!").formatted(Formatting.DARK_RED, Formatting.BOLD) : Text.literal("Errores: " + cuenta).formatted(Formatting.GRAY),
                 0, ultimo ? 35 : 15, 5);
