@@ -25,12 +25,20 @@ public final class DonationService {
         boolean entregar(String jugador, int dolares, String donador);
     }
 
+    /** Reparte {@code tickets} tickets entre todos los jugadores (los conectados lo reciben directo y el resto en el correo). true = hecho. */
+    public interface Repartidor {
+        boolean repartir(int tickets, String motivo);
+    }
+
     public static final class Pendiente {
         public String id;
         public String donador;
+        /** null = todavia no se sabe a quien le toca (se vuelve a intentar averiguarlo). */
         public String jugador;
         public int dolares;
         public long creada;
+        /** Mensaje de la donacion (para volver a buscar un «mc:Nombre» o el vinculo de Twitch mas tarde). */
+        public String mensaje;
     }
 
     private static final class Estado {
@@ -47,6 +55,7 @@ public final class DonationService {
     private final Entregador entregador;
     private final Consumer<String> log;
     private final VinculosTwitch vinculos;
+    private volatile Repartidor repartidor;
     private final Set<String> procesadas = new LinkedHashSet<>();
     private final List<Pendiente> pendientes = new ArrayList<>();
 
@@ -57,6 +66,10 @@ public final class DonationService {
         this.entregador = entregador;
         this.log = log;
         cargar();
+    }
+
+    public void setRepartidor(Repartidor r) {
+        this.repartidor = r;
     }
 
     /**
@@ -136,17 +149,20 @@ public final class DonationService {
             return;
         }
         String jugador = resolverJugador(cfg, vinculos, donador, mensaje);
-        if (jugador == null) {
-            log.accept("AVISO: no se a que jugador dar la donacion " + id + " de \"" + donador + "\" (" + dolares + " USD). Pide que ponga mc:NombreMinecraft en el mensaje o que vincule su Twitch con Emipokemon, o anadelo a \"jugadores\".");
-            guardar();
-            return;
-        }
         Pendiente p = new Pendiente();
         p.id = id;
         p.donador = donador;
         p.jugador = jugador;
+        p.mensaje = mensaje;
         p.dolares = Math.min(dolares, cfg.maximoDolares);
         p.creada = System.currentTimeMillis();
+        if (jugador == null) {
+            log.accept("AVISO: no se a que jugador dar la donacion " + id + " de \"" + donador + "\" (" + dolares + " USD). Pide que ponga mc:NombreMinecraft en el mensaje o que vincule su Twitch con Emipokemon, o anadelo a \"jugadores\"."
+                    + (cfg.horasParaRepartir > 0 ? " Se sigue intentando y, si pasan " + horas(cfg.horasParaRepartir) + " h sin dueno, sus tickets se reparten entre todos los jugadores." : ""));
+            if (cfg.horasParaRepartir > 0) pendientes.add(p);
+            guardar();
+            return;
+        }
         if (!intentar(p)) pendientes.add(p);
         guardar();
     }
@@ -154,19 +170,47 @@ public final class DonationService {
     /** Reintenta las pendientes (llamar cada reintentoSegundos). */
     public synchronized void reintentar() {
         if (pendientes.isEmpty()) return;
-        long limite = System.currentTimeMillis() - cfg.horasMaximasPendiente * 3600L * 1000L;
+        long ahora = System.currentTimeMillis();
+        long limite = ahora - cfg.horasMaximasPendiente * 3600L * 1000L;
+        long limiteReparto = ahora - (long) (cfg.horasParaRepartir * 3600.0 * 1000.0);
         List<Pendiente> restantes = new ArrayList<>();
         for (Pendiente p : pendientes) {
+            if (p.jugador == null) {                       // quiza ya se sabe: el donador vinculo su Twitch o se anadio al mapa
+                String j = resolverJugador(cfg, vinculos, p.donador, p.mensaje);
+                if (j != null) {
+                    p.jugador = j;
+                    log.accept("Donacion " + p.id + " de " + p.donador + ": ahora se sabe que es para " + j + ".");
+                }
+            }
+            if (p.jugador != null && intentar(p)) continue;
+            if (cfg.horasParaRepartir > 0 && repartidor != null && p.creada < limiteReparto && repartir(p)) continue;
             if (p.creada < limite) {
                 log.accept("Pendiente " + p.id + " (" + p.jugador + ", " + p.dolares + " USD) descartada por antigua.");
                 continue;
             }
-            if (!intentar(p)) restantes.add(p);
+            restantes.add(p);
         }
         boolean cambio = restantes.size() != pendientes.size();
         pendientes.clear();
         pendientes.addAll(restantes);
         if (cambio) guardar();
+    }
+
+    private boolean repartir(Pendiente p) {
+        boolean ok;
+        try {
+            ok = repartidor.repartir(p.dolares, "la donacion de " + p.donador + " (" + p.dolares + " USD)");
+        } catch (RuntimeException e) {
+            log.accept("Error repartiendo la donacion " + p.id + ": " + e);
+            ok = false;
+        }
+        if (ok) log.accept("REPARTIDA entre todos los jugadores: " + p.dolares + " tirada(s) de la donacion " + p.id + " de " + p.donador + " (llevaba " + horas((System.currentTimeMillis() - p.creada) / 3600000.0) + " h sin entregarse).");
+        else log.accept("No se pudo repartir la donacion " + p.id + "; se reintentara.");
+        return ok;
+    }
+
+    private static String horas(double h) {
+        return h == Math.rint(h) ? Long.toString((long) h) : String.format(Locale.ROOT, "%.2f", h);
     }
 
     public synchronized int numPendientes() {
@@ -182,7 +226,7 @@ public final class DonationService {
             ok = false;
         }
         if (ok) log.accept("ENTREGADO: " + p.dolares + " tirada(s) a " + p.jugador + " (donacion de " + p.donador + ").");
-        else log.accept("No entregado a " + p.jugador + " (desconectado?); se reintentara.");
+        else log.accept("No entregado a " + p.jugador + " (desconectado?); se reintentara" + (cfg.horasParaRepartir > 0 ? " y, pasadas " + horas(cfg.horasParaRepartir) + " h, se repartira entre todos." : "."));
         return ok;
     }
 

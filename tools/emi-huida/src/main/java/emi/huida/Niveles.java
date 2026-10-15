@@ -1,0 +1,123 @@
+package emi.huida;
+
+/**
+ * Los niveles de la huida. Cada uno es una {@link Def}: su dimension, la ruta (rectas y arcos), los obstaculos, el perseguidor (especie, tamano,
+ * hasta donde llega su «boca») y los textos. {@link Nivel#cargar(Def)} prepara la geometria del nivel elegido; solo hay uno cargado a la vez
+ * (una huida a la vez), y se cambia al abrir la cola con {@code /huida abrir [nivel]}.
+ */
+final class Niveles {
+    private Niveles() {}
+
+    /**
+     * @param tipo     S = recta de ese largo; L / R = arco de 90 grados a la izquierda / derecha con ese radio (en {@code val})
+     * @param desvios  el perseguidor rodea los puentes por tierra (no vuela): solo el Tyrantrum
+     * @param entrada  true = reja de hierro que levanta el michi demonio (nivel 1); false = arco abierto
+     * @param especie  propiedades de Cobblemon del perseguidor; {@code alto} = altura a la que se escala
+     * @param captura  distancia centro del perseguidor - jugador a la que te alcanza; {@code frente} = hasta donde llega por delante de su centro destruyendo obstaculos
+     * @param flota    altura de sus pies sobre el suelo (0 = anda; mas = flota)
+     * @param anchoBase, anchoVar  el camino mide 2 * (anchoBase + anchoVar * (algo entre 0 y 1)) de ancho (nivel 1: 7 a 9,4; nivel 2: mas estrecho)
+     * @param gapMin   distancia minima (en bloques) entre dos obstaculos seguidos de la misma recta
+     * @param vel      velocidad base del perseguidor (bloques/s; el jugador corre a ~5,6)
+     * @param holguraIni, holguraFin  distancia extra sobre {@code captura} que intenta mantener el perseguidor al empezar y a los {@code Huida.SEG_HASTA_FIN} s (nivel 3: mas justa)
+     */
+    record Def(String id, String titulo, String dimension, int baseX, char[] tipo, int[] val, Nivel.Mod[] mods, boolean desvios, boolean entrada,
+               String especie, float alto, double captura, double frente, double flota,
+               double anchoBase, double anchoVar, int gapMin, double vel, double holguraIni, double holguraFin,
+               String el, String El, String come, int introTicks, int finalTicks, int comidoTicks) {
+        boolean calabaza() { return id.equals("calabaza"); }
+        /** Nivel 3 (el final): una horda de michialiens, en el espacio. */
+        boolean cosmos() { return id.equals("cosmos"); }
+        /** 1 = Tyrantrum, 2 = calabaza, 3 = cosmos. */
+        int num() { return cosmos() ? 3 : calabaza() ? 2 : 1; }
+        /** El perseguidor es un grupo (la horda): los textos van en plural. */
+        boolean plural() { return cosmos(); }
+        String alcanzo() { return plural() ? "alcanzaron" : "alcanzó"; }
+        String lanza() { return plural() ? "se lanzan" : "se lanza"; }
+        String atrapo() { return plural() ? "te atraparon" : "te atrapó"; }
+    }
+
+    // ---------------------------------------------------------------- nivel 1: la huida del Tyrantrum (selva)
+    static final Def TYRANTRUM = new Def("tyrantrum", "la huida del Tyrantrum", "selva", 16384,
+            new char[]{'S', 'L', 'S', 'R', 'L', 'S', 'L', 'S', 'L', 'R', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'L', 'S', 'R', 'S'},
+            new int[]{114, 16, 44, 12, 12, 70, 16, 40, 12, 12, 64, 16, 50, 12, 36, 12, 60, 16, 84, 12, 72},
+            new Nivel.Mod[]{
+                    new Nivel.Mod(0, 72, 'T'), new Nivel.Mod(0, 92, 'B'),
+                    new Nivel.Mod(2, 8, 'L'), new Nivel.Mod(2, 15, 'R'), new Nivel.Mod(2, 22, 'L'), new Nivel.Mod(2, 29, 'R'), new Nivel.Mod(2, 35, 'H'),
+                    new Nivel.Mod(5, 16, 'P'), new Nivel.Mod(5, 46, 'T'), new Nivel.Mod(5, 56, 'C'),
+                    new Nivel.Mod(7, 8, 'H'), new Nivel.Mod(7, 15, 'T'), new Nivel.Mod(7, 24, 'B'),
+                    new Nivel.Mod(10, 8, 'L'), new Nivel.Mod(10, 14, 'R'), new Nivel.Mod(10, 20, 'L'), new Nivel.Mod(10, 26, 'R'), new Nivel.Mod(10, 34, 'T'), new Nivel.Mod(10, 40, 'T'), new Nivel.Mod(10, 50, 'B'),
+                    new Nivel.Mod(12, 8, 'H'), new Nivel.Mod(12, 15, 'T'), new Nivel.Mod(12, 24, 'C'), new Nivel.Mod(12, 32, 'B'), new Nivel.Mod(12, 40, 'T'),
+                    new Nivel.Mod(14, 8, 'T'), new Nivel.Mod(14, 13, 'T'), new Nivel.Mod(14, 18, 'T'), new Nivel.Mod(14, 26, 'B'),
+                    new Nivel.Mod(16, 14, 'P'), new Nivel.Mod(16, 44, 'R'), new Nivel.Mod(16, 52, 'L'),
+                    new Nivel.Mod(18, 8, 'B'), new Nivel.Mod(18, 16, 'C'), new Nivel.Mod(18, 24, 'T'), new Nivel.Mod(18, 32, 'H'), new Nivel.Mod(18, 42, 'L'), new Nivel.Mod(18, 48, 'R'),
+                    new Nivel.Mod(18, 56, 'T'), new Nivel.Mod(18, 62, 'B'), new Nivel.Mod(18, 70, 'T'),
+                    new Nivel.Mod(20, 10, 'T'), new Nivel.Mod(20, 18, 'H'), new Nivel.Mod(20, 28, 'B'), new Nivel.Mod(20, 36, 'R'), new Nivel.Mod(20, 44, 'T'), new Nivel.Mod(20, 54, 'C')},
+            true, true, "tyrantrum level=60", 9.0f, 6.0, 6.5, 0.0,
+            3.5, 1.2, 4, 5.3, 6.0, 2.5,
+            "el Tyrantrum", "El Tyrantrum", "come", 200, 266, 175);
+
+    // ---------------------------------------------------------------- nivel 2: la huida de la calabaza (Halloween, Pumpkaboo)
+    /**
+     * Un recorrido distinto al del Tyrantrum (el dueño pidio otro trazado, obstaculos distintos y mas dificiles): una serpentina de curvas cerradas (radio 8),
+     * dos horquillas de 180 grados y rectas cortas; camino mas estrecho (6,2 a 7,6), un Pumpkaboo algo mas rapido y tres tipos nuevos de obstaculo:
+     * {@code Z} islas de piedra sobre lava (hay que saltar de isla en isla, cinco veces seguidas), {@code K} calabazas rodantes que vienen hacia ti (en tres carriles: cambia de carril o salta en el momento justo)
+     * y {@code F} aspas giratorias alrededor de un pilar (hay que saltarlas). ~670 bloques (~620 de carrera, ~115 s: lo que dura la musica desde que sube).
+     */
+    static final Def CALABAZA = new Def("calabaza", "la huida de la calabaza", "calabazar", 16384,
+            new char[]{'S', 'R', 'S', 'L', 'S', 'R', 'S', 'L', 'S', 'L', 'S', 'R', 'S', 'L', 'S', 'R', 'S', 'R', 'S', 'L', 'S'},
+            new int[]{100, 8, 24, 8, 26, 8, 44, 14, 56, 14, 40, 8, 22, 8, 22, 8, 64, 12, 36, 12, 80},
+            new Nivel.Mod[]{
+                    new Nivel.Mod(0, 70, 'T'), new Nivel.Mod(0, 76, 'B'), new Nivel.Mod(0, 83, 'T'), new Nivel.Mod(0, 88, 'T'),
+                    new Nivel.Mod(2, 7, 'C'), new Nivel.Mod(2, 13, 'T'),
+                    new Nivel.Mod(4, 6, 'L'), new Nivel.Mod(4, 12, 'R'), new Nivel.Mod(4, 18, 'T'),
+                    new Nivel.Mod(6, 6, 'Z'), new Nivel.Mod(6, 34, 'T'),
+                    new Nivel.Mod(8, 8, 'F'), new Nivel.Mod(8, 22, 'B'), new Nivel.Mod(8, 29, 'W'), new Nivel.Mod(8, 37, 'T'), new Nivel.Mod(8, 42, 'T'),
+                    new Nivel.Mod(10, 6, 'K'), new Nivel.Mod(10, 27, 'H'), new Nivel.Mod(10, 33, 'T'),
+                    new Nivel.Mod(12, 6, 'W'), new Nivel.Mod(12, 13, 'B'),
+                    new Nivel.Mod(14, 6, 'C'), new Nivel.Mod(14, 12, 'L'),
+                    new Nivel.Mod(16, 6, 'P'), new Nivel.Mod(16, 24, 'T'), new Nivel.Mod(16, 29, 'R'), new Nivel.Mod(16, 35, 'L'), new Nivel.Mod(16, 41, 'R'), new Nivel.Mod(16, 47, 'T'), new Nivel.Mod(16, 52, 'B'),
+                    new Nivel.Mod(18, 6, 'Z'),
+                    new Nivel.Mod(20, 8, 'F'), new Nivel.Mod(20, 20, 'T'), new Nivel.Mod(20, 25, 'B'), new Nivel.Mod(20, 31, 'K'), new Nivel.Mod(20, 51, 'H'), new Nivel.Mod(20, 57, 'W'), new Nivel.Mod(20, 64, 'T')},
+            false, false, "pumpkaboo level=60", 5.4f, 3.6, 3.4, 0.9,
+            3.1, 0.7, 4, 5.45, 6.0, 2.5,
+            "el Pumpkaboo", "El Pumpkaboo", "convierte en calabaza", 184, 250, 130);
+
+    // ---------------------------------------------------------------- nivel 3: la huida de los michialiens (el final: el espacio, una horda de michialiens, Emi)
+    /**
+     * El ultimo nivel (el dueño pidio que fuera mas dificil que el de la calabaza): un camino flotando en el espacio (tematica espacial y tierna: suelo de
+     * hormigon rosa y lila, cristal de colores, estrellas y planetas debajo), 706 bloques con 11 curvas, camino aun mas estrecho (5,8 a 6,8), una horda de
+     * michialiens de todos los aspectos que corre a la misma velocidad que tu y se acerca mas rapido que en los otros niveles, y 41 obstaculos: los de siempre
+     * mas islas {@code Z}, aspas {@code F} y calabazas rodantes {@code K} (aqui planetas), y la lluvia de meteoritos {@code M}, que solo hay en este nivel.
+     */
+    static final Def COSMOS = new Def("cosmos", "la huida de los michialiens", "cosmos", 8192,
+            new char[]{'S', 'L', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'L', 'S', 'R', 'S', 'L', 'S', 'R', 'S', 'R', 'S', 'L', 'S', 'R', 'S'},
+            new int[]{100, 8, 26, 8, 30, 12, 28, 12, 52, 8, 24, 8, 24, 14, 56, 10, 36, 10, 40, 12, 28, 8, 90},
+            new Nivel.Mod[]{
+                    new Nivel.Mod(0, 70, 'T'), new Nivel.Mod(0, 75, 'B'), new Nivel.Mod(0, 81, 'T'), new Nivel.Mod(0, 85, 'T'), new Nivel.Mod(0, 89, 'C'),
+                    new Nivel.Mod(2, 6, 'L'), new Nivel.Mod(2, 12, 'R'), new Nivel.Mod(2, 17, 'T'),
+                    new Nivel.Mod(4, 6, 'H'), new Nivel.Mod(4, 12, 'T'), new Nivel.Mod(4, 17, 'W'), new Nivel.Mod(4, 23, 'T'),
+                    new Nivel.Mod(6, 6, 'F'), new Nivel.Mod(6, 17, 'B'),
+                    new Nivel.Mod(8, 6, 'Z'), new Nivel.Mod(8, 33, 'T'), new Nivel.Mod(8, 38, 'T'), new Nivel.Mod(8, 42, 'B'),
+                    new Nivel.Mod(10, 6, 'L'), new Nivel.Mod(10, 11, 'R'), new Nivel.Mod(10, 16, 'T'),
+                    new Nivel.Mod(12, 6, 'C'), new Nivel.Mod(12, 11, 'L'), new Nivel.Mod(12, 16, 'R'),
+                    new Nivel.Mod(14, 6, 'K'), new Nivel.Mod(14, 25, 'F'), new Nivel.Mod(14, 36, 'W'), new Nivel.Mod(14, 42, 'T'), new Nivel.Mod(14, 46, 'H'),
+                    new Nivel.Mod(16, 6, 'M'), new Nivel.Mod(16, 27, 'B'),
+                    new Nivel.Mod(18, 6, 'P'), new Nivel.Mod(18, 23, 'T'), new Nivel.Mod(18, 27, 'R'), new Nivel.Mod(18, 32, 'L'),
+                    new Nivel.Mod(20, 6, 'K'),
+                    new Nivel.Mod(22, 8, 'F'), new Nivel.Mod(22, 19, 'T'), new Nivel.Mod(22, 23, 'B'), new Nivel.Mod(22, 28, 'Z'), new Nivel.Mod(22, 55, 'M')},
+            false, true, "gatitoalien level=50", 3.0f, 2.6, 2.6, 0.0,
+            2.9, 0.5, 3, 5.6, 4.5, 1.3,
+            "los michialiens", "Los michialiens", "aplastan", 210, 660, 190);
+
+    static final Def[] TODOS = {TYRANTRUM, CALABAZA, COSMOS};
+
+    static Def porNombre(String n) {
+        if (n == null) return TYRANTRUM;
+        String s = n.toLowerCase(java.util.Locale.ROOT);
+        for (Def d : TODOS) if (d.id().equals(s)) return d;
+        if (s.equals("pumpkaboo") || s.equals("halloween") || s.equals("2")) return CALABAZA;
+        if (s.equals("michialien") || s.equals("michialiens") || s.equals("espacio") || s.equals("3")) return COSMOS;
+        if (s.equals("1") || s.equals("selva")) return TYRANTRUM;
+        return null;
+    }
+}

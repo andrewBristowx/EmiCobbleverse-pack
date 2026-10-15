@@ -1,0 +1,188 @@
+{
+  "musica.persecucion": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_persecucion",
+        "stream": true
+      }
+    ]
+  },
+  "musica.espera": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_espera",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.estrella": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:estrella"
+    ]
+  },
+  "sfx.estrella_grande": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:estrella_grande"
+    ]
+  },
+  "sfx.bien": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:bien"
+    ]
+  },
+  "sfx.fallo": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:fallo"
+    ]
+  },
+  "sfx.caida": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:caida"
+    ]
+  },
+  "sfx.pisada": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:pisada"
+    ]
+  },
+  "sfx.victoria": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:victoria"
+    ]
+  },
+  "sfx.derrota": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:derrota"
+    ]
+  },
+  "sfx.listo": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:listo"
+    ]
+  },
+  "sfx.burla": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:burla"
+    ]
+  },
+  "sfx.angel": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:angel"
+    ]
+  },
+  "sfx.glup": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:glup"
+    ]
+  },
+  "sfx.derrota_comido": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:derrota_comido"
+    ]
+  },
+  "musica.calabaza_intro": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:calabaza_intro",
+        "stream": true
+      }
+    ]
+  },
+  "musica.calabaza": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:calabaza",
+        "stream": true
+      }
+    ]
+  },
+  "musica.espera_calabaza": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_espera_calabaza",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.hechizo": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:hechizo"
+    ]
+  },
+  "sfx.transformacion": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:transformacion"
+    ]
+  },
+  "sfx.derrota_calabaza": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:derrota_calabaza"
+    ]
+  },
+  "musica.cosmos_intro": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:cosmos_intro",
+        "stream": true
+      }
+    ]
+  },
+  "musica.cosmos": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:cosmos",
+        "stream": true
+      }
+    ]
+  },
+  "musica.espera_cosmos": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "emi_huida:musica_espera_cosmos",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.horda": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:horda"
+    ]
+  },
+  "sfx.aplastado": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:aplastado"
+    ]
+  },
+  "sfx.aparece": {
+    "category": "master",
+    "sounds": [
+      "emi_huida:aparece"
+    ]
+  }
+}

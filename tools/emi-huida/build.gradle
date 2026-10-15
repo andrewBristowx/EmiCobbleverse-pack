@@ -1,0 +1,36 @@
+plugins {
+    id 'fabric-loom' version '1.10.5'
+}
+
+version = project.mod_version
+group = 'emi.huida'
+base { archivesName = 'emi-huida' }
+
+// Cobblemon y Kotlin solo se usan para compilar (en el servidor ya estan instalados).
+// Rutas: variables de entorno COBBLEMON_JAR y KOTLIN_JAR (ver build.sh).
+def cobblemonJar = System.getenv('COBBLEMON_JAR')
+def kotlinJar = System.getenv('KOTLIN_JAR')
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    if (cobblemonJar) modCompileOnly files(cobblemonJar)
+    if (kotlinJar) compileOnly files(kotlinJar)
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}

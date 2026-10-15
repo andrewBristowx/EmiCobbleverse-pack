@@ -50,6 +50,7 @@ public final class EmiStreamlabs implements DedicatedServerModInitializer {
             server = s;
             DonationService service = new DonationService(cfg, dir.resolve("emi-streamlabs-estado.json"),
                     new VinculosTwitch(dir.resolve("emipokemon").resolve("twitch_profiles.json")), this::entregar, EmiStreamlabs::log);
+            service.setRepartidor(this::repartir);
             socket = new StreamlabsSocket(cfg.streamlabsUrl, cfg.streamlabsToken, service::onStreamlabsEvent, EmiStreamlabs::log);
             socket.start();
             timer = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -96,6 +97,32 @@ public final class EmiStreamlabs implements DedicatedServerModInitializer {
             return r.get(15, TimeUnit.SECONDS);
         } catch (Exception e) {
             log("No se pudo entregar a " + jugador + ": " + e);
+            return false;
+        }
+    }
+
+    /**
+     * Reparte los tickets de una donacion vencida entre todos los jugadores. La logica esta en Emipokemon (clase {@code com.emipokemon.twitch.CommunityRewards},
+     * del jar parcheado del pack): usa su correo, que ya sabe entregar a los conectados y guardar para los desconectados. Se llama por reflexion para que este
+     * mod arranque igual aunque Emipokemon no sea el parcheado (entonces devuelve false y la donacion sigue pendiente).
+     */
+    private boolean repartir(int tickets, String motivo) {
+        MinecraftServer s = server;
+        if (s == null) return false;
+        CompletableFuture<Boolean> r = new CompletableFuture<>();
+        s.execute(() -> {
+            try {
+                Class<?> c = Class.forName("com.emipokemon.twitch.CommunityRewards");
+                java.lang.reflect.Method m = c.getMethod("repartirTickets", MinecraftServer.class, int.class, String.class);
+                r.complete((Boolean) m.invoke(null, s, tickets, motivo));
+            } catch (Throwable e) {
+                r.completeExceptionally(e);
+            }
+        });
+        try {
+            return r.get(30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log("No se pudo repartir: " + e);
             return false;
         }
     }

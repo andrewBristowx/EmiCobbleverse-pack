@@ -1398,7 +1398,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "2249789a2005f1e3eea1943bc2613f750159e6267c0a337ec5f7f7cb192c3a3e"
+hash = "d0610fac589db6245430c125d9d6335f818db0c9c7e47aef32a89875a5b66093"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1853,12 +1853,16 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-plush-1.13.1.jar"
-hash = "c7a80157fa878bdefbfee3250e0c17fd6e64ff8ad4bfba00b3af21f721d16a1d"
+file = "mods/emi-huida-0.11.1.jar"
+hash = "80a475e10d5d64d00f445b3f2566248683c5ae2745318d2cca559e70912fdf82"
 
 [[files]]
-file = "mods/emi-streamlabs-1.1.0.jar"
-hash = "a05d0f8d68dace0bdbcf83bb2ce41a855e71efa01939b2628a8bf120ca6ec66f"
+file = "mods/emi-plush-1.14.0.jar"
+hash = "c3d659c9ff69d4876f0fafacd352f7d7557a3d90bfed91572184ea6d069eb6e2"
+
+[[files]]
+file = "mods/emi-streamlabs-1.2.0.jar"
+hash = "194d923b6a1430bb6c4535e71046c9b0ad6a940374af5b76f4b8b5bf2680af92"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"
