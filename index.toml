@@ -15,6 +15,10 @@ file = "config/MouseTweaks.cfg"
 hash = "4069ce1a439d8c37453c1b1e9f2037e0942674c7e48723a39b37eab245792ad4"
 
 [[files]]
+file = "config/NoChatReports/NCR-Encryption.json"
+hash = "1628f8f131e2b115cfb70fa0cfdce64398e7231ca267af44c657067c9fdca31f"
+
+[[files]]
 file = "config/PaginatedAdvancements.json5"
 hash = "678d385ab09c7d610f80f1f45d990dd829cbe52b8a02b4b24b3dd919439a8cfb"
 
