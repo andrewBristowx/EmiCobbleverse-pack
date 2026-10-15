@@ -213,8 +213,8 @@ final class EscenasCosmos {
             if (t >= tCruce) cruzados++;
             if (t == (int) Math.ceil(tCruce) && m.e != null) {                       // ¡plaf!
                 Vec3d pie = p.getPos();
-                sonido(w, pie, SoundEvents.ENTITY_SLIME_SQUISH, 1.6f, 0.55f + RND.nextFloat() * 0.5f);
-                sonido(w, pie, SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 1.2f, 0.8f + RND.nextFloat() * 0.4f);
+                sonido(w, pie, SoundEvents.BLOCK_WOOL_PLACE, 1.6f, 0.6f + RND.nextFloat() * 0.4f);          // un «plof» blandito (nada de sonidos de monstruo: solo gatitos y peluches)
+                sonido(w, pie, SoundEvents.BLOCK_WOOL_HIT, 1.2f, 0.8f + RND.nextFloat() * 0.4f);
                 if (i % 3 == 0) maullar(w, m.e.getPos(), 0.9f);
                 Escenas.particulas(w, ParticleTypes.POOF, pie.add(0, 0.3, 0), 8, 0.5, 0.1, 0.5, 0.05);
                 Escenas.particulas(w, ParticleTypes.CRIT, pie.add(0, 0.5, 0), 6, 0.5, 0.2, 0.5, 0.3);
@@ -327,7 +327,7 @@ final class EscenasCosmos {
                 pos = lerp(slot, fin, suave(u)).add(0, 3.6 * Math.sin(Math.PI * u), 0);
                 yaw = Escenas.yawHacia(pos, pEmi.add(0, 0, 0));
                 if (u >= 1.0) pos = fin.add(0, 0.12 * Math.sin(t * 0.5 + m.fase) * (t < F_AY + 40 ? 1 : 0.3), 0);
-                if (t == F_SALTAN + 2 * i + 26) { sonido(w, fin, SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 1.0f, 0.8f + RND.nextFloat() * 0.5f); Escenas.particulas(w, ParticleTypes.HEART, fin.add(0, 1.5, 0), 2, 0.6, 0.4, 0.6, 0.02); }
+                if (t == F_SALTAN + 2 * i + 26) { sonido(w, fin, SoundEvents.BLOCK_WOOL_PLACE, 1.0f, 1.0f + RND.nextFloat() * 0.5f); Escenas.particulas(w, ParticleTypes.HEART, fin.add(0, 1.5, 0), 2, 0.6, 0.4, 0.6, 0.02); }
                 if (t == F_SALTAN + 2 * i) maullar(w, slot, 1.0f);
             }
             Horda.poner(m, pos, yaw, corre, 8.5);
@@ -356,7 +356,7 @@ final class EscenasCosmos {
         }
         double alturaEmi = t >= F_AY ? 6.0 : 4.4;
         if (t == F_EMI + 12 && emi != null) { decir(j, w, emi, alturaEmi, EMI_1, "light_purple", 3.2f, t, 62); p.sendMessage(Text.literal("Emi: ").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD).append(Text.literal(EMI_1 + " " + EMI_2).formatted(Formatting.WHITE)), false); }
-        if (t == F_EMI + 60 && emi != null) { decir(j, w, emi, alturaEmi, EMI_2, "light_purple", 3.0f, t, 92); sonido(w, pEmi, SoundEvents.ENTITY_ALLAY_AMBIENT_WITH_ITEM, 1.2f, 1.5f); }
+        if (t == F_EMI + 60 && emi != null) { decir(j, w, emi, alturaEmi, EMI_2, "light_purple", 3.0f, t, 92); sonido(w, pEmi, SoundEvents.ENTITY_CAT_PURREOW, 1.2f, 1.6f); }
         if (emi != null && !emi.isRemoved()) {
             if (t == F_SALTAN + 4) emi.ponerEstado(2);
             if (t == F_AY) emi.ponerEstado(3);
@@ -364,7 +364,7 @@ final class EscenasCosmos {
         }
         if (t == F_AY && emi != null) {
             decir(j, w, emi, 6.0, EMI_AY, "light_purple", 3.4f, t, 70);
-            sonido(w, pEmi, SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, 1.6f, 1.2f);
+            sonido(w, pEmi, SoundEvents.ENTITY_CAT_AMBIENT, 1.6f, 1.4f);
             sonido(w, pEmi, "sfx.aplastado", 1.0f, 1.5f);
         }
 

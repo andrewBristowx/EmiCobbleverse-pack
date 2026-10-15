@@ -431,7 +431,7 @@ public final class Huida {
                 case 0 -> Sonidos.sfx(p, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.5f, 0.8f + RND.nextFloat() * 0.8f);
                 case 1 -> Sonidos.sfx(p, SoundEvents.ENTITY_CAT_AMBIENT, 0.25f, 1.1f + RND.nextFloat() * 0.5f);
                 case 2 -> Sonidos.sfx(p, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 0.3f, 0.9f + RND.nextFloat() * 0.7f);
-                case 3 -> Sonidos.sfx(p, SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, 0.4f, 1.0f + RND.nextFloat() * 0.5f);
+                case 3 -> Sonidos.sfx(p, SoundEvents.ENTITY_CAT_PURREOW, 0.3f, 1.3f + RND.nextFloat() * 0.4f);
                 case 4 -> Sonidos.sfx(p, SoundEvents.ENTITY_CAT_PURR, 0.25f, 1.3f);
                 default -> Sonidos.sfx(p, SoundEvents.BLOCK_AMETHYST_CLUSTER_PLACE, 0.4f, 1.5f);
             }
@@ -457,9 +457,30 @@ public final class Huida {
         }
     }
 
+    /** El «rugido» del perseguidor que oye el jugador. En el nivel 3 (los michialiens) solo hay maullidos: el coro de maullidos de la horda, sin sonidos de monstruos. */
+    static void rugido(ServerPlayerEntity p, float vol, float pitch) {
+        if (p == null) return;
+        if (Nivel.cosmos()) Sonidos.sfx(p, Sonidos.ev("sfx.horda"), Math.min(1.6f, vol), 1.0f);
+        else Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, vol, pitch);
+    }
+
+    /** El latido de peligro (el del Warden en los otros niveles; en el nivel 3, un tambor suave). */
+    static void latido(ServerPlayerEntity p, float vol, float pitch) {
+        if (p == null) return;
+        if (Nivel.cosmos()) Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), vol * 0.8f, 0.7f);
+        else Msg.sound(p, SoundEvents.ENTITY_WARDEN_HEARTBEAT, vol, pitch);
+    }
+
     /** Animacion de rugido de Cobblemon. {@code cry()} no hace nada si la entidad esta en silencio, asi que se le quita un instante. */
     static void rugir(PokemonEntity e) {
         if (e == null) return;
+        if (Nivel.cosmos()) {          // nivel 3: son michis, nada de gritos de monstruo: la animacion de gritar y un maullido de gato
+            if (e.getWorld() instanceof ServerWorld sw) {
+                for (ServerPlayerEntity pl : sw.getPlayers()) Escenas.anim(e, pl, "cry");
+                Escenas.sonido(sw, e.getPos(), SoundEvents.ENTITY_CAT_AMBIENT, 1.4f, 0.8f);
+            }
+            return;
+        }
         try { e.setSilent(false); e.cry(); e.setSilent(true); } catch (Throwable t) { EmiHuida.LOG.warn("cry: {}", t.toString()); }
     }
 
@@ -536,7 +557,7 @@ public final class Huida {
         if (resta == 46 && !esc && pruebaEscena == null) for (J j : jug.values()) {                    // el Tyrantrum ruge (animacion y grito de Cobblemon) antes de salir
             ServerPlayerEntity p = jugador(j);
             rugir(j.perseguidor);
-            if (p != null) Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.4f, 0.45f);
+            rugido(p, 1.4f, 0.45f);
         }
         if (resta <= 0) {
             fase = Fase.CORRIENDO;
@@ -574,7 +595,7 @@ public final class Huida {
                 if (pruebaEscena != null && !pruebaEscena.equals("intro")) j.inicioTick = now - 400;
                 Msg.title(p, Text.literal("¡CORRE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Llega a la puerta dorada").formatted(Formatting.WHITE), 0, 30, 10);
                 if (modoPrueba && pruebaEscena == null) p.sendMessage(Msg.say("MODO PRUEBA: " + Nivel.DEF.el() + " no te atrapa y esta carrera no cuenta en la clasificación. Se apaga con /huida modoprueba off."), false);
-                Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.4f);
+                rugido(p, 1.5f, 0.4f);
             }
             musica(now, Sonidos.persecucion());
         }
@@ -750,8 +771,9 @@ public final class Huida {
         double dist = j.s - j.sPerseguidor;
         if (now % 8 == 0) {
             float vol = (float) Math.max(0.2, Math.min(1.4, 1.5 - dist / 25.0));
-            Sonidos.sfx(p, Sonidos.PISADA, vol, (now / 8) % 2 == 0 ? 0.92f : 1.05f);
-            if (dist < 18) Msg.sound(p, SoundEvents.ENTITY_WARDEN_HEARTBEAT, 0.8f, 0.9f);
+            if (Nivel.cosmos()) Sonidos.sfx(p, SoundEvents.BLOCK_WOOL_STEP, Math.min(1.0f, vol), (now / 8) % 2 == 0 ? 1.3f : 1.6f);        // patitas de muchos michis, no pasos de dinosaurio
+            else Sonidos.sfx(p, Sonidos.PISADA, vol, (now / 8) % 2 == 0 ? 0.92f : 1.05f);
+            if (dist < 18) latido(p, 0.8f, 0.9f);
         }
 
         // atrapado / meta
@@ -762,7 +784,7 @@ public final class Huida {
             if (j.devorado) { acabar(j, p, now, false); return; }
             j.pausaTyr = now + PAUSA_ALCANCE;
             if (j.perseguidor != null) rugir(j.perseguidor);
-            Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.3f, 0.6f);
+            rugido(p, 1.3f, 0.6f);
         }
         if (j.s >= Nivel.S_META) { acabar(j, p, now, true); return; }
 
@@ -808,7 +830,7 @@ public final class Huida {
             j.devorado = true;
             congelar(p, true);
             Msg.title(p, Text.literal("¡DEMASIADOS ERRORES!").formatted(Formatting.DARK_RED, Formatting.BOLD), Text.literal(Nivel.DEF.El() + " " + Nivel.DEF.lanza() + " a por ti").formatted(Formatting.RED), 0, 40, 10);
-            Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.8f, 0.5f);
+            rugido(p, 1.8f, 0.5f);
             if (j.perseguidor != null) rugir(j.perseguidor);
             return;
         }
@@ -816,7 +838,7 @@ public final class Huida {
         Msg.title(p, Text.literal(msg).formatted(Formatting.RED, Formatting.BOLD),
                 ultimo ? Text.literal("Errores: " + cuenta + " · ¡un fallo más y te " + Nivel.DEF.come() + "!").formatted(Formatting.DARK_RED, Formatting.BOLD) : Text.literal("Errores: " + cuenta).formatted(Formatting.GRAY),
                 0, ultimo ? 35 : 15, 5);
-        if (ultimo) Msg.sound(p, SoundEvents.ENTITY_WARDEN_HEARTBEAT, 1.4f, 0.8f);
+        if (ultimo) latido(p, 1.4f, 0.8f);
     }
 
     /** Recoge las michiestrellas que toca el jugador (las de s cerca de la suya; las que se pasan sin coger se pierden). */
@@ -924,7 +946,7 @@ public final class Huida {
         } else {
             if (!esc) {
                 Msg.title(p, Text.literal("¡TE ATRAPÓ!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("★ " + j.puntos + " · Aguantaste " + tiempo + " · " + j.errores + " errores").formatted(Formatting.GRAY), 0, 100, 20);
-                Msg.sound(p, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.5f);
+                rugido(p, 1.5f, 0.5f);
                 Sonidos.sfx(p, Sonidos.DERROTA, 1f, 1f);
             }
             p.sendMessage(Msg.say(Nivel.DEF.El() + " " + Nivel.DEF.atrapo() + " tras " + tiempo + ". Michiestrellas: " + j.nEstrellas + " (" + j.puntos + " puntos)."), false);

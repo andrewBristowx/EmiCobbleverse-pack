@@ -5,6 +5,6 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "emi-huida-refmap.json",
   "mixins": ["LivingEntityMixin", "DiagnosticoRedMixin"],
-  "client": ["CameraMixin", "KeyboardInputMixin", "InGameHudMixin", "BossBarHudMixin", "BetterThirdPersonMixin", "GameRendererMixin", "PlayerEntityRendererMixin"],
+  "client": ["CameraMixin", "KeyboardInputMixin", "InGameHudMixin", "BossBarHudMixin", "BetterThirdPersonMixin", "GameRendererMixin", "PlayerEntityRendererMixin", "MusicTrackerMixin"],
   "injectors": { "defaultRequire": 1 }
 }
