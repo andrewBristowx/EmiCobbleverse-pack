@@ -14,7 +14,7 @@ final class Cfg {
     static int escenaLenta() { return Math.max(1, Integer.getInteger("emi.huida.escena_lenta", 1)); }
     /** Errores que te llevan a ser comido: con 3, los dos primeros se perdonan y al TERCERO el Tyrantrum se lanza y te come (que el Tyrantrum te alcance cuenta como un error). -1 = sin limite (te come al alcanzarte, como antes); -Demi.huida.max_errores=5 para cambiarlo. */
     static int maxErrores() { return Integer.getInteger("emi.huida.max_errores", 3); }
-    static double velBase() { return Double.parseDouble(System.getProperty("emi.huida.vel_base", String.valueOf(Huida.VEL_BASE))); }
+    static double velBase() { return Double.parseDouble(System.getProperty("emi.huida.vel_base", String.valueOf(Nivel.DEF.vel()))); }
 
     // ---- solo para pruebas: -Demi.huida.dbgcam=<archivo .properties> permite cambiar sin reiniciar el servidor los numeros de las camaras de las escenas del nivel 2 (se relee cada segundo)
     private static final java.util.Properties DBG = new java.util.Properties();

@@ -86,6 +86,7 @@ public final class Huida {
         Entity comida;                               // la comida que le da el michi angel al Tyrantrum
         Entity globo;                                // el «¡Bien hecho!» del michi angel
         final List<Entity> extras = new ArrayList<>();      // otras entidades de las escenas (la calabaza gigante, su tapa, globos de texto...): se quitan al terminar
+        final List<Dinamicos.Din> dins = new ArrayList<>(); // obstaculos que se mueven (aspas y calabazas rodantes del nivel 2) de su copia
         long pausaTyr;                               // hasta que tick el Tyrantrum esta parado (se queda rugiendo tras alcanzarte; mientras tanto no cuenta como alcance)
         boolean devorado;                            // ha pasado de los errores permitidos: el Tyrantrum se lanza a por el y lo come
         boolean enMeta;                              // ha terminado (escena incluida) y espera en la sala de la meta a que acaben todos y el organizador cierre
@@ -240,6 +241,7 @@ public final class Huida {
             j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.S_PERSEGUIDOR; j.vPerseguidor = VEL_BASE;
             j.est = Est.ESPERA; j.errores = 0; j.devorado = false; j.pausaTyr = 0; j.ultimoError = 0; j.desconectado = false; j.enContacto = false; j.listo = false;
             j.puntos = 0; j.nEstrellas = 0; j.sigEst = 0; j.combo = 0; j.racha = 0; j.ultimaEst = 0; j.cogidas.clear(); j.sigMod = 0; j.dentro = false; j.erroresAlEntrar = 0;
+            Dinamicos.quitar(j); j.dins.clear(); j.dins.addAll(Dinamicos.crear());
             j.estPos = new double[Nivel.ESTRELLAS.length][];
             float[] datos = new float[Nivel.ESTRELLAS.length * 4];
             for (int i = 0; i < Nivel.ESTRELLAS.length; i++) {
@@ -586,6 +588,19 @@ public final class Huida {
         j.s = Nivel.S_META + 3.0; j.idx = Nivel.idxDe(j.s);
     }
 
+    /** Solo para pruebas (/huida ir <s>): coloca al jugador que corre a esa distancia del recorrido (con el perseguidor 12 bloques por detras). */
+    public static String ir(ServerPlayerEntity p, double s) {
+        J j = jug.get(p.getUuid());
+        if (j == null || fase != Fase.CORRIENDO || j.est != Est.CORRE || j.nivel == null) return "Solo puedes usar esto mientras corres una huida.";
+        s = Math.max(Nivel.S_SALIDA, Math.min(Nivel.S_META - 2, s));
+        double[] e = Nivel.ejePos(j.hueco, s);
+        p.teleport(mundo(), e[0], Nivel.Y0, e[1], (float) e[2], 0f);
+        p.setVelocity(0, 0, 0); p.velocityModified = true; p.fallDistance = 0;
+        j.s = s; j.idx = Nivel.idxDe(s); j.sPerseguidor = s - 12; j.enContacto = false;
+        j.sigEst = 0; while (j.sigEst < Nivel.ESTRELLAS.length && Nivel.ESTRELLAS[j.sigEst].s() < s - 3.5) j.sigEst++;
+        return null;
+    }
+
     /** Termina la escena final: el jugador se queda en la meta (no se le devuelve a su sitio hasta que acaben todos y el organizador cierre con /huida terminar o el salga con /huida salir). */
     private static void esperar(ServerWorld w, J j, ServerPlayerEntity p, long now) {
         j.enMeta = true;
@@ -674,6 +689,17 @@ public final class Huida {
 
         recogerEstrellas(w, j, p, now);
         valorarObstaculos(j, p);
+        if (!j.devorado) {        // obstaculos que se mueven (aspas, calabazas rodantes): si te tocan es un error y te echan hacia atras
+            String golpe = Dinamicos.tick(w, j, p, now, pr.v());
+            if (golpe != null) {
+                error(j, p, now, golpe, false);
+                if (!j.devorado) {
+                    double yaw = Math.toRadians(Nivel.rumbo(j.s));
+                    p.setVelocity(Math.sin(yaw) * 0.45, 0.14, -Math.cos(yaw) * 0.45);
+                    p.velocityModified = true;
+                }
+            }
+        }
         ambiente(j, p, now);
 
         // el perseguidor sigue el trazado y destruye lo que encuentra
@@ -855,6 +881,7 @@ public final class Huida {
     private static void acabar(J j, ServerPlayerEntity p, long now, boolean escapo) {
         boolean esc = Cfg.escenas() && j.perseguidor != null && j.nivel != null;
         j.est = escapo ? Est.ESCAPO : Est.ATRAPADO;
+        Dinamicos.quitar(j);          // aspas y calabazas rodantes fuera antes de la escena final
         j.finTick = now; j.escT = 0; j.soltarEn = now + (esc ? (escapo ? Nivel.DEF.finalTicks() : Nivel.DEF.comidoTicks()) * (long) Cfg.escenaLenta() : ESPERA_FIN);
         if (j.perseguidor != null) {      // el Tyrantrum se para (deja de correr) y, si te ha atrapado, ruge
             ((Corredor) (Object) j.perseguidor).emi_huida$setPaso(0f);
@@ -996,6 +1023,7 @@ public final class Huida {
     static void quitarExtras(J j) {
         for (Entity e : j.extras) if (e != null && !e.isRemoved()) e.discard();
         j.extras.clear();
+        Dinamicos.quitar(j);
     }
 
     private static ServerPlayerEntity jugador(J j) {

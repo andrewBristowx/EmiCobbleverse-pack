@@ -36,6 +36,9 @@ final class Nivel {
     static final int MAX_HUECOS = 12;
     static final int PRE = 44;                // bloques de camino detras del punto de partida del jugador (la jaula del Tyrantrum, que mide ~20 de largo, cabe detras de la entrada)
     static final int PUENTE_LARGO = 14;
+    /** Obstaculos del nivel 2: Z islas de piedra sobre lava (zigzag), K zona por la que bajan calabazas rodantes, F aspas giratorias alrededor de un pilar (bloques de largo de cada uno). */
+    static final int Z_LARGO = 24, K_LARGO = 16, F_LARGO = 8;
+    static final double F_HUB = 4.0, F_RADIO = 3.3;          // el pilar de las aspas esta a F_HUB del principio de su zona; las aspas miden F_RADIO a cada lado
     static final double PASO = 0.5;
     static final int PAD = 27;                // alcance maximo del terreno desde la linea central
     static double anchoMax(double s) { return mediaAncho(s) + grosorMuro(s); }
@@ -50,9 +53,10 @@ final class Nivel {
     static double[] SEG_S0;
 
     /** Un modulo de obstaculo: T tronco (saltar), B barra baja con raices (agacharse), L/R/C pilares a la izquierda / derecha / centro (esquivar),
-     *  H hueco de 2 con lava y W hueco ancho de 3 (saltar), P puente de tablas que se derrumba. `seg` = indice de la recta en la ruta, `u` = distancia desde su inicio. */
+     *  H hueco de 2 con lava y W hueco ancho de 3 (saltar), P puente de tablas que se derrumba; solo en el nivel 2: Z islas de piedra sobre lava, K calabazas rodantes, F aspas giratorias.
+     *  `seg` = indice de la recta en la ruta, `u` = distancia desde su inicio. */
     record Mod(int seg, int u, char tipo) {
-        int filas() { return switch (tipo) { case 'H' -> 2; case 'W' -> 3; case 'P' -> PUENTE_LARGO; case 'B', 'L', 'R', 'C' -> 2; default -> 1; }; }
+        int filas() { return switch (tipo) { case 'H' -> 2; case 'W' -> 3; case 'P' -> PUENTE_LARGO; case 'B', 'L', 'R', 'C' -> 2; case 'Z' -> Z_LARGO; case 'K' -> K_LARGO; case 'F' -> F_LARGO; default -> 1; }; }
         double s0() { return SEG_S0[seg] + u; }
     }
     static Mod[] MODS;
@@ -192,6 +196,8 @@ final class Nivel {
                         case 'L' -> { if (v <= -1) OBS[id] = 'r'; }
                         case 'R' -> { if (v >= 1) OBS[id] = 'r'; }
                         case 'C' -> { if (Math.abs(v) <= 1) OBS[id] = 'r'; }
+                        case 'Z' -> { if (!plataformaZ(sc - s0, v)) HOYO[id] = 1; }                      // islas de piedra: todo es lava salvo las plataformas
+                        case 'F' -> { if (Math.abs(sc - (s0 + F_HUB)) <= 0.8 && Math.abs(v) <= 0.8) OBS[id] = 'p'; }       // el pilar de las aspas
                         default -> {}
                     }
                 }
@@ -251,6 +257,7 @@ final class Nivel {
                     l.add(new Estrella(a + n + 1.2, 0, 2.6, 1)); l.add(new Estrella(a + n + 2.6, 0, 1.7, 1));
                 }
                 case 'P' -> { for (double q = 2; q <= n - 2; q += 2.6) l.add(new Estrella(a + q, 0, 1.0, 1)); l.add(new Estrella(a + n + 2.5, 0, 1.0, 5)); }
+                case 'Z' -> { for (int k = 0; k <= 3; k++) l.add(new Estrella(a + 1.0 + 5.5 * k + 1.75, (k % 2 == 0 ? -1 : 1) * 1.55, 1.0, k == 3 ? 5 : 1)); }      // una en cada isla (la ultima vale 5)
                 default -> {}
             }
         }
@@ -323,10 +330,12 @@ final class Nivel {
             if (TIPO[m.seg()] != 'S') throw new IllegalStateException("Obstaculo en un arco: " + m);
             int min = m.seg() == 0 ? PRE + 22 : 6;
             if (m.u() < min || m.u() + m.filas() > VAL[m.seg()] - 6) throw new IllegalStateException("Obstaculo mal colocado: " + m);
+            if (m.seg() == NSEG - 1 && m.u() + m.filas() > VAL[m.seg()] - 14) throw new IllegalStateException("Obstaculo demasiado cerca de la meta: " + m);
         }
+        int gap = DEF.gapMin();
         for (int i = 0; i < MODS.length; i++) for (int j = i + 1; j < MODS.length; j++) {
             Mod a = MODS[i], b = MODS[j];
-            if (a.seg() == b.seg() && a.u() < b.u() + b.filas() + 4 && b.u() < a.u() + a.filas() + 4) throw new IllegalStateException("Obstaculos pegados: " + a + " " + b);
+            if (a.seg() == b.seg() && a.u() < b.u() + b.filas() + gap && b.u() < a.u() + a.filas() + gap) throw new IllegalStateException("Obstaculos pegados: " + a + " " + b);
         }
         if (VAL[NSEG - 1] - 8 < 52) throw new IllegalStateException("Ultima recta demasiado corta");
     }
@@ -337,11 +346,26 @@ final class Nivel {
         return d;
     }
 
-    /** Medio ancho del camino: 3,5 (7 celdas) en los obstaculos y hasta 4,7 (9 celdas) en el resto. */
+    /** Medio ancho del camino: en el nivel 1 3,5 (7 celdas) en los obstaculos y hasta 4,7 (9 celdas) en el resto; en el nivel 2 (mas estrecho) 3,1 y hasta 3,8. */
     static double mediaAncho(double s) {
         double n = 0.5 * Math.sin(s / 19.0 + 1.3) + 0.5 * Math.sin(s / 8.3 + 0.4);
         double f = Math.max(0, Math.min(1, (distMod(s) - 3) / 6));
-        return 3.5 + 1.2 * (n + 1) / 2 * f;
+        return DEF.anchoBase() + DEF.anchoVar() * (n + 1) / 2 * f;
+    }
+
+    /**
+     * Las islas de piedra del nivel 2 (modulo Z, 24 de largo): cuatro plataformas de 3,5 de largo, una por cada lado del centro y alternadas (izquierda, derecha,
+     * izquierda...) pero que se solapan 1,8 en el centro (de -0,9 a 0,9: se puede ir en linea recta por el medio), con 2 de lava entre una y otra (hay que saltar
+     * cinco veces seguidas: de la entrada a la primera isla, entre ellas y de la ultima a la salida); las michiestrellitas estan en el lado de fuera de cada isla (hay que zigzaguear para cogerlas, que es mas arriesgado).
+     * {@code u} = distancia desde el principio del modulo, {@code v} = lateral (positivo = derecha).
+     */
+    static boolean plataformaZ(double u, double v) {
+        if (u < 0.5 || u >= Z_LARGO - 1.0) return true;          // la entrada y la salida son suelo normal
+        int k = (int) Math.floor((u - 1.0) / 5.5);
+        if (k < 0 || k > 3 || (u - 1.0) - 5.5 * k > 3.5) return false;
+        double lado = (k % 2 == 0) ? -1 : 1;
+        double l = v * lado;
+        return l >= -0.9 && l <= 2.8;
     }
 
     private static double grosorMuro(double s) { return 2.3 + 0.9 * Math.sin(s / 11.0 + 2.0); }
@@ -472,13 +496,14 @@ final class Nivel {
         chunks(w, hueco, true);
         boolean primera = CONSTRUIDOS.computeIfAbsent(DEF.id(), k -> new HashSet<>()).add(hueco);
         BlockPos.Mutable p = new BlockPos.Mutable();
-        BlockState lava = Blocks.LAVA.getDefaultState(), piedra = (calabaza() ? Blocks.BLACKSTONE : Blocks.STONE_BRICKS).getDefaultState();
+        BlockState aire = Blocks.AIR.getDefaultState(), lava = Blocks.LAVA.getDefaultState(), piedra = (calabaza() ? Blocks.BLACKSTONE : Blocks.STONE_BRICKS).getDefaultState();
         if (primera) {
             long t0 = System.nanoTime();
             for (int iz = GZ0; iz < GZ0 + GH; iz++) for (int ix = GX0; ix < GX0 + GW; ix++) {
                 int id = (ix - GX0) + (iz - GZ0) * GW;
                 switch (CAT[id]) {
                     case 1 -> {
+                        for (int y = -5; y <= 6; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), aire, F);          // limpia lo que hubiera de una version anterior del nivel (si no, un hueco nuevo podria quedar tapado por el suelo viejo)
                         if (HOYO[id] != 0) {
                             w.setBlockState(p.set(ox + ix, Y0 - 6, iz), lava, F);
                             w.setBlockState(p.set(ox + ix, Y0 - 7, iz), piedra, F);
@@ -500,6 +525,7 @@ final class Nivel {
                             Block b = alto >= 7 && y >= alto - 1 ? cincel() : muro()[hash(ix, iz, y + 11) % muro().length];
                             w.setBlockState(p.set(ox + ix, Y0 + y, iz), b.getDefaultState(), F);
                         }
+                        for (int y = alto; y <= 12; y++) w.setBlockState(p.set(ox + ix, Y0 + y, iz), aire, F);       // lo que quedara de una version anterior
                         if (calabaza()) decorarMuro(w, p, ox + ix, Y0 + alto, iz, ix, iz, id, alto);
                         else if (alto <= 5 && hash(ix, iz, 77) % 4 == 0) w.setBlockState(p.set(ox + ix, Y0 + alto, iz), Blocks.JUNGLE_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true), F);
                     }
@@ -611,6 +637,11 @@ final class Nivel {
                     obst.add(poner(w, ox + ix, Y0 + 1, iz, losa, sc));                                     // la barra: hay que agacharse
                     if (hash(ix, iz, 13) % 2 == 0) obst.add(poner(w, ox + ix, Y0, iz, Blocks.HANGING_ROOTS.getDefaultState(), sc));   // raices colgando (sin colision)
                 }
+                case 'p' -> {          // pilar de las aspas giratorias (3 de alto, con una calabaza encendida encima)
+                    obst.add(poner(w, ox + ix, Y0, iz, Blocks.CHISELED_DEEPSLATE.getDefaultState(), sc));
+                    obst.add(poner(w, ox + ix, Y0 + 1, iz, Blocks.DEEPSLATE_BRICKS.getDefaultState(), sc));
+                    obst.add(poner(w, ox + ix, Y0 + 2, iz, farol(haciaAdelante(sc)), sc));
+                }
                 case 'r' -> {
                     if (calabaza()) {          // «espantapajaros»: un pilar de piedra oscura con una calabaza encendida encima
                         obst.add(poner(w, ox + ix, Y0, iz, (hash(ix, iz, 43) % 3 == 0 ? Blocks.CRACKED_DEEPSLATE_BRICKS : Blocks.DEEPSLATE_BRICKS).getDefaultState(), sc));
@@ -623,7 +654,7 @@ final class Nivel {
         obst.sort((a, b) -> Double.compare(a.s(), b.s()));
         puente.sort((a, b) -> Double.compare(a.s(), b.s()));
         List<Check> checks = new ArrayList<>();
-        for (Mod m : MODS) if (m.tipo() == 'H' || m.tipo() == 'W' || m.tipo() == 'P') {
+        for (Mod m : MODS) if (m.tipo() == 'H' || m.tipo() == 'W' || m.tipo() == 'P' || m.tipo() == 'Z') {
             double sc = m.s0() - 4;
             double[] e = ejePos(0, sc);
             checks.add(new Check(sc, e[0] - ox(0), e[1], (float) e[2]));      // x local de la copia

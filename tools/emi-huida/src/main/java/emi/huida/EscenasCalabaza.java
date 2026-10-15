@@ -153,7 +153,7 @@ final class EscenasCalabaza {
     private static Vec3d adelante(double s) { double y = Math.toRadians(Nivel.rumbo(s)); return new Vec3d(-Math.sin(y), 0, Math.cos(y)); }
 
     /** Manda a los clientes cercanos la posicion exacta de una entidad (el seguimiento normal manda saltitos y se veia desplazada). */
-    private static void sync(Entity e) {
+    static void sync(Entity e) {
         if (e != null && !e.isRemoved() && e.getWorld() instanceof ServerWorld sw) sw.getChunkManager().sendToNearbyPlayers(e, new net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket(e));
     }
 

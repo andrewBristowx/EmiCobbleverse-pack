@@ -45,6 +45,9 @@ public final class Cmds {
                             if (niv == null) { c.getSource().sendError(Text.literal("Niveles: tyrantrum, calabaza.")); return 0; }
                             return con(c, () -> Huida.prueba(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "escena"), niv), "Preparando la prueba...");
                         }))));
+        // /huida ir <s>: lleva al organizador (que esta corriendo) a esa distancia del recorrido, para probar un obstaculo sin correr todo el nivel
+        root.then(admin("ir").then(CommandManager.argument("s", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 5000))
+                .executes(c -> con(c, () -> Huida.ir(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(c, "s")), "Teletransportado."))));
         // modo prueba: el Tyrantrum no te atrapa (para probar el final con un equipo que va con lag); sin argumento se alterna
         root.then(admin("modoprueba").executes(c -> modoPrueba(c, !Huida.modoPrueba))
                 .then(CommandManager.literal("on").executes(c -> modoPrueba(c, true)))
