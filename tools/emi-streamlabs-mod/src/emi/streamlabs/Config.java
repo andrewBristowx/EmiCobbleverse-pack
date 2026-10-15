@@ -23,6 +23,8 @@ public final class Config {
     public int maximoDolares = 1279;
     public int reintentoSegundos = 60;
     public int horasMaximasPendiente = 72;
+    /** A las cuantas horas una donacion sin entregar (o sin dueño) se reparte entre todos los jugadores. 0 = nunca (como antes). */
+    public double horasParaRepartir = 48;
     public boolean aceptarPruebasDeStreamlabs = false;
 
     public Config() {
@@ -64,6 +66,7 @@ public final class Config {
         if (c.maximoDolares < c.minimoDolares) c.maximoDolares = 1279;
         if (c.reintentoSegundos < 5) c.reintentoSegundos = 5;
         if (c.horasMaximasPendiente < 1) c.horasMaximasPendiente = 72;
+        if (c.horasParaRepartir < 0) c.horasParaRepartir = 48;
         return c;
     }
 }
