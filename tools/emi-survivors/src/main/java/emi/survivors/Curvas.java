@@ -19,8 +19,11 @@ final class Curvas {
     // ------------------------------------------------------------ monedas
 
     /** Michiestrellitas (la moneda de las mejoras permanentes) que se ganan al acabar una partida. {@code mult} = 1 + bonos de «suerte». */
-    static int monedas(int segundos, int derrotados, int nivel, int jefes, double mult) {
-        double base = segundos / 12.0 + derrotados / 15.0 + nivel * 2.0 + Jefes.MONEDAS_POR_JEFE * Math.max(0, jefes);
+    static int monedas(int segundos, int derrotados, int nivel, int jefes, double mult) { return monedas(segundos, derrotados, nivel, jefes, 0, mult); }
+
+    /** Igual, con {@code shinies} = los shinies que derroto ese jugador ({@link #MONEDAS_POR_SHINY} cada uno). */
+    static int monedas(int segundos, int derrotados, int nivel, int jefes, int shinies, double mult) {
+        double base = segundos / 12.0 + derrotados / 15.0 + nivel * 2.0 + Jefes.MONEDAS_POR_JEFE * Math.max(0, jefes) + MONEDAS_POR_SHINY * Math.max(0, shinies);
         return (int) Math.max(0, Math.round(base * mult));
     }
 
@@ -42,6 +45,18 @@ final class Curvas {
 
     /** Probabilidad de que un enemigo normal derrotado suelte un objeto (los campeones y el jefe siempre sueltan). */
     static final double P_OBJETO = 0.006;
+
+    /**
+     * Probabilidad de que un enemigo normal sea un shiny (variocolor): 1 de cada 250. Da mucha mas experiencia, un objeto seguro y {@link #MONEDAS_POR_SHINY} michiestrellitas
+     * al acabar. {@code -Demi.survivors.shiny=<0-1>} la cambia (para pruebas).
+     */
+    static final double P_SHINY = leerShiny();
+    static final int MONEDAS_POR_SHINY = 3;
+
+    private static double leerShiny() {
+        try { return Math.max(0.0, Math.min(1.0, Double.parseDouble(System.getProperty("emi.survivors.shiny", "0.004")))); }
+        catch (NumberFormatException e) { return 0.004; }
+    }
 
     /** Cuantos enemigos de mas (en proporcion) hay por cada jugador extra: con 2 jugadores, 1,6 veces; con 3, 2,2; con 4, 2,8 (sin pasar de {@link #TOPE_EQUIPO}). */
     static double escalaCantidad(int jugadores) { return 1 + 0.6 * (Math.max(1, Math.min(4, jugadores)) - 1); }

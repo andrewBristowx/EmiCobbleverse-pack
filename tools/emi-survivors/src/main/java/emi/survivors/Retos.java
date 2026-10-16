@@ -20,7 +20,9 @@ final class Retos {
     private Retos() {}
 
     /** Lo que se mide de la partida de un jugador cuando acaba. {@code jefes} = jefes que mato el equipo; {@code jugadores} = cuantos jugaban (1 = en solitario). */
-    record Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie) {}
+    record Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies) {
+        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, 0); }
+    }
 
     /** El avance de una mision en un jugador (la mision es la de ese id). */
     static final class Prog {
@@ -77,6 +79,7 @@ final class Retos {
             new Familia("amigos", "Mejores amigos", "Juega {n} partidas en grupo", "n", new long[]{1, 10, 50}, new int[]{2, 5, 12}, j -> j.partidasGrupo),
             new Familia("viajero", "Viajero", "Juega en {n} arenas distintas", "n", new long[]{2, 3}, new int[]{2, 3}, j -> j.biomas.size()),
             new Familia("coleccionista", "Coleccionista", "Juega con {n} Pokémon distintos", "n", new long[]{3, 10, 25}, new int[]{2, 4, 10}, j -> j.especies.size()),
+            new Familia("shiny", "Cazashinies", "Derrota a {n} shinies en total", "n", new long[]{1, 5, 25, 100}, new int[]{2, 4, 10, 20}, j -> j.shiniesTotal),
             new Familia("fiel", "Fiel al juego", "Juega {n} en total", "h", new long[]{3600, 36000, 180000}, new int[]{2, 8, 20}, j -> j.segundosTotal));
 
     /** Lo que ha pasado al apuntar una partida: lineas para contarselo al jugador y las coronas que ha ganado. */
@@ -155,6 +158,7 @@ final class Retos {
         j.derrotadosTotal += s.derrotados();
         j.jefesTotal += s.jefes();
         j.evolucionesTotal += s.evoluciones();
+        j.shiniesTotal += s.shinies();
         if (s.jugadores() > 1) j.partidasGrupo++;
         j.mejorNivel = Math.max(j.mejorNivel, s.nivel());
         j.mejorJefes = Math.max(j.mejorJefes, s.jefes());

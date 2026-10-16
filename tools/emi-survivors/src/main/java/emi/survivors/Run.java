@@ -59,6 +59,7 @@ final class Run {
     final List<Proyectil> proyectiles = new ArrayList<>();
 
     int tick;                                    // el reloj del equipo (lo copia el equipo en cada tick; lo usan los ataques)
+    int shinies;                                 // shinies que ha derrotado en esta partida
     int iframes, derrotados, nivel = 1, xp, xpSig = Curvas.xpPara(1), pendientes;
     double hp;
     int estado = VIVO, reviveT;
@@ -270,6 +271,7 @@ final class Run {
 
     /** Este jugador acaba de derrotar a un enemigo (lo llama el equipo): la Campana Concha le cura. */
     void alDerrotar(Enemigo en) {
+        if (en.shiny) shinies++;
         if (st.concha > 0) curar(st.concha);
     }
 

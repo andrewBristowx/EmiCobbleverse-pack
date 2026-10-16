@@ -192,6 +192,7 @@ final class Equipo {
         for (Run m : miembros) if (m.iframes > 0) m.iframes--;
         for (Enemigo en : enemigos) {
             if (jefe != null && en == jefe.en) continue;
+            if (en.shiny && tick % 5 == 0) w.spawnParticles(ParticleTypes.END_ROD, en.e.getX(), en.e.getY() + en.radio * 2.2, en.e.getZ(), 2, 0.35, 0.45, 0.35, 0.02);          // el brillo de los shinies
             if (en.rumboT > 0) { en.correr(); continue; }                                  // estampida: sigue su carril
             Run obj = masCercano(objetivos, en.e.getX(), en.e.getZ());
             if (obj == null) en.mover(en.e.getX(), en.e.getZ(), 0);
@@ -363,11 +364,44 @@ final class Equipo {
         double tm = fijo > 0 ? 0 : t;
         double hpMul = Curvas.vidaMul(tm) * Curvas.escalaVida(miembros.size()), velMul = Curvas.velMul(tm);
         if (marea != null && marea.tipo == Mareas.Tipo.MICHIS && normal) { hpMul *= Mareas.VIDA_MICHIS; velMul *= Mareas.VELOCIDAD_MICHIS; }
-        Enemigo en = Enemigo.crear(w, sp, extra, s, tipoE, hpMul, Curvas.danoMul(tm), velMul, 0f, rnd);
+        boolean shiny = normal && fijo == 0 && tipoE != Enemigo.Tipo.MICHI && rnd.nextDouble() < Curvas.P_SHINY;
+        Enemigo en = Enemigo.crear(w, sp, shiny ? (extra + " shiny=yes").trim() : extra, s, tipoE, hpMul, Curvas.danoMul(tm), velMul, 0f, rnd);
         if (en == null) { fallosCrear++; return false; }
         enemigos.add(en);
         especiesVistas.add(sp.id());
-        if (normal && fijo == 0 && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) && rnd.nextDouble() < Pers.probabilidad(t)) aplicarPers(en, Pers.sortear(rnd));
+        if (shiny) marcarShiny(en);
+        if (normal && !shiny && fijo == 0 && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) && rnd.nextDouble() < Pers.probabilidad(t)) aplicarPers(en, Pers.sortear(rnd));
+        return true;
+    }
+
+    private boolean avisoShiny;
+
+    /** Convierte a un enemigo en un shiny (el aspecto variocolor ya lo trae de {@link Enemigo#crear}): mas vida, 5 veces mas experiencia, aviso y brillo. */
+    void marcarShiny(Enemigo en) {
+        en.shiny = true;
+        en.hp *= 2f; en.hpMax = en.hp;
+        en.xp *= 5;
+        Colores.marcar(en, "yellow");                       // contorno amarillo para verlo entre la horda
+        try { if (!en.e.getPokemon().getShiny()) { EmiSurvivors.LOG.warn("[shiny] la propiedad shiny=yes no bastó para {}; se pone a mano", en.especie.id()); en.e.getPokemon().setShiny(true); } }
+        catch (Throwable ex) { /* se queda con el aspecto que tenga */ }
+        for (Run m : miembros) Sonidos.sfx(m.jugador(), Sonidos.BRILLO, 0.7f, 1.4f);
+        avisar(Msg.say(avisoShiny ? "✦ ¡Un shiny!" : "✦ ¡Ha aparecido un Pokémon shiny (variocolor, con contorno amarillo)! Derrótalo: da mucha experiencia, un objeto seguro y michiestrellitas extra."));
+        avisoShiny = true;
+    }
+
+    /** Solo para pruebas (/survivor dev shiny): un shiny a unos 8 bloques del jugador. */
+    boolean devShiny(Run r) {
+        double a = rnd.nextDouble() * Math.PI * 2;
+        double x = r.pp.x + Math.cos(a) * 8, z = r.pp.z + Math.sin(a) * 8;
+        if (!Arena.dentro(this, x, z, 3.0)) { x = r.pp.x - Math.cos(a) * 8; z = r.pp.z - Math.sin(a) * 8; }
+        double t = tick / 20.0;
+        List<Especies.E> pool = pool(false);
+        if (pool.isEmpty()) return false;
+        Especies.E sp = elegirNormal(pool);
+        Enemigo en = Enemigo.crear(w, sp, "shiny=yes", new Vec3d(x, Arena.Y0, z), Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t), Curvas.velMul(t), 0f, rnd);
+        if (en == null) return false;
+        enemigos.add(en);
+        marcarShiny(en);
         return true;
     }
 
@@ -573,6 +607,12 @@ final class Equipo {
             }
             default -> {
                 gemas.add(new Gema(x, z, en.xp));
+                if (en.shiny) {
+                    w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, x, y + 0.8, z, 30, 0.5, 0.6, 0.5, 0.25);
+                    for (Run m : miembros) Sonidos.sfx(m.jugador(), Sonidos.BRILLO, 0.9f, 1.0f);
+                    if (fijo == 0) soltarObjeto(Objeto.sortear(rnd, true), x, z);
+                    if (en.ultimo != null) { ServerPlayerEntity pj = en.ultimo.jugador(); if (pj != null) pj.sendMessage(Msg.say("✦ ¡Shiny derrotado! +" + Curvas.MONEDAS_POR_SHINY + " michiestrellitas al acabar la partida y un objeto en el suelo."), false); }
+                }
                 if (fijo == 0 && rnd.nextDouble() < Curvas.P_OBJETO) soltarObjeto(Objeto.sortear(rnd, false), x, z);
             }
         }

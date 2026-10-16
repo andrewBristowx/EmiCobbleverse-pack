@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.9.0 (fase 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.10.0 (fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -29,8 +29,8 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
 3. **Progresión**, en tres entregas (reparto del asistente; cada una se prueba y se entrega por separado):
    - **3A. Tops por periodo y mejoras permanentes más variadas** — HECHA (0.7.0): el top se puede ver de **hoy, de esta semana, de este mes o de siempre**, y hay **12 mejoras** por Pokémon (5 nuevas: Armadura, Crítico, Alcance, Rapidez y Vampirismo).
    - **3B. Misiones y logros** — HECHA (0.8.0): 3 misiones del día y 3 de la semana (las mismas para todos, salen de la fecha) y 11 logros con escalones, que dan **coronas**, una moneda aparte y escasa (**decisión del dueño, 2026-10-16**: las michiestrellitas son solo para las mejoras; las coronas son para la tienda de recompensas (3D)). Los premios reales los sigue dando el dueño a mano.
-   - **3C. Shinies** — después (enemigos variocolor con bonus).
-   - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — HECHA (0.9.0, esta): pestaña TIENDA donde se gastan las coronas en 7 tickets de los banners de Emipokemon y 5 objetos de Pokémon (Ultra Ball, Caramelo Raro, Revivir Máximo, Cápsula Habilidad y Master Ball). **Decisiones del dueño: máximo 10 de cada artículo al día y se entrega al correo (`/correo`).** Qué se vende y los precios son una primera propuesta del asistente (`Tienda.java`): el dueño los ajusta.
+   - **3C. Shinies** — HECHA (0.10.0, esta): 1 de cada 250 enemigos normales sale shiny (variocolor), con contorno amarillo y brillo; da 5 veces más experiencia, un objeto seguro y +3 michiestrellitas al acabar, y cuenta para el logro «Cazashinies».
+   - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — HECHA (0.9.0): pestaña TIENDA donde se gastan las coronas en 7 tickets de los banners de Emipokemon y 5 objetos de Pokémon (Ultra Ball, Caramelo Raro, Revivir Máximo, Cápsula Habilidad y Master Ball). **Decisiones del dueño: máximo 10 de cada artículo al día y se entrega al correo (`/correo`).** Qué se vende y los precios son una primera propuesta del asistente (`Tienda.java`): el dueño los ajusta.
 4. **Final y extras**: grietas con legendarios, «Sentencia» final, climas, eventos, más temas de Emi.
 
 ## Cómo se juega (jugador)
@@ -95,6 +95,13 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
 - **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
 - **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
+
+### Shinies (0.10.0)
+- **Aparición**: cada enemigo normal que sale tiene 1 posibilidad entre 250 (`Curvas.P_SHINY`; `-Demi.survivors.shiny=<0-1>` la cambia para pruebas) de ser un **shiny** de verdad de Cobblemon (se crea con la propiedad `shiny=yes`, así que lleva su aspecto variocolor). No lo son los Michialiens, los campeones, el jefe ni los de la estampida; no se pone en las partidas de medida. Un shiny **no** recibe personalidad.
+- **Cómo se ve**: **contorno amarillo** (el mismo sistema de equipos de color de las personalidades), chispas que lo rodean y un sonido de brillo; al salir el primero, el chat avisa a todo el equipo con la explicación y, después, «✦ ¡Un shiny!».
+- **Botín**: tiene el doble de vida; suelta **5 veces la experiencia**, **un objeto seguro** en el suelo (de los buenos, como los campeones), y cada shiny que derrota un jugador suma **+3 michiestrellitas** a sus ganancias al acabar (antes del bonus de suerte). Al derrotarlo, estallido de partículas, sonido y aviso al que le dio el último golpe; al acabar, el chat cuenta los shinies derrotados.
+- **Logro «Cazashinies»** (1, 5, 25 y 100 shinies en total; 2, 4, 10 y 20 coronas), con el contador `shiniesTotal` del jugador. Con el escalón nuevo los logros son 12 familias y 40 escalones (292 coronas en total) en dos páginas.
+- `/survivor dev shiny` (administradores): crea un shiny a 8 bloques de ti.
 
 ### Tienda de recompensas (0.9.0)
 - Pestaña **TIENDA** (la sexta; las pestañas se estrecharon para que quepan todas). 12 artículos, cada uno con su icono real del objeto, su precio en coronas y «Hoy: n/10». **Máximo 10 compras de cada artículo por jugador y día** (se vacía a medianoche, zona horaria del servidor) y **todo se entrega al correo** del jugador (`/correo`), aunque esté conectado.
@@ -228,6 +235,16 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.10.0: shinies)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): las monedas por shiny (+3 cada uno y nada si no hay), que la probabilidad sea pequeña y que el logro Cazashinies dé los escalones 1, 5 y 25 con 6 y 26 shinies.
+- **En el juego** (servidor ligero + cliente real, varias partidas normales de un jugador): `/survivor dev shiny` crea shinies con la propiedad `shiny=yes` (no hizo falta forzarlo a mano: el registro no avisó); se ven con contorno amarillo y chispas entre la horda, salen el aviso del primero y los siguientes; al derrotarlos dan el aviso «Shiny derrotado», la experiencia sube niveles de golpe, queda el objeto en el suelo y, al acabar la partida, aparece «Shinies derrotados», las monedas suben y se reconoce el logro («¡Logro «Cazashinies» 2/4: Derrota a 5 shinies en total! +4 coronas.»). La segunda página de logros se ve bien con la familia nueva.
+**No probado / límites**:
+- **Que aparezcan solos en una partida real** con la probabilidad de 1/250 (solo se crearon con el comando; con 1/250 saldrán unos 6 en una partida larga, pero es un cálculo).
+- Que **el aspecto variocolor se note** en todas las especies (en unas se ve mucho y en otras poco: por eso el contorno amarillo).
+- **Varios jugadores** (el aviso y el sonido van a todo el equipo; solo se probó con uno), el cliente en el pack entero y el servidor real.
+- El **equilibrio**: 5 veces la experiencia puede subir varios niveles de golpe; es un número a ojo.
 
 ## Probado / no probado (0.9.0: tienda de recompensas)
 **Probado**:

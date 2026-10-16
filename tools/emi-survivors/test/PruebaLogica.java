@@ -453,6 +453,9 @@ public final class PruebaLogica {
         int logrosTotal = 0;
         for (Retos.Familia f : Retos.FAMILIAS) for (int pr : f.premios()) logrosTotal += pr;
         ok(logrosTotal < 300, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
+        ok(Curvas.monedas(300, 100, 10, 0, 1.0) == Curvas.monedas(300, 100, 10, 0, 0, 1.0), "sin shinies, las monedas son las de siempre");
+        ok(Curvas.monedas(300, 100, 10, 0, 4, 1.0) - Curvas.monedas(300, 100, 10, 0, 0, 1.0) == 4 * Curvas.MONEDAS_POR_SHINY, "cada shiny suma " + Curvas.MONEDAS_POR_SHINY + " michiestrellitas");
+        ok(Curvas.P_SHINY > 0 && Curvas.P_SHINY <= 0.01, "los shinies son raros (" + Curvas.P_SHINY + ")");
         // un jugador: una partida da avance, y al cumplir la mision cobra una sola vez
         Path dir = Files.createTempDirectory("survivors_retos");
         Datos d = new Datos(dir);
@@ -490,6 +493,12 @@ public final class PruebaLogica {
         Retos.aplicar(k, new Retos.Partida(250, 100, 5, 0, "bosque", 1, 0, "eevee"), viernes, z);
         ok(k.dia.get(0).prog == 250 && !k.dia.get(0).hecha, "aguantar vale la mejor partida (250 y no 450)");
         ok(k.dia.get(1).prog == 200 && !k.dia.get(1).hecha && k.dia.get(2).prog == 2 && k.dia.get(2).hecha, "derrotados suma (200) y 2 partidas cumple");
+        // shinies: 6 en una partida dan los dos primeros escalones (1 y 5) y se suman en el total
+        Datos.Jugador sj = d.jugador(UUID.randomUUID(), "Cora");
+        Retos.Novedades ns = Retos.aplicar(sj, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 6), viernes, z);
+        ok(sj.shiniesTotal == 6 && sj.logros.getOrDefault("shiny", 0) == 2 && sj.coronas >= 6, "logro Cazashinies: 6 shinies = 2 escalones");
+        Retos.aplicar(sj, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 20), viernes, z);
+        ok(sj.shiniesTotal == 26 && sj.logros.getOrDefault("shiny", 0) == 3, "26 shinies en total: tercer escalon (25)");
         // se guarda y se lee de disco
         d.guardar(id);
         Datos d2 = new Datos(dir);
