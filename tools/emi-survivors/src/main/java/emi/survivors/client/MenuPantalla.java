@@ -17,6 +17,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import org.joml.Quaternionf;
 
@@ -34,9 +35,9 @@ import java.util.Map;
 @Environment(EnvType.CLIENT)
 public final class MenuPantalla extends Lienzo {
     private static final Identifier GEMA = Identifier.of("emi_survivors", "textures/gema.png");
-    private static final int T_JUGAR = 0, T_MEJORAS = 1, T_GRUPO = 2, T_TOP = 3, T_RETOS = 4;
-    private static final String[] TABS = {"JUGAR", "MEJORAS", "GRUPO", "TOP", "MISIONES"};
-    private static final String[] TABS_ID = {"jugar", "mejoras", "grupo", "top", "retos"};
+    private static final int T_JUGAR = 0, T_MEJORAS = 1, T_GRUPO = 2, T_TOP = 3, T_RETOS = 4, T_TIENDA = 5;
+    private static final String[] TABS = {"JUGAR", "MEJORAS", "GRUPO", "TOP", "MISIONES", "TIENDA"};
+    private static final String[] TABS_ID = {"jugar", "mejoras", "grupo", "top", "retos", "tienda"};
 
     /** La pantalla abierta ahora (para actualizarla cuando llegan datos nuevos del servidor). */
     public static MenuPantalla abierta;
@@ -83,6 +84,10 @@ public final class MenuPantalla extends Lienzo {
     private final Map<String, List<Marca>> tops = new HashMap<>();
     private final List<MisionC> misionesDia = new ArrayList<>(), misionesSemana = new ArrayList<>();
     private final List<LogroC> logros = new ArrayList<>();
+    private record ArticuloC(String id, String item, String nombre, String texto, int precio, String grupo, int hoy) {}
+    private final List<ArticuloC> articulos = new ArrayList<>();
+    private final Map<String, ItemStack> pilas = new HashMap<>();
+    private int limiteTienda = 10;
     private int pagLogros;
     private static final int LOGROS_POR_PAGINA = 6;
     private int maxGrupo = 4;
@@ -195,6 +200,15 @@ public final class MenuPantalla extends Lienzo {
                     r.get("puesto").getAsInt(), r.has("jefes") ? r.get("jefes").getAsInt() : r.get("jefe").getAsBoolean() ? 1 : 0, r.get("cuenta").getAsBoolean(), r.has("equipo") ? r.get("equipo").getAsString() : "",
                     r.has("retosCoronas") ? r.get("retosCoronas").getAsInt() : 0);
         }
+        articulos.clear();
+        if (o.has("tienda")) {
+            JsonObject td = o.getAsJsonObject("tienda");
+            limiteTienda = td.get("limite").getAsInt();
+            for (JsonElement e : td.getAsJsonArray("articulos")) {
+                JsonObject a = e.getAsJsonObject();
+                articulos.add(new ArticuloC(a.get("id").getAsString(), a.get("item").getAsString(), a.get("nombre").getAsString(), a.get("texto").getAsString(), a.get("precio").getAsInt(), a.get("grupo").getAsString(), a.get("hoy").getAsInt()));
+            }
+        }
         misionesDia.clear(); misionesSemana.clear(); logros.clear();
         if (o.has("retos")) {
             JsonObject rt = o.getAsJsonObject("retos");
@@ -288,10 +302,10 @@ public final class MenuPantalla extends Lienzo {
 
         // pestañas y salir
         for (int i = 0; i < TABS.length; i++) {
-            int x = 20 + i * 98;
-            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 92, 20);
-            caja(g, x, 48, 92, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : 0xFF1B1B30, act ? ORO : 0xFF55557A);
-            textoCentrado(g, TABS[i], x + 46, 54, act ? ORO : BLANCO, 1f);
+            int x = 20 + i * 82;
+            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 78, 20);
+            caja(g, x, 48, 78, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : 0xFF1B1B30, act ? ORO : 0xFF55557A);
+            textoCentrado(g, TABS[i], x + 39, 54, act ? ORO : BLANCO, 1f);
         }
         boton(g, 538, 48, 82, 20, "SALIR", 0xFF8A3A3A, true, dentro(mx, my, 538, 48, 82, 20), 1f);
 
@@ -300,6 +314,7 @@ public final class MenuPantalla extends Lienzo {
             case T_MEJORAS -> { lista(g, mx, my, delta); mejoras(g, mx, my); }
             case T_GRUPO -> grupo(g, mx, my);
             case T_RETOS -> retos(g, mx, my);
+            case T_TIENDA -> tienda(g, mx, my);
             default -> clasificacion(g, mx, my);
         }
         textoCentrado(g, "Inspirado en PokéSurvivor de JPTER78 · pokesurvivor.com", W / 2, 346, 0xFF77778A, 0.8f);
@@ -592,13 +607,48 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Las recompensas son coronas (escasas; las michiestrellitas son solo para las mejoras) y se cobran solas al acabar una partida que cuente.", LX, 336, 0xFF8888AA, 0.75f);
     }
 
+    // ------------------------------------------------------------ tienda de recompensas
+
+    private static final int TW = 296, TH = 34, TY = CY + 14;
+
+    private ItemStack pila(String item) {
+        return pilas.computeIfAbsent(item, k -> {
+            var it = Registries.ITEM.getOrEmpty(Identifier.of(k));
+            return it.isPresent() ? new ItemStack(it.get()) : ItemStack.EMPTY;
+        });
+    }
+
+    /** Donde va el articulo numero {@code i}: dos columnas de seis filas. */
+    private static int[] posArticulo(int i) { return new int[]{LX + (i / 6) * (TW + 8), TY + (i % 6) * (TH + 3)}; }
+
+    private void tienda(DrawContext g, int mx, int my) {
+        texto(g, "TIENDA DE RECOMPENSAS", LX, CY - 2, ORO, 1.2f);
+        texto(g, "Tus coronas: " + coronas + "   ·   Máximo " + limiteTienda + " de cada artículo al día", LX + 180, CY + 1, 0xFFC9B3FF, 0.85f);
+        for (int i = 0; i < articulos.size(); i++) {
+            ArticuloC a = articulos.get(i);
+            int[] p = posArticulo(i);
+            int x = p[0], y = p[1];
+            boolean tope = a.hoy() >= limiteTienda, puede = !tope && coronas >= a.precio();
+            caja(g, x, y, TW, TH, 0xFF1B1B30, a.grupo().equals("banner") ? 0xFF8A5AB0 : 0xFF55557A);
+            ItemStack s = pila(a.item());
+            if (!s.isEmpty()) g.drawItem(s, x + 8, y + 9);
+            texto(g, a.nombre(), x + 32, y + 5, BLANCO, 0.95f);
+            texto(g, a.texto(), x + 32, y + 17, GRIS, 0.7f);
+            texto(g, "Hoy: " + a.hoy() + "/" + limiteTienda, x + 32, y + 25, tope ? ROJO : 0xFF8888AA, 0.7f);
+            int bx = x + TW - 92, bw = 86;
+            boton(g, bx, y + 6, bw, 22, tope ? "AGOTADO HOY" : a.precio() + (a.precio() == 1 ? " corona" : " coronas"), 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 6, bw, 22), 0.85f);
+        }
+        if (articulos.isEmpty()) parrafo(g, "La tienda no está disponible.", LX, CY + 30, 400, GRIS, 1f);
+        texto(g, "Lo que compras llega a tu correo (/correo). Las coronas se ganan con misiones y logros.", LX, 336, 0xFF8888AA, 0.75f);
+    }
+
     // ------------------------------------------------------------ clics
 
     @Override
     protected void clic(int mx, int my, int boton) {
-        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 98, 48, 92, 20)) {
+        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 82, 48, 78, 20)) {
             tab = i; ultimoRefresco = 0;
-            if (i == T_TOP || i == T_GRUPO || i == T_RETOS) enviar("refrescar", TABS_ID[i], "");
+            if (i == T_TOP || i == T_GRUPO || i == T_RETOS || i == T_TIENDA) enviar("refrescar", TABS_ID[i], "");
             return;
         }
         if (dentro(mx, my, 538, 48, 82, 20)) { enviar("salir", "", ""); return; }
@@ -624,6 +674,13 @@ public final class MenuPantalla extends Lienzo {
             }
         }
         if (tab == T_GRUPO) clicGrupo(mx, my);
+        if (tab == T_TIENDA) {
+            for (int i = 0; i < articulos.size(); i++) {
+                ArticuloC a = articulos.get(i);
+                int[] ps = posArticulo(i);
+                if (a.hoy() < limiteTienda && coronas >= a.precio() && dentro(mx, my, ps[0] + TW - 92, ps[1] + 6, 86, 22)) { enviar("tienda_comprar", a.id(), ""); return; }
+            }
+        }
         if (tab == T_RETOS) {
             int paginas = Math.max(1, (logros.size() + LOGROS_POR_PAGINA - 1) / LOGROS_POR_PAGINA);
             if (paginas > 1 && dentro(mx, my, 322 + 200, CY - 4, 26, 16) && pagLogros > 0) pagLogros--;

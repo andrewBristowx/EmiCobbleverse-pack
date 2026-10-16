@@ -46,6 +46,9 @@ final class Datos {
         int derrotadosTotal, jefesTotal, evolucionesTotal, partidasGrupo, mejorNivel, mejorJefes;
         long segundosTotal;
         List<String> biomas = new ArrayList<>(), especies = new ArrayList<>();
+        // tienda de recompensas (desde 0.9.0): lo comprado hoy de cada articulo (se vacia al cambiar el dia, ver {@link Tienda#refrescar})
+        String tiendaDia = "";
+        Map<String, Integer> tiendaCompras = new HashMap<>();
     }
 
     static final String SOLO = "solo", GRUPO = "grupo";
@@ -107,6 +110,7 @@ final class Datos {
             if (j.logros == null) j.logros = new HashMap<>();
             if (j.biomas == null) j.biomas = new ArrayList<>();
             if (j.especies == null) j.especies = new ArrayList<>();
+            if (j.tiendaCompras == null) j.tiendaCompras = new HashMap<>();
             jugadores.put(id, j);
         }
         if (nombre != null && !nombre.isEmpty()) j.nombre = nombre;

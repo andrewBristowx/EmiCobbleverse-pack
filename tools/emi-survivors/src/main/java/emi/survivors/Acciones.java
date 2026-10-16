@@ -66,6 +66,19 @@ final class Acciones {
                     else Sonidos.sfx(p, Sonidos.MENU_COMPRAR, 0.9f, 1.0f);
                     Menu.enviar(p, "mejoras", null);
                 }
+                case "tienda_comprar" -> {
+                    if (!Mundo.enSala(p) || Partida.participa(p) || Partida.datos == null) return;
+                    String err = Tienda.comprar(Partida.datos.jugador(p.getUuid(), p.getGameProfile().getName()), a.a(), System.currentTimeMillis(), java.time.ZoneId.systemDefault(),
+                            art -> TiendaCorreo.enviar(p.getServer(), p.getUuid(), art));
+                    if (err != null) p.sendMessage(Msg.err(err), false);
+                    else {
+                        Partida.datos.guardar(p.getUuid());
+                        Tienda.Articulo art = Tienda.articulo(a.a());
+                        p.sendMessage(Msg.say("Comprado: " + art.nombre() + " (" + art.precio() + (art.precio() == 1 ? " corona" : " coronas") + "). Lo tienes en /correo."), false);
+                        Sonidos.sfx(p, Sonidos.MENU_COMPRAR, 0.9f, 1.0f);
+                    }
+                    Menu.enviar(p, "tienda", null);
+                }
                 case "menu" -> { if (Mundo.enSala(p) && !Partida.participa(p)) Menu.enviar(p, a.a().isEmpty() ? "jugar" : a.a(), null); }
                 case "salir" -> { String err = Mundo.salir(p); if (err != null) p.sendMessage(Msg.err(err), false); }
                 default -> EmiSurvivors.LOG.debug("Accion desconocida de {}: {}", p.getGameProfile().getName(), a.accion());

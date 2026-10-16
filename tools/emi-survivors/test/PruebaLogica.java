@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -503,6 +503,44 @@ public final class PruebaLogica {
         Retos.Novedades nv = Retos.aplicar(v, new Retos.Partida(30, 5, 2, 0, "pradera", 1, 0, "eevee"), viernes, z);
         ok(v.logros.getOrDefault("veterano", 0) == 1 && v.logros.getOrDefault("aguante", 0) == 1, "a un jugador antiguo se le reconocen sus partidas y su mejor tiempo (3 partidas, 400 s)");
         System.out.println("  misiones y logros: bien (" + nv.lineas.size() + " avisos al jugador antiguo)");
+    }
+
+    static void tienda() throws Exception {
+        System.out.println("== tienda");
+        java.time.ZoneId z = java.time.ZoneId.of("Europe/Madrid");
+        long ahora = java.time.ZonedDateTime.of(2026, 10, 16, 15, 30, 0, 0, z).toInstant().toEpochMilli(), dia = 86_400_000L;
+        Set<String> ids = new HashSet<>();
+        for (Tienda.Articulo a : Tienda.ARTICULOS) {
+            ok(ids.add(a.id()) && a.precio() > 0 && a.item().contains(":") && !a.nombre().isBlank() && (a.grupo().equals("banner") || a.grupo().equals("objeto")), "articulo valido " + a.id());
+            ok(Tienda.articulo(a.id()) == a, "se encuentra " + a.id());
+        }
+        ok(Tienda.ARTICULOS.size() <= 12, "caben en una pagina (12)");
+        ok(Tienda.LIMITE_DIA == 10, "el limite del dueño: 10 por articulo y dia");
+        Path dir = Files.createTempDirectory("survivors_tienda");
+        Datos d = new Datos(dir);
+        UUID id = UUID.randomUUID();
+        Datos.Jugador j = d.jugador(id, "Ana");
+        List<String> entregados = new java.util.ArrayList<>();
+        Tienda.Entrega bien = a -> { entregados.add(a.item()); return true; };
+        ok("Ese artículo no existe.".equals(Tienda.comprar(j, "nada", ahora, z, bien)), "articulo que no existe");
+        String err = Tienda.comprar(j, "gacha", ahora, z, bien);
+        ok(err != null && err.contains("Te faltan 3") && entregados.isEmpty() && j.coronas == 0, "sin coronas no se compra: " + err);
+        j.coronas = 100;
+        ok(Tienda.comprar(j, "gacha", ahora, z, bien) == null && j.coronas == 97 && entregados.equals(List.of("emipokemon:gacha_ticket")), "compra: cobra y entrega");
+        ok(Tienda.comprar(j, "gacha", ahora, z, a -> false) != null && j.coronas == 97 && Tienda.compradosHoy(j, "gacha") == 1, "si el correo falla no cobra ni cuenta");
+        ok(Tienda.comprar(j, "gacha", ahora, z, a -> { throw new IllegalStateException("x"); }) != null && j.coronas == 97, "si el correo lanza error no cobra");
+        for (int k = 0; k < 9; k++) ok(Tienda.comprar(j, "gacha", ahora, z, bien) == null, "compra " + (k + 2));
+        ok(Tienda.compradosHoy(j, "gacha") == 10 && j.coronas == 70, "10 compras de 3 coronas");
+        err = Tienda.comprar(j, "gacha", ahora, z, bien);
+        ok(err != null && err.contains("Hoy ya has comprado 10") && j.coronas == 70, "la undecima se rechaza: " + err);
+        ok(Tienda.comprar(j, "ultra", ahora, z, bien) == null && Tienda.compradosHoy(j, "ultra") == 1, "el limite es por articulo");
+        d.guardar(id);
+        Datos.Jugador r = new Datos(dir).jugador(id, "Ana");
+        ok(r.coronas == j.coronas && Tienda.compradosHoy(r, "gacha") == 10 && r.tiendaDia.equals("2026-10-16"), "las compras del dia se guardan");
+        ok(Tienda.comprar(j, "gacha", ahora + dia, z, bien) == null && Tienda.compradosHoy(j, "gacha") == 1 && Tienda.compradosHoy(j, "ultra") == 0, "al dia siguiente se vacian las compras");
+        j.coronas = 10;
+        ok(Tienda.comprar(j, "master", ahora + dia, z, bien) != null && j.coronas == 10, "la Master Ball cuesta mas de 10");
+        System.out.println("  tienda: bien");
     }
 
     static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }

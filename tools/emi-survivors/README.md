@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.8.0 (fase 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.9.0 (fase 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -28,9 +28,9 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
    - **2D. 3 biomas y música/sonidos propios** — HECHA (0.6.0): tres arenas con su dimensión (Pradera, Bosque Embrujado y Cosmos Michialien), elegibles en el menú; 5 canciones y 31 efectos propios sintetizados por código. El dueño dio el visto bueno para la fase 3 (2026-10-16).
 3. **Progresión**, en tres entregas (reparto del asistente; cada una se prueba y se entrega por separado):
    - **3A. Tops por periodo y mejoras permanentes más variadas** — HECHA (0.7.0): el top se puede ver de **hoy, de esta semana, de este mes o de siempre**, y hay **12 mejoras** por Pokémon (5 nuevas: Armadura, Crítico, Alcance, Rapidez y Vampirismo).
-   - **3B. Misiones y logros** — HECHA (0.8.0, esta): 3 misiones del día y 3 de la semana (las mismas para todos, salen de la fecha) y 11 logros con escalones, que dan **coronas**, una moneda aparte y escasa (**decisión del dueño, 2026-10-16**: las michiestrellitas son solo para las mejoras; las coronas son para una tienda de recompensas que aún no existe). Los premios reales los sigue dando el dueño a mano.
+   - **3B. Misiones y logros** — HECHA (0.8.0): 3 misiones del día y 3 de la semana (las mismas para todos, salen de la fecha) y 11 logros con escalones, que dan **coronas**, una moneda aparte y escasa (**decisión del dueño, 2026-10-16**: las michiestrellitas son solo para las mejoras; las coronas son para la tienda de recompensas (3D)). Los premios reales los sigue dando el dueño a mano.
    - **3C. Shinies** — después (enemigos variocolor con bonus).
-   - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — por decidir: gastar coronas en tiradas de banners y objetos útiles de Pokémon (Master Balls…). **No se construye sin el OK del dueño**: antes hay que fijar qué se vende, a qué precio y con qué límites (son cosas reales del servidor, que antes se habían descartado como «premios automáticos»).
+   - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — HECHA (0.9.0, esta): pestaña TIENDA donde se gastan las coronas en 7 tickets de los banners de Emipokemon y 5 objetos de Pokémon (Ultra Ball, Caramelo Raro, Revivir Máximo, Cápsula Habilidad y Master Ball). **Decisiones del dueño: máximo 10 de cada artículo al día y se entrega al correo (`/correo`).** Qué se vende y los precios son una primera propuesta del asistente (`Tienda.java`): el dueño los ajusta.
 4. **Final y extras**: grietas con legendarios, «Sentencia» final, climas, eventos, más temas de Emi.
 
 ## Cómo se juega (jugador)
@@ -90,11 +90,17 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Mejoras**: ver la lista en JUGAR→MEJORAS arriba. El coste de cada una sale de `Meta.costo(mejora, nivelActual) = base × (nivel + 1)`; los iconos de las 5 nuevas son propios (`assets/iconos_objetos.py`; el atlas pasa a 111 iconos).
 
 ### Misiones, logros y coronas (0.8.0)
-- **Coronas**: una moneda nueva (`coronas` en `jugadores/<uuid>.json`), **aparte de las michiestrellitas**. Solo se ganan con misiones y logros, en poca cantidad, y **no valen para las mejoras** (las michiestrellitas siguen siendo solo para mejoras). Hoy no hay dónde gastarlas: es la base de la tienda de recompensas (3D). Se ven arriba a la derecha del menú.
+- **Coronas**: una moneda nueva (`coronas` en `jugadores/<uuid>.json`), **aparte de las michiestrellitas**. Solo se ganan con misiones y logros, en poca cantidad, y **no valen para las mejoras** (las michiestrellitas siguen siendo solo para mejoras). Se gastan en la tienda de recompensas (0.9.0). Se ven arriba a la derecha del menú.
 - **Misiones** (`Retos.java`): cada día 3 del día (1-2 coronas cada una) y cada semana 3 de la semana (4-8 coronas). Salen de la **fecha** (misma elección para todos, sin repetir la misma medida): derrotar N Pokémon, jugar N partidas, aguantar N minutos, llegar a nivel N, derrotar jefes, evolucionar ataques y jugar en grupo. Las del día se renuevan a medianoche y las de la semana el lunes (zona horaria del servidor); lo que no hiciste se pierde. «Aguantar» y «nivel» valen la mejor partida; el resto se suma entre partidas.
 - **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
 - **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
 - **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
+
+### Tienda de recompensas (0.9.0)
+- Pestaña **TIENDA** (la sexta; las pestañas se estrecharon para que quepan todas). 12 artículos, cada uno con su icono real del objeto, su precio en coronas y «Hoy: n/10». **Máximo 10 compras de cada artículo por jugador y día** (se vacía a medianoche, zona horaria del servidor) y **todo se entrega al correo** del jugador (`/correo`), aunque esté conectado.
+- Catálogo (propuesta del asistente; los precios son un cálculo de lo escasas que son las coronas, no una medida): tickets de Emipokemon — Gacha 3, Cosméticos 3, Cartas 3, Tipos 4, Tesoros 4, Garra 4 y Especial de Emi 8 —; objetos de Cobblemon — Ultra Ball 2, Caramelo Raro 4, Revivir Máximo 4, Cápsula Habilidad 15 y Master Ball 40. Se cambia en `Tienda.ARTICULOS` (hasta 12 caben en la pantalla).
+- **Cómo se entrega** (`TiendaCorreo.java`): llama por reflexión a `com.emipokemon.mail.MailboxService.sendGift(servidor, uuid, pila, remitente, mensaje)` del Emipokemon del pack, que añade el objeto al correo, guarda el archivo del jugador y le avisa («✉ Te llegó un regalo nuevo al correo»). **Solo se cobra si el correo lo ha aceptado**: si falla (por ejemplo, sin Emipokemon), el jugador no pierde coronas.
+- `/survivor dev coronas <n>` (administradores): suma o resta coronas para probar.
 
 ### Comandos
 Para todos: `/survivor entrar`, `/survivor salir`, `/survivor menu` (en la sala), `/survivor top [hoy|semana|mes|siempre] [cuántos]` (en el chat: las dos listas del periodo), `/survivor parar` (tu partida).
@@ -222,6 +228,15 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.9.0: tienda de recompensas)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): precios, límite de 10 por artículo y día, que el límite es por artículo, que sin coronas no se compra, que si el correo falla (o lanza un error) no se cobra ni se cuenta, que al día siguiente se vacían las compras y que se guarda en disco.
+- **En el juego con el pack entero** (servidor y cliente reales con Emipokemon): la pestaña TIENDA con los iconos reales de los 12 artículos; comprar un Ticket Gacha, una Ultra Ball y otro Ticket Gacha: salió el aviso de Emipokemon «Te llegó un regalo nuevo al correo», se descontaron las coronas y **en el archivo de correo del jugador de Emipokemon aparecieron las tres entradas** (`emipokemon:gacha_ticket`, `cobblemon:ultra_ball`, `emipokemon:gacha_ticket`, de «Tienda de recompensas»); comprar el Ticket Gacha 10 veces seguidas: el botón pasa a «AGOTADO HOY» («Hoy: 10/10») y no deja una undécima; las coronas bajan lo justo (110 − 3×10 − 2 = 78).
+**No probado / límites**:
+- **Reclamar los objetos con `/correo`** (es de Emipokemon; solo se comprobó que llegan al correo), la compra de los otros artículos (Master Ball, Cápsula Habilidad…; usan el mismo camino), el cambio real de día y el servidor real de HolyHosting.
+- **Que los precios sean justos**: dependen de cuántas coronas gane la gente de verdad; son una propuesta. Con 3-6 coronas al día de misiones, una Master Ball (40) tarda más de una semana.
+- Que un banner «tirado» con un ticket de la tienda funcione igual que uno ganado de otra forma (son los mismos objetos de Emipokemon, pero no se gastó ninguno).
 
 ## Probado / no probado (0.8.0: misiones, logros y coronas)
 **Probado**:

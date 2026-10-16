@@ -113,6 +113,8 @@ public final class Cmds {
                             .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), IntegerArgumentType.getInteger(c, "nivel")))))));
         dev.then(CommandManager.literal("monedas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000))
                 .executes(c -> con(c, () -> Partida.devMonedas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "n"))))));
+        dev.then(CommandManager.literal("coronas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000))
+                .executes(c -> con(c, () -> Partida.devCoronas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "n"))))));
         // /survivor dev reconstruir <bioma> [hueco]: borra y vuelve a construir esa arena (para probar cambios de diseño sin reiniciar; no puede haber una partida en ella)
         dev.then(CommandManager.literal("reconstruir").then(argBioma().executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : Partida.reconstruir(b, 0); }, "Arena reconstruida."))
                 .then(CommandManager.argument("hueco", IntegerArgumentType.integer(0, 11)).executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : Partida.reconstruir(b, IntegerArgumentType.getInteger(c, "hueco")); }, "Arena reconstruida.")))));

@@ -473,6 +473,14 @@ public final class Partida {
         return null;
     }
 
+    public static String devCoronas(ServerPlayerEntity p, int n) {
+        if (datos == null) return "El minijuego aun no esta listo.";
+        Datos.Jugador j = datos.jugador(p.getUuid(), p.getGameProfile().getName());
+        j.coronas = Math.max(0, j.coronas + n);
+        datos.guardar(p.getUuid());
+        return null;
+    }
+
     /** Para probar: da experiencia, niveles, ataques... a la partida del administrador. Devuelve el motivo si no se puede, o null. */
     public static String dev(ServerPlayerEntity p, String que, String id, int n) {
         Run r = runs.get(p.getUuid());

@@ -178,6 +178,20 @@ final class Menu {
         retos.add("logros", logros);
         o.add("retos", retos);
 
+        // tienda de recompensas (con las coronas)
+        Tienda.refrescar(j, ahora, java.time.ZoneId.systemDefault());
+        JsonObject tienda = new JsonObject();
+        tienda.addProperty("limite", Tienda.LIMITE_DIA);
+        JsonArray arts = new JsonArray();
+        for (Tienda.Articulo a : Tienda.ARTICULOS) {
+            JsonObject e = new JsonObject();
+            e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("texto", a.texto());
+            e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("hoy", Tienda.compradosHoy(j, a.id()));
+            arts.add(e);
+        }
+        tienda.add("articulos", arts);
+        o.add("tienda", tienda);
+
         // el grupo del jugador (si esta en uno) y los grupos a los que se puede unir
         Grupos.Grupo g = Partida.grupos.de(p.getUuid());
         JsonObject gr = new JsonObject();
