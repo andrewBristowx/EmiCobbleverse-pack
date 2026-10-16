@@ -65,13 +65,14 @@ def g_tajo(p=None):
 
 
 def g_bumeran(p=None):
+    punta = RAMPAS['rojo'].mid if p is None else p.dark                           # las puntas rojas del bumeran amarillo; en los demas, un tono oscuro de su color
     p = p or RAMPAS['oro']
     d = nuevo()
     d.plano(arco(11, 13, 10.6, 18, 78, 1.3), RAMPAS['hueso'].light)              # lo que gira al volar
     d.plano(arco(11, 13, 10.6, 202, 262, 1.3), RAMPAS['hueso'].light)
     d.pintar(arco(17.0, 17.0, 12.4, 176, 278, 5.8, 5.8), p, 1.0)
     for a0, a1 in ((178, 192), (262, 276)):
-        d.plano(arco(17.0, 17.0, 12.4, a0, a1, 5.8, 5.8), RAMPAS['rojo'].mid)
+        d.plano(arco(17.0, 17.0, 12.4, a0, a1, 5.8, 5.8), punta)
     d.plano(arco(17.0, 17.0, 12.4, 206, 250, 1.3), p.hi)
     return d
 
