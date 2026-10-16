@@ -16,6 +16,22 @@ public final class Cmds {
 
     public static void register(CommandDispatcher<ServerCommandSource> d) {
         var root = CommandManager.literal("survivor");
+        // para todos los jugadores: entrar al mundo del minijuego, salir, abrir el menu y ver el top
+        root.then(CommandManager.literal("entrar").executes(c -> con(c, () -> Mundo.entrar(c.getSource().getPlayerOrThrow()))));
+        root.then(CommandManager.literal("salir").executes(c -> con(c, () -> Mundo.salir(c.getSource().getPlayerOrThrow()))));
+        root.then(CommandManager.literal("menu").executes(c -> con(c, () -> {
+            var p = c.getSource().getPlayerOrThrow();
+            if (!Mundo.enSala(p)) return "El menú solo se abre en la sala del minijuego (/survivor entrar).";
+            if (Partida.participa(p)) return "Estás en una partida.";
+            Menu.enviar(p, "jugar", null); return null;
+        })));
+        root.then(CommandManager.literal("top").executes(c -> { top(c, 10); return 1; })
+                .then(CommandManager.argument("cuantos", IntegerArgumentType.integer(1, 100)).executes(c -> { top(c, IntegerArgumentType.getInteger(c, "cuantos")); return 1; }))
+                .then(admin("reiniciar").executes(c -> {
+                    String copia = Partida.datos == null ? null : Partida.datos.reiniciarTop();
+                    c.getSource().sendFeedback(() -> Msg.say(copia == null ? "El top ya estaba vacío." : "Top reiniciado. Copia del anterior guardada en emi_survivors/" + copia), true);
+                    return 1;
+                })));
         // /survivor prueba [hueco]: una partida de verdad (oleadas, cartas, jefe) para quien lo escribe, con el Pokemon del hueco 1..6 del equipo
         root.then(admin("prueba").executes(c -> con(c, () -> Partida.iniciar(c.getSource().getPlayerOrThrow(), 1, 0, true), "Preparando la partida..."))
                 .then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6))
@@ -49,10 +65,25 @@ public final class Cmds {
                     .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), 1)))
                     .then(CommandManager.argument("nivel", IntegerArgumentType.integer(1, 5))
                             .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), IntegerArgumentType.getInteger(c, "nivel")))))));
+        dev.then(CommandManager.literal("monedas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000))
+                .executes(c -> con(c, () -> Partida.devMonedas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "n"))))));
         root.then(dev);
         root.then(CommandManager.literal("estado").executes(c -> { c.getSource().sendFeedback(() -> Msg.say(Partida.estado()), false); return 1; }));
-        root.executes(c -> { c.getSource().sendFeedback(() -> Msg.say("Emi Survivors (fase 1). Comandos de prueba: /survivor prueba [hueco], /survivor medida <enemigos>, /survivor parar, /survivor inmortal, /survivor estado, /survivor dev ..."), false); return 1; });
+        root.executes(c -> { c.getSource().sendFeedback(() -> Msg.say("Emi Survivors: /survivor entrar (al mundo del minijuego), /survivor salir, /survivor menu, /survivor top. Administradores: /survivor prueba, medida, parar, inmortal, estado, dev ..."), false); return 1; });
         d.register(root);
+    }
+
+    private static void top(CommandContext<ServerCommandSource> c, int n) {
+        if (Partida.datos == null) { c.getSource().sendError(Msg.err("El minijuego aun no esta listo.")); return; }
+        var lista = Partida.datos.top(n);
+        if (lista.isEmpty()) { c.getSource().sendFeedback(() -> Msg.say("Todavía no hay marcas en el top."), false); return; }
+        c.getSource().sendFeedback(() -> Msg.say("Top por tiempo aguantado (mejor marca de cada jugador):"), false);
+        int pos = 1;
+        for (Datos.Entrada e : lista) {
+            int seg = e.segundos, i = pos++;
+            String linea = i + ". " + e.nombre + " — " + (seg / 60) + ":" + String.format("%02d", seg % 60) + " (" + e.especie + ", nivel " + e.nivel + ", " + e.derrotados + " derrotados" + (e.jefe ? ", mató al jefe" : "") + ")";
+            c.getSource().sendFeedback(() -> Text.literal(linea), false);
+        }
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> admin(String nombre) {

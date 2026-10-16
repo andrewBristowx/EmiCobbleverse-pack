@@ -10,8 +10,8 @@ final class Curvas {
 
     // ------------------------------------------------------------ experiencia
 
-    /** Experiencia que hace falta para pasar del nivel {@code nivel} al siguiente (7 para el primero, ~25 para el quinto, ~54 para el decimo). */
-    static int xpPara(int nivel) { return (int) Math.round(4 + 3.2 * nivel + 0.18 * nivel * nivel); }
+    /** Experiencia que hace falta para pasar del nivel {@code nivel} al siguiente (10 para el primero, ~33 para el quinto, ~72 para el decimo). */
+    static int xpPara(int nivel) { return (int) Math.round(5 + 4.5 * nivel + 0.22 * nivel * nivel); }
 
     /** Experiencia que suelta un enemigo: 1 el debil, 2 el fuerte, +1 si es un Michialien; los elites y el jefe se fijan aparte. */
     static int xpEnemigo(boolean fuerte, boolean michi) { return (fuerte ? 2 : 1) + (michi ? 1 : 0); }

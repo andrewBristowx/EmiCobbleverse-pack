@@ -58,6 +58,11 @@ public final class EmiSurvivorsClient implements ClientModInitializer {
         MinecraftClient mc = MinecraftClient.getInstance();
         switch (p.tipo()) {
             case "cartas" -> { if (p.json().isEmpty()) cerrarCartas(); else mc.setScreen(new CartasPantalla(p.json())); }
+            case "menu" -> {
+                if (p.json().isEmpty()) { if (mc.currentScreen instanceof MenuPantalla) mc.setScreen(null); }
+                else if (MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json());
+                else mc.setScreen(new MenuPantalla(p.json()));
+            }
             default -> { }
         }
     }

@@ -64,7 +64,6 @@ final class Run {
     final List<Enemigo> enemigos = new ArrayList<>();
     final List<Proyectil> proyectiles = new ArrayList<>();
     final List<Gema> gemas = new ArrayList<>();
-    final List<BlockPos> rocas = new ArrayList<>();
     final Medidor med = new Medidor();
     final List<Especies.E> pool1, pool2;
     final Set<String> especiesVistas = new HashSet<>();
@@ -95,7 +94,6 @@ final class Run {
         agregarArma(inicial.arma(), 1);
         pool1 = Especies.entre(180, 330);
         pool2 = Especies.entre(331, 405);
-        rocas.addAll(Arena.colocarRocas(w, rnd, 18, (int) Math.round(ox), (int) Math.round(oz)));
     }
 
     ServerPlayerEntity jugador() { return Partida.server == null ? null : Partida.server.getPlayerManager().getPlayer(id); }
@@ -148,6 +146,7 @@ final class Run {
 
         tick++;
         pp = p.getPos();
+        if (!Arena.dentro(this, pp.x, pp.z, -2.0)) { p.teleport(w, ox + 0.5, Arena.Y0, oz + 0.5, p.getYaw(), 0f); pp = p.getPos(); }      // por si acaso se sale del muro
         double t = tick / 20.0;
 
         // 1) crear enemigos
@@ -391,7 +390,7 @@ final class Run {
             double x = pp.x + Math.cos(ang) * r, z = pp.z + Math.sin(ang) * r;
             if (!Arena.dentro(this, x, z, 2.0)) continue;
             BlockPos pie = new BlockPos((int) Math.floor(x), (int) Arena.Y0, (int) Math.floor(z));
-            if (!w.getBlockState(pie).isAir() || w.getBlockState(pie.down()).isAir()) continue;
+            if (!w.getBlockState(pie).getCollisionShape(w, pie).isEmpty() || w.getBlockState(pie.down()).isAir()) continue;     // sin bloque macizo en los pies y con suelo debajo
             return new Vec3d(x, Arena.Y0, z);
         }
         return null;
@@ -491,7 +490,6 @@ final class Run {
         enemigos.clear();
         proyectiles.clear();
         gemas.clear();
-        Arena.quitarRocas(w, rocas);
     }
 
     boolean hayMedidaEstable() { return nEstable > 0; }

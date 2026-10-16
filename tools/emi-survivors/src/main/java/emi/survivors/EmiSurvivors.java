@@ -44,12 +44,22 @@ public class EmiSurvivors implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Partida.alEntrar(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Partida.alSalir(handler.player));
 
-        // quien esta en una partida no toca bloques, objetos ni entidades (ni a los Pokemon enemigos)
-        UseItemCallback.EVENT.register((p, w, hand) -> !w.isClient && Partida.participa(p) ? TypedActionResult.fail(p.getStackInHand(hand)) : TypedActionResult.pass(p.getStackInHand(hand)));
-        UseBlockCallback.EVENT.register((p, w, hand, hit) -> !w.isClient && Partida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
-        UseEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Partida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
-        AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Partida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
-        AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && Partida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
-        PlayerBlockBreakEvents.BEFORE.register((w, p, pos, st, be) -> !Partida.participa(p));
+        ServerTickEvents.END_SERVER_TICK.register(Mundo::tick);
+
+        // en una partida y en la sala no se toca nada (ni bloques, ni objetos, ni entidades, ni a los Pokemon enemigos), salvo el terminal y el objeto del menu de la sala
+        UseItemCallback.EVENT.register((p, w, hand) -> {
+            if (w.isClient || !Mundo.bloqueado(p)) return TypedActionResult.pass(p.getStackInHand(hand));
+            if (!Partida.participa(p) && Mundo.esItemMenu(p.getStackInHand(hand)) && p instanceof net.minecraft.server.network.ServerPlayerEntity sp) Menu.enviar(sp, "jugar", null);
+            return TypedActionResult.fail(p.getStackInHand(hand));
+        });
+        UseBlockCallback.EVENT.register((p, w, hand, hit) -> {
+            if (w.isClient || !Mundo.bloqueado(p)) return ActionResult.PASS;
+            if (!Partida.participa(p) && hit.getBlockPos().equals(Mundo.TERMINAL) && p instanceof net.minecraft.server.network.ServerPlayerEntity sp) { Menu.enviar(sp, "jugar", null); return ActionResult.SUCCESS; }
+            return ActionResult.FAIL;
+        });
+        UseEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Mundo.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Mundo.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && Mundo.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        PlayerBlockBreakEvents.BEFORE.register((w, p, pos, st, be) -> !Mundo.bloqueado(p));
     }
 }

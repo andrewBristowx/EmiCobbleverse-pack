@@ -31,8 +31,29 @@ public final class Saved {
 
     public static boolean exists(MinecraftServer server, UUID id) { return Files.exists(file(server, id)); }
 
-    public static void save(MinecraftServer server, ServerPlayerEntity p) {
+    /** ¿Lo guardado es de alguien que esta en el mundo del minijuego (sala y arenas)? */
+    public static boolean enLobby(MinecraftServer server, UUID id) {
+        try {
+            Path f = file(server, id);
+            return Files.exists(f) && NbtIo.readCompressed(f, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes()).getBoolean("lobby");
+        } catch (IOException e) { return false; }
+    }
+
+    /** La transformacion («nombre|aspectos», o vacio) que llevaba el jugador cuando se guardo, para volver a ponersela al devolverle sus cosas. */
+    public static String morph(MinecraftServer server, UUID id) {
+        try {
+            Path f = file(server, id);
+            if (!Files.exists(f)) return "";
+            return NbtIo.readCompressed(f, net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes()).getString("morph");
+        } catch (IOException e) { return ""; }
+    }
+
+    public static void save(MinecraftServer server, ServerPlayerEntity p) { save(server, p, false); }
+
+    /** {@code lobby} = el jugador entra al mundo del minijuego (sala y arenas), no a una partida de prueba de un administrador. */
+    public static void save(MinecraftServer server, ServerPlayerEntity p, boolean lobby) {
         NbtCompound t = new NbtCompound();
+        t.putBoolean("lobby", lobby);
         NbtList inv = new NbtList();
         p.getInventory().writeNbt(inv);
         t.put("inv", inv);
@@ -42,6 +63,7 @@ public final class Saved {
         t.putInt("mode", p.interactionManager.getGameMode().getId());
         t.putInt("food", p.getHungerManager().getFoodLevel());
         t.putFloat("sat", p.getHungerManager().getSaturationLevel());
+        t.putString("morph", Morph.actual(p.getUuid()));
         BlockPos sp = p.getSpawnPointPosition();
         if (sp != null) {
             t.putLong("spawnPos", sp.asLong());

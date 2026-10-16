@@ -3,13 +3,11 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:plains",
+      "biome": "emi_survivors:pradera",
       "features": false,
       "lakes": false,
       "layers": [
-        { "block": "minecraft:bedrock", "height": 1 },
-        { "block": "minecraft:stone", "height": 2 },
-        { "block": "minecraft:grass_block", "height": 1 }
+        { "block": "minecraft:air", "height": 1 }
       ],
       "structure_overrides": []
     }

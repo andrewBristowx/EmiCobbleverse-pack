@@ -72,6 +72,8 @@ public final class Partida {
         for (Entity e : w.iterateEntities()) if (e.getCommandTags().contains("emi_survivors")) borrar.add(e);
         for (Entity e : borrar) e.discard();
         if (!borrar.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} enemigos que habian quedado de una partida anterior.", borrar.size());
+        try { ServerWorld sala = Mundo.sala(); if (sala != null) Mundo.construirSala(sala); else EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:entrada."); }
+        catch (Throwable t) { EmiSurvivors.LOG.error("No se pudo construir la sala de entrada", t); }
     }
 
     static void shutdown() {
@@ -101,11 +103,11 @@ public final class Partida {
             if (s.getTicks() < pendientesTick.get(i)) continue;
             UUID id = pendientes.remove(i); pendientesTick.remove(i);
             ServerPlayerEntity p = s.getPlayerManager().getPlayer(id);
-            if (p != null && !participa(p) && Saved.exists(s, id)) {
-                Morph.restaurar(s, p, "");
-                Saved.restore(s, p);
-                p.sendMessage(Msg.say("Te hemos devuelto tus cosas de la partida."), false);
-            }
+            if (p == null || participa(p) || !Saved.exists(s, id)) continue;
+            if (Saved.enLobby(s, id)) { Mundo.alEntrar(p); continue; }           // sigue en el mundo del minijuego: si se quedo en una arena, a la sala
+            Morph.restaurar(s, p, "");
+            Saved.restore(s, p);
+            p.sendMessage(Msg.say("Te hemos devuelto tus cosas de la partida."), false);
         }
     }
 
@@ -132,6 +134,8 @@ public final class Partida {
         ServerWorld w = mundo();
         if (w == null) return "No existe la dimension emi_survivors:arena (¿esta instalado el mod en el servidor?).";
         if (modoPrueba && Saved.exists(server, p.getUuid())) return "Tienes cosas guardadas de una partida anterior: sal y vuelve a entrar para recuperarlas.";
+        if (!modoPrueba && !Mundo.enSala(p)) return "Tienes que estar en la sala del minijuego (usa /survivor entrar).";
+        if (!ServerPlayNetworking.canSend(p, EstadoPayload.ID)) return "Tu juego no tiene el mod Emi Survivors: actualiza el pack y vuelve a entrar.";
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(p);
         Pokemon pk = party.get(hueco - 1);
         StringBuilder eq = new StringBuilder();
@@ -141,12 +145,14 @@ public final class Partida {
         if (!Morph.disponible()) return "Falta el mod CobbleMorph (el jugador va transformado en su Pokémon).";
         int slot = huecoLibre();
         if (slot < 0) return "No hay arenas libres.";
-        if (modoPrueba) { try { Saved.save(server, p); } catch (RuntimeException e) { return "No se pudo guardar tu inventario: no entras."; } }
-        String antes = Morph.actual(p.getUuid());
-        double ox = slot * SEPARACION, oz = 0;
+        if (modoPrueba) { try { Saved.save(server, p, false); } catch (RuntimeException e) { return "No se pudo guardar tu inventario: no entras."; } }
+        String antes = modoPrueba ? Morph.actual(p.getUuid()) : "";
+        double[] orig = Arena.origen(slot);
+        double ox = orig[0], oz = orig[1];
         Run run;
         try {
             if (runs.isEmpty()) Pausas.pausar();
+            Arena.preparar(w, slot);
             p.teleport(w, ox + 0.5, Arena.Y0, oz + 0.5, 180f, 0f);
             prepararJugador(p);
             Morph.transformar(server, p, pk);
@@ -158,7 +164,10 @@ public final class Partida {
             // si algo falla a medias, el jugador no se queda a medio camino: se le devuelve todo
             EmiSurvivors.LOG.error("No se pudo empezar la partida", t);
             runs.remove(p.getUuid());
-            try { Morph.restaurar(server, p, antes); if (modoPrueba) Saved.restore(server, p); else quitarEfectos(p); } catch (Throwable t2) { EmiSurvivors.LOG.error("Ademas, no se pudo devolver al jugador a su sitio", t2); }
+            try {
+                if (modoPrueba) { Morph.restaurar(server, p, antes); Saved.restore(server, p); }
+                else Mundo.volverASala(p, null);
+            } catch (Throwable t2) { EmiSurvivors.LOG.error("Ademas, no se pudo devolver al jugador a su sitio", t2); }
             if (runs.isEmpty()) { try { Pausas.reanudar(); } catch (Throwable t2) { /* nada */ } }
             return "No se pudo empezar la partida (mira el registro del servidor); te hemos devuelto a tu sitio.";
         }
@@ -204,15 +213,33 @@ public final class Partida {
         int seg = r.segundos();
         EmiSurvivors.LOG.info("Fin de la partida de {}: {} | {} s, nivel {}, {} derrotados, {} especies distintas, {} fallos al crear{}", r.nombre, motivo, seg, r.nivel, r.derrotados, r.especiesVistas.size(), r.fallosCrear,
                 r.fijo > 0 ? " | medias con " + r.fijo + " enemigos: servidor " + Run.fmt(r.msptEstable()) + " ms/tick, nuestro " + Run.fmt(r.nuestroEstable()) + " ms/tick (max servidor " + Run.fmt(r.med.msptMax()) + " ms)" : "");
+        // lo que se gana: monedas para las mejoras y, si es su mejor marca, un sitio en el top (las pruebas de administrador y las medidas no cuentan)
+        boolean cuenta = r.fijo == 0 && !r.inmortal && !r.modoPrueba;
+        int monedas = 0, puesto = 0;
+        if (cuenta) {
+            try {
+                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, r.jefeDerrotado, r.st.monedas);
+                Datos.Entrada e = new Datos.Entrada();
+                e.especie = r.especieId; e.aspectos = String.join(" ", r.pk.getAspects()); e.nivelPokemon = r.pk.getLevel();
+                e.segundos = seg; e.derrotados = r.derrotados; e.nivel = r.nivel; e.jefe = r.jefeDerrotado;
+                puesto = datos.registrar(r.id, r.nombre, r.pokeId, e, monedas);
+            } catch (RuntimeException ex) { EmiSurvivors.LOG.error("No se pudo guardar el resultado de la partida de {}", r.nombre, ex); }
+        }
         if (p != null) {
             try {
                 if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) ServerPlayNetworking.send(p, EstadoPayload.apagado());
                 if (ServerPlayNetworking.canSend(p, GemasPayload.ID)) ServerPlayNetworking.send(p, GemasPayload.vacio());
                 if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
             } catch (Throwable t) { /* el cliente no tiene el mod */ }
-            Morph.restaurar(server, p, r.morphAntes);
-            if (!Saved.restore(server, p)) quitarEfectos(p);
-            p.sendMessage(Msg.say(motivo + " Aguantaste " + (seg / 60) + ":" + String.format("%02d", seg % 60) + ", llegaste al nivel " + r.nivel + " y derrotaste a " + r.derrotados + " Pokémon."), false);
+            if (r.modoPrueba) {
+                Morph.restaurar(server, p, r.morphAntes);
+                if (!Saved.restore(server, p)) quitarEfectos(p);
+            } else {
+                quitarEfectos(p);
+                Mundo.volverASala(p, new Menu.Resultado(motivo, seg, r.derrotados, r.nivel, monedas, puesto, r.jefeDerrotado, cuenta));
+            }
+            p.sendMessage(Msg.say(motivo + " Aguantaste " + (seg / 60) + ":" + String.format("%02d", seg % 60) + ", llegaste al nivel " + r.nivel + " y derrotaste a " + r.derrotados + " Pokémon."
+                    + (cuenta ? " Ganas " + monedas + " michiestrellitas." + (puesto > 0 ? " Puesto " + puesto + " del top." : "") : "")), false);
             if (r.fijo > 0 && r.hayMedidaEstable())
                 p.sendMessage(Text.literal("Rendimiento de esta prueba (con " + r.fijo + " enemigos): el servidor tardó de media " + Run.fmt(r.msptEstable())
                         + " ms por tick (50 es el límite); este mod gastó " + Run.fmt(r.nuestroEstable()) + " ms.").formatted(Formatting.GRAY), false);
@@ -281,6 +308,15 @@ public final class Partida {
     }
 
     // ---------------------------------------------------------------- ayudas de prueba (administrador)
+
+    /** Para probar: da michiestrellitas al administrador (las que se ganan jugando se apuntan al acabar una partida). */
+    public static String devMonedas(ServerPlayerEntity p, int n) {
+        if (datos == null) return "El minijuego aun no esta listo.";
+        Datos.Jugador j = datos.jugador(p.getUuid(), p.getGameProfile().getName());
+        j.monedas = Math.max(0, j.monedas + n);
+        datos.guardar(p.getUuid());
+        return null;
+    }
 
     /** Para probar: da experiencia, niveles, ataques... a la partida del administrador. Devuelve el motivo si no se puede, o null. */
     public static String dev(ServerPlayerEntity p, String que, String id, int n) {

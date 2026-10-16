@@ -34,7 +34,7 @@ public final class PruebaLogica {
         for (int n = 1; n <= 20; n++) { sb.append(n).append("->").append(Curvas.xpPara(n)).append(' '); acum += Curvas.xpPara(n); }
         System.out.println(sb + "\n  XP total hasta el nivel 21: " + acum);
         for (int n = 1; n < 40; n++) ok(Curvas.xpPara(n + 1) > Curvas.xpPara(n), "la XP necesaria sube con el nivel " + n);
-        ok(Curvas.xpPara(1) >= 5 && Curvas.xpPara(1) <= 9, "el primer nivel cuesta 5-9 de XP");
+        ok(Curvas.xpPara(1) >= 8 && Curvas.xpPara(1) <= 12, "el primer nivel cuesta 8-12 de XP");
         for (int t : new int[]{0, 60, 120, 180, 300, 600, 900})
             System.out.printf("  t=%3ds  tope=%3d  ritmo=%.1f/s  vida x%.2f  dano x%.2f  vel x%.2f  fuertes %.0f%%%n", t, Curvas.tope(t), Curvas.ritmo(t), Curvas.vidaMul(t), Curvas.danoMul(t), Curvas.velMul(t), Curvas.pFuerte(t) * 100);
         ok(Curvas.tope(0) >= 15 && Curvas.tope(100000) == 120, "el tope va de ~22 a 120");
