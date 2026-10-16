@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_survivors",
+  "version": "${version}",
+  "name": "Emi Survivors",
+  "description": "Minijuego de supervivencia contra hordas de Pokemon (estilo Vampire Survivors) para el servidor de Emi. Inspirado en PokeSurvivor de JPTER78.",
+  "authors": ["SomitadePony"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["emi.survivors.EmiSurvivors"],
+    "client": ["emi.survivors.client.EmiSurvivorsClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "fabric-api": "*",
+    "cobblemon": "*"
+  },
+  "mixins": ["emi_survivors.mixins.json"]
+}
