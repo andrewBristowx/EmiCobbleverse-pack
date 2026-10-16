@@ -54,6 +54,10 @@ para MC 1.21.11 (el pack es 1.21.1); carga en el cliente de pruebas, pero no se 
 - **No abras un PR** hasta que el dueño diga "mergea". Desarrolla en la rama que te indiquen y haz push; no a `main`.
 - Commits terminan con las líneas de atribución que pida el entorno. Los jars pequeños se entregan como archivo; los grandes
   (Emipokemon, 35 MB) con enlace crudo de GitHub + SHA-256.
+- **Instancia de pruebas del dueño (Prism):** `prism-instance/EmiCobbleverse-Prism-Instance-PRUEBAS.zip` se actualiza sola desde la **rama de pruebas** (`PreLaunchCommand` con la URL
+  `raw.githubusercontent.com/andrewBristowx/EmiCobbleverse-pack/<rama>/pack.toml`) y no toca la oficial (que lee `main`). Como sigue la rama, cambia mientras se sigue trabajando; si el dueño quiere probar
+  **una versión que no cambie**, se hace una copia del zip con esa URL apuntando al **SHA completo del commit** (`.../<sha>/pack.toml`; raw.githubusercontent.com acepta un SHA), se le pone otro `name=` y
+  se entrega por el chat (no hace falta subirla al repositorio). Hecho con la «1.0.147 (fija)» (commit `dd63dd4`); se comprobó que la URL con el SHA da `pack.toml` 1.0.147, que el hash del índice coincide y que el jar de emi-survivors 0.5.1 baja con el hash del índice.
 - Antes de decir que algo funciona, **pruébalo en el juego** (servidor Fabric + cliente real) cuando sea posible; muestra capturas.
 - Los UV de los modelos Cobblemon deben ser enteros; evita z-fighting (caras coplanares). `tools/emi-plush/test/revisar_modelos.py`.
 
