@@ -237,6 +237,11 @@ final class Equipo {
         if (tick > RAMPA + 60 && tick % 10 == 0) { sumaEstable += med.msptServidor(); sumaNuestroEstable += med.msNuestro(); nEstable++; }
         if (tick % 4 == 0) for (Run m : miembros) m.enviarEstado();
         if (tick % 2 == 0) for (Run m : miembros) m.enviarGemas();
+        if (tick % 100 == 0 && Boolean.getBoolean("emi.survivors.debug")) {
+            java.util.Map<String, Integer> poses = new java.util.TreeMap<>();
+            for (Enemigo en : enemigos) { try { poses.merge(en.e.getCurrentPoseType().name(), 1, Integer::sum); } catch (Throwable ex) { poses.merge("?", 1, Integer::sum); } }
+            EmiSurvivors.LOG.info("[poses] {}", poses);
+        }
         if (tick % 100 == 0) EmiSurvivors.LOG.info("[medida] {} t={}s nivel={} enemigos={} gemas={} derrotados={} hp={} | nuestro={} ms/tick (max {}) | servidor={} ms/tick (media de 100, max {})",
                 nombres(), segundos(), miembros.get(0).nivel, enemigos.size(), gemas.size(), derrotados, resumenVida(), Run.fmt(med.msNuestro()), Run.fmt(med.msNuestroMax()), Run.fmt(med.msptServidor()), Run.fmt(med.msptMax()));
 

@@ -266,11 +266,10 @@ public final class MenuPantalla extends Lienzo {
         var m = g.getMatrices();
         m.push();
         m.translate(cx, cy - 0.935f * escala, 0);     // el modelo de Cobblemon cuelga ~0,35*escala por debajo del punto y mide ~1,17*escala
-        p.st.updateAge((int) ((System.nanoTime() - t0) / 50_000_000L));          // el reloj del modelo avanza: asi se anima (camina) en vez de quedarse en la pose fija
         p.st.updatePartialTicks(delta);
         float giro = (float) Math.toRadians(35 + (System.nanoTime() - t0) / 1e9 * 45);
         try {
-            PokemonGuiUtilsKt.drawProfilePokemon(p.rp, m, new Quaternionf().rotationXYZ((float) Math.toRadians(13), giro, 0f), PoseType.WALK, p.st, delta, escala, true, false, 1f, 1f, 1f, 1f, 0f, 0f);
+            PokemonGuiUtilsKt.drawProfilePokemon(p.rp, m, new Quaternionf().rotationXYZ((float) Math.toRadians(13), giro, 0f), PoseType.PROFILE, p.st, delta, escala, true, false, 1f, 1f, 1f, 1f, 0f, 0f);
         } catch (Throwable t) { p.rp = null; }
         m.pop();
     }
@@ -330,25 +329,19 @@ public final class MenuPantalla extends Lienzo {
         }
         for (int i = 0; i < equipo.size(); i++) {
             Poke p = equipo.get(i);
-            int[] c = posLista(i);
-            int x = c[0], y = c[1];
-            boolean act = i == sel, sobre = dentro(mx, my, x, y, CARTA_W, CARTA_H);
-            caja(g, x, y, CARTA_W, CARTA_H, act ? 0xFF2E2E58 : sobre ? 0xFF25254A : 0xFF1B1B30, act ? ORO : 0xFF55557A);
-            modelo(g, p, x + CARTA_W / 2f, y + 32, 40f, delta);
-            texto(g, p.titulo() + (p.brillante ? " ★" : ""), x + 6, y + 5, BLANCO, 0.95f);
-            texto(g, "Nv. " + p.nivel, x + 6, y + 16, GRIS, 0.8f);
+            int y = CY + i * 43;
+            boolean act = i == sel, sobre = dentro(mx, my, LX, y, LW, 40);
+            caja(g, LX, y, LW, 40, act ? 0xFF2E2E58 : sobre ? 0xFF25254A : 0xFF1B1B30, act ? ORO : 0xFF55557A);
+            modelo(g, p, LX + 26, y + 20, 24f, delta);
+            texto(g, p.titulo() + (p.brillante ? " ★" : ""), LX + 52, y + 6, BLANCO, 1.05f);
+            texto(g, "Nv. " + p.nivel, LX + 52, y + 18, GRIS, 0.9f);
             int col = COLORES.getOrDefault(p.tipo, 0xFFA8A77A);
-            g.fill(x + 6, y + CARTA_H - 13, x + 6 + 52, y + CARTA_H - 5, col);
-            textoCentrado(g, TIPOS.getOrDefault(p.tipo, p.tipo), x + 6 + 26, y + CARTA_H - 13, BLANCO, 0.7f);
+            g.fill(LX + 52, y + 29, LX + 52 + 52, y + 37, col);
+            textoCentrado(g, TIPOS.getOrDefault(p.tipo, p.tipo), LX + 52 + 26, y + 29, BLANCO, 0.7f);
             int total = 0; for (int v : p.mejoras.values()) total += v;
-            if (total > 0) texto(g, "Mej. " + total, x + CARTA_W - 40, y + CARTA_H - 13, 0xFFFFE070, 0.75f);
+            if (total > 0) texto(g, "Mejoras: " + total, LX + 130, y + 29, 0xFFFFE070, 0.8f);
         }
     }
-
-    /** Las tarjetas del equipo van en dos columnas de tres filas (grandes, para que el modelo se vea bien). */
-    private static final int CARTA_W = 111, CARTA_H = 84;
-
-    private static int[] posLista(int i) { return new int[]{LX + (i % 2) * (CARTA_W + 4), CY + (i / 2) * (CARTA_H + 3)}; }
 
     private void jugar(DrawContext g, int mx, int my, float delta) {
         int y = CY;
@@ -366,7 +359,7 @@ public final class MenuPantalla extends Lienzo {
         if (p == null) { parrafo(g, "Cuando tengas un Pokémon en tu equipo podrás jugar con él.", RX, y + 20, RW, GRIS, 1f); return; }
         int altoPanel = resultado != null ? 112 : 120;
         caja(g, RX, y, RW, altoPanel, 0xFF1B1B30, 0xFF55557A);
-        modelo(g, p, RX + 66, y + altoPanel - 62, 62f, delta);
+        modelo(g, p, RX + 66, y + altoPanel / 2 + 6, 48f, delta);
         int tx = RX + 140;
         texto(g, p.titulo() + (p.brillante ? " ★" : ""), tx, y + 8, ORO, 1.5f);
         texto(g, "Nv. " + p.nivel + " · Tipo " + TIPOS.getOrDefault(p.tipo, p.tipo), tx, y + 26, COLORES.getOrDefault(p.tipo, GRIS) | 0xFF000000, 1f);
@@ -660,7 +653,7 @@ public final class MenuPantalla extends Lienzo {
         }
         if (dentro(mx, my, 538, 48, 82, 20)) { enviar("salir", "", ""); return; }
         if (tab == T_JUGAR || tab == T_MEJORAS) {
-            for (int i = 0; i < equipo.size(); i++) { int[] c = posLista(i); if (dentro(mx, my, c[0], c[1], CARTA_W, CARTA_H)) { sel = i; return; } }
+            for (int i = 0; i < equipo.size(); i++) if (dentro(mx, my, LX, CY + i * 43, LW, 40)) { sel = i; return; }
         }
         Poke p = elegido();
         if (tab == T_JUGAR && p != null && puedeElegirArena()) {

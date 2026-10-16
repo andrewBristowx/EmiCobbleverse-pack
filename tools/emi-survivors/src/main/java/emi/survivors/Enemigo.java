@@ -1,6 +1,7 @@
 package emi.survivors;
 
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
+import com.cobblemon.mod.common.entity.PoseType;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.particle.ParticleTypes;
@@ -76,6 +77,7 @@ final class Enemigo {
             float escala = Math.max(0.3f, Math.min(8.0f, alto / sp.alto()));
             e.getPokemon().setScaleModifier(escala);
             e.setAiDisabled(true);
+            e.setEnablePoseTypeRecalculation(false);            // la pose la pone este mod (andando o parado): con la IA apagada Cobblemon los dejaba siempre «de pie», sin animar el paso
             e.setInvulnerable(true);
             e.setSilent(true);
             e.setPersistent();
@@ -127,7 +129,17 @@ final class Enemigo {
         }
         e.setVelocity(Vec3d.ZERO);
         e.move(MovementType.SELF, new Vec3d(vx, -0.2, vz));
+        ponerPose(vx * vx + vz * vz > 1e-6 ? PoseType.WALK : PoseType.STAND);
         e.setSprinting(factor != 0 && d > radio + 0.4);
+    }
+
+    private PoseType pose = PoseType.STAND;
+
+    /** La pose del modelo (se manda al cliente solo cuando cambia): andando, el modelo hace su animacion de caminar. */
+    private void ponerPose(PoseType nueva) {
+        if (nueva == pose) return;
+        pose = nueva;
+        try { e.getDataTracker().set(PokemonEntity.getPOSE_TYPE(), nueva); } catch (Throwable t) { /* se queda como estaba */ }
     }
 
     /** Un tick de un enemigo con la personalidad «embiste»: anda hacia el jugador, de vez en cuando se queda quieto un momento (con particulas de enfado) y se lanza en linea recta. */
