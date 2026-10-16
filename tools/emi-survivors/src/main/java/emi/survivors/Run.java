@@ -319,15 +319,16 @@ final class Run {
         eq.avisar(Msg.say(nombre + " ha vuelto a la partida."));
     }
 
-    /** El premio del jefe: dos niveles y la mitad de la vida (y si estaba caido, se levanta). */
-    void premioJefe() {
+    /** El premio de un jefe: dos niveles y la mitad de la vida (y si estaba caido, se levanta). {@code ultimo} = era el quinto de la vuelta (el Rey Michialien). */
+    void premioJefe(int numero, String jefe, boolean ultimo) {
         nivel += 2; pendientes += 2;            // el tesoro del jefe: dos subidas de nivel
         ServerPlayerEntity p = jugador();
         if (estado == CAIDO) revivir();
         else hp = Math.min(st.hpMax, hp + st.hpMax * 0.5);
         if (p != null) {
-            Msg.title(p, Text.literal("¡JEFE DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Tesoro: 2 niveles y la mitad de tu vida").formatted(Formatting.YELLOW), 5, 50, 15);
-            p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, 1.0f);
+            Msg.title(p, Text.literal(ultimo ? "¡HAS VENCIDO A " + jefe.toUpperCase() + "!" : "¡JEFE DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD),
+                    Text.literal((ultimo ? "¡Los cinco jefes caen! " : jefe + " ha caído. ") + "Tesoro: 2 niveles y la mitad de tu vida").formatted(Formatting.YELLOW), 5, 60, 15);
+            p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, ultimo ? 0.8f : 1.0f);
         }
     }
 
@@ -452,7 +453,8 @@ final class Run {
         boolean hayJefe = j != null && j.vivo();
         ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), eq.derrotados, nivel, xp, xpSig, esperandoCarta,
                 hayJefe ? j.nombre : "", hayJefe ? (int) Math.max(0, Math.ceil(j.en.hp)) : 0, hayJefe ? (int) Math.round(j.en.hpMax) : 0, listaArmas(), listaPasivas(), eq.med.msptServidor(), eq.med.msNuestro(),
-                estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this)));
+                estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this),
+                eq.marea == null ? "" : eq.marea.titulo(), eq.marea == null ? 0 : eq.marea.segundosRestantes()));
     }
 
     void enviarGemas() {

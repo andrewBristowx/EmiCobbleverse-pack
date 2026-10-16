@@ -66,6 +66,13 @@ public final class SurvivorsHud {
             barra(g, bx, by, bw, 8, e.jefeHp() / (float) e.jefeMax(), 0xFFC03AB8);
         }
 
+        // la marea en marcha (debajo de la barra del jefe, o arriba si no hay jefe): su titulo y lo que le queda
+        if (!e.evento().isEmpty()) {
+            int ey = (!e.jefe().isEmpty() && e.jefeMax() > 0) ? 26 : 12;
+            String txt = e.evento() + (e.eventoSeg() > 0 ? "  " + (e.eventoSeg() / 60) + ":" + String.format("%02d", e.eventoSeg() % 60) : "");
+            g.drawCenteredTextWithShadow(tr, txt, sw / 2, ey, 0xFFFFD34E);
+        }
+
         // los companeros de la partida (arriba a la derecha): nombre, vida y si estan caidos o eligiendo carta
         if (!e.companeros().isEmpty()) {
             int cx = sw - 112, cy = 8;

@@ -16,7 +16,7 @@ final class Especies {
     private Especies() {}
 
     /** @param id nombre de la especie en Cobblemon (p. ej. {@code mrmime}); alto = altura natural en bloques con su escala base; bst = total de estadisticas base */
-    record E(String id, float alto, int bst) {}
+    record E(String id, float alto, int bst, String tipo1, String tipo2) {}
 
     private static final Set<String> RAROS = Set.of("legendary", "mythical", "ultra_beast", "paradox", "restricted", "sub_legendary");
     private static List<E> todas;
@@ -40,7 +40,7 @@ final class Especies {
                 for (int v : sp.getBaseStats().values()) bst += v;
                 float h = Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale();
                 if (h < 0.05f || bst <= 0) continue;
-                l.add(new E(sp.getResourceIdentifier().getPath(), h, bst));
+                l.add(new E(sp.getResourceIdentifier().getPath(), h, bst, tipoDe(sp, true), tipoDe(sp, false)));
             } catch (Throwable t) { /* una especie rara no debe romper la lista */ }
         }
         todas = l;
@@ -62,7 +62,7 @@ final class Especies {
                 Species sp = PokemonSpecies.getByName("gatitoalien");
                 if (sp != null) {
                     int bst = 0; for (int v : sp.getBaseStats().values()) bst += v;
-                    michi = new E("gatitoalien", Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale(), bst);
+                    michi = new E("gatitoalien", Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale(), bst, tipoDe(sp, true), tipoDe(sp, false));
                 }
             } catch (Throwable t) { michi = null; }
         }
@@ -75,8 +75,23 @@ final class Especies {
             Species sp = id.contains(":") ? PokemonSpecies.getByIdentifier(net.minecraft.util.Identifier.of(id)) : PokemonSpecies.getByName(id);
             if (sp == null) return null;
             int bst = 0; for (int v : sp.getBaseStats().values()) bst += v;
-            return new E(id, Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale(), bst);
+            return new E(id, Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale(), bst, tipoDe(sp, true), tipoDe(sp, false));
         } catch (Throwable t) { return null; }
+    }
+
+    /** El tipo principal (o el secundario, si {@code principal} es false) de una especie, en minusculas y en ingles como lo escribe Cobblemon («fire»); vacio si no tiene. */
+    private static String tipoDe(Species sp, boolean principal) {
+        try {
+            var t = principal ? sp.getPrimaryType() : sp.getSecondaryType();
+            return t == null ? "" : t.getName().toLowerCase(java.util.Locale.ROOT);
+        } catch (Throwable e) { return ""; }
+    }
+
+    /** Las especies de ese tipo (principal o secundario) con BST entre {@code min} y {@code max}. */
+    static List<E> deTipo(String tipo, int min, int max) {
+        List<E> out = new ArrayList<>();
+        for (E e : todas()) if (e.bst() >= min && e.bst() <= max && (tipo.equals(e.tipo1()) || tipo.equals(e.tipo2()))) out.add(e);
+        return out;
     }
 
     /** Las especies con BST entre {@code min} y {@code max} (ambos incluidos). */

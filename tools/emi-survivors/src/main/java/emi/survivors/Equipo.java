@@ -1,5 +1,6 @@
 package emi.survivors;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -47,12 +48,19 @@ final class Equipo {
     final List<Enemigo> enemigos = new ArrayList<>();
     final List<Gema> gemas = new ArrayList<>();
     final List<Objeto> objetos = new ArrayList<>();
+    final List<Entity> marcas = new ArrayList<>();          // las marcas de aviso del suelo que hay ahora (ataques de jefes, mareas): ver Marcas
     final Medidor med = new Medidor();
     final List<Especies.E> pool1, pool2;
     final Set<String> especiesVistas = new HashSet<>();
     int tick, derrotados, fallosCrear, ticksParado;
     double presupuesto;
-    boolean jefeSalio, jefeDerrotado;
+    Marea marea;                                    // la marea en marcha (null si no hay)
+    int mareasSalidas;
+    boolean avisoPers;                              // ya se explico que significan los colores de los enemigos con personalidad
+    private final List<Bomba> bombas = new ArrayList<>();      // las bombas que dejan los enemigos explosivos al caer
+    int jefesSalidos, jefesDerrotados;              // cuantos jefes han salido y cuantos se han derrotado (uno cada 3 minutos; ver Jefes)
+    private final List<double[]> refuerzos = new ArrayList<>();      // sitios (x, z) donde faltan por aparecer los refuerzos que ha invocado un jefe
+    private Jefes.Def refuerzosDe;
     boolean terminado;                           // ya se acabo (para no acabarla dos veces)
     Jefe jefe;
     // medias del servidor cuando ya estan todos los enemigos (para el resumen final)
@@ -130,25 +138,34 @@ final class Equipo {
             int meta = Math.min(fijo, (int) ((long) fijo * tick / RAMPA));
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && enemigos.size() < meta; k++) if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
         } else {
-            int cap = (int) Math.round(Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * Partida.factorRendimiento());
-            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) / 20.0);
+            double fm = marea != null && marea.enemigosPropios() ? 1.25 : 1.0;
+            int cap = (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
+            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * (marea == null ? 1.0 : marea.factorRitmo()) / 20.0);
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && presupuesto >= 1.0 && enemigos.size() < cap; k++) {
                 if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
                 presupuesto -= 1.0;
             }
             if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
-            if (!jefeSalio && t >= Curvas.T_JEFE) crearJefe();
+            if ((jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.tocan(t)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
+            if (marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < Mareas.tocan(t)) iniciarMarea(++mareasSalidas, null);
         }
+        if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
+
+        crearRefuerzos();
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
         for (Run m : miembros) if (m.iframes > 0) m.iframes--;
         for (Enemigo en : enemigos) {
             if (jefe != null && en == jefe.en) continue;
+            if (en.rumboT > 0) { en.correr(); continue; }                                  // estampida: sigue su carril
             Run obj = masCercano(objetivos, en.e.getX(), en.e.getZ());
-            if (obj == null) en.mover(en.e.getX(), en.e.getZ(), 0); else en.mover(obj.pp.x, obj.pp.z);
+            if (obj == null) en.mover(en.e.getX(), en.e.getZ(), 0);
+            else if (en.pers == Pers.EMBISTE) en.embestir(obj, w, rnd);
+            else en.mover(obj.pp.x, obj.pp.z);
         }
         if (jefe != null && jefe.vivo()) jefe.tick(objetivos);
+        tickBombas(objetivos);
         for (Enemigo en : enemigos) {
             if (en.cdContacto > 0) en.cdContacto--;
             if (en.cdContacto > 0) continue;
@@ -280,51 +297,207 @@ final class Equipo {
 
     private boolean crearEnemigo(Enemigo.Tipo pedido) {
         double t = tick / 20.0;
-        Especies.E sp; String extra = ""; Enemigo.Tipo tipoE = pedido;
-        if (pedido == Enemigo.Tipo.ELITE) {
+        Especies.E sp = null; String extra = ""; Enemigo.Tipo tipoE = pedido;
+        boolean normal = pedido != Enemigo.Tipo.ELITE;
+        if (!normal) {
             List<Especies.E> pool = pool2.isEmpty() ? pool1 : pool2;
             if (pool.isEmpty()) return false;
             sp = pool.get(rnd.nextInt(pool.size()));
-        } else if (rnd.nextDouble() < Curvas.P_MICHI && Especies.michi() != null) {             // 1 de cada 10 es un Michialien (el toque de Emi)
+        } else if (marea != null && marea.tipo == Mareas.Tipo.MICHIS && Especies.michi() != null) {          // marea de Michialiens: todos lo son
             sp = Especies.michi(); tipoE = Enemigo.Tipo.MICHI; extra = Especies.FORMAS_MICHI[rnd.nextInt(Especies.FORMAS_MICHI.length)];
-        } else {
-            boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Curvas.pFuerte(t));
-            List<Especies.E> pool = fuerte ? pool2 : pool1;
-            if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
-            if (pool.isEmpty()) return false;
-            sp = pool.get(rnd.nextInt(pool.size()));
-            tipoE = fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL;
+        } else if (marea != null && marea.tipo == Mareas.Tipo.TIPO && marea.pk != null) {                    // marea de un tipo: todos son de ese tipo
+            List<Especies.E> l = Especies.deTipo(marea.pk.id(), 180, 405);
+            if (!l.isEmpty()) { sp = l.get(rnd.nextInt(l.size())); tipoE = sp.bst() > 330 ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL; }
+        }
+        if (sp == null) {
+            if (rnd.nextDouble() < Curvas.P_MICHI && Especies.michi() != null) {             // 1 de cada 10 es un Michialien (el toque de Emi)
+                sp = Especies.michi(); tipoE = Enemigo.Tipo.MICHI; extra = Especies.FORMAS_MICHI[rnd.nextInt(Especies.FORMAS_MICHI.length)];
+            } else {
+                boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Curvas.pFuerte(t));
+                List<Especies.E> pool = fuerte ? pool2 : pool1;
+                if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
+                if (pool.isEmpty()) return false;
+                sp = pool.get(rnd.nextInt(pool.size()));
+                tipoE = fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL;
+            }
         }
         Vec3d s = sitioDeAparicion(21, 26);
         if (s == null) return false;
         double tm = fijo > 0 ? 0 : t;
-        Enemigo en = Enemigo.crear(w, sp, extra, s, tipoE, Curvas.vidaMul(tm) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(tm), Curvas.velMul(tm), 0f, rnd);
+        double hpMul = Curvas.vidaMul(tm) * Curvas.escalaVida(miembros.size()), velMul = Curvas.velMul(tm);
+        if (marea != null && marea.tipo == Mareas.Tipo.MICHIS && normal) { hpMul *= Mareas.VIDA_MICHIS; velMul *= Mareas.VELOCIDAD_MICHIS; }
+        Enemigo en = Enemigo.crear(w, sp, extra, s, tipoE, hpMul, Curvas.danoMul(tm), velMul, 0f, rnd);
         if (en == null) { fallosCrear++; return false; }
         enemigos.add(en);
         especiesVistas.add(sp.id());
+        if (normal && fijo == 0 && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) && rnd.nextDouble() < Pers.probabilidad(t)) aplicarPers(en, Pers.sortear(rnd));
         return true;
+    }
+
+    /** Le da una personalidad a un enemigo (ver {@link Pers}): cambia sus numeros, lo agranda si hace falta y le pone el contorno de su color. */
+    void aplicarPers(Enemigo en, Pers p) {
+        en.pers = p;
+        en.hp *= (float) p.vida; en.hpMax = en.hp; en.dmg *= (float) p.dano; en.vel *= p.vel;
+        if (p == Pers.BRUTO) en.xp *= 2;
+        if (p.tam != 1.0) {
+            try { en.e.getPokemon().setScaleModifier((float) (en.e.getPokemon().getScaleModifier() * p.tam)); en.radio *= p.tam; } catch (Throwable ex) { /* se queda del tamano normal */ }
+        }
+        Colores.marcar(en, p.color);
+        if (!avisoPers) { avisoPers = true; avisar(Msg.say(Pers.LEYENDA)); }
+    }
+
+    /** Un enemigo normal en un sitio dado (los usan las mareas: el cerco). Devuelve null si no se pudo. */
+    Enemigo crearNormalEn(double x, double z) {
+        double t = tick / 20.0;
+        boolean fuerte = rnd.nextDouble() < Curvas.pFuerte(t);
+        List<Especies.E> pool = fuerte ? pool2 : pool1;
+        if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
+        if (pool.isEmpty()) return null;
+        Especies.E sp = pool.get(rnd.nextInt(pool.size()));
+        Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t), Curvas.velMul(t), 0f, rnd);
+        if (en == null) { fallosCrear++; return null; }
+        enemigos.add(en);
+        especiesVistas.add(sp.id());
+        return en;
+    }
+
+    /** Solo para pruebas (/survivor dev pers): crea un enemigo con esa personalidad a unos 8 bloques del jugador. */
+    boolean devPers(Pers p, Run r) {
+        double a = rnd.nextDouble() * Math.PI * 2;
+        double x = r.pp.x + Math.cos(a) * 8, z = r.pp.z + Math.sin(a) * 8;
+        if (!Arena.dentro(this, x, z, 3.0)) { x = r.pp.x - Math.cos(a) * 8; z = r.pp.z - Math.sin(a) * 8; }
+        Enemigo en = crearNormalEn(x, z);
+        if (en == null) return false;
+        aplicarPers(en, p);
+        return true;
+    }
+
+    /** Un enemigo de la estampida: sale de (x, z) y corre en la direccion (ux, uz) por un carril de {@code largo} bloques, sin perseguir a nadie, y se va al llegar al final. */
+    void crearCorredor(double x, double z, double ux, double uz, double largo) {
+        double t = tick / 20.0;
+        boolean fuerte = rnd.nextDouble() < Curvas.pFuerte(t);
+        List<Especies.E> pool = fuerte ? pool2 : pool1;
+        if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
+        if (pool.isEmpty()) return;
+        Especies.E sp = pool.get(rnd.nextInt(pool.size()));
+        Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t) * 1.3, Curvas.velMul(t), 0f, rnd);
+        if (en == null) { fallosCrear++; return; }
+        en.rdx = ux; en.rdz = uz;
+        en.rumboT = (int) (largo / (en.vel * 3.0)) + 15;
+        float yaw = (float) Math.toDegrees(Math.atan2(-ux, uz));
+        en.e.setYaw(yaw); en.e.setHeadYaw(yaw); en.e.setBodyYaw(yaw);
+        enemigos.add(en);
+        especiesVistas.add(sp.id());
+    }
+
+    /** Empieza la marea numero {@code k} (si {@code forzado} es null, la que le toca por orden; si no, ese tipo: solo para pruebas). */
+    void iniciarMarea(int k, Mareas.Tipo forzado) {
+        Mareas.Tipo tp = forzado != null ? forzado : Mareas.tipo(k);
+        Mareas.TipoPk pk = tp == Mareas.Tipo.TIPO ? Mareas.tipoAlAzar(rnd) : null;
+        if (marea != null) marea.limpiar();
+        marea = new Marea(this, tp, k, pk);
+    }
+
+    // ------------------------------------------------------------------------------------------------ bombas de los enemigos explosivos
+
+    /** La bomba que deja un enemigo explosivo al caer: un cuadrado rojo en el suelo que se rellena durante 1,2 s y explota. */
+    private final class Bomba {
+        static final double LADO = 6.0;
+        static final int AVISO = 24;
+        final double x, z;
+        int t;
+        net.minecraft.entity.Entity fondo, relleno;
+
+        Bomba(double x, double z) {
+            this.x = x; this.z = z;
+            fondo = Marcas.crear(Equipo.this, Marcas.CRISTAL_ROJO, x, Marcas.Y_FONDO, z, 0, (float) LADO, 0.05f, (float) LADO, false);
+            relleno = Marcas.crear(Equipo.this, Marcas.ALFOMBRA_ROJA, x, Marcas.Y_RELLENO, z, 0, 0.2f, 1f, 0.2f, false);
+        }
+    }
+
+    private void tickBombas(List<Run> objetivos) {
+        for (Iterator<Bomba> it = bombas.iterator(); it.hasNext(); ) {
+            Bomba b = it.next();
+            b.t++;
+            if (b.t == 2) Marcas.poner(b.relleno, b.x, Marcas.Y_RELLENO, b.z, 0, (float) Bomba.LADO, 1f, (float) Bomba.LADO, false, Bomba.AVISO - 2);
+            if (b.t < Bomba.AVISO) continue;
+            Marcas.quitar(this, b.fondo); Marcas.quitar(this, b.relleno);
+            w.spawnParticles(ParticleTypes.EXPLOSION, b.x, Arena.Y0 + 0.8, b.z, 2, 1.0, 0.3, 1.0, 0.0);
+            w.spawnParticles(ParticleTypes.FLAME, b.x, Arena.Y0 + 0.6, b.z, 24, Bomba.LADO * 0.25, 0.4, Bomba.LADO * 0.25, 0.08);
+            w.playSound(null, b.x, Arena.Y0 + 1, b.z, net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE.value(), net.minecraft.sound.SoundCategory.HOSTILE, 0.7f, 1.2f);
+            for (Run m : objetivos) if (Marcas.dentroDeCuadrado(m.pp.x, m.pp.z, b.x, b.z, Bomba.LADO, 0.3)) m.danarJugador(Pers.danoBomba(tick / 20.0));
+            it.remove();
+        }
     }
 
     /** Solo para pruebas (/survivor dev elite): crea un campeon ya. */
     boolean devElite() { return crearEnemigo(Enemigo.Tipo.ELITE); }
 
-    /** El jefe: Snorlax Emi si esta Emipokemon (si no, un Snorlax normal), enorme, a unos 20 bloques de un jugador. */
-    void crearJefe() {
-        jefeSalio = true;
-        Especies.E sp = Especies.porId("emipokemon:snorlax_emi");
-        String nom = "Snorlax Emi";
-        if (sp == null) { sp = Especies.porId("snorlax"); nom = "Snorlax"; }
-        if (sp == null) { EmiSurvivors.LOG.warn("No hay especie para el jefe"); return; }
+    boolean jefeDerrotado() { return jefesDerrotados > 0; }
+
+    /**
+     * El jefe numero {@code n} (ver {@link Jefes}): su especie de Emipokemon si esta instalado (si no, la de repuesto de Cobblemon), enorme, a unos 20 bloques de un jugador.
+     * Devuelve false si no ha podido (no hay sitio: se vuelve a intentar el siguiente tick; o no hay especie: se salta ese jefe).
+     */
+    boolean crearJefe(int n) {
+        Jefes.Def d = Jefes.def(n);
+        Especies.E sp = Especies.porId(d.especie());
+        if (sp == null) sp = Especies.porId(d.alternativa());
+        if (sp == null) { EmiSurvivors.LOG.warn("No hay especie para el jefe {} ({} ni {}): se salta", d.nombre(), d.especie(), d.alternativa()); jefesSalidos = n; return false; }
         Vec3d s = sitioDeAparicion(17, 22);
-        if (s == null) { jefeSalio = false; return; }                 // se vuelve a intentar el siguiente tick
-        double t = tick / 20.0;
-        Enemigo en = Enemigo.crear(w, sp, "", s, Enemigo.Tipo.JEFE, 1, Curvas.danoMul(t), 1, Curvas.vidaJefe(t) * (float) Curvas.escalaJefe(miembros.size()), rnd);
-        if (en == null) { fallosCrear++; return; }
+        if (s == null) return false;
+        float hp = (float) (Jefes.vida(n) * Curvas.escalaJefe(miembros.size()));
+        Enemigo en = Enemigo.crear(w, sp, d.extra(), s, Enemigo.Tipo.JEFE, 1, 1.0, 1, hp, rnd, d.alto(), Jefes.dano(n), d.vel());
+        if (en == null) { fallosCrear++; return false; }
+        jefesSalidos = n;
         enemigos.add(en);
-        jefe = new Jefe(this, en, nom);
+        jefe = new Jefe(this, en, d, n);
+        Formatting color = Formatting.byName(d.color());
+        if (color == null) color = Formatting.LIGHT_PURPLE;
         for (Run m : miembros) {
             ServerPlayerEntity p = m.jugador();
-            if (p != null) Msg.title(p, Text.literal("¡" + nom.toUpperCase() + "!").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), Text.literal("Esquiva los círculos y las líneas rojas").formatted(Formatting.YELLOW), 5, 50, 15);
+            if (p == null) continue;
+            Msg.title(p, Text.literal("¡" + d.nombre().toUpperCase() + "!").formatted(color, Formatting.BOLD), Text.literal(d.aviso()).formatted(Formatting.YELLOW), 5, 60, 15);
+            p.playSoundToPlayer(net.minecraft.sound.SoundEvents.ENTITY_WITHER_SPAWN, net.minecraft.sound.SoundCategory.MASTER, 0.35f, 1.2f);
+        }
+        EmiSurvivors.LOG.info("[jefe] {}: sale el jefe {} ({}) a los {} s con {} de vida", nombres(), n, d.nombre(), segundos(), Math.round(hp));
+        return true;
+    }
+
+    /** Un jefe invoca {@code n} refuerzos alrededor de (bx, bz): se crean poco a poco en los siguientes ticks (crear un Pokemon de Cobblemon cuesta). */
+    void invocar(Jefes.Def d, int n, double bx, double bz, double radio) {
+        refuerzosDe = d;
+        for (int k = 0; k < n; k++) {
+            double ang = k * Math.PI * 2 / n + rnd.nextDouble() * 0.4, r = radio + 1.5 + rnd.nextDouble() * 3.0;
+            double x = bx + Math.cos(ang) * r, z = bz + Math.sin(ang) * r;
+            if (!Arena.dentro(this, x, z, 2.0)) { x = bx + (ox - bx) * 0.3; z = bz + (oz - bz) * 0.3; }
+            refuerzos.add(new double[]{x, z});
+        }
+    }
+
+    private void crearRefuerzos() {
+        for (int k = 0; k < MAX_NUEVOS_POR_TICK && !refuerzos.isEmpty(); k++) {
+            double[] p = refuerzos.remove(refuerzos.size() - 1);
+            Jefes.Def d = refuerzosDe;
+            Especies.E sp = null; String extra = ""; Enemigo.Tipo tipo = Enemigo.Tipo.DEBIL;
+            if (d != null) for (String id : d.secuaz().split("\\|")) {
+                if (id.isEmpty()) continue;
+                if (id.equals("gatitoalien")) {
+                    sp = Especies.michi();
+                    if (sp != null) { tipo = Enemigo.Tipo.MICHI; extra = Especies.FORMAS_MICHI[rnd.nextInt(Especies.FORMAS_MICHI.length)]; }
+                } else sp = Especies.porId(id);
+                if (sp != null) break;
+            }
+            if (sp == null) {                                                                  // sin especie propia: un enemigo normal cualquiera
+                List<Especies.E> pool = pool1.isEmpty() ? pool2 : pool1;
+                if (pool.isEmpty()) continue;
+                sp = pool.get(rnd.nextInt(pool.size()));
+            }
+            double t = tick / 20.0;
+            Enemigo en = Enemigo.crear(w, sp, extra, new Vec3d(p[0], Arena.Y0, p[1]), tipo, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()) * 0.6, Curvas.danoMul(t), Curvas.velMul(t) * 1.15, 0f, rnd);
+            if (en == null) { fallosCrear++; continue; }
+            enemigos.add(en);
+            especiesVistas.add(sp.id());
         }
     }
 
@@ -332,16 +505,23 @@ final class Equipo {
 
     private void muerte(Enemigo en) {
         double x = en.e.getX(), y = en.e.getY(), z = en.e.getZ();
+        if (en.sinBotin) { en.quitar(); return; }                    // un corredor de la estampida que llego al final: se va sin mas
         w.spawnParticles(ParticleTypes.POOF, x, y + 0.5, z, en.grande() ? 25 : 6, 0.3, 0.3, 0.3, 0.02);
         en.quitar();
         derrotados++;
+        if (en.pers == Pers.EXPLOSIVO && bombas.size() < 12) bombas.add(new Bomba(x, z));
         if (en.ultimo != null && miembros.contains(en.ultimo)) { en.ultimo.derrotados++; en.ultimo.alDerrotar(en); }
         switch (en.tipo) {
             case JEFE -> {
-                jefeDerrotado = true; jefe = null;
-                for (int k = 0; k < 6; k++) { double a = k * Math.PI / 3; gemas.add(new Gema(x + Math.cos(a) * 2.5, z + Math.sin(a) * 2.5, 25)); }
-                for (Run m : miembros) m.premioJefe();
+                Jefe j = jefe;
+                if (j != null) j.limpiar();
+                int n = j != null ? j.numero : jefesDerrotados + 1;
+                jefesDerrotados++; jefe = null;
+                for (int k = 0; k < 6; k++) { double a = k * Math.PI / 3; gemas.add(new Gema(x + Math.cos(a) * 2.5, z + Math.sin(a) * 2.5, 25 + 10 * (n - 1))); }
+                for (Run m : miembros) m.premioJefe(n, j == null ? "El jefe" : j.nombre, Jefes.esElUltimo(n));
                 soltarObjeto(Objeto.BAYA, x + 1.8, z); soltarObjeto(Objeto.BAYA, x - 1.8, z); soltarObjeto(Objeto.IMAN, x, z + 1.8);
+                if (n >= 3) soltarObjeto(Objeto.CARAMELO, x, z - 1.8);
+                EmiSurvivors.LOG.info("[jefe] {}: jefe {} derrotado a los {} s", nombres(), n, segundos());
             }
             case ELITE -> {
                 for (int k = 0; k < 3; k++) { double a = k * Math.PI * 2 / 3; gemas.add(new Gema(x + Math.cos(a) * 1.2, z + Math.sin(a) * 1.2, 5)); }
@@ -405,6 +585,10 @@ final class Equipo {
         enemigos.clear();
         gemas.clear();
         objetos.clear();
+        refuerzos.clear();
+        bombas.clear();
+        if (marea != null) { marea.limpiar(); marea = null; }
+        Marcas.quitarTodas(this);
         for (Run m : miembros) m.proyectiles.clear();
     }
 

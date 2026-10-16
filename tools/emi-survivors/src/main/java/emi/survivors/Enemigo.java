@@ -3,6 +3,7 @@ package emi.survivors;
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 
@@ -17,17 +18,24 @@ final class Enemigo {
     final PokemonEntity e;
     final Especies.E especie;
     final Tipo tipo;
-    final int xp;               // experiencia que suelta al caer
+    int xp;                     // experiencia que suelta al caer
     float hp, hpMax;
-    final float dmg;
-    final double vel;           // bloques por tick
-    final double radio;         // radio de contacto (bloques)
+    float dmg;
+    double vel;                 // bloques por tick
+    double radio;               // radio de contacto (bloques)
     int cdContacto;
     Run ultimo;                 // el jugador que le dio el ultimo golpe (a el se le cuenta como derrotado)
     double kbx, kbz;            // empuje por golpes (bloques/tick, decae)
     double sepx, sepz;          // separacion de los vecinos (la calcula la partida cada tick)
     int lentoT, aturdidoT;      // ticks que le quedan ralentizado / aturdido (ataques de hielo, lodo, trueno, terremoto...)
     double lentoF = 1.0;        // multiplicador de su velocidad mientras esta ralentizado
+    Pers pers;                  // su personalidad (null = un enemigo normal); ver Pers
+    String colorEquipo;         // el equipo de color del marcador que le da el contorno (ver Colores)
+    int embFase, embT = 40;     // personalidad «embiste»: 0 anda, 1 avisa (quieto), 2 carga; ticks que le quedan en cada fase
+    double edx, edz;            // direccion de su embestida
+    int rumboT;                 // estampida: si es > 0 sigue la direccion (rdx, rdz) y no persigue; al llegar a 0 desaparece sin soltar nada
+    double rdx, rdz;
+    boolean sinBotin;           // desaparece sin soltar gemas ni contar como derrotado
 
     private Enemigo(PokemonEntity e, Especies.E especie, Tipo tipo, int xp, float hp, float dmg, double velBloquesPorSegundo, double radio) {
         this.e = e; this.especie = especie; this.tipo = tipo; this.xp = xp; this.hp = this.hpMax = hp; this.dmg = dmg; this.vel = velBloquesPorSegundo / 20.0; this.radio = radio;
@@ -54,10 +62,16 @@ final class Enemigo {
      * (ver {@link Curvas}); {@code hpJefe} solo lo usa el jefe.
      */
     static Enemigo crear(ServerWorld w, Especies.E sp, String extra, Vec3d pos, Tipo tipo, double hpMul, double dmgMul, double velMul, float hpJefe, java.util.Random rnd) {
+        return crear(w, sp, extra, pos, tipo, hpMul, dmgMul, velMul, hpJefe, rnd, 0f, 0f, 0.0);
+    }
+
+    /** Igual; para un jefe se pueden dar su altura, su dano de contacto y su velocidad (bloques/s); con 0 se usan los de siempre (4,6 de alto, 25 de dano, 2,2 b/s). */
+    static Enemigo crear(ServerWorld w, Especies.E sp, String extra, Vec3d pos, Tipo tipo, double hpMul, double dmgMul, double velMul, float hpJefe, java.util.Random rnd,
+                         float altoJefe, float dmgJefe, double velJefe) {
         try {
             int nivel = switch (tipo) { case DEBIL -> 8; case ELITE -> 35; case JEFE -> 60; default -> 20; };
             PokemonEntity e = PokemonProperties.Companion.parse(sp.id() + " level=" + nivel + (extra == null || extra.isEmpty() ? "" : " " + extra)).createEntity(w);
-            float alto = switch (tipo) { case ELITE -> 2.4f + rnd.nextFloat() * 0.5f; case JEFE -> 4.6f; default -> 1.0f + rnd.nextFloat() * 0.7f; };   // los normales se ven parecidos
+            float alto = switch (tipo) { case ELITE -> 2.4f + rnd.nextFloat() * 0.5f; case JEFE -> altoJefe > 0 ? altoJefe : 4.6f; default -> 1.0f + rnd.nextFloat() * 0.7f; };   // los normales se ven parecidos
             float escala = Math.max(0.3f, Math.min(8.0f, alto / sp.alto()));
             e.getPokemon().setScaleModifier(escala);
             e.setAiDisabled(true);
@@ -74,7 +88,7 @@ final class Enemigo {
                 case FUERTE -> { hp = 42f; dmg = 8f; vel = 2.8 + rnd.nextDouble() * 0.9; xp = Curvas.xpEnemigo(true, false); }
                 case MICHI -> { hp = 36f; dmg = 6f; vel = 3.0 + rnd.nextDouble() * 0.8; xp = Curvas.xpEnemigo(true, true); }
                 case ELITE -> { hp = 240f; dmg = 12f; vel = 2.6; xp = 10; }
-                case JEFE -> { hp = hpJefe; dmg = 25f; vel = 2.2; xp = 60; }
+                case JEFE -> { hp = hpJefe; dmg = dmgJefe > 0 ? dmgJefe : 25f; vel = velJefe > 0 ? velJefe : 2.2; xp = 60; }
                 default -> { hp = 24f; dmg = 5f; vel = 2.3 + rnd.nextDouble() * 0.9; xp = Curvas.xpEnemigo(false, false); }
             }
             if (tipo != Tipo.JEFE) hp *= (float) hpMul;
@@ -115,5 +129,37 @@ final class Enemigo {
         e.setSprinting(factor != 0 && d > radio + 0.4);
     }
 
-    void quitar() { if (e != null && !e.isRemoved()) e.discard(); }
+    /** Un tick de un enemigo con la personalidad «embiste»: anda hacia el jugador, de vez en cuando se queda quieto un momento (con particulas de enfado) y se lanza en linea recta. */
+    void embestir(Run obj, ServerWorld w, java.util.Random rnd) {
+        double dx = obj.pp.x - e.getX(), dz = obj.pp.z - e.getZ(), d = Math.sqrt(dx * dx + dz * dz);
+        switch (embFase) {
+            case 0 -> {
+                mover(obj.pp.x, obj.pp.z);
+                if (--embT <= 0) {
+                    if (d > 3.0 && d < 14.0) { embFase = 1; embT = 14; }
+                    else embT = 15;
+                }
+            }
+            case 1 -> {
+                mover(obj.pp.x, obj.pp.z, 0);
+                if (embT % 3 == 0) w.spawnParticles(ParticleTypes.ANGRY_VILLAGER, e.getX(), e.getY() + radio * 2.5, e.getZ(), 1, 0.2, 0.2, 0.2, 0.0);
+                if (--embT <= 0) { embFase = 2; embT = 12; double l = Math.max(d, 1e-6); edx = dx / l; edz = dz / l; }
+            }
+            default -> {
+                mover(e.getX() + edx * 10, e.getZ() + edz * 10, 3.4);
+                if (--embT <= 0) { embFase = 0; embT = 70 + rnd.nextInt(50); }
+            }
+        }
+    }
+
+    /** Un tick de un enemigo de la estampida: corre por su carril (el triple de deprisa) y, al acabar su tiempo, se va sin soltar nada. */
+    void correr() {
+        mover(e.getX() + rdx * 10, e.getZ() + rdz * 10, 3.0);
+        if (--rumboT <= 0) { sinBotin = true; hp = 0; }
+    }
+
+    void quitar() {
+        Colores.quitar(this);
+        if (e != null && !e.isRemoved()) e.discard();
+    }
 }

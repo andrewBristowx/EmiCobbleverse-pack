@@ -2,10 +2,12 @@ package emi.survivors;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 
 import java.util.Map;
 import java.util.Random;
@@ -35,6 +37,18 @@ final class Arena {
     static boolean dentro(Equipo r, double x, double z, double margen) {
         double dx = x - r.ox, dz = z - r.oz, lim = RADIO - margen;
         return dx * dx + dz * dz <= lim * lim;
+    }
+
+    /**
+     * Quita lo que haya quedado de una partida anterior en la arena de ese hueco (Pokemon enemigos y marcas de aviso con la etiqueta {@code emi_survivors}). Si el servidor
+     * se paro en pleno ataque, esas entidades se guardaron con el mundo y {@link Partida#init} no las encuentra porque sus trozos de mapa no estan cargados todavia.
+     */
+    static void limpiarRestos(ServerWorld w, int slot) {
+        double[] o = origen(slot);
+        Box caja = new Box(o[0] - 80, w.getBottomY(), o[1] - 80, o[0] + 80, w.getTopY(), o[1] + 80);
+        java.util.List<Entity> restos = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains("emi_survivors"));
+        for (Entity e : restos) e.discard();
+        if (!restos.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} restos de una partida anterior de la arena {}.", restos.size(), slot);
     }
 
     /** Construye la arena de ese hueco si todavia no existe. Devuelve true si la ha construido ahora (la primera vez tarda un segundo o dos). */

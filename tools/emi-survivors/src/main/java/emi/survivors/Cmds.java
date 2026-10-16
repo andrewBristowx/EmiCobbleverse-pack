@@ -74,7 +74,12 @@ public final class Cmds {
         for (String k : new String[]{"xp", "nivel", "tiempo", "dano"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("n", IntegerArgumentType.integer(0, 100000))
                     .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", IntegerArgumentType.getInteger(c, "n"))))));
-        for (String k : new String[]{"jefe", "elite", "curar", "sinxp", "dps"})
+        dev.then(CommandManager.literal("jefe").executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefe", "", 0)))
+                .then(CommandManager.argument("n", IntegerArgumentType.integer(1, 20)).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefe", "", IntegerArgumentType.getInteger(c, "n"))))));
+        for (String k : new String[]{"marea", "pers"})
+            dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word()).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), 1)))));
+        dev.then(CommandManager.literal("jefehp").then(CommandManager.argument("n", IntegerArgumentType.integer(0, 100)).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefehp", "", IntegerArgumentType.getInteger(c, "n"))))));
+        for (String k : new String[]{"elite", "curar", "sinxp", "dps"})
             dev.then(CommandManager.literal(k).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", 1))));
         for (String k : new String[]{"arma", "solo", "pasiva", "objeto", "usar"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word())
@@ -101,7 +106,7 @@ public final class Cmds {
         int pos = 1;
         for (Datos.Entrada e : lista) {
             int seg = e.segundos, i = pos++;
-            String linea = i + ". " + e.nombre + " — " + (seg / 60) + ":" + String.format("%02d", seg % 60) + " (" + (Datos.GRUPO.equals(e.modo) ? e.miembros.size() + " jugadores" : e.especie + ", nivel " + e.nivel) + ", " + e.derrotados + " derrotados" + (e.jefe ? ", mató al jefe" : "") + ")";
+            String linea = i + ". " + e.nombre + " — " + (seg / 60) + ":" + String.format("%02d", seg % 60) + " (" + (Datos.GRUPO.equals(e.modo) ? e.miembros.size() + " jugadores" : e.especie + ", nivel " + e.nivel) + ", " + e.derrotados + " derrotados" + (e.jefes > 1 ? ", mató a " + e.jefes + " jefes" : e.jefe ? ", mató al jefe" : "") + ")";
             c.getSource().sendFeedback(() -> Text.literal(linea), false);
         }
     }

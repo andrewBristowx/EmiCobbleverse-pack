@@ -56,8 +56,8 @@ public final class MenuPantalla extends Lienzo {
     }
 
     private record Mejora(String id, String nombre, String texto, String icono, int[] costos) {}
-    private record Marca(int pos, String nombre, boolean mio, String especie, int segundos, int derrotados, int nivel, boolean jefe) {}
-    private record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, boolean jefe, boolean cuenta, String equipo) {}
+    private record Marca(int pos, String nombre, boolean mio, String especie, int segundos, int derrotados, int nivel, int jefes) {}
+    private record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo) {}
     private record Miembro(String uuid, String nombre, boolean lider, boolean yo, boolean listo, String especie, int nivel) {}
     private record Abierto(String lider, String nombre, int n, String miembros) {}
 
@@ -127,13 +127,13 @@ public final class MenuPantalla extends Lienzo {
         for (JsonElement e : o.getAsJsonArray("top")) {
             JsonObject j = e.getAsJsonObject();
             top.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
-                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.get("jefe").getAsBoolean()));
+                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0));
         }
         topGrupos.clear();
         if (o.has("topGrupos")) for (JsonElement e : o.getAsJsonArray("topGrupos")) {
             JsonObject j = e.getAsJsonObject();
             topGrupos.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
-                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.get("jefe").getAsBoolean()));
+                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0));
         }
         miembros.clear(); abiertos.clear();
         enGrupo = false; soyLider = false; grupoJugando = false;
@@ -156,7 +156,7 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("resultado")) {
             JsonObject r = o.getAsJsonObject("resultado");
             resultado = new Resultado(r.get("motivo").getAsString(), r.get("segundos").getAsInt(), r.get("derrotados").getAsInt(), r.get("nivel").getAsInt(), r.get("monedas").getAsInt(),
-                    r.get("puesto").getAsInt(), r.get("jefe").getAsBoolean(), r.get("cuenta").getAsBoolean(), r.has("equipo") ? r.get("equipo").getAsString() : "");
+                    r.get("puesto").getAsInt(), r.has("jefes") ? r.get("jefes").getAsInt() : r.get("jefe").getAsBoolean() ? 1 : 0, r.get("cuenta").getAsBoolean(), r.has("equipo") ? r.get("equipo").getAsString() : "");
         }
     }
 
@@ -280,7 +280,7 @@ public final class MenuPantalla extends Lienzo {
             Resultado r = resultado;
             int h = 46;
             caja(g, RX, y, RW, h, 0xFF22223C, r.puesto() > 0 ? ORO : 0xFF55557A);
-            texto(g, "Tu última partida: " + tiempo(r.segundos()) + " · " + r.derrotados() + " derrotados · nivel " + r.nivel() + (r.jefe() ? " · ¡jefe derrotado!" : ""), RX + 8, y + 6, BLANCO, 1f);
+            texto(g, "Tu última partida: " + tiempo(r.segundos()) + " · " + r.derrotados() + " derrotados · nivel " + r.nivel() + (r.jefes() > 1 ? " · ¡" + r.jefes() + " jefes derrotados!" : r.jefes() == 1 ? " · ¡jefe derrotado!" : ""), RX + 8, y + 6, BLANCO, 1f);
             String l2 = !r.cuenta() ? "Esta partida no cuenta para el top ni da monedas (modo de prueba)." : "+" + r.monedas() + " michiestrellitas" + (r.puesto() > 0 ? " · ¡Puesto " + r.puesto() + (r.equipo().isEmpty() ? " del top!" : " del top de grupos!") : " · no mejora la marca");
             texto(g, l2, RX + 8, y + 20, r.puesto() > 0 ? ORO : 0xFFFFE070, 1f);
             texto(g, r.motivo() + (r.equipo().isEmpty() ? "" : "  Jugaste con: " + r.equipo()), RX + 8, y + 33, GRIS, 0.8f);
@@ -412,9 +412,9 @@ public final class MenuPantalla extends Lienzo {
             g.fill(20, y, 620, y + 20, m.mio() ? 0x663A3A10 : ((m.pos() & 1) == 0 ? 0x22FFFFFF : 0x11FFFFFF));
             int col = m.mio() ? ORO : m.pos() == 1 ? 0xFFFFE070 : BLANCO;
             texto(g, String.valueOf(m.pos()), xs[0], y + 6, col, 1f);
-            if (topDeGrupos) texto(g, recortar(m.nombre(), 46) + (m.jefe() ? " ★" : ""), xs[1], y + 6, col, 1f);
+            if (topDeGrupos) texto(g, recortar(m.nombre(), 46) + (m.jefes() > 1 ? " ★×" + m.jefes() : m.jefes() == 1 ? " ★" : ""), xs[1], y + 6, col, 1f);
             else {
-                texto(g, m.nombre() + (m.jefe() ? " ★" : ""), xs[1], y + 6, col, 1f);
+                texto(g, m.nombre() + (m.jefes() > 1 ? " ★×" + m.jefes() : m.jefes() == 1 ? " ★" : ""), xs[1], y + 6, col, 1f);
                 texto(g, m.especie(), xs[2], y + 6, col, 1f);
             }
             texto(g, tiempo(m.segundos()), xs[3], y + 6, col, 1f);

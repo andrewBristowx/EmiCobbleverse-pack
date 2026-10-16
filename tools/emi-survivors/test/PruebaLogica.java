@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); cartas(); objetos(); meta(); datos(); grupos();
+        curvas(); catalogo(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -38,9 +38,10 @@ public final class PruebaLogica {
         for (int t : new int[]{0, 60, 120, 180, 300, 600, 900})
             System.out.printf("  t=%3ds  tope=%3d  ritmo=%.1f/s  vida x%.2f  dano x%.2f  vel x%.2f  fuertes %.0f%%%n", t, Curvas.tope(t), Curvas.ritmo(t), Curvas.vidaMul(t), Curvas.danoMul(t), Curvas.velMul(t), Curvas.pFuerte(t) * 100);
         ok(Curvas.tope(0) >= 15 && Curvas.tope(100000) == 120, "el tope va de ~22 a 120");
-        ok(Curvas.monedas(0, 0, 1, false, 1.0) >= 0, "monedas no negativas");
-        int m5 = Curvas.monedas(300, 250, 15, false, 1.0);
-        System.out.println("  monedas de una partida de 5 min, 250 derrotados, nivel 15: " + m5 + " (con jefe: " + Curvas.monedas(300, 250, 15, true, 1.0) + ")");
+        ok(Curvas.monedas(0, 0, 1, 0, 1.0) >= 0, "monedas no negativas");
+        int m5 = Curvas.monedas(300, 250, 15, 0, 1.0);
+        System.out.println("  monedas de una partida de 5 min, 250 derrotados, nivel 15: " + m5 + " (con un jefe: " + Curvas.monedas(300, 250, 15, 1, 1.0) + ", con cinco: " + Curvas.monedas(300, 250, 15, 5, 1.0) + ")");
+        ok(Curvas.monedas(300, 250, 15, 1, 1.0) - m5 == Jefes.MONEDAS_POR_JEFE && Curvas.monedas(300, 250, 15, 5, 1.0) - m5 == 5 * Jefes.MONEDAS_POR_JEFE, "cada jefe derrotado suma sus monedas");
         ok(m5 > 40 && m5 < 120, "una partida normal da 40-120 monedas");
             // varios jugadores en la misma arena
         ok(Curvas.escalaCantidad(1) == 1.0 && Curvas.escalaCantidad(2) > 1.5 && Curvas.escalaCantidad(4) < 3.0, "la cantidad de enemigos crece con los jugadores sin disparatarse");
@@ -172,6 +173,77 @@ public final class PruebaLogica {
         ok(!Objeto.esObjeto(0) && !Objeto.esObjeto(2) && !Objeto.esObjeto(14), "las gemas (0-2) no son objetos");
         ok(Objeto.porNombre("baya") == Objeto.BAYA && Objeto.porNombre("caramelo") == Objeto.CARAMELO && Objeto.porNombre("nada") == -1, "nombres de los comandos de prueba");
         ok(Curvas.P_OBJETO > 0 && Curvas.P_OBJETO < 0.02, "pocos objetos de los enemigos normales");
+    }
+
+    static void jefes() {
+        System.out.println("== jefes");
+        Set<String> ids = new HashSet<>(), nombres = new HashSet<>();
+        double vidaAnt = 0;
+        for (int n = 1; n <= Jefes.TODOS.length; n++) {
+            Jefes.Def d = Jefes.def(n);
+            ok(ids.add(d.id()) && nombres.add(d.nombre()), "jefe repetido: " + d.id());
+            ok(d.ataques().length >= 2, "el jefe " + d.nombre() + " tiene varios ataques");
+            ok(d.espera() >= 40 && d.espera() <= 120, "tiempo entre ataques razonable: " + d.nombre());
+            ok(d.vel() > 1.5 && d.vel() < 4.5 && d.alto() >= 4 && d.alto() <= 7, "velocidad y altura razonables: " + d.nombre());
+            ok(d.vida() > vidaAnt, "cada jefe tiene mas vida que el anterior: " + d.nombre());
+            ok(Formatting_ok(d.color()), "color con nombre valido: " + d.color());
+            ok(d.aviso().length() > 10 && d.aviso().length() < 80, "frase de aparicion con una longitud razonable: " + d.nombre());
+            boolean invoca = false; for (Jefes.Ataque a : d.ataques()) if (a == Jefes.Ataque.INVOCAR) invoca = true;
+            ok(!invoca || !d.secuaz().isEmpty(), "el jefe que invoca tiene refuerzos: " + d.nombre());
+            vidaAnt = d.vida();
+            System.out.printf("  jefe %d a los %d s: %s (%s), vida %.0f, ataques %s, furia %b%n", n, Jefes.segundo(n), d.nombre(), d.especie(), d.vida(), java.util.Arrays.toString(d.ataques()), d.furia());
+        }
+        ok(Jefes.segundo(1) == 180 && Jefes.segundo(2) == 360 && Jefes.segundo(5) == 900, "los jefes salen a los 3, 6, 9, 12 y 15 minutos");
+        ok(Jefes.tocan(0) == 0 && Jefes.tocan(179.9) == 0 && Jefes.tocan(180) == 1 && Jefes.tocan(359.9) == 1 && Jefes.tocan(360) == 2 && Jefes.tocan(900) == 5 && Jefes.tocan(1080) == 6, "cuantos jefes tocan segun el tiempo");
+        ok(Jefes.ciclo(1) == 0 && Jefes.ciclo(5) == 0 && Jefes.ciclo(6) == 1 && Jefes.def(6) == Jefes.def(1), "pasados los cinco, el ciclo vuelve a empezar");
+        ok(Jefes.vida(6) > Jefes.vida(1) * 1.5 && Jefes.dano(6) > Jefes.dano(1), "la segunda vuelta es mas dura");
+        ok(Jefes.esElUltimo(5) && Jefes.esElUltimo(10) && !Jefes.esElUltimo(4), "solo el quinto de cada vuelta es el ultimo");
+        ok(Jefes.impactos(1, 1) >= 6 && Jefes.impactos(4, 1) > Jefes.impactos(1, 1) && Jefes.impactos(4, 10) <= 16, "la lluvia tiene entre 6 y 16 impactos");
+        ok(Jefes.refuerzos(1, 1, false) >= 6 && Jefes.refuerzos(1, 1, true) > Jefes.refuerzos(1, 1, false) && Jefes.refuerzos(4, 10, true) <= 24, "los refuerzos van de 6 a 24");
+        // lo que dura cada pelea con un dano por segundo de ejemplo (los jugadores reales haran mas o menos)
+        double[] dps = {150, 400, 800, 1300, 2200};
+        for (int n = 1; n <= 5; n++) System.out.printf("  jefe %d: con %.0f de dano por segundo dura %.0f s con 1 jugador%n", n, dps[n - 1], Jefes.vida(n) / dps[n - 1]);
+    }
+
+    static void mareas() {
+        System.out.println("== mareas y personalidades");
+        ok(Mareas.tocan(0) == 0 && Mareas.tocan(89.9) == 0 && Mareas.tocan(90) == 1 && Mareas.tocan(269.9) == 1 && Mareas.tocan(270) == 2 && Mareas.tocan(810) == 5, "cuantas mareas tocan segun el tiempo");
+        ok(Mareas.segundo(1) == 90 && Mareas.segundo(2) == 270 && Mareas.segundo(5) == 810, "las mareas salen a mitad de cada tramo entre jefes");
+        for (int k = 1; k <= 30; k++) for (int n = 1; n <= 30; n++) ok(Mareas.segundo(k) != Jefes.segundo(n), "una marea nunca sale justo cuando un jefe (" + k + ", " + n + ")");
+        ok(Mareas.tipo(1) == Mareas.Tipo.MICHIS && Mareas.tipo(2) == Mareas.Tipo.CERCO && Mareas.tipo(3) == Mareas.Tipo.TIPO && Mareas.tipo(4) == Mareas.Tipo.ESTAMPIDA && Mareas.tipo(5) == Mareas.Tipo.MICHIS, "el orden de las mareas");
+        for (Mareas.Tipo t : Mareas.Tipo.values()) ok(Mareas.porNombre(t.name().toLowerCase()) == t, "se pueden pedir por nombre: " + t);
+        Set<String> ids = new HashSet<>();
+        for (Mareas.TipoPk pk : Mareas.TIPOS) {
+            ok(ids.add(pk.id()) && Mareas.tipoPk(pk.id()) == pk, "tipo repetido: " + pk.id());
+            ok(Formatting_ok(pk.color()), "color valido en la marea de " + pk.nombre());
+            for (Mareas.Tipo t : new Mareas.Tipo[]{Mareas.Tipo.TIPO}) ok(Mareas.titulo(t, pk).length() <= 20, "titulo corto (cabe en la pantalla): " + Mareas.titulo(t, pk));
+        }
+        for (Mareas.Tipo t : Mareas.Tipo.values()) {
+            ok(Mareas.titulo(t, Mareas.TIPOS[0]).length() <= 20, "titulo corto: " + t);
+            ok(Mareas.subtitulo(t).length() <= 38, "subtitulo corto: " + Mareas.subtitulo(t));
+        }
+        ok(Mareas.factorRitmo(Mareas.Tipo.MICHIS) > Mareas.factorRitmo(Mareas.Tipo.TIPO) && Mareas.factorRitmo(Mareas.Tipo.CERCO) == 1.0, "ritmo de las mareas");
+        ok(Mareas.cerco(0, 1) >= 18 && Mareas.cerco(100000, 4) <= 54 && Mareas.cerco(300, 2) > Mareas.cerco(300, 1), "tamano del cerco");
+        ok(Mareas.porCarril(0) == 8 && Mareas.porCarril(100000) == 18, "enemigos por carril");
+        ok(Mareas.carriles(1) == 2 && Mareas.carriles(2) == 2 && Mareas.carriles(3) == 3 && Mareas.carriles(4) == 3, "carriles de la estampida");
+        // personalidades
+        ok(Pers.probabilidad(0) == 0 && Pers.probabilidad(60) == 0 && Pers.probabilidad(130) > 0.04 && Pers.probabilidad(100000) == 0.25, "probabilidad de personalidad: 0 el primer minuto y tope del 25 %");
+        for (int t = 0; t < 1000; t += 10) ok(Pers.probabilidad(t + 10) >= Pers.probabilidad(t), "la probabilidad no baja con el tiempo");
+        Set<Pers> vistas = new HashSet<>(); Random r = new Random(7);
+        for (int i = 0; i < 400; i++) vistas.add(Pers.sortear(r));
+        ok(vistas.size() == Pers.values().length, "salen las cuatro personalidades");
+        for (Pers p : Pers.values()) {
+            ok(Pers.porNombre(p.name()) == p && Pers.porNombre(p.nombre.toLowerCase()) == p, "se pueden pedir por nombre: " + p);
+            ok(Formatting_ok(p.color), "color de contorno valido: " + p);
+            ok(p.vida >= 0.3 && p.vida <= 3 && p.dano >= 0.5 && p.dano <= 2 && p.vel >= 0.5 && p.vel <= 2 && p.tam >= 1 && p.tam <= 1.5, "numeros razonables de " + p);
+        }
+        ok(Pers.LEYENDA.length() < 130, "la leyenda de colores cabe en dos lineas del chat");
+        ok(Pers.danoBomba(0) >= 10 && Pers.danoBomba(100000) == 60 && Pers.danoBomba(600) > Pers.danoBomba(60), "dano de la bomba del explosivo");
+        System.out.printf("  marea 1 a los %d s, 2 a los %d, 3 a los %d, 4 a los %d; personalidad: %.0f %% a los 3 min y %.0f %% a los 8 min%n", Mareas.segundo(1), Mareas.segundo(2), Mareas.segundo(3), Mareas.segundo(4), Pers.probabilidad(180) * 100, Pers.probabilidad(480) * 100);
+    }
+
+    private static boolean Formatting_ok(String c) {
+        return java.util.Set.of("black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray", "dark_gray", "blue", "green", "aqua", "red", "light_purple", "yellow", "white").contains(c);
     }
 
     static void meta() {

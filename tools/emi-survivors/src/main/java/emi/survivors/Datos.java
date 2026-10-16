@@ -56,7 +56,8 @@ final class Datos {
     static final class Entrada {
         String uuid = "", nombre = "", especie = "", aspectos = "";
         int nivelPokemon, segundos, derrotados, nivel;
-        boolean jefe;
+        boolean jefe;                // mato a algun jefe (de la fase 1: el unico)
+        int jefes;                   // cuantos jefes mato (desde 0.5.0; las marcas viejas con jefe=true cuentan como 1)
         long fecha;      // milisegundos desde 1970
         String modo = SOLO;
         List<MiembroTop> miembros = new ArrayList<>();

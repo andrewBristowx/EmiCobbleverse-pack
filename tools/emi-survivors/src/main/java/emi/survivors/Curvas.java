@@ -19,8 +19,8 @@ final class Curvas {
     // ------------------------------------------------------------ monedas
 
     /** Michiestrellitas (la moneda de las mejoras permanentes) que se ganan al acabar una partida. {@code mult} = 1 + bonos de «suerte». */
-    static int monedas(int segundos, int derrotados, int nivel, boolean jefe, double mult) {
-        double base = segundos / 12.0 + derrotados / 15.0 + nivel * 2.0 + (jefe ? 20 : 0);
+    static int monedas(int segundos, int derrotados, int nivel, int jefes, double mult) {
+        double base = segundos / 12.0 + derrotados / 15.0 + nivel * 2.0 + Jefes.MONEDAS_POR_JEFE * Math.max(0, jefes);
         return (int) Math.max(0, Math.round(base * mult));
     }
 
@@ -70,11 +70,7 @@ final class Curvas {
     /** Probabilidad de que un enemigo sea un Michialien (el toque de Emi). */
     static final double P_MICHI = 0.10;
 
-    /** Segundos entre elites (uno cada minuto, el primero al minuto) y segundo en que sale el primer jefe. */
-    static final int CADA_ELITE = 60, T_JEFE = 180;
+    /** Segundos entre elites (uno cada minuto, el primero al minuto). Los jefes salen cada 3 minutos: ver {@link Jefes}. */
+    static final int CADA_ELITE = 60;
 
-    // ------------------------------------------------------------ tipos de enemigo especial
-
-    /** Vida base del jefe «Snorlax Emi» segun el minuto en que sale (el primero, 3:00). */
-    static float vidaJefe(double t) { return (float) (1200 + 4 * (t - T_JEFE)); }
 }

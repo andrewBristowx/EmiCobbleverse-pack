@@ -185,6 +185,7 @@ public final class Partida {
         try {
             if (equipos.isEmpty()) Pausas.pausar();
             Arena.preparar(w, slot);
+            Arena.limpiarRestos(w, slot);
             int n = cs.size();
             for (int i = 0; i < n; i++) {
                 Candidato c = cs.get(i);
@@ -316,7 +317,7 @@ public final class Partida {
 
     private static Datos.Entrada entradaDelEquipo(Equipo eq, List<Run> ms, int seg) {
         Datos.Entrada e = new Datos.Entrada();
-        e.segundos = seg; e.derrotados = eq.derrotados; e.jefe = eq.jefeDerrotado;
+        e.segundos = seg; e.derrotados = eq.derrotados; e.jefe = eq.jefesDerrotados > 0; e.jefes = eq.jefesDerrotados;
         List<String> ids = new ArrayList<>(), nombres = new ArrayList<>();
         int nivelMax = 1;
         for (Run r : ms) {
@@ -342,7 +343,7 @@ public final class Partida {
         int monedas = 0;
         if (cuenta) {
             try {
-                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefeDerrotado, r.st.monedas);
+                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefesDerrotados, r.st.monedas);
                 datos.registrarJugador(r.id, r.nombre, r.pokeId, r.especieId, seg, monedas);
             } catch (RuntimeException ex) { EmiSurvivors.LOG.error("No se pudo guardar el resultado de la partida de {}", r.nombre, ex); }
         }
@@ -360,7 +361,7 @@ public final class Partida {
             if (!Saved.restore(server, p)) quitarEfectos(p);
         } else {
             quitarEfectos(p);
-            Mundo.volverASala(p, new Menu.Resultado(motivo, seg, r.derrotados, r.nivel, monedas, puesto, eq.jefeDerrotado, cuenta, otros.toString()));
+            Mundo.volverASala(p, new Menu.Resultado(motivo, seg, r.derrotados, r.nivel, monedas, puesto, eq.jefesDerrotados, cuenta, otros.toString()));
         }
         p.sendMessage(Msg.say(motivo + " Aguantasteis " + (seg / 60) + ":" + String.format("%02d", seg % 60) + ", llegaste al nivel " + r.nivel + " y derrotaste a " + r.derrotados + " Pokémon."
                 + (cuenta ? " Ganas " + monedas + " michiestrellitas." + (puesto > 0 ? " Puesto " + puesto + " del top." : "") : "")), false);
@@ -449,7 +450,21 @@ public final class Partida {
             case "xp" -> r.ganarXp(Math.max(1, n));
             case "nivel" -> { r.nivel += Math.max(1, n); r.pendientes += Math.max(1, n); r.xpSig = Curvas.xpPara(r.nivel); r.xp = 0; }
             case "tiempo" -> r.eq.tick = Math.max(0, n) * 20;
-            case "jefe" -> { if (r.eq.jefe != null && r.eq.jefe.vivo()) return "Ya hay un jefe vivo."; r.eq.crearJefe(); }
+            case "jefe" -> { if (r.eq.jefe != null && r.eq.jefe.vivo()) return "Ya hay un jefe vivo."; if (!r.eq.crearJefe(n > 0 ? n : r.eq.jefesSalidos + 1)) return "No se pudo crear el jefe (mira el registro)."; }
+            case "jefehp" -> {                    // deja al jefe vivo con ese porcentaje de vida (0 = lo mata): para probar la furia y los premios
+                if (r.eq.jefe == null || !r.eq.jefe.vivo()) return "No hay ningun jefe vivo.";
+                r.eq.jefe.en.hp = r.eq.jefe.en.hpMax * Math.max(0, Math.min(100, n)) / 100f;
+            }
+            case "marea" -> {                     // empieza ya una marea de ese tipo (michis, cerco, tipo, estampida)
+                Mareas.Tipo tp = Mareas.porNombre(id);
+                if (tp == null) return "Mareas: michis, cerco, tipo, estampida.";
+                r.eq.iniciarMarea(r.eq.mareasSalidas + 1, tp);
+            }
+            case "pers" -> {                      // crea un enemigo con esa personalidad cerca
+                Pers pp = Pers.porNombre(id);
+                if (pp == null) return "Personalidades: veloz, bruto, embiste, explosivo.";
+                if (!r.eq.devPers(pp, r)) return "No se pudo crear el enemigo.";
+            }
             case "elite" -> { return r.eq.devElite() ? null : "No se pudo crear el campeón."; }
             case "curar" -> r.hp = r.st.hpMax;
             case "dano" -> r.hp -= Math.max(1, n);
@@ -484,7 +499,7 @@ public final class Partida {
                 r.pasivas.put(id, Math.max(1, Math.min(Catalogo.MAX_NIVEL, n)));
                 r.recalcular();
             }
-            default -> { return "Opciones: xp, nivel, tiempo, jefe, elite, curar, dano, sinxp, dps, arma, solo, pasiva, objeto, usar."; }
+            default -> { return "Opciones: xp, nivel, tiempo, jefe [n], jefehp <%>, marea <tipo>, pers <nombre>, elite, curar, dano, sinxp, dps, arma, solo, pasiva, objeto, usar."; }
         }
         return null;
     }

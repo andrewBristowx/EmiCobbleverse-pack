@@ -17,7 +17,7 @@ final class Menu {
     private Menu() {}
 
     /** El resultado de la partida que acaba de terminar (para enseñarlo en el menu). {@code puesto} = 0 si no entra al top. */
-    record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, boolean jefe, boolean cuenta, String equipo) {}
+    record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo) {}
 
     static void enviar(ServerPlayerEntity p, String tab, Resultado res) {
         if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) {
@@ -54,6 +54,7 @@ final class Menu {
             e.addProperty("derrotados", en.derrotados);
             e.addProperty("nivel", en.nivel);
             e.addProperty("jefe", en.jefe);
+            e.addProperty("jefes", Math.max(en.jefes, en.jefe ? 1 : 0));
             top.add(e);
         }
         return top;
@@ -155,7 +156,8 @@ final class Menu {
             r.addProperty("nivel", res.nivel());
             r.addProperty("monedas", res.monedas());
             r.addProperty("puesto", res.puesto());
-            r.addProperty("jefe", res.jefe());
+            r.addProperty("jefe", res.jefes() > 0);
+            r.addProperty("jefes", res.jefes());
             r.addProperty("cuenta", res.cuenta());
             r.addProperty("equipo", res.equipo());
             o.add("resultado", r);
