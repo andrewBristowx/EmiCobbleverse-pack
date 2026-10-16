@@ -70,6 +70,16 @@ final class Menu {
         o.addProperty("maxPartidas", Partida.MAX_PARTIDAS);
         o.addProperty("miPuesto", d.puesto(p.getUuid()));
         o.addProperty("miMejor", j.mejorTiempo);
+        JsonArray bio = new JsonArray();
+        for (Biomas.Bioma b : Biomas.TODOS) {
+            JsonObject e = new JsonObject();
+            e.addProperty("id", b.id()); e.addProperty("nombre", b.nombre()); e.addProperty("texto", b.texto()); e.addProperty("color", b.color());
+            JsonArray tp = new JsonArray();
+            for (String t : b.tipos()) tp.add(t);
+            e.add("tipos", tp);
+            bio.add(e);
+        }
+        o.add("biomas", bio);
 
         JsonArray eq = new JsonArray();
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(p);
@@ -126,6 +136,7 @@ final class Menu {
         if (g != null) {
             gr.addProperty("soyLider", g.lider.equals(p.getUuid()));
             gr.addProperty("enPartida", g.enPartida);
+            gr.addProperty("bioma", g.bioma);
             gr.addProperty("max", Grupos.MAX);
             JsonArray ms = new JsonArray();
             for (Grupos.Miembro m : g.miembros) {

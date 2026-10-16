@@ -39,7 +39,7 @@ final class Acciones {
                 case "jugar" -> {
                     if (Partida.participa(p)) { Menu.cerrar(p); return; }                  // doble clic: la partida ya esta en marcha
                     if (Partida.grupos.de(p.getUuid()) != null) { p.sendMessage(Msg.err("Estás en un grupo: usa «¡LISTO!» o «¡EMPEZAR!», o sal del grupo para jugar solo."), false); Menu.enviar(p, "jugar", null); return; }
-                    String err = Partida.iniciar(p, Integer.parseInt(a.a().trim()), 0, false);
+                    String err = Partida.iniciar(p, Integer.parseInt(a.a().trim()), 0, false, Biomas.deIdOPradera(a.b()));
                     if (err != null) { p.sendMessage(Msg.err(err), false); Menu.enviar(p, "jugar", null); }
                     else Menu.cerrar(p);
                 }
@@ -49,9 +49,10 @@ final class Acciones {
                 case "grupo_expulsar" -> respuesta(p, GrupoCtl.expulsar(p, UUID.fromString(a.a().trim())));
                 case "grupo_listo" -> { int hueco = Integer.parseInt(a.a().trim()); respuesta(p, hueco <= 0 ? GrupoCtl.noListo(p) : GrupoCtl.listo(p, hueco)); }
                 case "grupo_empezar" -> {
-                    String err = GrupoCtl.empezar(p, Integer.parseInt(a.a().trim()));
+                    String err = GrupoCtl.empezar(p, Integer.parseInt(a.a().trim()));          // en la arena que haya elegido el lider (se guarda en el grupo)
                     if (err != null) respuesta(p, err);
                 }
+                case "bioma" -> respuesta(p, GrupoCtl.elegirBioma(p, Biomas.porId(a.a())));
                 case "refrescar" -> {
                     long ahora = System.currentTimeMillis();
                     Long antes = ULTIMO_REFRESCO.put(p.getUuid(), ahora);

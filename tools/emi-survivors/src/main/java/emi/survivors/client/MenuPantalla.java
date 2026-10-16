@@ -60,12 +60,18 @@ public final class MenuPantalla extends Lienzo {
     private record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo) {}
     private record Miembro(String uuid, String nombre, boolean lider, boolean yo, boolean listo, String especie, int nivel) {}
     private record Abierto(String lider, String nombre, int n, String miembros) {}
+    private record Bioma(String id, String nombre, String texto, int color, List<String> tipos) {}
 
     private final List<Poke> equipo = new ArrayList<>();
     private final List<Mejora> catalogo = new ArrayList<>();
     private final List<Marca> top = new ArrayList<>(), topGrupos = new ArrayList<>();
     private final List<Miembro> miembros = new ArrayList<>();
     private final List<Abierto> abiertos = new ArrayList<>();
+    private final List<Bioma> biomas = new ArrayList<>();
+    /** La arena que has elegido para jugar solo (se recuerda mientras no cierres el juego). */
+    private static String biomaSolo = "pradera";
+    /** La arena que ha elegido el lider del grupo (la manda el servidor). */
+    private String biomaGrupo = "pradera";
     private Resultado resultado;
     private boolean enGrupo, soyLider, grupoJugando, topDeGrupos;
     private int maxGrupo = 4;
@@ -135,6 +141,13 @@ public final class MenuPantalla extends Lienzo {
             topGrupos.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
                     j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0));
         }
+        biomas.clear();
+        if (o.has("biomas")) for (JsonElement e : o.getAsJsonArray("biomas")) {
+            JsonObject j = e.getAsJsonObject();
+            List<String> tp = new ArrayList<>();
+            if (j.has("tipos")) for (JsonElement tt : j.getAsJsonArray("tipos")) tp.add(tt.getAsString());
+            biomas.add(new Bioma(j.get("id").getAsString(), j.get("nombre").getAsString(), j.get("texto").getAsString(), j.get("color").getAsInt(), tp));
+        }
         miembros.clear(); abiertos.clear();
         enGrupo = false; soyLider = false; grupoJugando = false;
         if (o.has("grupo")) {
@@ -142,6 +155,7 @@ public final class MenuPantalla extends Lienzo {
             enGrupo = g.get("enGrupo").getAsBoolean();
             if (enGrupo) {
                 soyLider = g.get("soyLider").getAsBoolean(); grupoJugando = g.get("enPartida").getAsBoolean(); maxGrupo = g.get("max").getAsInt();
+                if (g.has("bioma")) biomaGrupo = g.get("bioma").getAsString();
                 for (JsonElement e : g.getAsJsonArray("miembros")) {
                     JsonObject j = e.getAsJsonObject();
                     miembros.add(new Miembro(j.get("uuid").getAsString(), j.get("nombre").getAsString(), j.get("lider").getAsBoolean(), j.get("yo").getAsBoolean(), j.get("listo").getAsBoolean(),
@@ -278,19 +292,19 @@ public final class MenuPantalla extends Lienzo {
         int y = CY;
         if (resultado != null) {
             Resultado r = resultado;
-            int h = 46;
+            int h = 40;
             caja(g, RX, y, RW, h, 0xFF22223C, r.puesto() > 0 ? ORO : 0xFF55557A);
-            texto(g, "Tu última partida: " + tiempo(r.segundos()) + " · " + r.derrotados() + " derrotados · nivel " + r.nivel() + (r.jefes() > 1 ? " · ¡" + r.jefes() + " jefes derrotados!" : r.jefes() == 1 ? " · ¡jefe derrotado!" : ""), RX + 8, y + 6, BLANCO, 1f);
+            texto(g, "Tu última partida: " + tiempo(r.segundos()) + " · " + r.derrotados() + " derrotados · nivel " + r.nivel() + (r.jefes() > 1 ? " · ¡" + r.jefes() + " jefes derrotados!" : r.jefes() == 1 ? " · ¡jefe derrotado!" : ""), RX + 8, y + 5, BLANCO, 1f);
             String l2 = !r.cuenta() ? "Esta partida no cuenta para el top ni da monedas (modo de prueba)." : "+" + r.monedas() + " michiestrellitas" + (r.puesto() > 0 ? " · ¡Puesto " + r.puesto() + (r.equipo().isEmpty() ? " del top!" : " del top de grupos!") : " · no mejora la marca");
-            texto(g, l2, RX + 8, y + 20, r.puesto() > 0 ? ORO : 0xFFFFE070, 1f);
-            texto(g, r.motivo() + (r.equipo().isEmpty() ? "" : "  Jugaste con: " + r.equipo()), RX + 8, y + 33, GRIS, 0.8f);
-            y += h + 6;
+            texto(g, l2, RX + 8, y + 17, r.puesto() > 0 ? ORO : 0xFFFFE070, 1f);
+            texto(g, r.motivo() + (r.equipo().isEmpty() ? "" : "  Jugaste con: " + r.equipo()), RX + 8, y + 29, GRIS, 0.8f);
+            y += h + 4;
         }
         Poke p = elegido();
         if (p == null) { parrafo(g, "Cuando tengas un Pokémon en tu equipo podrás jugar con él.", RX, y + 20, RW, GRIS, 1f); return; }
-        int altoPanel = 330 - y - 40;
+        int altoPanel = resultado != null ? 112 : 120;
         caja(g, RX, y, RW, altoPanel, 0xFF1B1B30, 0xFF55557A);
-        modelo(g, p, RX + 66, y + 104, 56f, delta);
+        modelo(g, p, RX + 66, y + altoPanel / 2 + 6, 48f, delta);
         int tx = RX + 140;
         texto(g, p.titulo() + (p.brillante ? " ★" : ""), tx, y + 8, ORO, 1.5f);
         texto(g, "Nv. " + p.nivel + " · Tipo " + TIPOS.getOrDefault(p.tipo, p.tipo), tx, y + 26, COLORES.getOrDefault(p.tipo, GRIS) | 0xFF000000, 1f);
@@ -299,8 +313,10 @@ public final class MenuPantalla extends Lienzo {
         parrafo(g, p.ataqueTexto, tx + 30, y + 56, RW - 140 - 38, GRIS, 0.9f);
         StringBuilder sb = new StringBuilder();
         for (Mejora m : catalogo) { int n = p.mejoras.getOrDefault(m.id(), 0); if (n > 0) sb.append(m.nombre()).append(' ').append(n).append("  "); }
-        texto(g, sb.length() == 0 ? "Sin mejoras permanentes todavía (mira la pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 90, 0xFFFFE070, 0.85f);
-        texto(g, p.partidas == 0 ? "Aún no has jugado con él." : "Mejor tiempo con él: " + tiempo(p.mejorTiempo) + " (" + p.partidas + " partidas)", tx, y + 104, GRIS, 0.85f);
+        texto(g, sb.length() == 0 ? "Sin mejoras permanentes todavía (mira la pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 88, 0xFFFFE070, 0.85f);
+        texto(g, p.partidas == 0 ? "Aún no has jugado con él." : "Mejor tiempo con él: " + tiempo(p.mejorTiempo) + " (" + p.partidas + " partidas)", tx, y + 99, GRIS, 0.85f);
+        int[] za = zonaArenas();
+        arenas(g, mx, my, za[0], za[1]);
         boolean lleno = partidas >= maxPartidas;
         boolean sobre = dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32);
         if (!enGrupo) {
@@ -319,6 +335,46 @@ public final class MenuPantalla extends Lienzo {
             boolean listo = m != null && m.listo();
             boton(g, RX + RW / 2 - 100, 296, 200, 32, preparando ? "..." : listo ? "LISTO ✓  (pulsa para cambiar)" : "¡LISTO!", listo ? 0xFF3A6EC8 : 0xFF2E9B4E, !preparando, sobre, listo ? 0.95f : 1.4f);
             textoCentrado(g, listo ? "Esperando a que el líder empiece la partida..." : "Elige tu Pokémon y pulsa ¡LISTO!", RX + RW / 2, 332, GRIS, 0.8f);
+        }
+    }
+
+    // ---- la eleccion de arena (bioma): tres tarjetas debajo del Pokemon
+    private static final int CW = 116, CGAP = 7;
+
+    /** Donde van las tarjetas de arena en JUGAR: {y de la etiqueta, alto de las tarjetas}; ocupan hasta el boton de jugar (y = 296). */
+    private int[] zonaArenas() {
+        int y = resultado != null ? CY + 44 : CY;
+        int panel = resultado != null ? 112 : 120;
+        int yb = y + panel + 4;
+        return new int[]{yb, 292 - (yb + 12)};
+    }
+
+    /** Solo elige la arena quien la decide: el jugador que juega solo, o el lider de un grupo (que aun no esta jugando). */
+    private boolean puedeElegirArena() { return !preparando && (!enGrupo || (soyLider && !grupoJugando)); }
+
+    private void arenas(DrawContext g, int mx, int my, int yb, int hc) {
+        if (biomas.isEmpty()) return;
+        boolean puede = puedeElegirArena();
+        String actual = enGrupo ? biomaGrupo : biomaSolo;
+        texto(g, enGrupo && !soyLider ? "ARENA (la elige el líder del grupo)" : "ELIGE LA ARENA", RX, yb, ORO, 0.9f);
+        for (int i = 0; i < biomas.size(); i++) {
+            Bioma b = biomas.get(i);
+            int x = RX + i * (CW + CGAP), y = yb + 12;
+            boolean sel = b.id().equals(actual), sobre = puede && dentro(mx, my, x, y, CW, hc);
+            caja(g, x, y, CW, hc, sel ? 0xFF2E2E58 : sobre ? 0xFF25254A : 0xFF1B1B30, sel ? ORO : sobre ? b.color() : 0xFF55557A);
+            g.fill(x + 1, y + 1, x + 4, y + hc - 1, puede || sel ? b.color() : (b.color() & 0x00FFFFFF) | 0x66000000);
+            boolean alto = hc >= 60;
+            int ix = x + 9, iy = alto ? y + 6 : y + (hc - 24) / 2, tx = ix + 29;
+            icono(g, "b_" + b.id(), ix, iy, 1f);
+            String[] nom = b.nombre().split(" ", 2);
+            texto(g, nom[0], tx, iy + 2, sel ? ORO : puede ? BLANCO : GRIS, 1.05f);
+            if (nom.length > 1) texto(g, nom[1], tx, iy + 14, GRIS, 0.8f);
+            if (alto) {
+                int l = parrafo(g, b.texto(), x + 8, y + 36, CW - 12, GRIS, 0.75f);
+                StringBuilder sb = new StringBuilder("Más: ");
+                for (int k = 0; k < b.tipos().size(); k++) sb.append(k > 0 ? ", " : "").append(TIPOS.getOrDefault(b.tipos().get(k), b.tipos().get(k)));
+                parrafo(g, sb.toString(), x + 8, y + 36 + Math.round(l * 7.5f) + 3, CW - 12, 0xFFFFE070, 0.7f);
+            }
         }
     }
 
@@ -439,6 +495,10 @@ public final class MenuPantalla extends Lienzo {
             for (int i = 0; i < equipo.size(); i++) if (dentro(mx, my, LX, CY + i * 43, LW, 40)) { sel = i; return; }
         }
         Poke p = elegido();
+        if (tab == T_JUGAR && p != null && puedeElegirArena()) {
+            int[] za = zonaArenas();
+            for (int i = 0; i < biomas.size(); i++) if (dentro(mx, my, RX + i * (CW + CGAP), za[0] + 12, CW, za[1])) { elegirArena(biomas.get(i).id()); return; }
+        }
         if (tab == T_JUGAR && p != null && dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32)) { botonJugar(p); return; }
         if (tab == T_MEJORAS && p != null) {
             for (int i = 0; i < catalogo.size(); i++) {
@@ -454,10 +514,17 @@ public final class MenuPantalla extends Lienzo {
         }
     }
 
+    /** Elige la arena: solo se recuerda aqui; en un grupo se lo dice al servidor (que se la enseña a todo el grupo). */
+    private void elegirArena(String id) {
+        if (!enGrupo) { biomaSolo = id; return; }
+        biomaGrupo = id;
+        enviar("bioma", id, "");
+    }
+
     /** El boton grande de la pestaña JUGAR: jugar solo, estar listo (miembro del grupo) o empezar (lider). */
     private void botonJugar(Poke p) {
         boolean lleno = partidas >= maxPartidas;
-        if (!enGrupo) { if (!lleno && !preparando) { preparando = true; enviar("jugar", String.valueOf(p.slot), ""); } return; }
+        if (!enGrupo) { if (!lleno && !preparando) { preparando = true; enviar("jugar", String.valueOf(p.slot), biomaSolo); } return; }
         if (grupoJugando) return;
         if (soyLider) {
             if (!lleno && !preparando && otros() - listosSinLider() <= 0) { preparando = true; enviar("grupo_empezar", String.valueOf(p.slot), ""); }

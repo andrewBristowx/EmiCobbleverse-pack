@@ -4,7 +4,7 @@
 Uso:  python3 generar_iconos.py                 -> escribe src/main/resources/assets/emi_survivors/textures/iconos.png y .../iconos.json
       python3 generar_iconos.py --hojas DIR     -> ademas guarda hojas de contacto ampliadas en DIR (para revisar a ojo)
       python3 generar_iconos.py --solo clave1,clave2   -> solo esas claves (para probar)
-Las claves: a_<ataque>, e_<ataque> (evolucion), i_<tipo> (ataque inicial de ese tipo), p_<objeto>, m_<mejora permanente>, x_<otros>.
+Las claves: a_<ataque>, e_<ataque> (evolucion), i_<tipo> (ataque inicial de ese tipo), p_<objeto>, m_<mejora permanente>, x_<otros>, b_<bioma> (arena).
 Los dibujos son propios (hechos por codigo); del juego PokéSurvivor solo se tomo como referencia la idea de la interfaz (ranuras con icono, numero y puntos de nivel)."""
 import json
 import os
@@ -18,6 +18,7 @@ from iconos_base import *
 import iconos_ataques
 import iconos_objetos
 import iconos_evo
+import iconos_biomas
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 SALIDA = os.path.join(AQUI, '..', 'src', 'main', 'resources', 'assets', 'emi_survivors')
@@ -43,6 +44,8 @@ def todos():
         r['m_' + k] = iconos_objetos.OBJETOS[o]()
     for k, f in iconos_objetos.OTROS.items():
         r['x_' + k] = f()
+    for k, f in iconos_biomas.BIOMAS.items():
+        r['b_' + k] = f()
     return r
 
 

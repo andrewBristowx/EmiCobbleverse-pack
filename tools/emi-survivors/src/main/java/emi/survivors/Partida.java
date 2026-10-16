@@ -67,9 +67,19 @@ public final class Partida {
     /** Un jugador que va a empezar una partida y el hueco (1..6) de su equipo de Cobblemon con el Pokemon que llevara. */
     record Candidato(ServerPlayerEntity p, int hueco) {}
 
-    static ServerWorld mundo() {
-        return server == null ? null : server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_survivors", "arena")));
+    /** Para probar cambios de diseño sin reiniciar el servidor (/survivor dev reconstruir): borra la arena de ese hueco y la vuelve a construir. Devuelve el motivo si no se puede, o null. */
+    static String reconstruir(Biomas.Bioma bioma, int slot) {
+        ServerWorld w = mundo(bioma);
+        if (w == null) return "No existe la dimension emi_survivors:" + bioma.dimension() + ".";
+        for (Equipo e : equipos) if (e.w == w && e.slot == slot) return "Hay una partida en esa arena: paradla antes (/survivor parar).";
+        long t0 = System.nanoTime();
+        Arena.reconstruir(w, slot, bioma);
+        EmiSurvivors.LOG.info("Arena {} ({}) reconstruida en {} ms (dev)", slot, bioma.id(), (System.nanoTime() - t0) / 1_000_000);
+        return null;
     }
+
+    /** El mundo de las arenas del bioma (la pradera por defecto). */
+    static ServerWorld mundo(Biomas.Bioma b) { return Mundo.arena(b); }
 
     static void init(MinecraftServer s) {
         server = s;
@@ -77,13 +87,16 @@ public final class Partida {
         equipos.clear();
         grupos.vaciar();
         datos = new Datos(s.getSavePath(WorldSavePath.ROOT).resolve("emi_survivors"));
-        ServerWorld w = mundo();
-        if (w == null) { EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:arena: el minijuego no funcionara."); return; }
-        // restos de una partida anterior que no pudo limpiarse (servidor parado a la fuerza): enemigos con nuestra etiqueta
-        List<Entity> borrar = new ArrayList<>();
-        for (Entity e : w.iterateEntities()) if (e.getCommandTags().contains("emi_survivors")) borrar.add(e);
-        for (Entity e : borrar) e.discard();
-        if (!borrar.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} enemigos que habian quedado de una partida anterior.", borrar.size());
+        if (mundo(Biomas.PRADERA) == null) { EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:arena: el minijuego no funcionara."); return; }
+        // restos de una partida anterior que no pudo limpiarse (servidor parado a la fuerza): enemigos con nuestra etiqueta (en la arena de cada bioma)
+        for (Biomas.Bioma b : Biomas.TODOS) {
+            ServerWorld w = mundo(b);
+            if (w == null) { EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:{}: ese bioma no estara disponible.", b.dimension()); continue; }
+            List<Entity> borrar = new ArrayList<>();
+            for (Entity e : w.iterateEntities()) if (e.getCommandTags().contains("emi_survivors")) borrar.add(e);
+            for (Entity e : borrar) e.discard();
+            if (!borrar.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} enemigos que habian quedado de una partida anterior ({}).", borrar.size(), b.id());
+        }
         Colores.limpiarTodos(s);                                  // los equipos de colores del marcador (contorno de los enemigos con personalidad) que pudieran haber quedado
         try { ServerWorld sala = Mundo.sala(); if (sala != null) Mundo.construirSala(sala); else EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:entrada."); }
         catch (Throwable t) { EmiSurvivors.LOG.error("No se pudo construir la sala de entrada", t); }
@@ -143,20 +156,24 @@ public final class Partida {
      * de enemigos a la vez, sin oleadas ni jefe). {@code modoPrueba}: el jugador viene de fuera (comando de administrador): se le guarda y se le devuelve todo al acabar.
      * Devuelve el motivo si no se puede, o null si empezo.
      */
-    public static String iniciar(ServerPlayerEntity p, int hueco, int fijo, boolean modoPrueba) {
-        return iniciarEquipo(List.of(new Candidato(p, hueco)), fijo, modoPrueba);
+    public static String iniciar(ServerPlayerEntity p, int hueco, int fijo, boolean modoPrueba) { return iniciar(p, hueco, fijo, modoPrueba, Biomas.PRADERA); }
+
+    /** Igual, en la arena del bioma {@code bioma}. */
+    public static String iniciar(ServerPlayerEntity p, int hueco, int fijo, boolean modoPrueba, Biomas.Bioma bioma) {
+        return iniciarEquipo(List.of(new Candidato(p, hueco)), fijo, modoPrueba, null, bioma);
     }
 
     /** Empieza una partida para uno o varios jugadores (un grupo de la sala) en la misma arena. Devuelve el motivo si no se puede, o null si empezo. */
-    static String iniciarEquipo(List<Candidato> cs, int fijo, boolean modoPrueba) { return iniciarEquipo(cs, fijo, modoPrueba, null); }
+    static String iniciarEquipo(List<Candidato> cs, int fijo, boolean modoPrueba) { return iniciarEquipo(cs, fijo, modoPrueba, null, Biomas.PRADERA); }
 
-    /** Igual, para el grupo {@code grupo} de la sala (null = jugadores sueltos): al acabar la partida el grupo sigue junto. */
-    static String iniciarEquipo(List<Candidato> cs, int fijo, boolean modoPrueba, Grupos.Grupo grupo) {
+    /** Igual, para el grupo {@code grupo} de la sala (null = jugadores sueltos) en la arena de {@code bioma}: al acabar la partida el grupo sigue junto. */
+    static String iniciarEquipo(List<Candidato> cs, int fijo, boolean modoPrueba, Grupos.Grupo grupo, Biomas.Bioma bioma) {
         if (server == null) return "El minijuego aun no esta listo.";
         if (cs.isEmpty()) return "No hay jugadores.";
         if (equipos.size() >= MAX_PARTIDAS) return "Hay " + equipos.size() + " partidas en marcha (el máximo es " + MAX_PARTIDAS + "). Espera a que acabe alguna.";
-        ServerWorld w = mundo();
-        if (w == null) return "No existe la dimension emi_survivors:arena (¿esta instalado el mod en el servidor?).";
+        if (bioma == null) bioma = Biomas.PRADERA;
+        ServerWorld w = mundo(bioma);
+        if (w == null) return "No existe la dimension emi_survivors:" + bioma.dimension() + " (¿esta instalado el mod en el servidor?).";
         if (!Morph.disponible()) return "Falta el mod CobbleMorph (el jugador va transformado en su Pokémon).";
         List<Pokemon> pks = new ArrayList<>();
         for (Candidato c : cs) {
@@ -179,13 +196,13 @@ public final class Partida {
         if (modoPrueba) for (Candidato c : cs) { try { Saved.save(server, c.p(), false); } catch (RuntimeException e) { return "No se pudo guardar tu inventario: no entras."; } }
         double[] orig = Arena.origen(slot);
         double ox = orig[0], oz = orig[1];
-        Equipo eq = new Equipo(w, slot, ox, oz, fijo, modoPrueba);
+        Equipo eq = new Equipo(w, slot, ox, oz, fijo, modoPrueba, bioma);
         eq.grupo = grupo;
         List<Candidato> tocados = new ArrayList<>();
         String[] antes = new String[cs.size()];
         try {
             if (equipos.isEmpty()) Pausas.pausar();
-            Arena.preparar(w, slot);
+            Arena.preparar(w, slot, bioma);
             Arena.limpiarRestos(w, slot);
             int n = cs.size();
             for (int i = 0; i < n; i++) {
@@ -251,7 +268,7 @@ public final class Partida {
         StringBuilder sb = new StringBuilder();
         for (Equipo eq : equipos) {
             if (sb.length() > 0) sb.append("\n");
-            sb.append("Partida de ").append(eq.nombres()).append(" (arena ").append(eq.slot).append("): ").append(eq.segundos()).append(" s, ").append(eq.enemigos.size()).append(" enemigos, ")
+            sb.append("Partida de ").append(eq.nombres()).append(" (arena ").append(eq.slot).append(", ").append(eq.bioma.id()).append("): ").append(eq.segundos()).append(" s, ").append(eq.enemigos.size()).append(" enemigos, ")
                     .append(eq.derrotados).append(" derrotados");
             for (Run r : eq.miembros)
                 sb.append(" | ").append(r.nombre).append(" nivel ").append(r.nivel).append(", vida ").append(Math.max(0, Math.round(r.hp))).append("/").append(Math.round(r.st.hpMax)).append(r.estado == Run.CAIDO ? " (caído)" : r.esperandoCarta ? " (eligiendo carta)" : "");

@@ -38,6 +38,7 @@ final class Equipo {
     static final double REVIVIR_DIST = 2.6;
 
     final ServerWorld w;
+    final Biomas.Bioma bioma;                    // el bioma (la arena) de esta partida
     final int slot;
     final double ox, oz;                         // centro de la arena de esta partida
     final int fijo;                              // > 0 = modo de MEDIDA de la fase 0 (ese numero de enemigos desde el principio, sin oleadas ni jefe)
@@ -50,7 +51,7 @@ final class Equipo {
     final List<Objeto> objetos = new ArrayList<>();
     final List<Entity> marcas = new ArrayList<>();          // las marcas de aviso del suelo que hay ahora (ataques de jefes, mareas): ver Marcas
     final Medidor med = new Medidor();
-    final List<Especies.E> pool1, pool2;
+    final List<Especies.E> pool1, pool2, sesgo1, sesgo2;       // las especies que pueden salir, y de ellas las de los tipos favoritos del bioma
     final Set<String> especiesVistas = new HashSet<>();
     int tick, derrotados, fallosCrear, ticksParado;
     double presupuesto;
@@ -66,14 +67,30 @@ final class Equipo {
     // medias del servidor cuando ya estan todos los enemigos (para el resumen final)
     double sumaEstable, sumaNuestroEstable; int nEstable;
 
-    Equipo(ServerWorld w, int slot, double ox, double oz, int fijo, boolean modoPrueba) {
-        this.w = w; this.slot = slot; this.ox = ox; this.oz = oz; this.fijo = fijo; this.modoPrueba = modoPrueba;
+    Equipo(ServerWorld w, int slot, double ox, double oz, int fijo, boolean modoPrueba, Biomas.Bioma bioma) {
+        this.w = w; this.slot = slot; this.ox = ox; this.oz = oz; this.fijo = fijo; this.modoPrueba = modoPrueba; this.bioma = bioma;
         pool1 = Especies.entre(180, 330);
         pool2 = Especies.entre(331, 405);
+        sesgo1 = favoritas(pool1);
+        sesgo2 = favoritas(pool2);
+    }
+
+    /** De esas especies, las que tienen alguno de los tipos favoritos del bioma. */
+    private List<Especies.E> favoritas(List<Especies.E> l) {
+        List<Especies.E> r = new ArrayList<>();
+        for (Especies.E e : l) if (bioma.tipos().contains(e.tipo1()) || bioma.tipos().contains(e.tipo2())) r.add(e);
+        return r;
+    }
+
+    /** El grupo de especies del que sale un enemigo normal: con la probabilidad del bioma, el de sus tipos favoritos (fantasmas en el bosque, psiquicos en el cosmos...); si no, el general. */
+    private List<Especies.E> pool(boolean fuerte) {
+        List<Especies.E> favoritas = fuerte ? sesgo2 : sesgo1;
+        List<Especies.E> l = !favoritas.isEmpty() && rnd.nextDouble() < bioma.sesgo() ? favoritas : fuerte ? pool2 : pool1;
+        return l.isEmpty() ? (pool1.isEmpty() ? pool2 : pool1) : l;
     }
 
     /** El nombre del mundo (bioma) de esta partida, para la interfaz. */
-    String zona() { return Arena.ZONA; }
+    String zona() { return bioma.nombre(); }
 
     int segundos() { return tick / 20; }
 
@@ -320,8 +337,7 @@ final class Equipo {
                 sp = Especies.michi(); tipoE = Enemigo.Tipo.MICHI; extra = Especies.FORMAS_MICHI[rnd.nextInt(Especies.FORMAS_MICHI.length)];
             } else {
                 boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Curvas.pFuerte(t));
-                List<Especies.E> pool = fuerte ? pool2 : pool1;
-                if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
+                List<Especies.E> pool = pool(fuerte);
                 if (pool.isEmpty()) return false;
                 sp = pool.get(rnd.nextInt(pool.size()));
                 tipoE = fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL;
@@ -365,8 +381,7 @@ final class Equipo {
     Enemigo crearNormalEn(double x, double z) {
         double t = tick / 20.0;
         boolean fuerte = rnd.nextDouble() < Curvas.pFuerte(t);
-        List<Especies.E> pool = fuerte ? pool2 : pool1;
-        if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
+        List<Especies.E> pool = pool(fuerte);
         if (pool.isEmpty()) return null;
         Especies.E sp = pool.get(rnd.nextInt(pool.size()));
         Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t), Curvas.velMul(t), 0f, rnd);
@@ -391,8 +406,7 @@ final class Equipo {
     void crearCorredor(double x, double z, double ux, double uz, double largo) {
         double t = tick / 20.0;
         boolean fuerte = rnd.nextDouble() < Curvas.pFuerte(t);
-        List<Especies.E> pool = fuerte ? pool2 : pool1;
-        if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
+        List<Especies.E> pool = pool(fuerte);
         if (pool.isEmpty()) return;
         Especies.E sp = pool.get(rnd.nextInt(pool.size()));
         Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t) * 1.3, Curvas.velMul(t), 0f, rnd);

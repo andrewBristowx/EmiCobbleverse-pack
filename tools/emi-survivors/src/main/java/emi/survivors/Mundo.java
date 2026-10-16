@@ -34,7 +34,6 @@ public final class Mundo {
     private Mundo() {}
 
     static final Identifier ID_SALA = Identifier.of("emi_survivors", "entrada");
-    static final Identifier ID_ARENA = Identifier.of("emi_survivors", "arena");
     /** El bloque que abre el menu al tocarlo (una mesa de encantamientos en el centro de la sala). */
     static final BlockPos TERMINAL = new BlockPos(0, -60, 0);
     static final double SALA_X = 0.5, SALA_Y = -60.0, SALA_Z = 10.5;
@@ -48,7 +47,17 @@ public final class Mundo {
 
     static boolean enSala(PlayerEntity p) { return p.getWorld().getRegistryKey().getValue().equals(ID_SALA); }
 
-    static boolean enArena(PlayerEntity p) { return p.getWorld().getRegistryKey().getValue().equals(ID_ARENA); }
+    /** ¿Esta en la arena de algun bioma (la pradera, el bosque o el cosmos)? */
+    static boolean enArena(PlayerEntity p) {
+        Identifier id = p.getWorld().getRegistryKey().getValue();
+        return "emi_survivors".equals(id.getNamespace()) && Biomas.esArena(id.getPath());
+    }
+
+    /** El mundo (dimension) de las arenas de ese bioma, o null si el servidor no lo tiene. */
+    static ServerWorld arena(Biomas.Bioma b) {
+        MinecraftServer s = Partida.server;
+        return s == null ? null : s.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.of("emi_survivors", b.dimension())));
+    }
 
     /** ¿Esta en el mundo del minijuego (la sala o una arena)? */
     public static boolean dentro(PlayerEntity p) { return enSala(p) || enArena(p); }

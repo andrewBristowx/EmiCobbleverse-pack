@@ -15,6 +15,23 @@ import net.minecraft.text.Text;
 public final class Cmds {
     @FunctionalInterface private interface Tarea { String run() throws CommandSyntaxException; }
 
+    /** El argumento opcional «bioma» de los comandos (pradera, bosque o cosmos), con sugerencias. */
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<ServerCommandSource, String> argBioma() {
+        return CommandManager.argument("bioma", StringArgumentType.word()).suggests((c, b) -> {
+            for (Biomas.Bioma x : Biomas.TODOS) b.suggest(x.id());
+            return b.buildFuture();
+        });
+    }
+
+    /** El bioma escrito en el comando, o null si no existe. */
+    private static Biomas.Bioma bioma(CommandContext<ServerCommandSource> c) { return Biomas.porId(StringArgumentType.getString(c, "bioma")); }
+
+    private static String errorBioma() {
+        StringBuilder sb = new StringBuilder("Ese bioma no existe. Los hay: ");
+        for (int i = 0; i < Biomas.TODOS.size(); i++) sb.append(i > 0 ? ", " : "").append(Biomas.TODOS.get(i).id());
+        return sb.append(".").toString();
+    }
+
     public static void register(CommandDispatcher<ServerCommandSource> d) {
         var root = CommandManager.literal("survivor");
         // para todos los jugadores: entrar al mundo del minijuego, salir, abrir el menu y ver el top
@@ -45,19 +62,24 @@ public final class Cmds {
                 .then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6)).executes(c -> con(c, () -> GrupoCtl.listo(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"))))));
         gr.then(CommandManager.literal("noListo").executes(c -> con(c, () -> GrupoCtl.noListo(c.getSource().getPlayerOrThrow()))));
         gr.then(CommandManager.literal("empezar").executes(c -> con(c, () -> GrupoCtl.empezar(c.getSource().getPlayerOrThrow(), 1)))
-                .then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6)).executes(c -> con(c, () -> GrupoCtl.empezar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"))))));
+                .then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6)).executes(c -> con(c, () -> GrupoCtl.empezar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"))))
+                        .then(argBioma().executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : GrupoCtl.empezar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"), b); })))));
+        gr.then(CommandManager.literal("arena").then(argBioma().executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : GrupoCtl.elegirBioma(c.getSource().getPlayerOrThrow(), b); }))));
         gr.then(CommandManager.literal("info").executes(c -> { c.getSource().sendFeedback(() -> Msg.say(infoGrupos()), false); return 1; }));
         root.then(gr);
-        // /survivor prueba [hueco]: una partida de verdad (oleadas, cartas, jefe) para quien lo escribe, con el Pokemon del hueco 1..6 del equipo
+        // /survivor prueba [hueco] [bioma]: una partida de verdad (oleadas, cartas, jefe) para quien lo escribe, con el Pokemon del hueco 1..6 del equipo y en la arena de ese bioma (pradera por defecto)
         root.then(admin("prueba").executes(c -> con(c, () -> Partida.iniciar(c.getSource().getPlayerOrThrow(), 1, 0, true), "Preparando la partida..."))
                 .then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6))
-                        .executes(c -> con(c, () -> Partida.iniciar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"), 0, true), "Preparando la partida..."))));
+                        .executes(c -> con(c, () -> Partida.iniciar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"), 0, true), "Preparando la partida..."))
+                        .then(argBioma().executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : Partida.iniciar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"), 0, true, b); }, "Preparando la partida...")))));
         // /survivor medida <enemigos> [hueco]: el modo de MEDIDA de la fase 0 (un numero fijo de enemigos desde el principio, sin oleadas ni jefe)
         root.then(admin("medida").then(CommandManager.argument("enemigos", IntegerArgumentType.integer(0, 400))
                 .executes(c -> con(c, () -> Partida.iniciar(c.getSource().getPlayerOrThrow(), 1, Math.max(1, IntegerArgumentType.getInteger(c, "enemigos")), true), "Preparando la medida..."))
                 .then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6))
                         .executes(c -> con(c, () -> Partida.iniciar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"),
-                                Math.max(1, IntegerArgumentType.getInteger(c, "enemigos")), true), "Preparando la medida...")))));
+                                Math.max(1, IntegerArgumentType.getInteger(c, "enemigos")), true), "Preparando la medida..."))
+                        .then(argBioma().executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : Partida.iniciar(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"),
+                                Math.max(1, IntegerArgumentType.getInteger(c, "enemigos")), true, b); }, "Preparando la medida..."))))));
         // /survivor parar: cancela tu partida; si eres administrador y no estas en ninguna, cancela todas
         root.then(CommandManager.literal("parar").executes(c -> {
             var p = c.getSource().getPlayer();
@@ -88,6 +110,9 @@ public final class Cmds {
                             .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), IntegerArgumentType.getInteger(c, "nivel")))))));
         dev.then(CommandManager.literal("monedas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000))
                 .executes(c -> con(c, () -> Partida.devMonedas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "n"))))));
+        // /survivor dev reconstruir <bioma> [hueco]: borra y vuelve a construir esa arena (para probar cambios de diseño sin reiniciar; no puede haber una partida en ella)
+        dev.then(CommandManager.literal("reconstruir").then(argBioma().executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : Partida.reconstruir(b, 0); }, "Arena reconstruida."))
+                .then(CommandManager.argument("hueco", IntegerArgumentType.integer(0, 11)).executes(c -> con(c, () -> { Biomas.Bioma b = bioma(c); return b == null ? errorBioma() : Partida.reconstruir(b, IntegerArgumentType.getInteger(c, "hueco")); }, "Arena reconstruida.")))));
         root.then(dev);
         root.then(CommandManager.literal("estado").executes(c -> { c.getSource().sendFeedback(() -> Msg.say(Partida.estado()), false); return 1; }));
         root.executes(c -> { c.getSource().sendFeedback(() -> Msg.say("Emi Survivors: /survivor entrar (al mundo del minijuego), /survivor salir, /survivor menu, /survivor top, /survivor grupo crear|unirse|salir|listo|empezar. Administradores: /survivor prueba, medida, parar, inmortal, estado, dev ..."), false); return 1; });

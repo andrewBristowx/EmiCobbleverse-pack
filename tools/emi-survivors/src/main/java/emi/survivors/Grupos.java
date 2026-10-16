@@ -31,6 +31,8 @@ final class Grupos {
         final List<Miembro> miembros = new ArrayList<>();
         /** Esta jugando una partida ahora mismo (no se puede entrar ni cambiar nada). */
         boolean enPartida;
+        /** La arena (id de {@link Biomas}) en la que jugara el grupo: la elige el lider y se ve en el menu de todos. */
+        String bioma = "pradera";
         final long creado = System.currentTimeMillis();
 
         Miembro de(UUID id) { for (Miembro m : miembros) if (m.id.equals(id)) return m; return null; }

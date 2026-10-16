@@ -127,8 +127,26 @@ final class GrupoCtl {
 
     private static int listos(Grupos.Grupo g) { int n = 0; for (Grupos.Miembro m : g.miembros) if (m.listo) n++; return n; }
 
-    /** El lider empieza la partida del grupo con el Pokemon del hueco {@code hueco}; hacen falta todos listos. */
-    static String empezar(ServerPlayerEntity lider, int hueco) {
+    /** El lider elige la arena (el bioma) del grupo: se guarda en el grupo y se ve en el menu de todos. */
+    static String elegirBioma(ServerPlayerEntity p, Biomas.Bioma bioma) {
+        String e = enSala(p);
+        if (e != null) return e;
+        Grupos.Grupo g = Partida.grupos.de(p.getUuid());
+        if (g == null) return "No estás en ningún grupo.";
+        if (!g.lider.equals(p.getUuid())) return "Solo el líder elige la arena.";
+        if (g.enPartida) return "El grupo ya está jugando.";
+        if (bioma == null) return "Esa arena no existe.";
+        if (Mundo.arena(bioma) == null) return "Esa arena no está disponible en este servidor.";
+        g.bioma = bioma.id();
+        refrescar(g);
+        return null;
+    }
+
+    /** El lider empieza la partida del grupo con el Pokemon del hueco {@code hueco}, en la arena que haya elegido el grupo; hacen falta todos listos. */
+    static String empezar(ServerPlayerEntity lider, int hueco) { return empezar(lider, hueco, null); }
+
+    /** Igual, en la arena del bioma {@code bioma} (null = la que tenga elegida el grupo; si se da, el grupo se queda con ella). */
+    static String empezar(ServerPlayerEntity lider, int hueco, Biomas.Bioma bioma) {
         String e = enSala(lider);
         if (e != null) return e;
         Grupos.Grupo g = Partida.grupos.de(lider.getUuid());
@@ -144,7 +162,8 @@ final class GrupoCtl {
             if (p == null || !Mundo.enSala(p) || Partida.participa(p)) return m.nombre + " no está en la sala del minijuego.";
             cs.add(new Partida.Candidato(p, m.hueco));
         }
-        e = Partida.iniciarEquipo(cs, 0, false, g);
+        if (bioma != null) g.bioma = bioma.id();
+        e = Partida.iniciarEquipo(cs, 0, false, g, Biomas.deIdOPradera(g.bioma));
         if (e != null) { refrescar(g); return e; }
         return null;
     }

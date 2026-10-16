@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -121,6 +121,7 @@ public final class PruebaLogica {
             ok(ic.has(Catalogo.iconoInicial(t)), "falta el icono del ataque inicial del tipo " + t); n++;
         }
         ok(ic.has("x_curar") && ic.has("x_xp"), "faltan los iconos de las tarjetas curar y experiencia");
+        for (Biomas.Bioma b : Biomas.TODOS) { ok(ic.has("b_" + b.id()), "falta el icono de la arena b_" + b.id()); n++; }
         for (var e : ic.entrySet()) {
             int c = e.getValue().getAsJsonArray().get(0).getAsInt(), f = e.getValue().getAsJsonArray().get(1).getAsInt();
             ok(c >= 0 && c < cols && f >= 0 && f < filas, "el icono " + e.getKey() + " esta fuera del atlas");
@@ -390,6 +391,26 @@ public final class PruebaLogica {
         g.salir(b); g.salir(c);
         ok(g.todos().isEmpty() && g.salir(c) != null, "sin miembros el grupo desaparece y salir otra vez da error");
         System.out.println("  grupos: bien");
+    }
+
+    static void biomas() {
+        System.out.println("== biomas");
+        ok(Biomas.TODOS.size() == 3, "hay tres biomas");
+        Set<String> ids = new HashSet<>(), dims = new HashSet<>();
+        List<String> tiposValidos = List.of("normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy");
+        for (Biomas.Bioma b : Biomas.TODOS) {
+            ok(ids.add(b.id()), "id repetido " + b.id());
+            ok(dims.add(b.dimension()), "dimension repetida " + b.dimension());
+            ok(b.sesgo() > 0 && b.sesgo() < 1, b.id() + ": el sesgo de tipos tiene que estar entre 0 y 1");
+            ok(!b.tipos().isEmpty() && tiposValidos.containsAll(b.tipos()), b.id() + ": tipos favoritos validos");
+            ok((b.color() >>> 24) == 0xFF, b.id() + ": el color es opaco");
+            ok(!b.nombre().isBlank() && !b.texto().isBlank() && !b.musica().isBlank(), b.id() + ": tiene nombre, frase y musica");
+            ok(Biomas.porId(b.id().toUpperCase()) == b && Biomas.porDimension(b.dimension()) == b && Biomas.esArena(b.dimension()), b.id() + ": se encuentra por id y por dimension");
+        }
+        ok(Biomas.porId("nada") == null && Biomas.porId(null) == null && Biomas.deIdOPradera("nada") == Biomas.PRADERA && Biomas.deIdOPradera(null) == Biomas.PRADERA, "un bioma que no existe cae en la pradera");
+        ok(!Biomas.esArena("entrada") && !Biomas.esArena("overworld"), "la sala de entrada no es una arena");
+        ok(Biomas.porId(new Grupos.Grupo().bioma) == Biomas.PRADERA, "un grupo nuevo juega en la pradera");
+        System.out.println("  biomas: bien");
     }
 
     static Datos.Entrada entrada(String especie, int seg, int derrotados) {

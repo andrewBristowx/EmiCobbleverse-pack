@@ -2,22 +2,25 @@ package emi.survivors;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.HorizontalFacingBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 
 import java.util.Map;
 import java.util.Random;
 
 /**
- * La arena de una partida: la «Pradera Michialien», una isla circular de hierba flotando en el vacio de la dimension {@code emi_survivors:arena}, con un muro de cristal
- * de amatista y farolas de luz perlada alrededor (los enemigos y el jugador no pueden salir), una luna creciente en el centro, flores, manchas de musgo, unas rocas y, fuera,
- * cuatro islotes con estatuas gigantes de los peluches del Michialien mirando a la arena. Cada hueco de partida tiene su propia isla (a 1024 bloques de la anterior) y se
- * construye la primera vez que se usa; queda guardada en el mundo. Si se cambia el diseño se sube {@link #VERSION}: la isla nueva se construye en otro sitio (otra fila
- * de Z), asi no hace falta limpiar la antigua.
+ * La arena de una partida: una isla circular flotando en el vacio, con un muro alrededor (los enemigos y el jugador no pueden salir), una luna creciente en el centro y, fuera,
+ * cuatro islotes con estatuas gigantes de los peluches del Michialien mirando a la arena. Hay una por bioma ({@link Biomas}), cada una en su dimension: la «Pradera Michialien»
+ * ({@code emi_survivors:arena}: hierba, flores, rocas y un muro de amatista), el «Bosque Embrujado» ({@code arena_bosque}: noche, suelo de pizarra con musgo, lapidas, calabazas y circulos de runas) y el
+ * «Cosmos Michialien» ({@code arena_cosmos}: un damero magenta y purpura con las orbitas y los planetas pintados en el suelo). Cada hueco de partida tiene su propia isla (a 1024 bloques
+ * de la anterior) y se construye la primera vez que se usa; queda guardada en el mundo. Si se cambia el diseño se sube {@link #VERSION}: la isla nueva se construye en otro sitio
+ * (otra fila de Z), asi no hace falta limpiar la antigua. Lo que se pone dentro de la arena es BAJO (hasta 2 bloques) para que la camara cenital no tape al jugador.
  */
 final class Arena {
     private Arena() {}
@@ -27,10 +30,7 @@ final class Arena {
     static final int SUELO = -61;
     /** Radio jugable (hasta el muro) y radio de la isla. */
     static final int RADIO = 46, RADIO_ISLA = 50;
-    /** Version del diseño de la arena: 1 fue la llanura de la fase 0; 2 es la isla con muro de la fase 1. */
-    /** El nombre de la zona que sale en la interfaz (en la 2D habra una por bioma). */
-    static final String ZONA = "Pradera Michialien";
-
+    /** Version del diseño de la arena: 1 fue la llanura de la fase 0; 2 es la isla con muro de la fase 1 (los tres biomas de la 2D usan la misma). */
     static final int VERSION = 2;
 
     /** Centro (x, z) de la arena del hueco {@code slot}. */
@@ -54,19 +54,38 @@ final class Arena {
         if (!restos.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} restos de una partida anterior de la arena {}.", restos.size(), slot);
     }
 
-    /** Construye la arena de ese hueco si todavia no existe. Devuelve true si la ha construido ahora (la primera vez tarda un segundo o dos). */
-    static boolean preparar(ServerWorld w, int slot) {
+    /** Construye la arena de ese hueco en el mundo {@code w} (la dimension del bioma) si todavia no existe. Devuelve true si la ha construido ahora (la primera vez tarda un segundo o dos). */
+    static boolean preparar(ServerWorld w, int slot, Biomas.Bioma bioma) {
         double[] o = origen(slot);
         int cx = (int) o[0], cz = (int) o[1];
         if (w.getBlockState(new BlockPos(cx, -64, cz)).isOf(Blocks.CRYING_OBSIDIAN)) return false;
         long t0 = System.nanoTime();
-        construir(w, cx, cz, slot);
+        switch (bioma.id()) {
+            case "bosque" -> construirBosque(w, cx, cz, slot);
+            case "cosmos" -> construirCosmos(w, cx, cz, slot);
+            default -> construirPradera(w, cx, cz, slot);
+        }
         Obra.poner(w, cx, -64, cz, Blocks.CRYING_OBSIDIAN.getDefaultState());           // la marca de «ya esta construida»
-        EmiSurvivors.LOG.info("Arena {} construida en {} ms", slot, (System.nanoTime() - t0) / 1_000_000);
+        EmiSurvivors.LOG.info("Arena {} ({}) construida en {} ms", slot, bioma.id(), (System.nanoTime() - t0) / 1_000_000);
         return true;
     }
 
-    private static void construir(ServerWorld w, int cx, int cz, int slot) {
+    /** Solo para probar (/survivor dev reconstruir): borra toda la arena del hueco (isla, muro, islotes con estatuas y la marca) y la vuelve a construir; tarda unos segundos. */
+    static void reconstruir(ServerWorld w, int slot, Biomas.Bioma bioma) {
+        double[] o = origen(slot);
+        int cx = (int) o[0], cz = (int) o[1], R = 112;
+        BlockState aire = Blocks.AIR.getDefaultState();
+        BlockPos.Mutable p = new BlockPos.Mutable();
+        for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) for (int y = -68; y <= -16; y++) {
+            p.set(cx + dx, y, cz + dz);
+            if (!w.getBlockState(p).isAir()) w.setBlockState(p, aire, Obra.BANDERAS);
+        }
+        preparar(w, slot, bioma);
+    }
+
+    // ---------------------------------------------------------------- pradera (el diseño de siempre)
+
+    private static void construirPradera(ServerWorld w, int cx, int cz, int slot) {
         Random rnd = new Random(0xE31L * (slot + 1) + VERSION);
         BlockState hierba = Obra.b("grass_block"), tierra = Obra.b("dirt"), piedra = Obra.b("stone"), profundo = Obra.b("deepslate"), musgo = Obra.b("moss_block");
         BlockState luna = Obra.b("yellow_concrete");
@@ -148,6 +167,194 @@ final class Arena {
             for (double b = 0; b < Math.PI * 2; b += 0.04) Obra.poner(w, sx + (int) Math.round(Math.cos(b) * 16), SUELO, sz + (int) Math.round(Math.sin(b) * 16), "pink_concrete");
             Obra.ponerEstatua(w, formas[k], sx, (int) Y0, sz, Obra.girarHacia(sx, sz, cx, cz));
         }
+    }
+
+    // ---------------------------------------------------------------- piezas comunes de los biomas nuevos
+
+    /** La isla redonda: una capa de arriba (el bloque de cada celda lo elige la funcion) y debajo tres capas de relleno. */
+    private static void suelo(ServerWorld w, int cx, int cz, java.util.function.BiFunction<Integer, Integer, BlockState> arriba, BlockState b1, BlockState b2, BlockState b3) {
+        int R = RADIO_ISLA;
+        for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) {
+            if (dx * dx + dz * dz > R * R) continue;
+            int x = cx + dx, z = cz + dz;
+            Obra.poner(w, x, SUELO, z, arriba.apply(dx, dz));
+            Obra.poner(w, x, SUELO - 1, z, b1);
+            Obra.poner(w, x, SUELO - 2, z, b2);
+            Obra.poner(w, x, SUELO - 3, z, b3);
+        }
+    }
+
+    /** Un anillo de bloques a ras de suelo, de {@code radio}: continuo o a tramos con huecos (como las orbitas de la luna). Marca las celdas para que no se ponga nada encima. */
+    private static void anillo(ServerWorld w, int cx, int cz, int radio, BlockState s, boolean[][] usado, boolean continuo) {
+        int R = RADIO_ISLA;
+        for (double a = 0; a < Math.PI * 2; a += 0.012) {
+            if (!continuo && ((int) (a * radio / 3.0)) % 3 == 2) continue;
+            int dx = (int) Math.round(Math.cos(a) * radio), dz = (int) Math.round(Math.sin(a) * radio);
+            Obra.poner(w, cx + dx, SUELO, cz + dz, s);
+            usado[dx + R][dz + R] = true;
+        }
+    }
+
+    /** La luna creciente del centro (la forma del dibujo de Emi): un disco al que se le quita otro desplazado. */
+    private static void luna(ServerWorld w, int cx, int cz, BlockState s, boolean[][] usado) {
+        int R = RADIO_ISLA;
+        for (int dx = -7; dx <= 7; dx++) for (int dz = -7; dz <= 7; dz++) {
+            boolean enDisco = dx * dx + dz * dz <= 6.4 * 6.4;
+            boolean enHueco = (dx - 2.8) * (dx - 2.8) + (dz + 1.6) * (dz + 1.6) <= 5.3 * 5.3;
+            if (enDisco && !enHueco) { Obra.poner(w, cx + dx, SUELO, cz + dz, s); usado[dx + R][dz + R] = true; }
+        }
+    }
+
+    /** Un disco plano en el suelo (un planeta pintado, una mancha de tierra) con el centro a (px, pz) del centro de la arena. */
+    private static void mancha(ServerWorld w, int cx, int cz, int px, int pz, double r, BlockState s, boolean[][] usado) {
+        int R = RADIO_ISLA, ri = (int) Math.ceil(r);
+        for (int dx = -ri; dx <= ri; dx++) for (int dz = -ri; dz <= ri; dz++) {
+            if (dx * dx + dz * dz > r * r) continue;
+            int gx = px + dx, gz = pz + dz;
+            if (gx * gx + gz * gz > (RADIO - 1) * (RADIO - 1)) continue;
+            Obra.poner(w, cx + gx, SUELO, cz + gz, s);
+            usado[gx + R][gz + R] = true;
+        }
+    }
+
+    /** Los cuatro islotes de fuera con las estatuas gigantes de los peluches, mirando a la arena. */
+    private static void islotes(ServerWorld w, int cx, int cz, String[] formas, String capa1, String capa2, String borde) {
+        for (int k = 0; k < 4; k++) {
+            double a = Math.PI / 4 + k * Math.PI / 2;
+            int sx = cx + (int) Math.round(Math.cos(a) * 86), sz = cz + (int) Math.round(Math.sin(a) * 86);
+            for (int cap = 0; cap < 4; cap++) Obra.disco(w, sx, SUELO - cap, sz, 17 - cap * 3.0, Obra.b(cap < 2 ? capa1 : capa2));
+            for (double b = 0; b < Math.PI * 2; b += 0.04) Obra.poner(w, sx + (int) Math.round(Math.cos(b) * 16), SUELO, sz + (int) Math.round(Math.sin(b) * 16), borde);
+            Obra.ponerEstatua(w, formas[k], sx, (int) Y0, sz, Obra.girarHacia(sx, sz, cx, cz));
+        }
+    }
+
+    /** El muro que no se puede cruzar (dos bloques de {@code bajo} y uno de {@code alto}) con 48 luces encima ({@code luz} y, si no es null, un {@code remate}). */
+    private static void muro(ServerWorld w, int cx, int cz, String bajo, String alto, String luz, String remate) {
+        int R = RADIO_ISLA;
+        for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) {
+            double d = Math.sqrt(dx * dx + dz * dz);
+            if (d < RADIO || d >= RADIO + 2.2) continue;
+            Obra.poner(w, cx + dx, SUELO + 1, cz + dz, bajo);
+            Obra.poner(w, cx + dx, SUELO + 2, cz + dz, bajo);
+            Obra.poner(w, cx + dx, SUELO + 3, cz + dz, alto);
+        }
+        for (int k = 0; k < 48; k++) {
+            double a = k * Math.PI * 2 / 48;
+            int dx = (int) Math.round(Math.cos(a) * (RADIO + 1)), dz = (int) Math.round(Math.sin(a) * (RADIO + 1));
+            Obra.poner(w, cx + dx, SUELO + 4, cz + dz, luz);
+            if (remate != null) Obra.poner(w, cx + dx, SUELO + 5, cz + dz, remate);
+        }
+    }
+
+    /** El bloque girado hacia {@code d} si tiene orientacion (una calabaza tallada); si no (una calabaza lisa), igual. */
+    private static BlockState girado(BlockState s, Direction d) { return s.contains(HorizontalFacingBlock.FACING) ? s.with(HorizontalFacingBlock.FACING, d) : s; }
+
+    /** Un sitio al azar dentro de la arena, entre {@code dMin} y {@code dMax} del centro, que no este ya usado; null si no lo encuentra en 30 intentos. */
+    private static int[] sitioLibre(Random rnd, boolean[][] usado, double dMin, double dMax) {
+        int R = RADIO_ISLA;
+        for (int i = 0; i < 30; i++) {
+            double ang = rnd.nextDouble() * Math.PI * 2, d = dMin + rnd.nextDouble() * (dMax - dMin);
+            int dx = (int) Math.round(Math.cos(ang) * d), dz = (int) Math.round(Math.sin(ang) * d);
+            if (!usado[dx + R][dz + R]) { usado[dx + R][dz + R] = true; return new int[]{dx, dz}; }
+        }
+        return null;
+    }
+
+    // ---------------------------------------------------------------- Bosque Embrujado (de noche)
+
+    private static void construirBosque(ServerWorld w, int cx, int cz, int slot) {
+        Random rnd = new Random(0xB05C0L * (slot + 1) + VERSION);
+        int R = RADIO_ISLA;
+        boolean[][] usado = new boolean[2 * R + 1][2 * R + 1];
+        // el suelo es de pizarra oscura (asi los Pokemon de colores se ven bien desde arriba) con manchas de musgo
+        BlockState pizarra = Obra.b("deepslate_tiles"), musgo = Obra.b("moss_block");
+        suelo(w, cx, cz, (dx, dz) -> pizarra, Obra.b("deepslate"), Obra.b("deepslate"), Obra.b("deepslate"));
+        for (int k = 0; k < 18; k++) {
+            double ang = rnd.nextDouble() * Math.PI * 2, d = 6 + rnd.nextDouble() * 38, r = 2.0 + rnd.nextDouble() * 3.5;
+            mancha(w, cx, cz, (int) Math.round(Math.cos(ang) * d), (int) Math.round(Math.sin(ang) * d), r, musgo, usado);
+        }
+        // ---- los circulos de runas (dos anillos a tramos de obsidiana llorona, que brilla) y la luna creciente de Emi, blanca
+        anillo(w, cx, cz, 16, Obra.b("crying_obsidian"), usado, false);
+        anillo(w, cx, cz, 32, Obra.b("crying_obsidian"), usado, false);
+        luna(w, cx, cz, Obra.b("calcite"), usado);
+        // ---- ocho calabazas encendidas en el circulo de runas, mirando al centro
+        for (int k = 0; k < 8; k++) {
+            double a = k * Math.PI / 4;
+            int dx = (int) Math.round(Math.cos(a) * 16), dz = (int) Math.round(Math.sin(a) * 16);
+            Direction mira = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? Direction.WEST : Direction.EAST) : (dz > 0 ? Direction.NORTH : Direction.SOUTH);
+            Obra.poner(w, cx + dx, SUELO + 1, cz + dz, girado(Obra.b("jack_o_lantern"), mira));
+        }
+        // ---- lapidas (un pilar de dos bloques, a veces con una calavera), tumbas bajas, calabazas sueltas y farolas
+        for (int k = 0; k < 16; k++) {
+            int[] s = sitioLibre(rnd, usado, 9, 42);
+            if (s == null) continue;
+            Obra.poner(w, cx + s[0], SUELO + 1, cz + s[1], "stone_brick_wall");
+            Obra.poner(w, cx + s[0], SUELO + 2, cz + s[1], "stone_brick_wall");
+            if (rnd.nextDouble() < 0.4) Obra.poner(w, cx + s[0], SUELO + 3, cz + s[1], "skeleton_skull");
+        }
+        for (int k = 0; k < 5; k++) {                                              // filas de tumbas bajas (una losa de 3)
+            int[] s = sitioLibre(rnd, usado, 9, 40);
+            if (s == null) continue;
+            boolean alX = rnd.nextBoolean();
+            for (int t = -1; t <= 1; t++) {
+                int gx = s[0] + (alX ? t : 0), gz = s[1] + (alX ? 0 : t);
+                if (gx * gx + gz * gz > (RADIO - 3) * (RADIO - 3)) continue;
+                Obra.poner(w, cx + gx, SUELO + 1, cz + gz, "stone_brick_slab");
+            }
+        }
+        String[] calabazas = {"pumpkin", "carved_pumpkin", "jack_o_lantern", "jack_o_lantern"};
+        for (int k = 0; k < 14; k++) {
+            int[] s = sitioLibre(rnd, usado, 8, 42);
+            if (s == null) continue;
+            Obra.poner(w, cx + s[0], SUELO + 1, cz + s[1], girado(Obra.b(calabazas[rnd.nextInt(calabazas.length)]), Direction.fromHorizontal(rnd.nextInt(4))));
+        }
+        for (int k = 0; k < 6; k++) {                                              // seis farolas de alma azul en el anillo de fuera
+            double a = k * Math.PI / 3 + 0.3;
+            int dx = (int) Math.round(Math.cos(a) * 32), dz = (int) Math.round(Math.sin(a) * 32);
+            Obra.poner(w, cx + dx, SUELO + 1, cz + dz, "dark_oak_fence");
+            Obra.poner(w, cx + dx, SUELO + 2, cz + dz, "dark_oak_fence");
+            Obra.poner(w, cx + dx, SUELO + 3, cz + dz, "soul_lantern");
+        }
+        // ---- arbustos secos
+        for (int dx = -RADIO + 2; dx <= RADIO - 2; dx++) for (int dz = -RADIO + 2; dz <= RADIO - 2; dz++) {
+            double d2 = dx * dx + dz * dz;
+            if (d2 > (RADIO - 2) * (RADIO - 2) || d2 < 36 || usado[dx + R][dz + R]) continue;
+            if (rnd.nextDouble() < 0.04) Obra.poner(w, cx + dx, SUELO + 1, cz + dz, "dead_bush");
+        }
+        // ---- el muro de pizarra y piedra negra con calabazas encendidas, y los islotes con las estatuas (brujas y angelitos)
+        muro(w, cx, cz, "deepslate_bricks", "blackstone", "jack_o_lantern", null);
+        islotes(w, cx, cz, new String[]{"michi_witch_hat_20", "michi_halo_20", "michi_witch_hat_20", "michi_crown_20"}, "deepslate", "blackstone", "orange_concrete");
+    }
+
+    // ---------------------------------------------------------------- Cosmos Michialien (en el espacio)
+
+    private static void construirCosmos(ServerWorld w, int cx, int cz, int slot) {
+        Random rnd = new Random(0xC05C05L * (slot + 1) + VERSION);
+        int R = RADIO_ISLA;
+        boolean[][] usado = new boolean[2 * R + 1][2 * R + 1];
+        BlockState magenta = Obra.b("magenta_concrete"), purpura = Obra.b("purple_concrete");
+        suelo(w, cx, cz, (dx, dz) -> ((Math.floorDiv(dx, 4) + Math.floorDiv(dz, 4)) & 1) == 0 ? magenta : purpura, Obra.b("black_concrete"), Obra.b("obsidian"), Obra.b("obsidian"));
+        // ---- tres orbitas pintadas en el suelo y, sobre ellas, planetas con su lunita (el sistema solar de Emi)
+        for (int radio : new int[]{14, 24, 36}) anillo(w, cx, cz, radio, Obra.b("white_concrete"), usado, true);
+        record Planeta(int orbita, double grados, double r, String color, String luna) {}
+        Planeta[] planetas = {
+                new Planeta(14, 35, 2.4, "orange_concrete", null), new Planeta(24, 150, 3.0, "blue_concrete", "light_gray_concrete"), new Planeta(24, 300, 2.2, "light_blue_concrete", null),
+                new Planeta(36, 70, 3.4, "yellow_terracotta", "white_concrete"), new Planeta(36, 210, 2.6, "red_concrete", null), new Planeta(36, 330, 2.0, "lime_concrete", null)};
+        for (Planeta p : planetas) {
+            double a = Math.toRadians(p.grados());
+            int px = (int) Math.round(Math.cos(a) * p.orbita()), pz = (int) Math.round(Math.sin(a) * p.orbita());
+            mancha(w, cx, cz, px, pz, p.r(), Obra.b(p.color()), usado);
+            if (p.luna() != null) mancha(w, cx, cz, px + (int) Math.round(p.r() + 2.5), pz - (int) Math.round(p.r() * 0.6), 1.2, Obra.b(p.luna()), usado);
+        }
+        luna(w, cx, cz, Obra.b("yellow_concrete"), usado);
+        // ---- estrellas: celdas sueltas de luz de mar a ras de suelo
+        for (int k = 0; k < 70; k++) {
+            int[] s = sitioLibre(rnd, usado, 4, RADIO - 2);
+            if (s != null) Obra.poner(w, cx + s[0], SUELO, cz + s[1], "sea_lantern");
+        }
+        // ---- el muro de cristal morado con luz de mar y varas del End, y los islotes con las estatuas
+        muro(w, cx, cz, "purple_stained_glass", "magenta_stained_glass", "sea_lantern", "end_rod");
+        islotes(w, cx, cz, new String[]{"michi_crown_20", "michi_halo_20", "michi_witch_hat_20", "michi_sunglasses_20"}, "crying_obsidian", "obsidian", "sea_lantern");
     }
 
     // ---------------------------------------------------------------- particulas por tipo
