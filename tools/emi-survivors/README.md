@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.7.0 (fase 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.8.0 (fase 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -27,9 +27,10 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
    - **2C. Jefes (min. 3, 6, 9, 12, 15), mareas y personalidades de enemigo** — HECHA (0.5.0): 5 jefes con ataques avisados en el suelo, 4 mareas (de Michialiens, cerco, de un tipo y estampida) y 4 personalidades de enemigo con contorno de color.
    - **2D. 3 biomas y música/sonidos propios** — HECHA (0.6.0): tres arenas con su dimensión (Pradera, Bosque Embrujado y Cosmos Michialien), elegibles en el menú; 5 canciones y 31 efectos propios sintetizados por código. El dueño dio el visto bueno para la fase 3 (2026-10-16).
 3. **Progresión**, en tres entregas (reparto del asistente; cada una se prueba y se entrega por separado):
-   - **3A. Tops por periodo y mejoras permanentes más variadas** — HECHA (0.7.0, esta): el top se puede ver de **hoy, de esta semana, de este mes o de siempre**, y hay **12 mejoras** por Pokémon (5 nuevas: Armadura, Crítico, Alcance, Rapidez y Vampirismo).
-   - **3B. Misiones y logros** — siguiente (las recompensas son solo michiestrellitas dentro del minijuego; los premios reales los sigue dando el dueño a mano).
+   - **3A. Tops por periodo y mejoras permanentes más variadas** — HECHA (0.7.0): el top se puede ver de **hoy, de esta semana, de este mes o de siempre**, y hay **12 mejoras** por Pokémon (5 nuevas: Armadura, Crítico, Alcance, Rapidez y Vampirismo).
+   - **3B. Misiones y logros** — HECHA (0.8.0, esta): 3 misiones del día y 3 de la semana (las mismas para todos, salen de la fecha) y 11 logros con escalones, que dan **coronas**, una moneda aparte y escasa (**decisión del dueño, 2026-10-16**: las michiestrellitas son solo para las mejoras; las coronas son para una tienda de recompensas que aún no existe). Los premios reales los sigue dando el dueño a mano.
    - **3C. Shinies** — después (enemigos variocolor con bonus).
+   - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — por decidir: gastar coronas en tiradas de banners y objetos útiles de Pokémon (Master Balls…). **No se construye sin el OK del dueño**: antes hay que fijar qué se vende, a qué precio y con qué límites (son cosas reales del servidor, que antes se habían descartado como «premios automáticos»).
 4. **Final y extras**: grietas con legendarios, «Sentencia» final, climas, eventos, más temas de Emi.
 
 ## Cómo se juega (jugador)
@@ -87,6 +88,13 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Periodos**: hoy = desde las 00:00; semana = desde el lunes a las 00:00; mes = desde el día 1; siempre = sin límite. Usan la zona horaria del servidor.
 - **El dueño sigue dando los premios a mano**: `/survivor top semana` o `mes` es la forma cómoda de ver quién ganó cada periodo.
 - **Mejoras**: ver la lista en JUGAR→MEJORAS arriba. El coste de cada una sale de `Meta.costo(mejora, nivelActual) = base × (nivel + 1)`; los iconos de las 5 nuevas son propios (`assets/iconos_objetos.py`; el atlas pasa a 111 iconos).
+
+### Misiones, logros y coronas (0.8.0)
+- **Coronas**: una moneda nueva (`coronas` en `jugadores/<uuid>.json`), **aparte de las michiestrellitas**. Solo se ganan con misiones y logros, en poca cantidad, y **no valen para las mejoras** (las michiestrellitas siguen siendo solo para mejoras). Hoy no hay dónde gastarlas: es la base de la tienda de recompensas (3D). Se ven arriba a la derecha del menú.
+- **Misiones** (`Retos.java`): cada día 3 del día (1-2 coronas cada una) y cada semana 3 de la semana (4-8 coronas). Salen de la **fecha** (misma elección para todos, sin repetir la misma medida): derrotar N Pokémon, jugar N partidas, aguantar N minutos, llegar a nivel N, derrotar jefes, evolucionar ataques y jugar en grupo. Las del día se renuevan a medianoche y las de la semana el lunes (zona horaria del servidor); lo que no hiciste se pierde. «Aguantar» y «nivel» valen la mejor partida; el resto se suma entre partidas.
+- **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
+- **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
+- **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
 
 ### Comandos
 Para todos: `/survivor entrar`, `/survivor salir`, `/survivor menu` (en la sala), `/survivor top [hoy|semana|mes|siempre] [cuántos]` (en el chat: las dos listas del periodo), `/survivor parar` (tu partida).
@@ -214,6 +222,15 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.8.0: misiones, logros y coronas)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): las claves de día y semana (lunes), que la elección de misiones sea la misma para una fecha y distinta entre fechas (60 días), que no se repita la medida, que las recompensas sean pequeñas (diarias 1-2, semanales 4-8, logros sin pasar de 300 coronas en total), el avance de «suma» y «mejor partida», que no se cobre dos veces, la renovación al día siguiente y el lunes, que se guarde y se lea del disco y que se lea bien un archivo de jugador de la versión anterior (sin los campos nuevos).
+- **En el juego** (servidor ligero + cliente real, 3 partidas normales de un jugador): la pestaña MISIONES (misiones del día y de la semana, logros en dos páginas, barras de avance, coronas en el título), el avance tras cada partida, una misión cumplida (cambia a verde, «¡HECHA!»), el aviso en el chat («¡Misión del día cumplida: … +1 corona.»), los logros que se reconocen de partidas antiguas (+180 en la primera), la línea «Retos: +N» de la última partida, que las coronas **no** sumen a las michiestrellitas y que se guarden en disco.
+**No probado / límites**:
+- Un cambio real de día o de semana (solo con fechas inventadas en la lógica), el servidor real y su zona horaria, varios jugadores a la vez, y los escalones altos de los logros (por ejemplo, 100 jefes) con gente real.
+- El **equilibrio**: cuántas coronas son «pocas» depende de lo que cueste la tienda, que aún no existe. Los números son estimaciones (un jugador que haga todas las misiones gana entre 3 y 6 coronas al día y entre 12 y 24 a la semana).
+- Que las misiones se completen cuando el jugador juega en grupo con 3-4 jugadores (se probó solo en solitario).
 
 ## Probado / no probado (0.7.0: tops por periodo y mejoras)
 **Probado**:

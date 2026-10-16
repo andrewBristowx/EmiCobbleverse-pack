@@ -34,9 +34,9 @@ import java.util.Map;
 @Environment(EnvType.CLIENT)
 public final class MenuPantalla extends Lienzo {
     private static final Identifier GEMA = Identifier.of("emi_survivors", "textures/gema.png");
-    private static final int T_JUGAR = 0, T_MEJORAS = 1, T_GRUPO = 2, T_TOP = 3;
-    private static final String[] TABS = {"JUGAR", "MEJORAS", "GRUPO", "TOP"};
-    private static final String[] TABS_ID = {"jugar", "mejoras", "grupo", "top"};
+    private static final int T_JUGAR = 0, T_MEJORAS = 1, T_GRUPO = 2, T_TOP = 3, T_RETOS = 4;
+    private static final String[] TABS = {"JUGAR", "MEJORAS", "GRUPO", "TOP", "MISIONES"};
+    private static final String[] TABS_ID = {"jugar", "mejoras", "grupo", "top", "retos"};
 
     /** La pantalla abierta ahora (para actualizarla cuando llegan datos nuevos del servidor). */
     public static MenuPantalla abierta;
@@ -57,7 +57,9 @@ public final class MenuPantalla extends Lienzo {
 
     private record Mejora(String id, String nombre, String texto, String icono, int[] costos) {}
     private record Marca(int pos, String nombre, boolean mio, String especie, int segundos, int derrotados, int nivel, int jefes) {}
-    private record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo) {}
+    private record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo, int retosCoronas) {}
+    private record MisionC(String texto, int prog, int objetivo, int premio, boolean hecha, boolean segundos) {}
+    private record LogroC(String nombre, String texto, int hechos, int total, long valor, long meta, String valorTxt, String metaTxt, int premio, boolean completo) {}
     private record Miembro(String uuid, String nombre, boolean lider, boolean yo, boolean listo, String especie, int nivel) {}
     private record Abierto(String lider, String nombre, int n, String miembros) {}
     private record Bioma(String id, String nombre, String texto, int color, List<String> tipos) {}
@@ -79,9 +81,13 @@ public final class MenuPantalla extends Lienzo {
     private static final String[] PERIODOS = {"hoy", "semana", "mes", "siempre"}, PERIODOS_TXT = {"HOY", "SEMANA", "MES", "SIEMPRE"};
     private static final int POR_PAGINA = 6;
     private final Map<String, List<Marca>> tops = new HashMap<>();
+    private final List<MisionC> misionesDia = new ArrayList<>(), misionesSemana = new ArrayList<>();
+    private final List<LogroC> logros = new ArrayList<>();
+    private int pagLogros;
+    private static final int LOGROS_POR_PAGINA = 6;
     private int maxGrupo = 4;
     private long ultimoRefresco = System.currentTimeMillis();
-    private int monedas, partidas, maxPartidas, miPuesto, miMejor;
+    private int monedas, coronas, partidas, maxPartidas, miPuesto, miMejor;
     private int tab, sel;
     /** Ya se ha pulsado JUGAR y se espera al servidor (la primera vez que se usa una arena tarda un par de segundos): no se vuelve a mandar. */
     private boolean preparando;
@@ -103,6 +109,7 @@ public final class MenuPantalla extends Lienzo {
         String t = o.has("tab") ? o.get("tab").getAsString() : "jugar";
         if (!soloDatos) for (int i = 0; i < TABS_ID.length; i++) if (TABS_ID[i].equals(t)) tab = i;
         monedas = o.get("monedas").getAsInt();
+        coronas = o.has("coronas") ? o.get("coronas").getAsInt() : 0;
         partidas = o.get("partidas").getAsInt(); maxPartidas = o.get("maxPartidas").getAsInt();
         miPuesto = o.get("miPuesto").getAsInt(); miMejor = o.get("miMejor").getAsInt();
 
@@ -185,8 +192,24 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("resultado")) {
             JsonObject r = o.getAsJsonObject("resultado");
             resultado = new Resultado(r.get("motivo").getAsString(), r.get("segundos").getAsInt(), r.get("derrotados").getAsInt(), r.get("nivel").getAsInt(), r.get("monedas").getAsInt(),
-                    r.get("puesto").getAsInt(), r.has("jefes") ? r.get("jefes").getAsInt() : r.get("jefe").getAsBoolean() ? 1 : 0, r.get("cuenta").getAsBoolean(), r.has("equipo") ? r.get("equipo").getAsString() : "");
+                    r.get("puesto").getAsInt(), r.has("jefes") ? r.get("jefes").getAsInt() : r.get("jefe").getAsBoolean() ? 1 : 0, r.get("cuenta").getAsBoolean(), r.has("equipo") ? r.get("equipo").getAsString() : "",
+                    r.has("retosCoronas") ? r.get("retosCoronas").getAsInt() : 0);
         }
+        misionesDia.clear(); misionesSemana.clear(); logros.clear();
+        if (o.has("retos")) {
+            JsonObject rt = o.getAsJsonObject("retos");
+            for (JsonElement e : rt.getAsJsonArray("dia")) misionesDia.add(mision(e.getAsJsonObject()));
+            for (JsonElement e : rt.getAsJsonArray("semana")) misionesSemana.add(mision(e.getAsJsonObject()));
+            for (JsonElement e : rt.getAsJsonArray("logros")) {
+                JsonObject l = e.getAsJsonObject();
+                logros.add(new LogroC(l.get("nombre").getAsString(), l.get("texto").getAsString(), l.get("hechos").getAsInt(), l.get("total").getAsInt(), l.get("valor").getAsLong(), l.get("meta").getAsLong(),
+                        l.get("valorTxt").getAsString(), l.get("metaTxt").getAsString(), l.get("premio").getAsInt(), l.get("completo").getAsBoolean()));
+            }
+        }
+    }
+
+    private static MisionC mision(JsonObject m) {
+        return new MisionC(m.get("texto").getAsString(), m.get("prog").getAsInt(), m.get("objetivo").getAsInt(), m.get("premio").getAsInt(), m.get("hecha").getAsBoolean(), m.get("segundos").getAsBoolean());
     }
 
     private Miembro yo() { for (Miembro m : miembros) if (m.yo()) return m; return null; }
@@ -261,6 +284,7 @@ public final class MenuPantalla extends Lienzo {
         g.drawTexture(GEMA, 488, 10, 16, 16, 0f, 0f, 128, 128, 128, 128);
         texto(g, monedas + " michiestrellitas", 508, 14, 0xFFFFE070, 1f);
         texto(g, "Con ellas mejoras a tus Pokémon", 488, 28, GRIS, 0.8f);
+        texto(g, "Coronas: " + coronas + "  (misiones y logros)", 488, 38, 0xFFC9B3FF, 0.8f);
 
         // pestañas y salir
         for (int i = 0; i < TABS.length; i++) {
@@ -275,6 +299,7 @@ public final class MenuPantalla extends Lienzo {
             case T_JUGAR -> { lista(g, mx, my, delta); jugar(g, mx, my, delta); }
             case T_MEJORAS -> { lista(g, mx, my, delta); mejoras(g, mx, my); }
             case T_GRUPO -> grupo(g, mx, my);
+            case T_RETOS -> retos(g, mx, my);
             default -> clasificacion(g, mx, my);
         }
         textoCentrado(g, "Inspirado en PokéSurvivor de JPTER78 · pokesurvivor.com", W / 2, 346, 0xFF77778A, 0.8f);
@@ -310,7 +335,7 @@ public final class MenuPantalla extends Lienzo {
             int h = 40;
             caja(g, RX, y, RW, h, 0xFF22223C, r.puesto() > 0 ? ORO : 0xFF55557A);
             texto(g, "Tu última partida: " + tiempo(r.segundos()) + " · " + r.derrotados() + " derrotados · nivel " + r.nivel() + (r.jefes() > 1 ? " · ¡" + r.jefes() + " jefes derrotados!" : r.jefes() == 1 ? " · ¡jefe derrotado!" : ""), RX + 8, y + 5, BLANCO, 1f);
-            String l2 = !r.cuenta() ? "Esta partida no cuenta para el top ni da monedas (modo de prueba)." : "+" + r.monedas() + " michiestrellitas" + (r.puesto() > 0 ? " · ¡Puesto " + r.puesto() + (r.equipo().isEmpty() ? " del top!" : " del top de grupos!") : " · no mejora la marca");
+            String l2 = !r.cuenta() ? "Esta partida no cuenta para el top ni da monedas (modo de prueba)." : "+" + r.monedas() + " michiestrellitas" + (r.puesto() > 0 ? " · ¡Puesto " + r.puesto() + (r.equipo().isEmpty() ? " del top!" : " del top de grupos!") : " · no mejora la marca") + (r.retosCoronas() > 0 ? " · Retos: +" + r.retosCoronas() + (r.retosCoronas() == 1 ? " corona" : " coronas") : "");
             texto(g, l2, RX + 8, y + 17, r.puesto() > 0 ? ORO : 0xFFFFE070, 1f);
             texto(g, r.motivo() + (r.equipo().isEmpty() ? "" : "  Jugaste con: " + r.equipo()), RX + 8, y + 29, GRIS, 0.8f);
             y += h + 4;
@@ -511,13 +536,69 @@ public final class MenuPantalla extends Lienzo {
         if (!topDeGrupos) texto(g, miMejor > 0 ? "Tu mejor marca: " + tiempo(miMejor) + (miPuesto > 0 ? " (puesto " + miPuesto + ")" : "") : "Todavía no tienes marca: ¡juega una partida!", 20, 328, ORO, 1f);
     }
 
+    // ------------------------------------------------------------ misiones y logros
+
+    private static String valorMision(MisionC m, int v) { return m.segundos() ? tiempo(v) : String.valueOf(v); }
+
+    /** Una tarjeta de mision: el texto, una barra de avance y la recompensa. */
+    private void tarjetaMision(DrawContext g, MisionC m, int x, int y, int w) {
+        caja(g, x, y, w, 34, m.hecha() ? 0xFF16301F : 0xFF1B1B30, m.hecha() ? VERDE : 0xFF55557A);
+        texto(g, m.texto(), x + 8, y + 5, m.hecha() ? VERDE : BLANCO, 0.95f);
+        int bx = x + 8, bw = w - 100;
+        g.fill(bx, y + 21, bx + bw, y + 28, 0xFF0E0E1A);
+        g.fill(bx, y + 21, bx + (int) (bw * Math.min(1.0, m.prog() / (double) m.objetivo())), y + 28, m.hecha() ? VERDE : 0xFFFFD34E);
+        texto(g, valorMision(m, m.prog()) + " / " + valorMision(m, m.objetivo()), bx + bw + 6, y + 20, GRIS, 0.8f);
+        texto(g, m.hecha() ? "¡HECHA! ✓" : "+" + m.premio() + (m.premio() == 1 ? " corona" : " coronas"), x + w - 66, y + 5, m.hecha() ? VERDE : 0xFFC9B3FF, 0.95f);
+    }
+
+    private void retos(DrawContext g, int mx, int my) {
+        int w = 290;
+        texto(g, "MISIONES DEL DÍA", LX, CY - 2, ORO, 1.2f);
+        texto(g, "Se renuevan a medianoche", LX + 150, CY, GRIS, 0.75f);
+        for (int k = 0; k < misionesDia.size(); k++) tarjetaMision(g, misionesDia.get(k), LX, CY + 14 + k * 37, w);
+        int y2 = CY + 14 + 3 * 37 + 6;
+        texto(g, "MISIONES DE LA SEMANA", LX, y2 - 2, ORO, 1.2f);
+        texto(g, "Se renuevan el lunes", LX + 170, y2, GRIS, 0.75f);
+        for (int k = 0; k < misionesSemana.size(); k++) tarjetaMision(g, misionesSemana.get(k), LX, y2 + 14 + k * 37, w);
+
+        int rx = 322, rw = 298;
+        texto(g, "LOGROS", rx, CY - 2, ORO, 1.2f);
+        int paginas = Math.max(1, (logros.size() + LOGROS_POR_PAGINA - 1) / LOGROS_POR_PAGINA);
+        pagLogros = Math.min(pagLogros, paginas - 1);
+        if (paginas > 1) {
+            boolean sA = dentro(mx, my, rx + 200, CY - 4, 26, 16), sB = dentro(mx, my, rx + 272, CY - 4, 26, 16);
+            boton(g, rx + 200, CY - 4, 26, 16, "<", 0xFF3A3A66, pagLogros > 0, sA, 0.9f);
+            textoCentrado(g, (pagLogros + 1) + "/" + paginas, rx + 249, CY, BLANCO, 0.85f);
+            boton(g, rx + 272, CY - 4, 26, 16, ">", 0xFF3A3A66, pagLogros < paginas - 1, sB, 0.9f);
+        }
+        int hechos = 0, total = 0;
+        for (LogroC l : logros) { hechos += l.hechos(); total += l.total(); }
+        if (!logros.isEmpty()) texto(g, hechos + "/" + total + " escalones", rx + 60, CY, GRIS, 0.75f);
+        for (int k = 0; k < LOGROS_POR_PAGINA; k++) {
+            int i = pagLogros * LOGROS_POR_PAGINA + k;
+            if (i >= logros.size()) break;
+            LogroC l = logros.get(i);
+            int y = CY + 14 + k * 37;
+            caja(g, rx, y, rw, 34, l.completo() ? 0xFF2A2410 : 0xFF1B1B30, l.completo() ? ORO : 0xFF55557A);
+            texto(g, l.nombre(), rx + 8, y + 4, l.completo() ? ORO : BLANCO, 0.95f);
+            for (int q = 0; q < l.total(); q++) g.fill(rx + 8 + 70 + q * 9, y + 5, rx + 8 + 70 + q * 9 + 7, y + 11, q < l.hechos() ? 0xFFFFD34E : 0xFF555566);
+            texto(g, l.texto(), rx + 8, y + 15, GRIS, 0.75f);
+            int bx = rx + 8, bw = rw - 100;
+            g.fill(bx, y + 25, bx + bw, y + 30, 0xFF0E0E1A);
+            g.fill(bx, y + 25, bx + (int) (bw * Math.min(1.0, l.valor() / (double) l.meta())), y + 25 + 5, l.completo() ? ORO : 0xFF4EA0FF);
+            texto(g, l.completo() ? "¡COMPLETO!" : l.valorTxt() + " / " + l.metaTxt(), bx + bw + 6, y + 23, l.completo() ? ORO : GRIS, 0.8f);
+            if (!l.completo()) texto(g, "+" + l.premio() + (l.premio() == 1 ? " corona" : " coronas"), rx + rw - 62, y + 4, 0xFFC9B3FF, 0.85f);
+        }
+        texto(g, "Las recompensas son coronas (escasas; las michiestrellitas son solo para las mejoras) y se cobran solas al acabar una partida que cuente.", LX, 336, 0xFF8888AA, 0.75f);
+    }
+
     // ------------------------------------------------------------ clics
 
     @Override
     protected void clic(int mx, int my, int boton) {
         for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 98, 48, 92, 20)) {
             tab = i; ultimoRefresco = 0;
-            if (i == T_TOP || i == T_GRUPO) enviar("refrescar", TABS_ID[i], "");
+            if (i == T_TOP || i == T_GRUPO || i == T_RETOS) enviar("refrescar", TABS_ID[i], "");
             return;
         }
         if (dentro(mx, my, 538, 48, 82, 20)) { enviar("salir", "", ""); return; }
@@ -543,6 +624,11 @@ public final class MenuPantalla extends Lienzo {
             }
         }
         if (tab == T_GRUPO) clicGrupo(mx, my);
+        if (tab == T_RETOS) {
+            int paginas = Math.max(1, (logros.size() + LOGROS_POR_PAGINA - 1) / LOGROS_POR_PAGINA);
+            if (paginas > 1 && dentro(mx, my, 322 + 200, CY - 4, 26, 16) && pagLogros > 0) pagLogros--;
+            else if (paginas > 1 && dentro(mx, my, 322 + 272, CY - 4, 26, 16) && pagLogros < paginas - 1) pagLogros++;
+        }
         if (tab == T_TOP) {
             for (int i = 0; i < PERIODOS.length; i++) if (dentro(mx, my, 20 + i * 72, CY - 6, 68, 16)) periodo = i;
             if (dentro(mx, my, 392, CY - 6, 108, 16)) topDeGrupos = false;

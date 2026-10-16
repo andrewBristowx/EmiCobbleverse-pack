@@ -219,6 +219,7 @@ public final class Partida {
                 Map<String, Integer> meta = new java.util.HashMap<>(datos.poke(datos.jugador(p.getUuid(), p.getGameProfile().getName()), pk.getUuid().toString(), pk.getSpecies().getResourceIdentifier().getPath()).mejoras);
                 Run run = new Run(eq, p, pk, antes[i], inmortal && Perm.admin(p.getCommandSource()), meta);   // el modo inmortal es solo de administradores
                 eq.miembros.add(run);
+                eq.jugadoresAlEmpezar = eq.miembros.size();
                 runs.put(p.getUuid(), run);
             }
             equipos.add(eq);
@@ -364,11 +365,16 @@ public final class Partida {
     /** Lo que se le hace a un jugador al acabar su partida: monedas, devolverlo a la sala (o a su sitio) y contarle como le fue. */
     private static void cerrarJugador(Run r, Equipo eq, String motivo, int seg, boolean cuenta, int puesto) {
         ServerPlayerEntity p = r.jugador();
-        int monedas = 0;
+        int monedas = 0, retosCoronas = 0;
+        List<String> retosLineas = new ArrayList<>();
         if (cuenta) {
             try {
                 monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefesDerrotados, r.st.monedas);
                 datos.registrarJugador(r.id, r.nombre, r.pokeId, r.especieId, seg, monedas);
+                int evos = 0;
+                for (int nivelArma : r.armas.values()) if (nivelArma >= Catalogo.NIVEL_EVO) evos++;
+                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+                retosLineas = nv.lineas; retosCoronas = nv.coronas;
             } catch (RuntimeException ex) { EmiSurvivors.LOG.error("No se pudo guardar el resultado de la partida de {}", r.nombre, ex); }
         }
         EmiSurvivors.LOG.info("  {}: nivel {}, {} derrotados, {} monedas{}", r.nombre, r.nivel, r.derrotados, monedas, r.estado == Run.CAIDO ? " (acabó caído)" : "");
@@ -385,8 +391,9 @@ public final class Partida {
             if (!Saved.restore(server, p)) quitarEfectos(p);
         } else {
             quitarEfectos(p);
-            Mundo.volverASala(p, new Menu.Resultado(motivo, seg, r.derrotados, r.nivel, monedas, puesto, eq.jefesDerrotados, cuenta, otros.toString()));
+            Mundo.volverASala(p, new Menu.Resultado(motivo, seg, r.derrotados, r.nivel, monedas, puesto, eq.jefesDerrotados, cuenta, otros.toString(), retosLineas, retosCoronas));
         }
+        for (String l : retosLineas) p.sendMessage(Msg.say(l), false);
         p.sendMessage(Msg.say(motivo + " Aguantasteis " + (seg / 60) + ":" + String.format("%02d", seg % 60) + ", llegaste al nivel " + r.nivel + " y derrotaste a " + r.derrotados + " Pokémon."
                 + (cuenta ? " Ganas " + monedas + " michiestrellitas." + (puesto > 0 ? " Puesto " + puesto + " del top." : "") : "")), false);
         if (eq.fijo > 0 && eq.hayMedidaEstable())

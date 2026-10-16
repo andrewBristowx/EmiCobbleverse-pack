@@ -59,6 +59,7 @@ final class Equipo {
     int mareasSalidas;
     boolean avisoPers;                              // ya se explico que significan los colores de los enemigos con personalidad
     private final List<Bomba> bombas = new ArrayList<>();      // las bombas que dejan los enemigos explosivos al caer
+    int jugadoresAlEmpezar = 1;                  // cuantos jugadores empezaron la partida (para las misiones de grupo; aunque alguien se vaya)
     int jefesSalidos, jefesDerrotados;              // cuantos jefes han salido y cuantos se han derrotado (uno cada 3 minutos; ver Jefes)
     private final List<double[]> refuerzos = new ArrayList<>();      // sitios (x, z) donde faltan por aparecer los refuerzos que ha invocado un jefe
     private Jefes.Def refuerzosDe;

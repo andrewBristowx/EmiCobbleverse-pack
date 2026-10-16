@@ -17,7 +17,7 @@ final class Menu {
     private Menu() {}
 
     /** El resultado de la partida que acaba de terminar (para enseñarlo en el menu). {@code puesto} = 0 si no entra al top. */
-    record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo) {}
+    record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo, java.util.List<String> retos, int retosCoronas) {}
 
     static void enviar(ServerPlayerEntity p, String tab, Resultado res) {
         if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) {
@@ -60,12 +60,27 @@ final class Menu {
         return top;
     }
 
+    private static JsonArray misionesJson(java.util.List<Retos.Prog> lista) {
+        JsonArray a = new JsonArray();
+        for (Retos.Prog pr : lista) {
+            Retos.Def d = Retos.def(pr.id);
+            if (d == null) continue;
+            JsonObject e = new JsonObject();
+            e.addProperty("texto", d.texto()); e.addProperty("prog", pr.prog); e.addProperty("objetivo", d.objetivo());
+            e.addProperty("premio", d.premio()); e.addProperty("hecha", pr.hecha);
+            e.addProperty("segundos", d.metrica().equals("segundos"));
+            a.add(e);
+        }
+        return a;
+    }
+
     static String json(ServerPlayerEntity p, String tab, Resultado res) {
         Datos d = Partida.datos;
         Datos.Jugador j = d.jugador(p.getUuid(), p.getGameProfile().getName());
         JsonObject o = new JsonObject();
         o.addProperty("tab", tab);
         o.addProperty("monedas", j.monedas);
+        o.addProperty("coronas", j.coronas);
         o.addProperty("partidas", Partida.runs.size());
         o.addProperty("maxPartidas", Partida.MAX_PARTIDAS);
         o.addProperty("miPuesto", d.puesto(p.getUuid()));
@@ -138,6 +153,31 @@ final class Menu {
         }
         o.add("tops", tops);
 
+        // misiones del dia y de la semana, y logros
+        Retos.refrescar(j, ahora, java.time.ZoneId.systemDefault());
+        JsonObject retos = new JsonObject();
+        retos.add("dia", misionesJson(j.dia));
+        retos.add("semana", misionesJson(j.semana));
+        JsonArray logros = new JsonArray();
+        for (Retos.Familia f : Retos.FAMILIAS) {
+            int hechos = Math.min(j.logros.getOrDefault(f.id(), 0), f.escalones().length);
+            boolean completo = hechos >= f.escalones().length;
+            long meta = f.escalones()[completo ? f.escalones().length - 1 : hechos];
+            JsonObject e = new JsonObject();
+            e.addProperty("id", f.id()); e.addProperty("nombre", f.nombre());
+            e.addProperty("texto", Retos.texto(f, meta));
+            e.addProperty("hechos", hechos); e.addProperty("total", f.escalones().length);
+            e.addProperty("valor", completo ? meta : Math.min(f.valor().applyAsLong(j), meta));
+            e.addProperty("meta", meta);
+            e.addProperty("valorTxt", Retos.formato(completo ? meta : Math.min(f.valor().applyAsLong(j), meta), f.unidad()));
+            e.addProperty("metaTxt", Retos.formato(meta, f.unidad()));
+            e.addProperty("premio", f.premios()[completo ? f.premios().length - 1 : hechos]);
+            e.addProperty("completo", completo);
+            logros.add(e);
+        }
+        retos.add("logros", logros);
+        o.add("retos", retos);
+
         // el grupo del jugador (si esta en uno) y los grupos a los que se puede unir
         Grupos.Grupo g = Partida.grupos.de(p.getUuid());
         JsonObject gr = new JsonObject();
@@ -180,6 +220,10 @@ final class Menu {
             r.addProperty("jefes", res.jefes());
             r.addProperty("cuenta", res.cuenta());
             r.addProperty("equipo", res.equipo());
+            r.addProperty("retosCoronas", res.retosCoronas());
+            JsonArray rl = new JsonArray();
+            for (String l : res.retos()) rl.add(l);
+            r.add("retos", rl);
             o.add("resultado", r);
         }
         return o.toString();

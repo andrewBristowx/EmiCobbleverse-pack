@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -424,6 +424,88 @@ public final class PruebaLogica {
         ok(d2.topDesde(Datos.SOLO, semana, 10).size() == 2, "el historial sobrevive a un reinicio");
         System.out.println("  periodos: bien");
     }
+
+    static void retos() throws Exception {
+        System.out.println("== misiones y logros");
+        java.time.ZoneId z = java.time.ZoneId.of("Europe/Madrid");
+        long viernes = java.time.ZonedDateTime.of(2026, 10, 16, 15, 30, 0, 0, z).toInstant().toEpochMilli();
+        long dia = 86_400_000L;
+        ok(Retos.claveDia(viernes, z).equals("2026-10-16") && Retos.claveSemana(viernes, z).equals("2026-10-12"), "claves: dia y lunes de la semana");
+        ok(Retos.claveSemana(viernes + 2 * dia, z).equals("2026-10-12") && Retos.claveSemana(viernes + 3 * dia, z).equals("2026-10-19"), "la semana cambia el lunes");
+        // la eleccion: 3, sin repetir medida, siempre la misma para una fecha y distinta entre fechas
+        Set<List<String>> distintas = new HashSet<>();
+        for (int k = 0; k < 60; k++) {
+            String clave = Retos.claveDia(viernes + k * dia, z);
+            List<Retos.Def> a = Retos.elegir(Retos.DIARIAS, clave), b = Retos.elegir(Retos.DIARIAS, clave), c = Retos.elegir(Retos.SEMANALES, clave);
+            ok(a.size() == 3 && c.size() == 3, "tres misiones por periodo (" + clave + ")");
+            ok(a.equals(b), "la misma fecha da las mismas misiones");
+            Set<String> met = new HashSet<>();
+            for (Retos.Def d : a) ok(met.add(d.metrica()), "no se repite la medida " + d.metrica() + " en " + clave);
+            distintas.add(a.stream().map(Retos.Def::id).toList());
+        }
+        ok(distintas.size() > 10, "las misiones cambian de un dia a otro (" + distintas.size() + " combinaciones en 60 dias)");
+        for (Retos.Def d : Retos.DIARIAS) ok(d.objetivo() > 0 && d.premio() > 0 && d.premio() <= 2 && Retos.def(d.id()) == d, "mision valida " + d.id());
+        for (Retos.Def d : Retos.SEMANALES) ok(d.objetivo() > 0 && d.premio() >= 4 && d.premio() <= 8 && Retos.def(d.id()) == d, "mision valida " + d.id());
+        for (Retos.Familia f : Retos.FAMILIAS) {
+            ok(f.escalones().length == f.premios().length && f.escalones().length >= 2 && f.texto().contains("{n}"), "familia bien formada " + f.id());
+            for (int i = 1; i < f.escalones().length; i++) ok(f.escalones()[i] > f.escalones()[i - 1] && f.premios()[i] > f.premios()[i - 1], f.id() + ": escalones y premios crecen");
+        }
+        int logrosTotal = 0;
+        for (Retos.Familia f : Retos.FAMILIAS) for (int pr : f.premios()) logrosTotal += pr;
+        ok(logrosTotal < 300, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
+        // un jugador: una partida da avance, y al cumplir la mision cobra una sola vez
+        Path dir = Files.createTempDirectory("survivors_retos");
+        Datos d = new Datos(dir);
+        UUID id = UUID.randomUUID();
+        Datos.Jugador j = d.jugador(id, "Ana");
+        Retos.refrescar(j, viernes, z);
+        ok(j.coronas == 0 && j.dia.size() == 3 && j.semana.size() == 3 && j.diaClave.equals("2026-10-16"), "al refrescar salen 3 + 3");
+        List<String> idsDia = j.dia.stream().map(p -> p.id).toList();
+        Retos.Partida grande = new Retos.Partida(700, 5000, 30, 5, "pradera", 2, 6, "pikachu");
+        int antes = j.coronas, estrellas = j.monedas;
+        j.partidas = 1; j.mejorTiempo = 700;                       // lo que apunta registrarJugador antes
+        Retos.Novedades n = d.retos(id, "Ana", grande, viernes, z);
+        for (Retos.Prog p : j.dia) ok(Retos.def(p.id).metrica().equals("partidas") ? p.prog == 1 && !p.hecha : p.hecha && p.prog == Retos.def(p.id).objetivo(), "una partida enorme cumple la mision " + p.id + " (menos las de jugar varias partidas, que llevan 1)");
+        ok(n.coronas > 0 && j.coronas == antes + n.coronas && j.monedas == estrellas, "las recompensas se suman a las coronas y no tocan las michiestrellitas");
+        ok(j.logros.getOrDefault("cazador", 0) == 3 && j.logros.getOrDefault("matajefes", 0) == 2 && j.logros.getOrDefault("aguante", 0) == 2, "logros: cazador 3 (100, 1000, 5000), matajefes 2 (1, 5), aguante 2 (5 y 10 min)");
+        ok(j.logros.getOrDefault("rey", 0) == 2 && j.logros.getOrDefault("evolucionista", 0) == 1 && j.logros.getOrDefault("amigos", 0) == 1, "logros: rey 2 (3 y 5 jefes en una), evolucionista 1, amigos 1");
+        ok(n.lineas.size() >= 6, "cuenta lo conseguido (" + n.lineas.size() + " lineas)");
+        int tras = j.coronas;
+        Retos.Novedades n2 = d.retos(id, "Ana", new Retos.Partida(10, 1, 1, 0, "pradera", 1, 0, "pikachu"), viernes, z);
+        ok(j.coronas == tras + n2.coronas && n2.lineas.stream().noneMatch(s -> s.contains("Logro")), "una partida floja no vuelve a cobrar los logros ya cobrados");
+        ok(j.biomas.size() == 1 && j.especies.size() == 1 && j.derrotadosTotal == 5001 && j.partidasGrupo == 1, "contadores: arenas, especies, derrotados, grupo");
+        // al dia siguiente salen otras (sin progreso), la semana sigue
+        List<Retos.Prog> semanaAntes = j.semana;
+        Retos.refrescar(j, viernes + dia, z);
+        ok(j.diaClave.equals("2026-10-17") && j.dia.stream().noneMatch(p -> p.hecha || p.prog > 0), "al dia siguiente las misiones del dia se renuevan sin avance");
+        ok(j.semana == semanaAntes, "la semana no cambia el sabado");
+        Retos.refrescar(j, viernes + 3 * dia, z);
+        ok(j.semanaClave.equals("2026-10-19") && j.semana != semanaAntes && j.semana.stream().noneMatch(p -> p.hecha), "el lunes se renuevan las semanales");
+        // MAX no suma entre partidas y SUMA si
+        Datos.Jugador k = d.jugador(UUID.randomUUID(), "Bea");
+        Retos.refrescar(k, viernes, z);
+        k.dia.clear(); k.dia.add(prog("d_aguanta_6")); k.dia.add(prog("d_derrota_300")); k.dia.add(prog("d_partidas_2"));
+        d.retos(UUID.randomUUID(), "x", new Retos.Partida(200, 100, 5, 0, "bosque", 1, 0, "eevee"), viernes, z);     // otro jugador: no afecta
+        Retos.aplicar(k, new Retos.Partida(200, 100, 5, 0, "bosque", 1, 0, "eevee"), viernes, z);
+        Retos.aplicar(k, new Retos.Partida(250, 100, 5, 0, "bosque", 1, 0, "eevee"), viernes, z);
+        ok(k.dia.get(0).prog == 250 && !k.dia.get(0).hecha, "aguantar vale la mejor partida (250 y no 450)");
+        ok(k.dia.get(1).prog == 200 && !k.dia.get(1).hecha && k.dia.get(2).prog == 2 && k.dia.get(2).hecha, "derrotados suma (200) y 2 partidas cumple");
+        // se guarda y se lee de disco
+        d.guardar(id);
+        Datos d2 = new Datos(dir);
+        Datos.Jugador r = d2.jugador(id, "Ana");
+        ok(r.logros.equals(j.logros) && r.derrotadosTotal == 5001 && r.semanaClave.equals(j.semanaClave) && r.dia.size() == 3 && r.biomas.equals(j.biomas), "misiones y logros sobreviven a un reinicio");
+        // un archivo de la version anterior (sin campos nuevos) se lee bien
+        Path viejo = dir.resolve("jugadores").resolve("11111111-1111-1111-1111-111111111111.json");
+        Files.writeString(viejo, "{\"nombre\":\"Vieja\",\"monedas\":50,\"partidas\":3,\"mejorTiempo\":400,\"pokemon\":{}}");
+        Datos.Jugador v = d2.jugador(UUID.fromString("11111111-1111-1111-1111-111111111111"), "Vieja");
+        ok(v.monedas == 50 && v.dia != null && v.logros != null && v.biomas != null && v.especies != null, "un jugador de la version anterior se lee sin errores");
+        Retos.Novedades nv = Retos.aplicar(v, new Retos.Partida(30, 5, 2, 0, "pradera", 1, 0, "eevee"), viernes, z);
+        ok(v.logros.getOrDefault("veterano", 0) == 1 && v.logros.getOrDefault("aguante", 0) == 1, "a un jugador antiguo se le reconocen sus partidas y su mejor tiempo (3 partidas, 400 s)");
+        System.out.println("  misiones y logros: bien (" + nv.lineas.size() + " avisos al jugador antiguo)");
+    }
+
+    static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }
 
     static Datos.Entrada entradaFecha(UUID id, String nombre, int seg, long fecha) {
         Datos.Entrada e = entrada("pikachu", seg, 10);

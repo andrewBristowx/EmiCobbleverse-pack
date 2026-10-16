@@ -36,7 +36,16 @@ final class Datos {
     static final class Jugador {
         String nombre = "";
         int monedas, partidas, mejorTiempo;
+        int coronas;                 // la moneda de las recompensas (desde 0.8.0): se gana con misiones y logros, es escasa y no sirve para las mejoras
         Map<String, PokeMeta> pokemon = new HashMap<>();
+        // misiones (desde 0.8.0): las del dia y las de la semana con su avance; si cambia la fecha se renuevan ({@link Retos#refrescar})
+        String diaClave = "", semanaClave = "";
+        List<Retos.Prog> dia = new ArrayList<>(), semana = new ArrayList<>();
+        // logros (desde 0.8.0): escalones conseguidos de cada familia y los contadores que los miden (los de antes se cuentan desde que se instala la 0.8.0)
+        Map<String, Integer> logros = new HashMap<>();
+        int derrotadosTotal, jefesTotal, evolucionesTotal, partidasGrupo, mejorNivel, mejorJefes;
+        long segundosTotal;
+        List<String> biomas = new ArrayList<>(), especies = new ArrayList<>();
     }
 
     static final String SOLO = "solo", GRUPO = "grupo";
@@ -93,6 +102,11 @@ final class Datos {
             j = leer(archivo(id), Jugador.class);
             if (j == null) j = new Jugador();
             if (j.pokemon == null) j.pokemon = new HashMap<>();
+            if (j.dia == null) j.dia = new ArrayList<>();
+            if (j.semana == null) j.semana = new ArrayList<>();
+            if (j.logros == null) j.logros = new HashMap<>();
+            if (j.biomas == null) j.biomas = new ArrayList<>();
+            if (j.especies == null) j.especies = new ArrayList<>();
             jugadores.put(id, j);
         }
         if (nombre != null && !nombre.isEmpty()) j.nombre = nombre;
@@ -135,6 +149,14 @@ final class Datos {
         j.mejorTiempo = Math.max(j.mejorTiempo, segundos);
         m.mejorTiempo = Math.max(m.mejorTiempo, segundos);
         guardar(id);
+    }
+
+    /** Apunta una partida (que cuenta) en las misiones y los logros del jugador y le suma las recompensas. Devuelve lo que ha pasado, para contarselo. */
+    Retos.Novedades retos(UUID id, String nombre, Retos.Partida s, long ahoraMs, java.time.ZoneId zona) {
+        Jugador j = jugador(id, nombre);
+        Retos.Novedades n = Retos.aplicar(j, s, ahoraMs, zona);
+        guardar(id);
+        return n;
     }
 
     /** Apunta la partida de un equipo en el top (solo o de grupos, segun su {@code modo}): si mejora la marca de ese jugador o grupo, la sustituye. Devuelve el puesto (1 = el primero) o 0 si no mejora su marca (o no entra). */
