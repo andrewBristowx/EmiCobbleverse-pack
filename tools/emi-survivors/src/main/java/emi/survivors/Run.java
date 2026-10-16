@@ -62,6 +62,9 @@ final class Run {
     double hp;
     int estado = VIVO, reviveT;
     boolean esperandoCarta;
+    int focusCd, bayaCd;                         // ticks hasta que se recargan la Banda Focus y la Baya Zidra (0 = listas)
+    double danoHecho;                            // dano total de los ataques (solo para medir el equilibrio: /survivor dev dps)
+    int dpsTick0 = -1, dpsDerrotados0;
     boolean sinXp;                               // solo para pruebas (/survivor dev sinxp): no se gana experiencia
     int cartaCuenta;
     List<Cartas.Carta> oferta;
@@ -95,7 +98,12 @@ final class Run {
     /** Las particulas de un ataque: el ataque con el que empieza el Pokemon usa las de su tipo; los demas, las suyas. */
     ParticleEffect particula(String armaId, ParticleEffect nativa) { return armaId.equals(inicial.arma()) ? Arena.particula(tipo) : nativa; }
 
-    String nombreArma(String id) { return id.equals(inicial.arma()) ? inicial.nombre() : Catalogo.arma(id).nombre(); }
+    /** El nombre del ataque en su nivel: el del movimiento del tipo si es con el que empezo el Pokemon, o el de su evolucion si ya evoluciono. */
+    String nombreArma(String id, int nivelArma) {
+        Catalogo.Arma a = Catalogo.arma(id);
+        if (nivelArma >= Catalogo.NIVEL_EVO && a.evo() != null) return a.evo().nombre();
+        return id.equals(inicial.arma()) ? inicial.nombre() : a.nombre();
+    }
 
     // ------------------------------------------------------------------------------------------------ estadisticas y mejoras
 
@@ -147,6 +155,8 @@ final class Run {
                 if (p != null && tick - sonidoGema >= 2) { sonidoGema = tick; p.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 0.25f, 0.8f + rnd.nextFloat() * 0.6f); }
             } else { g.x += dx / d * Math.min(vel, d); g.z += dz / d * Math.min(vel, d); }
         }
+        if (focusCd > 0) focusCd--;
+        if (bayaCd > 0) bayaCd--;
         if (st.regen > 0 && tick % 20 == 0 && hp < st.hpMax) hp = Math.min(st.hpMax, hp + st.regen);
         if (p != null && p.getHungerManager().getFoodLevel() < 20 && tick % 100 == 0) p.getHungerManager().setFoodLevel(20);
     }
@@ -158,23 +168,115 @@ final class Run {
 
     // ------------------------------------------------------------------------------------------------ dano, caer y revivir
 
-    /** El jugador recibe dano (sin pasar de la armadura). Con el modo prueba «inmortal» no pierde vida. */
-    void danarJugador(float dmg) {
+    /** El jugador recibe dano de algo que no es un enemigo normal (el jefe, por ejemplo). */
+    void danarJugador(float dmg) { danarJugador(dmg, null); }
+
+    /**
+     * El jugador recibe dano (sin pasar de la armadura). Con el modo prueba «inmortal» no pierde vida. {@code causa} es el enemigo que le toca (null si no es un contacto):
+     * con el Casco Dentado ese enemigo sufre dano y sale despedido. La Banda Focus lo deja con 1 de vida si el golpe iba a ser mortal, y la Baya Zidra lo cura al bajar del 40 %.
+     */
+    void danarJugador(float dmg, Enemigo causa) {
         iframes = 8;
         ServerPlayerEntity p = jugador();
-        if (!inmortal) hp -= Math.max(1, Math.round(dmg * (1 - st.armadura)));
+        if (!inmortal) {
+            hp -= Math.max(1, Math.round(dmg * (1 - st.armadura)));
+            if (hp <= 0 && st.focus > 0 && focusCd <= 0) {
+                hp = 1; iframes = 30; focusCd = Catalogo.focusSegundos(st.focus) * 20;
+                if (Boolean.getBoolean("emi.survivors.debug")) EmiSurvivors.LOG.info("[objeto] {}: la Banda Focus lo deja con 1 de vida (se recarga en {} s)", nombre, Catalogo.focusSegundos(st.focus));
+                w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.0, pp.z, 20, 0.4, 0.6, 0.4, 0.2);
+                if (p != null) { p.playSoundToPlayer(SoundEvents.ITEM_TOTEM_USE, SoundCategory.MASTER, 0.4f, 1.6f); Msg.actionBar(p, Text.literal("¡Banda Focus! Aguantas con 1 de vida").formatted(Formatting.GOLD, Formatting.BOLD)); }
+            } else if (hp > 0 && st.baya > 0 && bayaCd <= 0 && hp < st.hpMax * 0.4) {
+                curar(st.hpMax * 0.25); bayaCd = Catalogo.bayaSegundos(st.baya) * 20;
+                if (Boolean.getBoolean("emi.survivors.debug")) EmiSurvivors.LOG.info("[objeto] {}: la Baya Zidra lo cura (vida {}; se recarga en {} s)", nombre, Math.round(hp), Catalogo.bayaSegundos(st.baya));
+                w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pp.x, pp.y + 1.0, pp.z, 14, 0.4, 0.5, 0.4, 0.0);
+                if (p != null) { p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.MASTER, 0.6f, 1.2f); Msg.actionBar(p, Text.literal("¡Baya Zidra! +25% de vida").formatted(Formatting.GREEN, Formatting.BOLD)); }
+            }
+        }
+        if (causa != null && st.casco > 0 && causa.hp > 0) {
+            causa.hp -= (float) st.casco;
+            causa.ultimo = this;
+            double dx = causa.e.getX() - pp.x, dz = causa.e.getZ() - pp.z, d = Math.max(0.01, Math.sqrt(dx * dx + dz * dz)), kb = causa.tipo == Enemigo.Tipo.JEFE ? 0.05 : causa.tipo == Enemigo.Tipo.ELITE ? 0.35 : 1.0;
+            causa.kbx += dx / d * 0.9 * kb; causa.kbz += dz / d * 0.9 * kb;
+            w.spawnParticles(ParticleTypes.ENCHANTED_HIT, causa.e.getX(), causa.e.getY() + 0.7, causa.e.getZ(), 6, 0.2, 0.2, 0.2, 0.1);
+        }
         if (p != null) p.networkHandler.sendPacket(new EntityStatusS2CPacket(p, (byte) 2));
     }
 
+    /** Empuja a un enemigo en la direccion (dx, dz) con esa fuerza (menos a campeones y jefe): para atraer (hacia un punto) o apartar. */
+    void impulso(Enemigo en, double dx, double dz, double fuerza) {
+        double d = Math.sqrt(dx * dx + dz * dz);
+        if (d < 1e-6) return;
+        double kb = en.tipo == Enemigo.Tipo.JEFE ? 0.05 : en.tipo == Enemigo.Tipo.ELITE ? 0.35 : 1.0;
+        en.kbx += dx / d * fuerza * kb; en.kbz += dz / d * fuerza * kb;
+    }
+
+    /** Este jugador acaba de pisar un objeto del suelo: lo que haga (ver {@link Objeto}). */
+    void recoger(int tipo) {
+        ServerPlayerEntity p = jugador();
+        switch (tipo) {
+            case Objeto.BAYA -> {
+                curar(st.hpMax * 0.30);
+                for (Run m : eq.miembros) if (m != this && m.estado == VIVO && Math.hypot(m.pp.x - pp.x, m.pp.z - pp.z) < 6) m.curar(m.st.hpMax * 0.15);
+                w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pp.x, pp.y + 1.2, pp.z, 16, 0.5, 0.6, 0.5, 0.0);
+                if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.MASTER, 0.7f, 1.2f);
+            }
+            case Objeto.IMAN -> {
+                for (Gema g : eq.gemas) { g.dueno = this; g.atraidaT = Math.max(g.atraidaT, 26); }
+                for (int k = 0; k < 36; k++) { double a = k * Math.PI / 18; w.spawnParticles(ParticleTypes.ENCHANT, pp.x + Math.cos(a) * 3, pp.y + 1.0, pp.z + Math.sin(a) * 3, 1, 0.1, 0.3, 0.1, 0.5); }
+                if (p != null) p.playSoundToPlayer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 1.0f, 0.8f);
+            }
+            case Objeto.BOMBA -> {
+                w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, pp.x, pp.y + 0.5, pp.z, 1, 0, 0, 0, 0);
+                for (Enemigo en : enemigos) {
+                    if (en.hp <= 0) continue;
+                    double dx = en.e.getX() - pp.x, dz = en.e.getZ() - pp.z, d = Math.sqrt(dx * dx + dz * dz);
+                    if (d > 22) continue;
+                    en.hp -= en.tipo == Enemigo.Tipo.JEFE ? 40f : 150f;
+                    en.ultimo = this;
+                    impulso(en, dx, dz, 0.9);
+                    w.sendEntityStatus(en.e, (byte) 2);
+                    w.spawnParticles(ParticleTypes.EXPLOSION, en.e.getX(), en.e.getY() + 0.6, en.e.getZ(), 1, 0, 0, 0, 0);
+                }
+                if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.MASTER, 0.8f, 0.9f);
+            }
+            case Objeto.CARAMELO -> {
+                nivel++; pendientes++; xpSig = Curvas.xpPara(nivel); xp = Math.min(xp, xpSig - 1);
+                w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.2, pp.z, 24, 0.4, 0.6, 0.4, 0.2);
+                if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 0.7f, 1.3f);
+            }
+            default -> { return; }
+        }
+        if (p != null) Msg.actionBar(p, Text.literal(Objeto.texto(tipo)).formatted(Formatting.GOLD, Formatting.BOLD));
+    }
+
+    /** Recupera vida (sin pasar del maximo). */
+    void curar(double v) { if (estado == VIVO && v > 0) hp = Math.min(st.hpMax, hp + v); }
+
+    /** Este jugador acaba de derrotar a un enemigo (lo llama el equipo): la Campana Concha le cura. */
+    void alDerrotar(Enemigo en) {
+        if (st.concha > 0) curar(st.concha);
+    }
+
+    /** Cuantas particulas «de adorno» se dibujan: con muchos ataques a la vez la pantalla se llena, asi que se reducen (1 = todas; con 6 ataques, la mitad). */
+    double densidad() { return armas.size() >= 5 ? 0.5 : armas.size() >= 3 ? 0.75 : 1.0; }
+
     /** Un ataque del jugador golpea a un enemigo: dano base por la mejora de dano, empuje (menor en elites y jefe) y destello rojo. */
-    void golpear(Enemigo en, double dmgBase, double kx, double kz) {
+    void golpear(Enemigo en, double dmgBase, double kx, double kz) { golpear(en, dmgBase, kx, kz, false); }
+
+    /** Igual; con {@code critico} el golpe es critico seguro. Con el Periscopio hay probabilidad de critico (el doble de dano) y con la Cinta Experto mas dano a campeones y jefes. */
+    void golpear(Enemigo en, double dmgBase, double kx, double kz, boolean critico) {
         if (en.hp <= 0) return;
-        en.hp -= (float) (dmgBase * st.dano);
+        double d = dmgBase * st.dano;
+        if (st.experto > 0 && en.grande()) d *= 1 + st.experto;
+        boolean crit = critico || (st.critico > 0 && rnd.nextDouble() < st.critico);
+        if (crit) d *= 2;
+        en.hp -= (float) d;
+        danoHecho += d;
         en.ultimo = this;
         double kb = en.tipo == Enemigo.Tipo.JEFE ? 0.05 : en.tipo == Enemigo.Tipo.ELITE ? 0.35 : 1.0;
         en.kbx += kx * kb; en.kbz += kz * kb;
         w.sendEntityStatus(en.e, (byte) 2);
-        w.spawnParticles(ParticleTypes.CRIT, en.e.getX(), en.e.getY() + 0.7, en.e.getZ(), 3, 0.2, 0.2, 0.2, 0.1);
+        w.spawnParticles(crit ? ParticleTypes.ENCHANTED_HIT : ParticleTypes.CRIT, en.e.getX(), en.e.getY() + 0.7, en.e.getZ(), crit ? 8 : 3, 0.2, 0.2, 0.2, 0.1);
     }
 
     Enemigo masCercano(Vec3d desde, double alcance, Collection<Enemigo> excluir) {
@@ -261,14 +363,30 @@ final class Run {
         o.addProperty("tipo", c.tipo());
         o.addProperty("nueva", c.nueva());
         o.addProperty("nivel", c.nivel());
+        o.addProperty("evo", c.evo());
         switch (c.tipo()) {
             case "arma" -> {
                 Catalogo.Arma d = Catalogo.arma(c.id());
-                o.addProperty("titulo", nombreArma(c.id())); o.addProperty("texto", d.textos()[c.nivel() - 1]); o.addProperty("icono", d.icono());
+                if (c.evo()) {
+                    o.addProperty("titulo", d.evo().nombre());
+                    o.addProperty("texto", d.evo().texto() + " Sustituye a «" + nombreArma(c.id(), Catalogo.MAX_NIVEL) + "».");
+                    o.addProperty("icono", d.evo().icono());
+                } else {
+                    String texto = d.textos()[c.nivel() - 1];
+                    if (c.nivel() == Catalogo.MAX_NIVEL && d.evo() != null) texto += " Evoluciona con: " + Catalogo.pasiva(d.evo().requiere()).nombre() + ".";
+                    o.addProperty("titulo", nombreArma(c.id(), c.nivel())); o.addProperty("texto", texto); o.addProperty("icono", d.icono());
+                }
             }
             case "pasiva" -> {
                 Catalogo.Pasiva d = Catalogo.pasiva(c.id());
-                o.addProperty("titulo", d.nombre()); o.addProperty("texto", d.texto()); o.addProperty("icono", d.icono());
+                String texto = d.texto();
+                List<Catalogo.Arma> evolucionan = Catalogo.evolucionanCon(c.id(), armas);
+                if (!evolucionan.isEmpty()) {
+                    StringBuilder sb = new StringBuilder(texto).append(" Con él evoluciona: ");
+                    for (int k = 0; k < evolucionan.size(); k++) sb.append(k > 0 ? ", " : "").append(nombreArma(evolucionan.get(k).id(), armas.getOrDefault(evolucionan.get(k).id(), 1)));
+                    texto = sb.append(".").toString();
+                }
+                o.addProperty("titulo", d.nombre()); o.addProperty("texto", texto); o.addProperty("icono", d.icono());
             }
             case "curar" -> { o.addProperty("titulo", "Pastel Michi"); o.addProperty("texto", "Recuperas el 40% de tu vida."); o.addProperty("icono", "minecraft:cake"); }
             default -> { o.addProperty("titulo", "Estrella Fugaz"); o.addProperty("texto", "Ganas experiencia al instante."); o.addProperty("icono", "minecraft:nether_star"); }
@@ -283,7 +401,11 @@ final class Run {
         switch (c.tipo()) {
             case "arma" -> {
                 if (c.nueva()) agregarArma(c.id(), 1);
-                else { armas.put(c.id(), c.nivel()); Armas.Arma a = armaObj.get(c.id()); if (a != null) a.nivel = c.nivel(); }
+                else {
+                    String antes = nombreArma(c.id(), armas.getOrDefault(c.id(), 1));
+                    armas.put(c.id(), c.nivel()); Armas.Arma a = armaObj.get(c.id()); if (a != null) a.nivel = c.nivel();
+                    if (c.evo()) alEvolucionar(antes, c.id());
+                }
             }
             case "pasiva" -> { pasivas.put(c.id(), c.nivel()); recalcular(); }
             case "curar" -> hp = Math.min(st.hpMax, hp + st.hpMax * 0.4);
@@ -297,11 +419,23 @@ final class Run {
         if (p != null) enviarEstado();
     }
 
+    /** Un ataque acaba de evolucionar: titulo, sonido, particulas y aviso a los companeros. */
+    private void alEvolucionar(String antes, String idArma) {
+        String despues = nombreArma(idArma, Catalogo.NIVEL_EVO);
+        ServerPlayerEntity p = jugador();
+        if (p != null) {
+            Msg.title(p, Text.literal("¡EVOLUCIÓN!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(antes + " → " + despues).formatted(Formatting.YELLOW), 5, 50, 15);
+            p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, 1.2f);
+        }
+        w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.0, pp.z, 40, 0.5, 0.8, 0.5, 0.25);
+        if (eq.miembros.size() > 1) eq.avisar(Msg.say(nombre + " ha evolucionado «" + antes + "» en «" + despues + "»."));
+    }
+
     // ------------------------------------------------------------------------------------------------ paquetes al cliente
 
     private String listaArmas() {
         StringBuilder sb = new StringBuilder();
-        for (var e : armas.entrySet()) { if (sb.length() > 0) sb.append(','); sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(nombreArma(e.getKey())); }
+        for (var e : armas.entrySet()) { if (sb.length() > 0) sb.append(','); sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(nombreArma(e.getKey(), e.getValue())); }
         return sb.toString();
     }
 
@@ -325,17 +459,23 @@ final class Run {
         ServerPlayerEntity p = jugador();
         if (p == null || !ServerPlayNetworking.canSend(p, GemasPayload.ID)) return;
         List<Gema> gemas = eq.gemas;
-        if (gemas.isEmpty()) {
+        List<Objeto> objetos = eq.objetos;
+        if (gemas.isEmpty() && objetos.isEmpty()) {
             if (gemasEnviadas) { ServerPlayNetworking.send(p, GemasPayload.vacio()); gemasEnviadas = false; }
             return;
         }
         int n = 0;
         for (Gema g : gemas) if (Math.abs(g.x - pp.x) < 60 && Math.abs(g.z - pp.z) < 60) n++;
+        for (Objeto o : objetos) if (Math.abs(o.x - pp.x) < 60 && Math.abs(o.z - pp.z) < 60) n++;
         short[] dx = new short[n], dz = new short[n]; byte[] tp = new byte[n];
         int i = 0;
         for (Gema g : gemas) {
             if (Math.abs(g.x - pp.x) >= 60 || Math.abs(g.z - pp.z) >= 60) continue;
             dx[i] = (short) Math.round((g.x - pp.x) * 16); dz[i] = (short) Math.round((g.z - pp.z) * 16); tp[i] = (byte) g.tipo(); i++;
+        }
+        for (Objeto o : objetos) {
+            if (Math.abs(o.x - pp.x) >= 60 || Math.abs(o.z - pp.z) >= 60) continue;
+            dx[i] = (short) Math.round((o.x - pp.x) * 16); dz[i] = (short) Math.round((o.z - pp.z) * 16); tp[i] = (byte) o.tipo; i++;
         }
         ServerPlayNetworking.send(p, new GemasPayload(pp.x, pp.z, dx, dz, tp));
         gemasEnviadas = true;

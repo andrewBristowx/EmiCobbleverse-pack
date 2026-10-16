@@ -26,6 +26,7 @@ public final class GemasCliente {
     private GemasCliente() {}
 
     private static final Identifier TEX = Identifier.of("emi_survivors", "textures/gema.png");
+    private static final Identifier OBJ = Identifier.of("emi_survivors", "textures/objetos.png");
     private static double[] x = new double[0], z = new double[0];
     private static byte[] tipo = new byte[0];
 
@@ -47,34 +48,53 @@ public final class GemasCliente {
         Vec3d cam = ctx.camera().getPos();
         MatrixStack m = ctx.matrixStack();
         if (m == null) return;
-        double suelo = mc.player.getY();
-        double t = System.nanoTime() / 1e9;
         RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
-        RenderSystem.setShaderTexture(0, TEX);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
         RenderSystem.disableCull();
-        BufferBuilder bb = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-        for (int i = 0; i < n; i++) {
-            double dx = x[i] - cam.x, dz = z[i] - cam.z;
-            if (dx * dx + dz * dz > 80 * 80) continue;
-            int tp = tipo[i];
-            float s = tp == 2 ? 0.62f : tp == 1 ? 0.42f : 0.30f;                   // medio lado del dibujo
-            int r = tp == 2 ? 255 : tp == 1 ? 120 : 140, g = tp == 2 ? 170 : tp == 1 ? 240 : 205, b = tp == 2 ? 235 : tp == 1 ? 150 : 255;
-            double bob = Math.sin(t * 3.0 + i * 1.7) * 0.07;
-            m.push();
-            m.translate(dx, suelo + 0.5 + s * 0.5 + bob - cam.y, dz);
-            m.multiply(ctx.camera().getRotation());
-            Matrix4f mat = m.peek().getPositionMatrix();
-            bb.vertex(mat, -s, -s, 0).texture(0, 1).color(r, g, b, 255);
-            bb.vertex(mat, s, -s, 0).texture(1, 1).color(r, g, b, 255);
-            bb.vertex(mat, s, s, 0).texture(1, 0).color(r, g, b, 255);
-            bb.vertex(mat, -s, s, 0).texture(0, 0).color(r, g, b, 255);
-            m.pop();
-        }
-        BufferRenderer.drawWithGlobalProgram(bb.end());
+        pasada(ctx, cam, m, mc.player.getY(), false);       // gemas
+        pasada(ctx, cam, m, mc.player.getY(), true);        // objetos del suelo (baya, iman, bomba, caramelo)
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
+    }
+
+    /** Dibuja o las gemas (tipo 0-2, con la textura de la michiestrellita) o los objetos (tipo 10-13, un dibujo de {@code objetos.png} cada uno, con un halo que late). */
+    private static void pasada(WorldRenderContext ctx, Vec3d cam, MatrixStack m, double suelo, boolean objetos) {
+        double t = System.nanoTime() / 1e9;
+        RenderSystem.setShaderTexture(0, objetos ? OBJ : TEX);
+        BufferBuilder bb = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+        int dibujados = 0;
+        for (int i = 0; i < x.length; i++) {
+            int tp = tipo[i];
+            if ((tp >= 10) != objetos) continue;
+            double dx = x[i] - cam.x, dz = z[i] - cam.z;
+            if (dx * dx + dz * dz > 80 * 80) continue;
+            float s = objetos ? 0.62f : tp == 2 ? 0.62f : tp == 1 ? 0.42f : 0.30f;                 // medio lado del dibujo
+            int r = tp == 2 ? 255 : tp == 1 ? 120 : 140, g = tp == 2 ? 170 : tp == 1 ? 240 : 205, b = tp == 2 ? 235 : tp == 1 ? 150 : 255;
+            if (objetos) { r = 255; g = 255; b = 255; }
+            double bob = Math.sin(t * (objetos ? 4.0 : 3.0) + i * 1.7) * (objetos ? 0.14 : 0.07);
+            float u0 = objetos ? (tp - 10) / 4f : 0f, u1 = objetos ? (tp - 9) / 4f : 1f;
+            m.push();
+            m.translate(dx, suelo + 0.5 + s * 0.5 + bob - cam.y + (objetos ? 0.25 : 0), dz);
+            m.multiply(ctx.camera().getRotation());
+            Matrix4f mat = m.peek().getPositionMatrix();
+            if (objetos) {                                                              // el halo: el mismo dibujo, mas grande y casi transparente, que late
+                float h = s * (1.25f + 0.12f * (float) Math.sin(t * 5.0 + i));
+                int a = 70 + (int) (40 * Math.sin(t * 5.0 + i));
+                bb.vertex(mat, -h, -h, 0).texture(u0, 1).color(255, 240, 160, a);
+                bb.vertex(mat, h, -h, 0).texture(u1, 1).color(255, 240, 160, a);
+                bb.vertex(mat, h, h, 0).texture(u1, 0).color(255, 240, 160, a);
+                bb.vertex(mat, -h, h, 0).texture(u0, 0).color(255, 240, 160, a);
+                dibujados++;
+            }
+            bb.vertex(mat, -s, -s, 0).texture(u0, 1).color(r, g, b, 255);
+            bb.vertex(mat, s, -s, 0).texture(u1, 1).color(r, g, b, 255);
+            bb.vertex(mat, s, s, 0).texture(u1, 0).color(r, g, b, 255);
+            bb.vertex(mat, -s, s, 0).texture(u0, 0).color(r, g, b, 255);
+            m.pop();
+            dibujados++;
+        }
+        if (dibujados > 0) BufferRenderer.drawWithGlobalProgram(bb.end());
     }
 }

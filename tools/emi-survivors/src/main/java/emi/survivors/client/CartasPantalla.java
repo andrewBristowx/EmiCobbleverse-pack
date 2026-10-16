@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Environment(EnvType.CLIENT)
 public final class CartasPantalla extends Lienzo {
-    private record Carta(String tipo, boolean nueva, int nivel, String titulo, String texto, String icono) {}
+    private record Carta(String tipo, boolean nueva, boolean evo, int nivel, String titulo, String texto, String icono) {}
 
     private final List<Carta> cartas = new ArrayList<>();
     private final int nivelJugador, segundos;
@@ -35,7 +35,7 @@ public final class CartasPantalla extends Lienzo {
         JsonArray a = o.getAsJsonArray("cartas");
         for (var e : a) {
             JsonObject c = e.getAsJsonObject();
-            cartas.add(new Carta(c.get("tipo").getAsString(), c.get("nueva").getAsBoolean(), c.get("nivel").getAsInt(), c.get("titulo").getAsString(), c.get("texto").getAsString(), c.get("icono").getAsString()));
+            cartas.add(new Carta(c.get("tipo").getAsString(), c.get("nueva").getAsBoolean(), c.has("evo") && c.get("evo").getAsBoolean(), c.get("nivel").getAsInt(), c.get("titulo").getAsString(), c.get("texto").getAsString(), c.get("icono").getAsString()));
         }
     }
 
@@ -46,6 +46,7 @@ public final class CartasPantalla extends Lienzo {
     private int x0() { return (W - (cartas.size() * CW + (cartas.size() - 1) * SEP)) / 2; }
 
     private static int color(Carta c) {
+        if (c.evo()) return 0xFFFFD34E;
         return switch (c.tipo()) { case "arma" -> 0xFFFF8A4D; case "pasiva" -> AZUL; case "curar" -> VERDE; default -> ORO; };
     }
 
@@ -60,13 +61,17 @@ public final class CartasPantalla extends Lienzo {
             boolean sobre = dentro(mx, my, x, y, CW, CH);
             int col = color(c);
             if (sobre) g.fill(x - 3, y - 3, x + CW + 3, y + CH + 3, 0x80FFFFFF);
-            caja(g, x, y, CW, CH, sobre ? 0xFF2A2A45 : 0xFF1B1B30, col);
+            if (c.evo()) {                                              // la carta de evolucion brilla: marco dorado doble que parpadea
+                int a = 0x60 + (int) (0x50 * (0.5 + 0.5 * Math.sin(System.currentTimeMillis() / 220.0)));
+                g.fill(x - 5, y - 5, x + CW + 5, y + CH + 5, (a << 24) | 0xFFD34E);
+            }
+            caja(g, x, y, CW, CH, c.evo() ? (sobre ? 0xFF3A3220 : 0xFF2A2418) : sobre ? 0xFF2A2A45 : 0xFF1B1B30, col);
             g.fill(x + 1, y + 1, x + CW - 1, y + 26, col & 0x00FFFFFF | 0x66000000);
             textoCentrado(g, "[" + (i + 1) + "]", x + CW / 2, y + 9, BLANCO, 1.1f);
             icono(g, c.icono(), x + CW / 2 - 24, y + 36, 3f);
             parrafoCentrado(g, c.titulo(), x + CW / 2, y + 96, CW - 16, BLANCO, 1.25f);
-            String etiqueta = c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
-            if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() ? ORO : col, 1.1f);
+            String etiqueta = c.evo() ? "¡EVOLUCIÓN!" : c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
+            if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() || c.evo() ? ORO : col, 1.1f);
             parrafo(g, c.texto(), x + 12, y + 152, CW - 24, GRIS, 1f);
         }
         // tiempo que queda

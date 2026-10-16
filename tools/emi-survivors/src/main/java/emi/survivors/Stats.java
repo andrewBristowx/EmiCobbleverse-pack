@@ -15,4 +15,10 @@ final class Stats {
     double xp = 1.0;            // multiplicador de la experiencia ganada
     double armadura = 0;        // fraccion del dano de contacto que se evita (0..0,6)
     double monedas = 1.0;       // multiplicador de las monedas al acabar
+    double critico = 0;         // probabilidad de golpe critico (el doble de dano), 0..0,5 (Periscopio)
+    double concha = 0;          // vida que se recupera por cada Pokemon derrotado (Campana Concha)
+    int focus = 0;              // nivel de la Banda Focus (0 = no la lleva): sobrevives a un golpe mortal; mas nivel = se recarga antes
+    double experto = 0;         // dano extra contra campeones y jefes (Cinta Experto)
+    double casco = 0;           // dano que sufre quien te golpea (Casco Dentado)
+    int baya = 0;               // nivel de la Baya Zidra (0 = no la lleva): te cura al bajar del 40 % de vida
 }

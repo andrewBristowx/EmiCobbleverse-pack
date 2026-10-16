@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); cartas(); meta(); datos(); grupos();
+        curvas(); catalogo(); cartas(); objetos(); meta(); datos(); grupos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -63,6 +63,32 @@ public final class PruebaLogica {
         }
         for (Catalogo.Pasiva p : Catalogo.PASIVAS) ok(ids.add(p.id()), "id repetido: " + p.id());
         System.out.println("  " + Catalogo.ARMAS.size() + " ataques, " + Catalogo.PASIVAS.size() + " mejoras pasivas, " + Meta.MEJORAS.size() + " mejoras permanentes");
+        ok(Catalogo.ARMAS.size() == 30 && Catalogo.PASIVAS.size() == 16, "30 ataques y 16 objetos");
+        // nombres e iconos: sin repetir (cada ataque y cada evolucion se reconoce por el suyo)
+        Set<String> nombres = new HashSet<>(), iconos = new HashSet<>();
+        Map<String, Integer> evolucionanCon = new HashMap<>();
+        for (Catalogo.Arma a : Catalogo.ARMAS) {
+            ok(nombres.add(a.nombre()), "nombre de ataque repetido: " + a.nombre());
+            ok(iconos.add(a.icono()), "icono repetido: " + a.icono() + " (" + a.id() + ")");
+            ok(a.evo() != null, "todos los ataques evolucionan: " + a.id());
+            if (a.evo() == null) continue;
+            ok(nombres.add(a.evo().nombre()), "nombre de evolucion repetido: " + a.evo().nombre());
+            ok(Catalogo.pasiva(a.evo().requiere()) != null, "la evolucion de " + a.id() + " pide un objeto que no existe: " + a.evo().requiere());
+            ok(a.evo().texto().length() > 10 && a.evo().texto().length() < 110, "texto de evolucion con una longitud razonable: " + a.id());
+            for (String t : a.textos()) ok(t.length() > 3 && t.length() < 110, "texto de nivel con una longitud razonable: " + a.id() + " -> " + t);
+            evolucionanCon.merge(a.evo().requiere(), 1, Integer::sum);
+        }
+        for (Catalogo.Pasiva p : Catalogo.PASIVAS) {
+            ok(iconos.add(p.icono()), "icono de objeto repetido: " + p.icono() + " (" + p.id() + ")");
+            ok(nombres.add(p.nombre()), "nombre de objeto repetido: " + p.nombre());
+            ok(evolucionanCon.getOrDefault(p.id(), 0) >= 1 || p.id().equals("xp") && false, "el objeto " + p.nombre() + " sirve para evolucionar algun ataque");
+        }
+        System.out.println("  evoluciones por objeto: " + evolucionanCon);
+        ok(Catalogo.focusSegundos(1) == 160 && Catalogo.focusSegundos(5) == 80 && Catalogo.bayaSegundos(1) == 60 && Catalogo.bayaSegundos(5) == 20, "recargas de la Banda Focus y la Baya Zidra");
+        ok(Catalogo.nombre(Catalogo.arma("disparo"), 5).equals("Disparo Rápido") && Catalogo.nombre(Catalogo.arma("disparo"), 6).equals("Ráfaga Infinita"), "el nombre cambia al evolucionar");
+        Map<String, Integer> con = new HashMap<>(Map.of("recarga", 1));
+        ok(!Catalogo.puedeEvolucionar(Catalogo.arma("disparo"), 4, con) && Catalogo.puedeEvolucionar(Catalogo.arma("disparo"), 5, con) && !Catalogo.puedeEvolucionar(Catalogo.arma("disparo"), 6, con)
+                && !Catalogo.puedeEvolucionar(Catalogo.arma("orbes"), 5, con), "solo evoluciona un ataque al nivel 5 con su objeto (y una sola vez)");
         Stats s = new Stats();
         Map<String, Integer> p = new HashMap<>();
         for (Catalogo.Pasiva x : Catalogo.PASIVAS) p.put(x.id(), Catalogo.MAX_NIVEL);
@@ -70,6 +96,11 @@ public final class PruebaLogica {
         System.out.printf("  con todas las pasivas al maximo: vida %.0f regen %.1f vel x%.2f dano x%.2f recarga x%.2f area x%.2f iman %.1f xp x%.2f armadura %.0f%%%n",
                 s.hpMax, s.regen, s.vel, s.dano, s.recarga, s.area, s.iman, s.xp, s.armadura * 100);
         ok(s.recarga > 0.3 && s.armadura <= 0.6, "los limites de recarga y armadura");
+        ok(s.critico <= 0.5 && s.critico > 0.3, "el critico llega al tope de 50%: " + s.critico);
+        ok(s.focus == Catalogo.MAX_NIVEL && s.baya == Catalogo.MAX_NIVEL && s.casco == 40 && Math.abs(s.experto - 0.75) < 1e-9 && Math.abs(s.concha - 2.0) < 1e-9, "efectos de los objetos nuevos al maximo");
+        Stats s3 = new Stats();
+        Catalogo.aplicarPasivas(s3, Map.of("moneda", 5, "critico", 1));
+        ok(Math.abs(s3.monedas - 1.5) < 1e-9 && Math.abs(s3.critico - 0.08) < 1e-9, "Moneda Amuleto +50% y Periscopio +8% al nivel 1");
     }
 
     static void cartas() {
@@ -91,18 +122,56 @@ public final class PruebaLogica {
         for (int i = 0; i < 6; i++) armas.put(Catalogo.ARMAS.get(i).id(), 2);
         for (int i = 0; i < 6; i++) pasivas.put(Catalogo.PASIVAS.get(i).id(), 3);
         for (int i = 0; i < 500; i++) for (Cartas.Carta c : Cartas.sortear(rnd, armas, pasivas)) ok(!c.nueva() || c.tipo().equals("curar") || c.tipo().equals("xp"), "con los huecos llenos no salen cartas nuevas: " + c);
-        // todo al maximo: solo curar y xp
-        armas.replaceAll((k, v) -> Catalogo.MAX_NIVEL); pasivas.replaceAll((k, v) -> Catalogo.MAX_NIVEL);
-        List<Cartas.Carta> l = Cartas.sortear(rnd, armas, pasivas);
-        ok(l.size() == 2 && l.contains(Cartas.CURAR) && l.contains(Cartas.XP), "todo al maximo: solo quedan curar y xp: " + l);
-        // un solo candidato posible
+        // un solo candidato posible: todos los ataques evolucionados menos el tajo (nivel 4), todos los objetos al maximo
         armas.clear(); pasivas.clear();
-        for (Catalogo.Arma a : Catalogo.ARMAS) armas.put(a.id(), a.id().equals("tajo") ? 4 : Catalogo.MAX_NIVEL);
+        for (Catalogo.Arma a : Catalogo.ARMAS) armas.put(a.id(), a.id().equals("tajo") ? 4 : Catalogo.NIVEL_EVO);
         for (Catalogo.Pasiva p : Catalogo.PASIVAS) pasivas.put(p.id(), Catalogo.MAX_NIVEL);
-        armas.remove("disparo");     // 9 armas (tope 6): no se pueden anadir y el tajo sube de 4 a 5
+        List<Cartas.Carta> l = Cartas.sortear(rnd, armas, pasivas);
+        ok(l.get(0).equals(new Cartas.Carta("arma", "tajo", 5)) && l.size() == 3 && l.contains(Cartas.CURAR) && l.contains(Cartas.XP), "la unica subida posible sale primero y se rellena con curar y xp: " + l);
+        // todo al maximo y evolucionado: solo curar y xp
+        armas.put("tajo", Catalogo.NIVEL_EVO);
         l = Cartas.sortear(rnd, armas, pasivas);
-        ok(l.get(0).equals(new Cartas.Carta("arma", "tajo", 5)), "la unica subida posible sale primero: " + l);
+        ok(l.size() == 3 && l.contains(Cartas.CURAR) && l.contains(Cartas.XP) && l.stream().filter(c -> c.tipo().equals("arma") || c.tipo().equals("pasiva")).count() == 0 || l.size() == 2, "todo evolucionado: no queda nada que subir: " + l);
+        // evoluciones: el ataque al nivel 5 con su objeto ofrece la carta dorada, siempre
+        armas.clear(); pasivas.clear();
+        armas.put("disparo", Catalogo.MAX_NIVEL); armas.put("orbes", 3);
+        pasivas.put("area", 1);
+        for (int i = 0; i < 300; i++) for (Cartas.Carta c : Cartas.sortear(rnd, armas, pasivas)) ok(!c.evo(), "sin el objeto de Disparo Rápido no hay evolucion: " + c);
+        pasivas.put("recarga", 1);
+        for (int i = 0; i < 300; i++) {
+            l = Cartas.sortear(rnd, armas, pasivas);
+            ok(l.size() == 3 && l.get(0).equals(new Cartas.Carta("arma", "disparo", Catalogo.NIVEL_EVO)) && l.get(0).evo() && !l.get(0).nueva(), "con el objeto, la evolucion sale la primera: " + l);
+            ok(new HashSet<>(l).size() == 3, "las 3 distintas: " + l);
+        }
+        // dos evoluciones a la vez (como mucho 2 cartas doradas y una normal)
+        armas.put("orbes", Catalogo.MAX_NIVEL);
+        for (int i = 0; i < 300; i++) {
+            l = Cartas.sortear(rnd, armas, pasivas);
+            ok(l.get(0).evo() && l.get(1).evo() && !l.get(2).evo(), "dos evoluciones: salen las dos primero: " + l);
+        }
+        armas.put("disparo", Catalogo.NIVEL_EVO);
+        for (int i = 0; i < 300; i++) for (Cartas.Carta c : Cartas.sortear(rnd, armas, pasivas)) ok(!(c.tipo().equals("arma") && c.id().equals("disparo")), "un ataque ya evolucionado no vuelve a salir: " + c);
+        // reparto por categorias (estado inicial: solo el disparo; sin objetos)
+        armas.clear(); pasivas.clear(); armas.put("disparo", 1);
+        int[] cuenta = new int[4];
+        for (int i = 0; i < 20000; i++) for (Cartas.Carta c : Cartas.sortear(rnd, armas, pasivas)) cuenta[c.tipo().equals("arma") ? (c.nueva() ? 1 : 0) : (c.nueva() ? 3 : 2)]++;
+        System.out.printf("  reparto de cartas al empezar (subir ataque / ataque nuevo / subir objeto / objeto nuevo): %d / %d / %d / %d%n", cuenta[0], cuenta[1], cuenta[2], cuenta[3]);
+        ok(cuenta[0] > 8000 && cuenta[1] > 5000 && cuenta[3] > 3000 && cuenta[2] == 0, "al empezar sale a menudo subir el ataque que ya tienes");
         System.out.println("  sorteos de prueba: bien");
+    }
+
+    static void objetos() {
+        System.out.println("== objetos del suelo");
+        Random rnd = new Random(11);
+        int[] normal = new int[4], campeon = new int[4];
+        for (int i = 0; i < 20000; i++) { normal[Objeto.sortear(rnd, false) - Objeto.BAYA]++; campeon[Objeto.sortear(rnd, true) - Objeto.BAYA]++; }
+        System.out.printf("  reparto (baya / iman / bomba / caramelo): normales %d/%d/%d/%d, campeones %d/%d/%d/%d%n", normal[0], normal[1], normal[2], normal[3], campeon[0], campeon[1], campeon[2], campeon[3]);
+        ok(normal[0] > normal[1] && normal[1] > normal[2] && normal[2] > normal[3] && normal[3] > 1000, "de los normales salen mas bayas que imanes, bombas y caramelos (en ese orden)");
+        ok(campeon[3] > normal[3] && campeon[2] > normal[2], "los campeones sueltan mas bombas y caramelos");
+        for (int t : Objeto.TODOS) ok(Objeto.esObjeto(t) && !Objeto.nombre(t).equals("?") && !Objeto.texto(t).isEmpty(), "objeto " + t + " con nombre y texto");
+        ok(!Objeto.esObjeto(0) && !Objeto.esObjeto(2) && !Objeto.esObjeto(14), "las gemas (0-2) no son objetos");
+        ok(Objeto.porNombre("baya") == Objeto.BAYA && Objeto.porNombre("caramelo") == Objeto.CARAMELO && Objeto.porNombre("nada") == -1, "nombres de los comandos de prueba");
+        ok(Curvas.P_OBJETO > 0 && Curvas.P_OBJETO < 0.02, "pocos objetos de los enemigos normales");
     }
 
     static void meta() {

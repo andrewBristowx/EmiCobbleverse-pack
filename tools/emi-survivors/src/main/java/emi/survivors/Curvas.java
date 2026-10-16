@@ -40,6 +40,9 @@ final class Curvas {
     /** Tope duro de enemigos de un solo equipo, sean los jugadores que sean (el servidor y el cliente aguantan lo que aguantan). */
     static final int TOPE_EQUIPO = 200;
 
+    /** Probabilidad de que un enemigo normal derrotado suelte un objeto (los campeones y el jefe siempre sueltan). */
+    static final double P_OBJETO = 0.006;
+
     /** Cuantos enemigos de mas (en proporcion) hay por cada jugador extra: con 2 jugadores, 1,6 veces; con 3, 2,2; con 4, 2,8 (sin pasar de {@link #TOPE_EQUIPO}). */
     static double escalaCantidad(int jugadores) { return 1 + 0.6 * (Math.max(1, Math.min(4, jugadores)) - 1); }
 

@@ -254,6 +254,10 @@ public final class Partida {
             for (Run r : eq.miembros)
                 sb.append(" | ").append(r.nombre).append(" nivel ").append(r.nivel).append(", vida ").append(Math.max(0, Math.round(r.hp))).append("/").append(Math.round(r.st.hpMax)).append(r.estado == Run.CAIDO ? " (caído)" : r.esperandoCarta ? " (eligiendo carta)" : "");
             sb.append(" | servidor ").append(Run.fmt(eq.med.msptServidor())).append(" ms/tick, nuestro ").append(Run.fmt(eq.med.msNuestro())).append(" ms/tick");
+            if (!eq.objetos.isEmpty()) {
+                sb.append(" | objetos:");
+                for (Objeto o : eq.objetos) sb.append(' ').append(Objeto.nombre(o.tipo)).append('@').append(Math.round(o.x - eq.miembros.get(0).pp.x)).append(',').append(Math.round(o.z - eq.miembros.get(0).pp.z));
+            }
         }
         return sb.toString();
     }
@@ -452,20 +456,35 @@ public final class Partida {
             case "sinxp" -> { r.sinXp = !r.sinXp; return null; }
             case "arma" -> {
                 if (Catalogo.arma(id) == null) return "Ataque desconocido: " + id;
-                int nv = Math.max(1, Math.min(Catalogo.MAX_NIVEL, n));
+                int nv = Math.max(1, Math.min(Catalogo.NIVEL_EVO, n));
                 if (r.armaObj.containsKey(id)) { r.armas.put(id, nv); r.armaObj.get(id).nivel = nv; } else r.agregarArma(id, nv);
             }
             case "solo" -> {
                 if (Catalogo.arma(id) == null) return "Ataque desconocido: " + id;
                 r.armas.clear(); r.armaObj.clear();
-                r.agregarArma(id, Math.max(1, Math.min(Catalogo.MAX_NIVEL, n)));
+                r.agregarArma(id, Math.max(1, Math.min(Catalogo.NIVEL_EVO, n)));
+            }
+            case "dps" -> {                       // mide el dano que hacen los ataques desde la ultima vez (y vuelve a empezar): sale en el registro del servidor
+                double seg = (r.tick - r.dpsTick0) / 20.0;
+                if (r.dpsTick0 >= 0 && seg > 0.5) EmiSurvivors.LOG.info("[dps] ataques={} dano={} en {} s = {} por segundo, derrotados={}, enemigos={}", r.armas, Math.round(r.danoHecho), Run.fmt((float) seg), Run.fmt((float) (r.danoHecho / seg)), r.derrotados - r.dpsDerrotados0, r.enemigos.size());
+                r.danoHecho = 0; r.dpsTick0 = r.tick; r.dpsDerrotados0 = r.derrotados;
+            }
+            case "usar" -> {                      // como si hubieras pisado ese objeto, sin tener que ir a por el
+                int t = Objeto.porNombre(id);
+                if (t < 0) return "Objetos: baya, iman, bomba, caramelo.";
+                r.recoger(t);
+            }
+            case "objeto" -> {
+                int t = Objeto.porNombre(id);
+                if (t < 0) return "Objetos: baya, iman, bomba, caramelo.";
+                r.eq.soltarObjeto(t, r.pp.x + 2.5 + 2.0 * r.eq.objetos.size(), r.pp.z - 1.5);       // cada uno un poco mas lejos del anterior, para verlos todos
             }
             case "pasiva" -> {
                 if (Catalogo.pasiva(id) == null) return "Mejora desconocida: " + id;
                 r.pasivas.put(id, Math.max(1, Math.min(Catalogo.MAX_NIVEL, n)));
                 r.recalcular();
             }
-            default -> { return "Opciones: xp, nivel, tiempo, jefe, elite, curar, dano, sinxp, arma, solo, pasiva."; }
+            default -> { return "Opciones: xp, nivel, tiempo, jefe, elite, curar, dano, sinxp, dps, arma, solo, pasiva, objeto, usar."; }
         }
         return null;
     }

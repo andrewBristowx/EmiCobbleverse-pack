@@ -40,9 +40,11 @@ public final class SurvivorsHud {
             if (p.length < 3) continue;
             Catalogo.Arma a = Catalogo.arma(p[0]);
             int n = Integer.parseInt(p[1]);
-            if (a != null) Lienzo.icono(g, a.icono(), x, ay, 1f);
-            g.drawTextWithShadow(tr, p[2], x + 19, ay + 1, 0xFFFFFFFF);
+            boolean evo = n >= Catalogo.NIVEL_EVO;                       // evolucionado: nombre e icono nuevos, nombre dorado y una estrella
+            if (a != null) Lienzo.icono(g, Catalogo.icono(a, n), x, ay, 1f);
+            g.drawTextWithShadow(tr, p[2], x + 19, ay + 1, evo ? 0xFFFFD34E : 0xFFFFFFFF);
             for (int k = 0; k < Catalogo.MAX_NIVEL; k++) g.fill(x + 19 + k * 5, ay + 11, x + 22 + k * 5, ay + 14, k < n ? 0xFFFFD34E : 0xFF555566);
+            if (evo) g.drawTextWithShadow(tr, "★", x + 19 + Catalogo.MAX_NIVEL * 5 + 1, ay + 8, 0xFFFFE070);
             ay += 18;
         }
         int px = x;

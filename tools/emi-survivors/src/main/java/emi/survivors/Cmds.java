@@ -74,12 +74,12 @@ public final class Cmds {
         for (String k : new String[]{"xp", "nivel", "tiempo", "dano"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("n", IntegerArgumentType.integer(0, 100000))
                     .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", IntegerArgumentType.getInteger(c, "n"))))));
-        for (String k : new String[]{"jefe", "elite", "curar", "sinxp"})
+        for (String k : new String[]{"jefe", "elite", "curar", "sinxp", "dps"})
             dev.then(CommandManager.literal(k).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", 1))));
-        for (String k : new String[]{"arma", "solo", "pasiva"})
+        for (String k : new String[]{"arma", "solo", "pasiva", "objeto", "usar"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word())
                     .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), 1)))
-                    .then(CommandManager.argument("nivel", IntegerArgumentType.integer(1, 5))
+                    .then(CommandManager.argument("nivel", IntegerArgumentType.integer(1, Catalogo.NIVEL_EVO))
                             .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), IntegerArgumentType.getInteger(c, "nivel")))))));
         dev.then(CommandManager.literal("monedas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000))
                 .executes(c -> con(c, () -> Partida.devMonedas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "n"))))));

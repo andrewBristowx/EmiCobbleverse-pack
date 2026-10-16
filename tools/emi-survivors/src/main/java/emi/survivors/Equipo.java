@@ -32,7 +32,7 @@ import java.util.Set;
 final class Equipo {
     static final int RAMPA = 200;               // modo medida: ticks que tarda en llegar al numero de enemigos pedido (10 s)
     static final int MAX_NUEVOS_POR_TICK = 3;   // crear un Pokemon de Cobblemon cuesta: se reparte
-    static final int MAX_GEMAS = 300;
+    static final int MAX_GEMAS = 300, MAX_OBJETOS = 30;
     static final int REVIVIR_TICKS = 60;        // 3 s a su lado para revivir a un companero caido
     static final double REVIVIR_DIST = 2.6;
 
@@ -46,6 +46,7 @@ final class Equipo {
     final List<Run> miembros = new ArrayList<>();
     final List<Enemigo> enemigos = new ArrayList<>();
     final List<Gema> gemas = new ArrayList<>();
+    final List<Objeto> objetos = new ArrayList<>();
     final Medidor med = new Medidor();
     final List<Especies.E> pool1, pool2;
     final Set<String> especiesVistas = new HashSet<>();
@@ -156,7 +157,7 @@ final class Equipo {
                 double dx = en.e.getX() - m.pp.x, dz = en.e.getZ() - m.pp.z, r = en.radio + 0.4;
                 if (dx * dx + dz * dz < r * r && Math.abs(en.e.getY() - m.pp.y) < (en.grande() ? 3.0 : 1.8)) {
                     en.cdContacto = 20;
-                    m.danarJugador(en.dmg);
+                    m.danarJugador(en.dmg, en);
                     break;
                 }
             }
@@ -176,6 +177,7 @@ final class Equipo {
         // 5) gemas, regeneracion y revivir
         for (Run m : miembros) if (m.estado == Run.VIVO && !m.esperandoCarta) m.tickGemasYRegen();
         if (gemas.size() > MAX_GEMAS) fusionarGemas();
+        recogerObjetos();
         revivir();
 
         // 6) interfaz y medidas
@@ -333,15 +335,49 @@ final class Equipo {
         w.spawnParticles(ParticleTypes.POOF, x, y + 0.5, z, en.grande() ? 25 : 6, 0.3, 0.3, 0.3, 0.02);
         en.quitar();
         derrotados++;
-        if (en.ultimo != null && miembros.contains(en.ultimo)) en.ultimo.derrotados++;
+        if (en.ultimo != null && miembros.contains(en.ultimo)) { en.ultimo.derrotados++; en.ultimo.alDerrotar(en); }
         switch (en.tipo) {
             case JEFE -> {
                 jefeDerrotado = true; jefe = null;
                 for (int k = 0; k < 6; k++) { double a = k * Math.PI / 3; gemas.add(new Gema(x + Math.cos(a) * 2.5, z + Math.sin(a) * 2.5, 25)); }
                 for (Run m : miembros) m.premioJefe();
+                soltarObjeto(Objeto.BAYA, x + 1.8, z); soltarObjeto(Objeto.BAYA, x - 1.8, z); soltarObjeto(Objeto.IMAN, x, z + 1.8);
             }
-            case ELITE -> { for (int k = 0; k < 3; k++) { double a = k * Math.PI * 2 / 3; gemas.add(new Gema(x + Math.cos(a) * 1.2, z + Math.sin(a) * 1.2, 5)); } }
-            default -> gemas.add(new Gema(x, z, en.xp));
+            case ELITE -> {
+                for (int k = 0; k < 3; k++) { double a = k * Math.PI * 2 / 3; gemas.add(new Gema(x + Math.cos(a) * 1.2, z + Math.sin(a) * 1.2, 5)); }
+                if (fijo == 0) soltarObjeto(Objeto.sortear(rnd, true), x, z);
+            }
+            default -> {
+                gemas.add(new Gema(x, z, en.xp));
+                if (fijo == 0 && rnd.nextDouble() < Curvas.P_OBJETO) soltarObjeto(Objeto.sortear(rnd, false), x, z);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------ objetos del suelo
+
+    /** Deja un objeto en el suelo (si hay demasiados, desaparece el mas viejo). Dentro de la arena. */
+    void soltarObjeto(int tipo, double x, double z) {
+        double dx = x - ox, dz = z - oz, lim = Arena.RADIO - 2.5, d = Math.sqrt(dx * dx + dz * dz);
+        if (d > lim) { x = ox + dx / d * lim; z = oz + dz / d * lim; }
+        while (objetos.size() >= MAX_OBJETOS) objetos.remove(0);
+        objetos.add(new Objeto(tipo, x, z));
+    }
+
+    /** El primer jugador en pie que pisa un objeto se lo queda; si nadie lo coge, desaparece a los 90 s. */
+    private void recogerObjetos() {
+        for (Iterator<Objeto> it = objetos.iterator(); it.hasNext(); ) {
+            Objeto o = it.next();
+            if (--o.vida <= 0) { it.remove(); continue; }
+            Run quien = null;
+            for (Run m : miembros) {
+                if (m.estado != Run.VIVO || m.esperandoCarta) continue;
+                double dx = m.pp.x - o.x, dz = m.pp.z - o.z;
+                if (dx * dx + dz * dz < 1.3 * 1.3) { quien = m; break; }
+            }
+            if (quien == null) continue;
+            it.remove();
+            quien.recoger(o.tipo);
         }
     }
 
@@ -368,6 +404,7 @@ final class Equipo {
         for (Enemigo en : enemigos) en.quitar();
         enemigos.clear();
         gemas.clear();
+        objetos.clear();
         for (Run m : miembros) m.proyectiles.clear();
     }
 

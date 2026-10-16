@@ -26,12 +26,28 @@ final class Enemigo {
     Run ultimo;                 // el jugador que le dio el ultimo golpe (a el se le cuenta como derrotado)
     double kbx, kbz;            // empuje por golpes (bloques/tick, decae)
     double sepx, sepz;          // separacion de los vecinos (la calcula la partida cada tick)
+    int lentoT, aturdidoT;      // ticks que le quedan ralentizado / aturdido (ataques de hielo, lodo, trueno, terremoto...)
+    double lentoF = 1.0;        // multiplicador de su velocidad mientras esta ralentizado
 
     private Enemigo(PokemonEntity e, Especies.E especie, Tipo tipo, int xp, float hp, float dmg, double velBloquesPorSegundo, double radio) {
         this.e = e; this.especie = especie; this.tipo = tipo; this.xp = xp; this.hp = this.hpMax = hp; this.dmg = dmg; this.vel = velBloquesPorSegundo / 20.0; this.radio = radio;
     }
 
     boolean grande() { return tipo == Tipo.ELITE || tipo == Tipo.JEFE; }
+
+    /** Lo ralentiza ({@code f} = fraccion de su velocidad, 0,5 = va a la mitad) durante {@code ticks}. Los campeones se ralentizan menos y el jefe casi nada. */
+    void ralentizar(int ticks, double f) {
+        if (tipo == Tipo.JEFE) f = Math.max(f, 0.8);
+        else if (tipo == Tipo.ELITE) f = Math.max(f, 0.55);
+        if (lentoT <= 0 || f <= lentoF) lentoF = f;
+        lentoT = Math.max(lentoT, ticks);
+    }
+
+    /** Lo deja quieto {@code ticks} (los campeones, un tercio; el jefe es inmune). */
+    void aturdir(int ticks) {
+        if (tipo == Tipo.JEFE) return;
+        aturdidoT = Math.max(aturdidoT, tipo == Tipo.ELITE ? ticks / 3 : ticks);
+    }
 
     /**
      * Crea y coloca un enemigo; null si Cobblemon no pudo crearlo. {@code hpMul}, {@code dmgMul} y {@code velMul} son los multiplicadores del momento de la partida
@@ -83,6 +99,8 @@ final class Enemigo {
         double dx = ox - e.getX(), dz = oz - e.getZ();
         double d = Math.sqrt(dx * dx + dz * dz);
         double vx = 0, vz = 0;
+        if (aturdidoT > 0) { aturdidoT--; factor = 0; }
+        else if (lentoT > 0) { lentoT--; factor *= lentoF; }
         if (d > radio + 0.2 && factor != 0) { vx = dx / d * vel * factor; vz = dz / d * vel * factor; }
         vx += kbx + sepx; vz += kbz + sepz;
         kbx *= 0.78; kbz *= 0.78;
