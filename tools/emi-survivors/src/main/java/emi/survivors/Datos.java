@@ -63,6 +63,13 @@ final class Datos {
         List<MiembroTop> miembros = new ArrayList<>();
     }
 
+    /** Todas las partidas acabadas (solo las ultimas {@link #MAX_HISTORIAL}), para los tops de hoy, de la semana y del mes. */
+    private static final class HistorialArchivo {
+        List<Entrada> partidas = new ArrayList<>();
+    }
+
+    static final int MAX_HISTORIAL = 3000;
+
     private static final class TopArchivo {
         List<Entrada> entradas = new ArrayList<>();     // en solitario
         List<Entrada> grupos = new ArrayList<>();       // en grupo
@@ -71,6 +78,7 @@ final class Datos {
     private final Path raiz;
     private final Map<UUID, Jugador> jugadores = new HashMap<>();
     private TopArchivo top;
+    private HistorialArchivo historial;
 
     Datos(Path raiz) { this.raiz = raiz; }
 
@@ -110,7 +118,7 @@ final class Datos {
         PokeMeta m = poke(j, pokeId, especie);
         int nivel = m.mejoras.getOrDefault(mejoraId, 0);
         if (nivel >= Meta.MAX) return "Esa mejora ya está al máximo.";
-        int costo = Meta.costo(nivel);
+        int costo = Meta.costo(Meta.mejora(mejoraId), nivel);
         if (j.monedas < costo) return "Te faltan " + (costo - j.monedas) + " michiestrellitas.";
         j.monedas -= costo;
         m.mejoras.put(mejoraId, nivel + 1);
@@ -133,6 +141,7 @@ final class Datos {
     int registrarEquipo(Entrada e) {
         e.fecha = System.currentTimeMillis();
         if (e.miembros == null) e.miembros = new ArrayList<>();
+        anotarHistorial(e);
         List<Entrada> t = lista(e.modo);
         Entrada previa = null;
         for (Entrada x : t) if (x.uuid.equals(e.uuid)) previa = x;
@@ -145,6 +154,51 @@ final class Datos {
         while (t.size() > MAX_TOP) t.remove(t.size() - 1);
         escribir(raiz.resolve("top.json"), top);
         return puesto(e.uuid, e.modo);
+    }
+
+    // ------------------------------------------------------------ historial y tops por periodo
+
+    private HistorialArchivo historial() {
+        if (historial == null) {
+            historial = leer(raiz.resolve("historial.json"), HistorialArchivo.class);
+            if (historial == null) {
+                // primera vez (o partidas anteriores a 0.7.0): se parte de las marcas del top, que ya llevan su fecha
+                historial = new HistorialArchivo();
+                historial.partidas.addAll(top().entradas);
+                historial.partidas.addAll(top().grupos);
+            }
+            if (historial.partidas == null) historial.partidas = new ArrayList<>();
+        }
+        return historial;
+    }
+
+    /** Solo para las pruebas: apunta una partida con su fecha en el historial (sin tocar el top). */
+    void anotarPartidaConFecha(Entrada e) { anotarHistorial(e); }
+
+    private void anotarHistorial(Entrada e) {
+        List<Entrada> h = historial().partidas;
+        h.add(e);
+        while (h.size() > MAX_HISTORIAL) h.remove(0);
+        escribir(raiz.resolve("historial.json"), historial);
+    }
+
+    /** Las {@code n} mejores marcas de ese modo desde {@code desdeMs} (la mejor de cada jugador o grupo en ese tiempo). */
+    List<Entrada> topDesde(String modo, long desdeMs, int n) {
+        Map<String, Entrada> mejor = new HashMap<>();
+        for (Entrada x : historial().partidas) {
+            if (!modo.equals(x.modo == null || x.modo.isEmpty() ? SOLO : x.modo) || x.fecha < desdeMs) continue;
+            Entrada p = mejor.get(x.uuid);
+            if (p == null || x.segundos > p.segundos) mejor.put(x.uuid, x);
+        }
+        List<Entrada> l = new ArrayList<>(mejor.values());
+        ordenar(l);
+        return primeras(l, n);
+    }
+
+    /** El top de un periodo («hoy», «semana», «mes» o «siempre») en solitario o de grupos. */
+    List<Entrada> topPeriodo(String modo, String periodo, int n, long ahoraMs, java.time.ZoneId zona) {
+        if (!Periodos.existe(periodo) || "siempre".equalsIgnoreCase(periodo)) return primeras(lista(modo), n);
+        return topDesde(modo, Periodos.desde(periodo, ahoraMs, zona), n);
     }
 
     // ------------------------------------------------------------ top
@@ -198,8 +252,12 @@ final class Datos {
         if (t.entradas.isEmpty() && t.grupos.isEmpty()) return null;
         String copia = "top_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
         escribir(raiz.resolve(copia), top);
+        historial();                                  // (antes de vaciar el top: si no existia, se crea a partir de el)
         t.entradas.clear(); t.grupos.clear();
         escribir(raiz.resolve("top.json"), top);
+        escribir(raiz.resolve(copia.replace("top_", "historial_")), historial);
+        historial.partidas.clear();
+        escribir(raiz.resolve("historial.json"), historial);
         return copia;
     }
 

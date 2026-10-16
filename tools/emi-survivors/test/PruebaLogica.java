@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -275,15 +275,19 @@ public final class PruebaLogica {
     static void meta() {
         System.out.println("== mejoras permanentes");
         int total = 0;
-        for (int n = 0; n < Meta.MAX; n++) total += Meta.costo(n);
-        System.out.println("  coste de subir una mejora al maximo: " + total + " michiestrellitas; las 7 mejoras: " + total * Meta.MEJORAS.size());
-        ok(Meta.costo(0) == 25 && Meta.costo(4) == 125, "costes 25..125");
+        int totalTodas = 0;
+        for (Meta.Mejora x : Meta.MEJORAS) for (int n = 0; n < Meta.MAX; n++) { totalTodas += Meta.costo(x, n); if (x.base() == 25) total += Meta.costo(x, n); }
+        System.out.println("  coste de subir una mejora basica al maximo: " + total / 7 + " michiestrellitas; las " + Meta.MEJORAS.size() + " mejoras: " + totalTodas);
+        ok(Meta.costo(Meta.mejora("vigor"), 0) == 25 && Meta.costo(Meta.mejora("vigor"), 4) == 125, "costes 25..125 de las basicas");
+        ok(Meta.costo(Meta.mejora("armadura"), 0) == 40 && Meta.costo(Meta.mejora("armadura"), 4) == 200, "costes 40..200 de las de la fase 3A");
+        ok(Meta.MEJORAS.size() == 12, "hay 12 mejoras");
         Stats s = new Stats();
         Map<String, Integer> m = new HashMap<>();
         for (Meta.Mejora x : Meta.MEJORAS) m.put(x.id(), Meta.MAX);
         Meta.aplicar(s, m);
         System.out.printf("  con todas al maximo: vida %.0f dano x%.2f vel x%.3f xp x%.2f iman %.2f regen %.2f monedas x%.2f%n", s.hpMax, s.dano, s.vel, s.xp, s.iman, s.regen, s.monedas);
         ok(s.hpMax == 160, "vigor 5 = +60 de vida");
+        ok(Math.abs(s.armadura - 0.15) < 1e-9 && Math.abs(s.critico - 0.15) < 1e-9 && Math.abs(s.area - 1.2) < 1e-9 && Math.abs(s.recarga - 0.85) < 1e-9 && Math.abs(s.concha - 0.5) < 1e-9, "las 5 mejoras nuevas a nivel 5: armadura/critico 15%, alcance x1,2, rapidez x0,85, vampirismo 0,5");
         Stats s2 = new Stats();
         Meta.aplicar(s2, Map.of("vigor", 99, "mejora_rara", 3));
         ok(s2.hpMax == 160, "un nivel absurdo se recorta al maximo y una mejora desconocida se ignora");
@@ -391,6 +395,40 @@ public final class PruebaLogica {
         g.salir(b); g.salir(c);
         ok(g.todos().isEmpty() && g.salir(c) != null, "sin miembros el grupo desaparece y salir otra vez da error");
         System.out.println("  grupos: bien");
+    }
+
+    static void periodos() throws Exception {
+        System.out.println("== periodos del top");
+        java.time.ZoneId z = java.time.ZoneId.of("Europe/Madrid");
+        long ahora = java.time.ZonedDateTime.of(2026, 10, 16, 15, 30, 0, 0, z).toInstant().toEpochMilli();       // viernes
+        long hoy = Periodos.desde("hoy", ahora, z), semana = Periodos.desde("semana", ahora, z), mes = Periodos.desde("mes", ahora, z);
+        ok(hoy == java.time.ZonedDateTime.of(2026, 10, 16, 0, 0, 0, 0, z).toInstant().toEpochMilli(), "hoy empieza a las 00:00");
+        ok(semana == java.time.ZonedDateTime.of(2026, 10, 12, 0, 0, 0, 0, z).toInstant().toEpochMilli(), "la semana empieza el lunes 12");
+        ok(mes == java.time.ZonedDateTime.of(2026, 10, 1, 0, 0, 0, 0, z).toInstant().toEpochMilli(), "el mes empieza el 1");
+        ok(Periodos.desde("siempre", ahora, z) == 0 && Periodos.existe("Hoy") && !Periodos.existe("ayer"), "siempre = 0; nombres validos");
+        // historial: partidas con fechas distintas
+        Path dir = Files.createTempDirectory("survivors_per");
+        Datos d = new Datos(dir);
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        long dia = 86_400_000L;
+        d.anotarPartidaConFecha(entradaFecha(a, "Ana", 500, ahora - 20 * dia));      // el mes pasado... (20 dias antes: 26 sep)
+        d.anotarPartidaConFecha(entradaFecha(a, "Ana", 300, ahora - 3 * dia));       // esta semana? 13 oct: si
+        d.anotarPartidaConFecha(entradaFecha(b, "Bea", 200, ahora - 1000));          // hoy
+        d.anotarPartidaConFecha(entradaFecha(b, "Bea", 100, ahora - 5 * dia));       // 11 oct: este mes, no esta semana
+        List<Datos.Entrada> h = d.topDesde(Datos.SOLO, hoy, 10), s = d.topDesde(Datos.SOLO, semana, 10), m = d.topDesde(Datos.SOLO, mes, 10);
+        ok(h.size() == 1 && h.get(0).nombre.equals("Bea"), "hoy: solo Bea");
+        ok(s.size() == 2 && s.get(0).nombre.equals("Ana") && s.get(0).segundos == 300 && s.get(1).segundos == 200, "semana: Ana 300 (la de hace 3 dias) y Bea 200");
+        ok(m.size() == 2 && m.get(0).segundos == 300 && m.get(1).segundos == 200, "mes: lo mismo (la de hace 20 dias es del mes pasado)");
+        ok(d.topDesde(Datos.SOLO, 0, 10).get(0).segundos == 500, "siempre: Ana 500");
+        Datos d2 = new Datos(dir);
+        ok(d2.topDesde(Datos.SOLO, semana, 10).size() == 2, "el historial sobrevive a un reinicio");
+        System.out.println("  periodos: bien");
+    }
+
+    static Datos.Entrada entradaFecha(UUID id, String nombre, int seg, long fecha) {
+        Datos.Entrada e = entrada("pikachu", seg, 10);
+        e.uuid = id.toString(); e.nombre = nombre; e.fecha = fecha;
+        return e;
     }
 
     static void biomas() {

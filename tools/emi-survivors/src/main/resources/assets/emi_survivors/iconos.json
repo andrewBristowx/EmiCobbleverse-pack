@@ -106,10 +106,15 @@
   "m_vigor": [2, 6],
   "m_iman": [3, 6],
   "m_recuperacion": [4, 6],
-  "x_curar": [5, 6],
-  "x_xp": [6, 6],
-  "b_pradera": [7, 6],
-  "b_bosque": [8, 6],
-  "b_cosmos": [9, 6]
+  "m_armadura": [5, 6],
+  "m_critico": [6, 6],
+  "m_area": [7, 6],
+  "m_recarga": [8, 6],
+  "m_concha": [9, 6],
+  "x_curar": [10, 6],
+  "x_xp": [11, 6],
+  "b_pradera": [12, 6],
+  "b_bosque": [13, 6],
+  "b_cosmos": [14, 6]
  }
 }

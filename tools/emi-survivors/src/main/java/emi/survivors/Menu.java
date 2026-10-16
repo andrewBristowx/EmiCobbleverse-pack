@@ -120,7 +120,7 @@ final class Menu {
             JsonObject e = new JsonObject();
             e.addProperty("id", m.id()); e.addProperty("nombre", m.nombre()); e.addProperty("texto", m.texto()); e.addProperty("icono", m.icono());
             JsonArray costos = new JsonArray();
-            for (int n = 0; n < Meta.MAX; n++) costos.add(Meta.costo(n));
+            for (int n = 0; n < Meta.MAX; n++) costos.add(Meta.costo(m, n));
             e.add("costos", costos);
             cat.add(e);
         }
@@ -128,6 +128,15 @@ final class Menu {
 
         o.add("top", topJson(d.top(10), p));
         o.add("topGrupos", topJson(d.topGrupos(10), p));
+        // los tops por periodo (hoy, semana, mes y siempre), en solitario y de grupos
+        JsonObject tops = new JsonObject();
+        long ahora = System.currentTimeMillis();
+        for (String modo : new String[]{Datos.SOLO, Datos.GRUPO}) {
+            JsonObject por = new JsonObject();
+            for (String per : Periodos.TODOS) por.add(per, topJson(d.topPeriodo(modo, per, 10, ahora, java.time.ZoneId.systemDefault()), p));
+            tops.add(modo, por);
+        }
+        o.add("tops", tops);
 
         // el grupo del jugador (si esta en uno) y los grupos a los que se puede unir
         Grupos.Grupo g = Partida.grupos.de(p.getUuid());

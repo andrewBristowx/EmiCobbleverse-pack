@@ -265,6 +265,6 @@ OBJETOS = {
 }
 
 # las mejoras permanentes que reusan el dibujo de un objeto (el id de la mejora -> el id del objeto) y las que tienen el suyo
-MEJORAS_USAN = {'vigor': 'vida', 'iman': 'iman', 'recuperacion': 'regen'}
+MEJORAS_USAN = {'vigor': 'vida', 'iman': 'iman', 'recuperacion': 'regen', 'armadura': 'armadura', 'critico': 'critico', 'area': 'area', 'recarga': 'recarga', 'concha': 'concha'}
 MEJORAS_PROPIAS = {'fuerza': g_fuerza, 'agilidad': g_agilidad, 'sabiduria': g_sabiduria, 'suerte': g_suerte}
 OTROS = {'curar': g_curar, 'xp': g_estrella_xp}

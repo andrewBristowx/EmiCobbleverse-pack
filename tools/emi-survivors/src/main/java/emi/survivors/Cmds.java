@@ -43,8 +43,11 @@ public final class Cmds {
             if (Partida.participa(p)) return "Estás en una partida.";
             Menu.enviar(p, "jugar", null); return null;
         })));
-        root.then(CommandManager.literal("top").executes(c -> { top(c, 10); return 1; })
-                .then(CommandManager.argument("cuantos", IntegerArgumentType.integer(1, 100)).executes(c -> { top(c, IntegerArgumentType.getInteger(c, "cuantos")); return 1; }))
+        root.then(CommandManager.literal("top").executes(c -> { top(c, "siempre", 10); return 1; })
+                .then(CommandManager.argument("periodo", StringArgumentType.word()).suggests((c, b) -> { for (String p : Periodos.TODOS) b.suggest(p); return b.buildFuture(); })
+                        .executes(c -> { top(c, StringArgumentType.getString(c, "periodo"), 10); return 1; })
+                        .then(CommandManager.argument("n", IntegerArgumentType.integer(1, 100)).executes(c -> { top(c, StringArgumentType.getString(c, "periodo"), IntegerArgumentType.getInteger(c, "n")); return 1; })))
+                .then(CommandManager.argument("cuantos", IntegerArgumentType.integer(1, 100)).executes(c -> { top(c, "siempre", IntegerArgumentType.getInteger(c, "cuantos")); return 1; }))
                 .then(admin("reiniciar").executes(c -> {
                     String copia = Partida.datos == null ? null : Partida.datos.reiniciarTop();
                     c.getSource().sendFeedback(() -> Msg.say(copia == null ? "El top ya estaba vacío." : "Top reiniciado. Copia del anterior guardada en emi_survivors/" + copia), true);
@@ -119,10 +122,13 @@ public final class Cmds {
         d.register(root);
     }
 
-    private static void top(CommandContext<ServerCommandSource> c, int n) {
+    private static void top(CommandContext<ServerCommandSource> c, String periodo, int n) {
         if (Partida.datos == null) { c.getSource().sendError(Msg.err("El minijuego aun no esta listo.")); return; }
-        mostrarTop(c, "Top en solitario (el tiempo aguantado, la mejor marca de cada jugador):", Partida.datos.top(n));
-        mostrarTop(c, "Top de grupos (lo que ha aguantado todo el equipo):", Partida.datos.topGrupos(n));
+        if (!Periodos.existe(periodo)) { c.getSource().sendError(Msg.err("Ese periodo no existe: hoy, semana, mes o siempre.")); return; }
+        String per = periodo.toLowerCase(), de = "siempre".equals(per) ? "" : " de " + ("hoy".equals(per) ? "hoy" : "semana".equals(per) ? "esta semana" : "este mes");
+        long ahora = System.currentTimeMillis();
+        mostrarTop(c, "Top en solitario" + de + " (el tiempo aguantado, la mejor marca de cada jugador):", Partida.datos.topPeriodo(Datos.SOLO, per, n, ahora, java.time.ZoneId.systemDefault()));
+        mostrarTop(c, "Top de grupos" + de + " (lo que ha aguantado todo el equipo):", Partida.datos.topPeriodo(Datos.GRUPO, per, n, ahora, java.time.ZoneId.systemDefault()));
     }
 
     private static void mostrarTop(CommandContext<ServerCommandSource> c, String titulo, java.util.List<Datos.Entrada> lista) {

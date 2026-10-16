@@ -74,6 +74,11 @@ public final class MenuPantalla extends Lienzo {
     private String biomaGrupo = "pradera";
     private Resultado resultado;
     private boolean enGrupo, soyLider, grupoJugando, topDeGrupos;
+    /** Pagina de MEJORAS (6 por pagina) y periodo del TOP (0 hoy, 1 semana, 2 mes, 3 siempre). */
+    private int pagMejoras, periodo = 3;
+    private static final String[] PERIODOS = {"hoy", "semana", "mes", "siempre"}, PERIODOS_TXT = {"HOY", "SEMANA", "MES", "SIEMPRE"};
+    private static final int POR_PAGINA = 6;
+    private final Map<String, List<Marca>> tops = new HashMap<>();
     private int maxGrupo = 4;
     private long ultimoRefresco = System.currentTimeMillis();
     private int monedas, partidas, maxPartidas, miPuesto, miMejor;
@@ -147,6 +152,16 @@ public final class MenuPantalla extends Lienzo {
             List<String> tp = new ArrayList<>();
             if (j.has("tipos")) for (JsonElement tt : j.getAsJsonArray("tipos")) tp.add(tt.getAsString());
             biomas.add(new Bioma(j.get("id").getAsString(), j.get("nombre").getAsString(), j.get("texto").getAsString(), j.get("color").getAsInt(), tp));
+        }
+        tops.clear();
+        if (o.has("tops")) for (var modo : o.getAsJsonObject("tops").entrySet()) for (var per : modo.getValue().getAsJsonObject().entrySet()) {
+            List<Marca> l = new ArrayList<>();
+            for (JsonElement e : per.getValue().getAsJsonArray()) {
+                JsonObject j = e.getAsJsonObject();
+                l.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
+                        j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : 0));
+            }
+            tops.put(modo.getKey() + "/" + per.getKey(), l);
         }
         miembros.clear(); abiertos.clear();
         enGrupo = false; soyLider = false; grupoJugando = false;
@@ -383,15 +398,25 @@ public final class MenuPantalla extends Lienzo {
         if (p == null) { parrafo(g, "Cuando tengas un Pokémon en tu equipo podrás mejorarlo.", RX, CY + 20, RW, GRIS, 1f); return; }
         texto(g, "Mejoras permanentes de " + p.titulo(), RX, CY - 2, ORO, 1.2f);
         texto(g, "Se compran con michiestrellitas y cuentan en todas sus partidas.", RX, CY + 12, GRIS, 0.85f);
-        for (int i = 0; i < catalogo.size(); i++) {
+        int paginas = Math.max(1, (catalogo.size() + POR_PAGINA - 1) / POR_PAGINA);
+        pagMejoras = Math.min(pagMejoras, paginas - 1);
+        if (paginas > 1) {
+            boolean sA = dentro(mx, my, RX + 262, CY - 4, 26, 16), sB = dentro(mx, my, RX + 334, CY - 4, 26, 16);
+            boton(g, RX + 262, CY - 4, 26, 16, "<", 0xFF3A3A66, pagMejoras > 0, sA, 0.9f);
+            textoCentrado(g, (pagMejoras + 1) + "/" + paginas, RX + 311, CY, BLANCO, 0.85f);
+            boton(g, RX + 334, CY - 4, 26, 16, ">", 0xFF3A3A66, pagMejoras < paginas - 1, sB, 0.9f);
+        }
+        for (int k = 0; k < POR_PAGINA; k++) {
+            int i = pagMejoras * POR_PAGINA + k;
+            if (i >= catalogo.size()) break;
             Mejora m = catalogo.get(i);
-            int y = CY + 28 + i * 34;
+            int y = CY + 28 + k * 34;
             int nivel = p.mejoras.getOrDefault(m.id(), 0);
             caja(g, RX, y, RW, 31, 0xFF1B1B30, 0xFF55557A);
             icono(g, m.icono(), RX + 4, y + 3, 1f);
             texto(g, m.nombre(), RX + 33, y + 5, BLANCO, 1f);
             texto(g, m.texto(), RX + 33, y + 17, GRIS, 0.75f);
-            for (int k = 0; k < m.costos().length; k++) g.fill(RX + 212 + k * 9, y + 5, RX + 219 + k * 9, y + 11, k < nivel ? 0xFFFFD34E : 0xFF555566);
+            for (int q = 0; q < m.costos().length; q++) g.fill(RX + 212 + q * 9, y + 5, RX + 219 + q * 9, y + 11, q < nivel ? 0xFFFFD34E : 0xFF555566);
             int bx = RX + 266, bw = 88;
             if (nivel >= m.costos().length) boton(g, bx, y + 4, bw, 22, "AL MÁXIMO", 0xFF555566, false, false, 0.9f);
             else {
@@ -450,20 +475,25 @@ public final class MenuPantalla extends Lienzo {
     private static String recortar(String s, int max) { return s.length() <= max ? s : s.substring(0, max - 1) + "…"; }
 
     private void clasificacion(DrawContext g, int mx, int my) {
-        texto(g, topDeGrupos ? "Las mejores marcas de grupos: lo que ha aguantado todo el equipo" : "Las mejores marcas en solitario: el tiempo que has aguantado vivo", 20, CY - 2, ORO, 1.1f);
+        for (int i = 0; i < PERIODOS.length; i++) {
+            int bx = 20 + i * 72;
+            boolean act = i == periodo, sobre = dentro(mx, my, bx, CY - 6, 68, 16);
+            caja(g, bx, CY - 6, 68, 16, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : 0xFF1B1B30, act ? ORO : 0xFF55557A);
+            textoCentrado(g, PERIODOS_TXT[i], bx + 34, CY - 2, act ? ORO : BLANCO, 0.85f);
+        }
         boolean sobreS = dentro(mx, my, 392, CY - 6, 108, 16), sobreG = dentro(mx, my, 506, CY - 6, 114, 16);
         caja(g, 392, CY - 6, 108, 16, !topDeGrupos ? 0xFF3A3A66 : sobreS ? 0xFF2A2A4A : 0xFF1B1B30, !topDeGrupos ? ORO : 0xFF55557A);
         textoCentrado(g, "EN SOLITARIO", 446, CY - 2, !topDeGrupos ? ORO : BLANCO, 0.85f);
         caja(g, 506, CY - 6, 114, 16, topDeGrupos ? 0xFF3A3A66 : sobreG ? 0xFF2A2A4A : 0xFF1B1B30, topDeGrupos ? ORO : 0xFF55557A);
         textoCentrado(g, "EN GRUPO", 563, CY - 2, topDeGrupos ? ORO : BLANCO, 0.85f);
-        List<Marca> lista = topDeGrupos ? topGrupos : top;
+        List<Marca> lista = tops.getOrDefault((topDeGrupos ? "grupo/" : "solo/") + PERIODOS[periodo], topDeGrupos ? topGrupos : top);
         int y = CY + 20;
         g.fill(20, y, 620, y + 16, 0xFF2A2A48);
         String[] cab = topDeGrupos ? new String[]{"#", "Equipo", "", "Tiempo", "Derrotados", "Nivel"} : new String[]{"#", "Jugador", "Pokémon", "Tiempo", "Derrotados", "Nivel"};
         int[] xs = {28, 60, 220, 340, 420, 520};
         for (int i = 0; i < cab.length; i++) texto(g, cab[i], xs[i], y + 4, GRIS, 0.9f);
         y += 18;
-        if (lista.isEmpty()) texto(g, topDeGrupos ? "Todavía no hay marcas de grupos. ¡Sed los primeros!" : "Todavía no hay marcas. ¡Sé el primero!", 28, y + 10, BLANCO, 1.1f);
+        if (lista.isEmpty()) texto(g, periodo == 3 ? (topDeGrupos ? "Todavía no hay marcas de grupos. ¡Sed los primeros!" : "Todavía no hay marcas. ¡Sé el primero!") : "Nadie ha jugado " + (periodo == 0 ? "hoy" : periodo == 1 ? "esta semana" : "este mes") + " todavía. ¡Sé el primero!", 28, y + 10, BLANCO, 1.1f);
         for (Marca m : lista) {
             g.fill(20, y, 620, y + 20, m.mio() ? 0x663A3A10 : ((m.pos() & 1) == 0 ? 0x22FFFFFF : 0x11FFFFFF));
             int col = m.mio() ? ORO : m.pos() == 1 ? 0xFFFFE070 : BLANCO;
@@ -501,14 +531,20 @@ public final class MenuPantalla extends Lienzo {
         }
         if (tab == T_JUGAR && p != null && dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32)) { botonJugar(p); return; }
         if (tab == T_MEJORAS && p != null) {
-            for (int i = 0; i < catalogo.size(); i++) {
+            int paginas = Math.max(1, (catalogo.size() + POR_PAGINA - 1) / POR_PAGINA);
+            if (paginas > 1 && dentro(mx, my, RX + 262, CY - 4, 26, 16) && pagMejoras > 0) { pagMejoras--; return; }
+            if (paginas > 1 && dentro(mx, my, RX + 334, CY - 4, 26, 16) && pagMejoras < paginas - 1) { pagMejoras++; return; }
+            for (int k = 0; k < POR_PAGINA; k++) {
+                int i = pagMejoras * POR_PAGINA + k;
+                if (i >= catalogo.size()) break;
                 Mejora m = catalogo.get(i);
-                int y = CY + 28 + i * 34, nivel = p.mejoras.getOrDefault(m.id(), 0);
+                int y = CY + 28 + k * 34, nivel = p.mejoras.getOrDefault(m.id(), 0);
                 if (nivel < m.costos().length && monedas >= m.costos()[nivel] && dentro(mx, my, RX + 266, y + 4, 88, 22)) { enviar("comprar", p.id, m.id()); return; }
             }
         }
         if (tab == T_GRUPO) clicGrupo(mx, my);
         if (tab == T_TOP) {
+            for (int i = 0; i < PERIODOS.length; i++) if (dentro(mx, my, 20 + i * 72, CY - 6, 68, 16)) periodo = i;
             if (dentro(mx, my, 392, CY - 6, 108, 16)) topDeGrupos = false;
             else if (dentro(mx, my, 506, CY - 6, 114, 16)) topDeGrupos = true;
         }
