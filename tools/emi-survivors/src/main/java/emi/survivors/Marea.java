@@ -37,7 +37,7 @@ final class Marea {
     // estampida
     private final List<double[]> carriles = new ArrayList<>();         // {x0, z0, ux, uz, largo}
     private final List<Entity[]> marcas = new ArrayList<>();           // {fondo, relleno} de cada carril
-    private int salidas;
+    private int salidas, ultimaSalida;
 
     Marea(Equipo eq, Mareas.Tipo tipo, int numero, Mareas.TipoPk pk) {
         this.eq = eq; this.tipo = tipo; this.numero = numero; this.pk = pk; this.rnd = eq.rnd;
@@ -109,7 +109,7 @@ final class Marea {
         }
         if (t < AVISO_CERCO) return false;
         if (t == AVISO_CERCO) {
-            int total = Mareas.cerco(eq.tick / 20.0, eq.miembros.size());
+            int total = Math.min(Mareas.cerco(eq.tick / 20.0, eq.miembros.size()), eq.espacioEventos());
             double medio = Math.toRadians(30);
             for (int k = 0; k < total; k++) {
                 double a = ang0 + medio + (Math.PI * 2 - 2 * medio) * (k + 0.5) / total, r = 13.5 + rnd.nextDouble() * 2.5;
@@ -158,8 +158,9 @@ final class Marea {
             for (Entity[] m : marcas) { quitar(m[0]); quitar(m[1]); }
             marcas.clear();
             sonido();
+            ultimaSalida = Math.max(3, Math.min(Mareas.porCarril(eq.tick / 20.0), eq.espacioEventos() / Math.max(1, carriles.size())));       // cuantos salen por carril (se decide una vez)
         }
-        int ultimo = Mareas.porCarril(eq.tick / 20.0);
+        int ultimo = ultimaSalida;
         if ((t - AVISO_ESTAMPIDA) % SEPARACION_SALIDAS == 0 && salidas < ultimo) {
             for (double[] c : carriles) eq.crearCorredor(c[0], c[1], c[2], c[3], c[4]);
             salidas++;

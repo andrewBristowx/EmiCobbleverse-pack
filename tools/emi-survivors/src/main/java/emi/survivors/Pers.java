@@ -27,7 +27,7 @@ enum Pers {
         this.nombre = nombre; this.color = color; this.vida = vida; this.dano = dano; this.vel = vel; this.tam = tam;
     }
 
-    /** Probabilidad de que un enemigo normal nuevo tenga personalidad: 0 el primer minuto y luego sube hasta un 25 % (a los 8 minutos y medio). */
+    /** Probabilidad de que un enemigo normal nuevo tenga personalidad: 0 el primer minuto y luego sube hasta un 25 % (a los 6:50). */
     static double probabilidad(double t) { return Math.min(0.25, Math.max(0, (t - 60) / 1400.0)); }
 
     static Pers sortear(Random rnd) { Pers[] v = values(); return v[rnd.nextInt(v.length)]; }

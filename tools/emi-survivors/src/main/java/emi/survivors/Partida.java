@@ -84,6 +84,7 @@ public final class Partida {
         for (Entity e : w.iterateEntities()) if (e.getCommandTags().contains("emi_survivors")) borrar.add(e);
         for (Entity e : borrar) e.discard();
         if (!borrar.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} enemigos que habian quedado de una partida anterior.", borrar.size());
+        Colores.limpiarTodos(s);                                  // los equipos de colores del marcador (contorno de los enemigos con personalidad) que pudieran haber quedado
         try { ServerWorld sala = Mundo.sala(); if (sala != null) Mundo.construirSala(sala); else EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:entrada."); }
         catch (Throwable t) { EmiSurvivors.LOG.error("No se pudo construir la sala de entrada", t); }
     }
@@ -254,6 +255,9 @@ public final class Partida {
                     .append(eq.derrotados).append(" derrotados");
             for (Run r : eq.miembros)
                 sb.append(" | ").append(r.nombre).append(" nivel ").append(r.nivel).append(", vida ").append(Math.max(0, Math.round(r.hp))).append("/").append(Math.round(r.st.hpMax)).append(r.estado == Run.CAIDO ? " (caído)" : r.esperandoCarta ? " (eligiendo carta)" : "");
+            if (eq.jefe != null && eq.jefe.vivo()) sb.append(" | jefe ").append(eq.jefe.nombre).append(" ").append(Math.round(eq.jefe.en.hp)).append("/").append(Math.round(eq.jefe.en.hpMax)).append(eq.jefe.furia ? " (furia)" : "");
+            if (eq.marea != null) sb.append(" | marea ").append(eq.marea.titulo()).append(" (").append(eq.marea.segundosRestantes()).append(" s)");
+            sb.append(" | jefes derrotados ").append(eq.jefesDerrotados);
             sb.append(" | servidor ").append(Run.fmt(eq.med.msptServidor())).append(" ms/tick, nuestro ").append(Run.fmt(eq.med.msNuestro())).append(" ms/tick");
             if (!eq.objetos.isEmpty()) {
                 sb.append(" | objetos:");

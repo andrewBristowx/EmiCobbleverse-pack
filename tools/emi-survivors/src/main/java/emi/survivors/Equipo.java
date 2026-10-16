@@ -147,7 +147,10 @@ final class Equipo {
             }
             if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
             if ((jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.tocan(t)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
-            if (marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < Mareas.tocan(t)) iniciarMarea(++mareasSalidas, null);
+            if (marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < Mareas.tocan(t)) {
+                mareasSalidas = Math.max(mareasSalidas, Mareas.tocan(t) - 1);          // si una marea llega tarde (habia un jefe vivo), las que se perdieron no se acumulan
+                iniciarMarea(++mareasSalidas, null);
+            }
         }
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
@@ -344,6 +347,15 @@ final class Equipo {
         }
         Colores.marcar(en, p.color);
         if (!avisoPers) { avisoPers = true; avisar(Msg.say(Pers.LEYENDA)); }
+    }
+
+    /**
+     * Cuantos enemigos mas puede traer ahora un suceso (el cerco, la estampida): los sucesos se saltan el tope normal de enemigos, asi que tienen su propio margen
+     * (30 por encima del tope del equipo) y se reducen si el servidor va justo ({@link Partida#factorRendimiento}).
+     */
+    int espacioEventos() {
+        int tope = Math.min(Curvas.TOPE_EQUIPO, Partida.topePorEquipo() + 40) + 30;
+        return (int) Math.max(0, (tope - enemigos.size()) * Partida.factorRendimiento());
     }
 
     /** Un enemigo normal en un sitio dado (los usan las mareas: el cerco). Devuelve null si no se pudo. */
