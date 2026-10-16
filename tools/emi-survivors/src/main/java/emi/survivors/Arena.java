@@ -22,11 +22,11 @@ final class Arena {
      * Pone {@code n} rocas de 2x2x2 entre 10 y 42 bloques del centro (para probar colisiones); devuelve las posiciones de todos sus bloques.
      * Debajo de cada roca se pone piedra: la hierba con un bloque encima se convierte en tierra y se quedaria asi al quitar la roca.
      */
-    static List<BlockPos> colocarRocas(ServerWorld w, Random rnd, int n) {
+    static List<BlockPos> colocarRocas(ServerWorld w, Random rnd, int n, int ox, int oz) {
         List<BlockPos> bloques = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             double ang = rnd.nextDouble() * Math.PI * 2, r = 10 + rnd.nextDouble() * 32;
-            int x = (int) Math.round(Math.cos(ang) * r), z = (int) Math.round(Math.sin(ang) * r);
+            int x = ox + (int) Math.round(Math.cos(ang) * r), z = oz + (int) Math.round(Math.sin(ang) * r);
             for (int dx = 0; dx < 2; dx++) for (int dz = 0; dz < 2; dz++) {
                 BlockPos suelo = new BlockPos(x + dx, (int) Y0 - 1, z + dz);
                 w.setBlockState(suelo, Blocks.STONE.getDefaultState());
@@ -40,6 +40,9 @@ final class Arena {
         }
         return bloques;
     }
+
+    /** ¿Esta el punto (x, z) dentro de la arena de esta partida, con un margen respecto al borde? (por ahora toda la llanura vale; la arena con muro llega despues) */
+    static boolean dentro(Run r, double x, double z, double margen) { return true; }
 
     /** Quita las rocas y devuelve la hierba a su sitio (los bloques a la altura del suelo se vuelven hierba; los de encima, aire). */
     static void quitarRocas(ServerWorld w, List<BlockPos> bloques) {

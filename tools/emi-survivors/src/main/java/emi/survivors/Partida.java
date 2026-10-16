@@ -4,6 +4,8 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import emi.survivors.net.EstadoPayload;
+import emi.survivors.net.GemasPayload;
+import emi.survivors.net.TextoPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -20,28 +22,35 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Controla la partida de la fase 0: empezarla (guardar al jugador, llevarlo a la arena, transformarlo en su Pokemon), llamarla cada tick, y acabarla
- * (limpiar la arena, devolver al jugador a su sitio y contar lo que paso). Solo hay una partida a la vez y un jugador por partida; el multijugador
- * (grupos de hasta 4) llega en la fase 2.
+ * Controla las partidas: empezarlas (guardar al jugador, llevarlo a su arena, transformarlo en su Pokemon), llamarlas cada tick, y acabarlas (limpiar la arena,
+ * devolver al jugador a su sitio y contar lo que paso). Puede haber varias partidas a la vez, cada una de UN jugador y en su propia arena (a 1024 bloques de las
+ * demas); el multijugador de verdad (grupos de hasta 4 en la misma arena) llega en la fase 2.
  */
 public final class Partida {
     private Partida() {}
 
-    static final int HP_MAX = 100;
     static final double VELOCIDAD = 0.14;            // atributo de velocidad del jugador (0,1 = andar normal de Minecraft); 0,14 = ~6 bloques/s
+    static final double SEPARACION = 1024.0;         // distancia entre las arenas de partidas simultaneas
+    static final int MAX_PARTIDAS = Integer.getInteger("emi.survivors.max_partidas", 4);
     private static final Identifier ID_VEL = Identifier.of("emi_survivors", "velocidad");
     private static final Identifier ID_SALTO = Identifier.of("emi_survivors", "sin_salto");
+    private static final Identifier ID_ESCALA = Identifier.of("emi_survivors", "escala");
+    /** Altura (bloques) a la que se normaliza el tamano del Pokemon del jugador: asi un Unown diminuto y un Snorlax se ven parecidos de grandes. */
+    static final double ALTURA_JUGADOR = 1.7;
 
     static MinecraftServer server;
-    static Run run;
+    static Datos datos;
+    static final Map<UUID, Run> runs = new LinkedHashMap<>();
     /** Modo prueba: el jugador no pierde vida (para medir el rendimiento sin que la partida acabe). */
     static boolean inmortal;
 
@@ -54,7 +63,8 @@ public final class Partida {
 
     static void init(MinecraftServer s) {
         server = s;
-        run = null;
+        runs.clear();
+        datos = new Datos(s.getSavePath(WorldSavePath.ROOT).resolve("emi_survivors"));
         ServerWorld w = mundo();
         if (w == null) { EmiSurvivors.LOG.warn("No existe la dimension emi_survivors:arena: el minijuego no funcionara."); return; }
         // restos de una partida anterior que no pudo limpiarse (servidor parado a la fuerza): enemigos con nuestra etiqueta
@@ -65,16 +75,26 @@ public final class Partida {
     }
 
     static void shutdown() {
-        if (run != null) terminar(run, "El servidor se apaga.");
+        for (Run r : new ArrayList<>(runs.values())) terminar(r, "El servidor se apaga.");
         try { Pausas.reanudar(); } catch (Throwable t) { /* nada */ }
     }
 
-    public static boolean participa(PlayerEntity p) { return run != null && run.id.equals(p.getUuid()); }
+    public static boolean participa(PlayerEntity p) { return runs.containsKey(p.getUuid()); }
+
+    static Run de(UUID id) { return runs.get(id); }
+
+    /** Cuantos enemigos se permiten segun lo cargado que va el servidor: si los ticks tardan mucho, se crean menos (proteccion del servidor). */
+    static double factorRendimiento() {
+        if (server == null) return 1.0;
+        float ms = server.getAverageTickTime();
+        return ms > 46 ? 0.3 : ms > 42 ? 0.5 : ms > 38 ? 0.75 : 1.0;
+    }
 
     static void tick(MinecraftServer s) {
-        if (run != null) {
-            try { run.tick(); }
-            catch (Throwable t) { EmiSurvivors.LOG.error("Error en la partida; se cancela", t); if (run != null) terminar(run, "Error interno: se cancela la partida."); }
+        for (Run r : new ArrayList<>(runs.values())) {
+            if (runs.get(r.id) != r) continue;
+            try { r.tick(); }
+            catch (Throwable t) { EmiSurvivors.LOG.error("Error en la partida de {}; se cancela", r.nombre, t); terminar(r, "Error interno: se cancela la partida."); }
         }
         // devolver sus cosas a quien volvio a entrar despues de que el servidor se parara en plena partida
         for (int i = pendientes.size() - 1; i >= 0; i--) {
@@ -91,75 +111,113 @@ public final class Partida {
 
     // ---------------------------------------------------------------- comandos
 
-    /** Empieza una partida de prueba para {@code p}: {@code enemigos} Pokemon a la vez, con el Pokemon del hueco {@code slot} (1..6) del equipo. */
-    public static String prueba(ServerPlayerEntity p, int enemigos, int slot) {
+    private static int huecoLibre() {
+        for (int slot = 0; slot < MAX_PARTIDAS; slot++) {
+            boolean usado = false;
+            for (Run r : runs.values()) if (r.slot == slot) usado = true;
+            if (!usado) return slot;
+        }
+        return -1;
+    }
+
+    /**
+     * Empieza una partida para {@code p} con el Pokemon del hueco {@code hueco} (1..6) de su equipo. {@code fijo > 0} = modo de medida de la fase 0 (ese numero de
+     * enemigos a la vez, sin oleadas ni jefe). {@code modoPrueba}: el jugador viene de fuera (comando de administrador): se le guarda y se le devuelve todo al acabar.
+     * Devuelve el motivo si no se puede, o null si empezo.
+     */
+    public static String iniciar(ServerPlayerEntity p, int hueco, int fijo, boolean modoPrueba) {
         if (server == null) return "El minijuego aun no esta listo.";
-        if (run != null) return "Ya hay una partida en marcha (" + run.nombre + "). Usa /survivor parar para cancelarla.";
+        if (runs.containsKey(p.getUuid())) return "Ya estás en una partida. Usa /survivor parar para cancelarla.";
+        if (runs.size() >= MAX_PARTIDAS) return "Hay " + runs.size() + " partidas en marcha (el máximo es " + MAX_PARTIDAS + "). Espera a que acabe alguna.";
         ServerWorld w = mundo();
         if (w == null) return "No existe la dimension emi_survivors:arena (¿esta instalado el mod en el servidor?).";
-        if (Saved.exists(server, p.getUuid())) return "Tienes cosas guardadas de una partida anterior: sal y vuelve a entrar para recuperarlas.";
+        if (modoPrueba && Saved.exists(server, p.getUuid())) return "Tienes cosas guardadas de una partida anterior: sal y vuelve a entrar para recuperarlas.";
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(p);
-        Pokemon pk = party.get(slot - 1);
+        Pokemon pk = party.get(hueco - 1);
         StringBuilder eq = new StringBuilder();
         for (int i = 0; i < 6; i++) { Pokemon x = party.get(i); if (x != null) eq.append(i + 1).append("=").append(x.getSpecies().getName()).append(" Nv.").append(x.getLevel()).append("  "); }
         EmiSurvivors.LOG.info("Equipo de {}: {}", p.getGameProfile().getName(), eq);
-        if (pk == null) return "No tienes ningun Pokémon en el hueco " + slot + " del equipo.";
+        if (pk == null) return "No tienes ningún Pokémon en el hueco " + hueco + " del equipo.";
         if (!Morph.disponible()) return "Falta el mod CobbleMorph (el jugador va transformado en su Pokémon).";
-        try { Saved.save(server, p); } catch (RuntimeException e) { return "No se pudo guardar tu inventario: no entras."; }
+        int slot = huecoLibre();
+        if (slot < 0) return "No hay arenas libres.";
+        if (modoPrueba) { try { Saved.save(server, p); } catch (RuntimeException e) { return "No se pudo guardar tu inventario: no entras."; } }
         String antes = Morph.actual(p.getUuid());
+        double ox = slot * SEPARACION, oz = 0;
+        Run run;
         try {
-            Pausas.pausar();
-            p.teleport(w, 0.5, Arena.Y0, 0.5, 180f, 0f);
+            if (runs.isEmpty()) Pausas.pausar();
+            p.teleport(w, ox + 0.5, Arena.Y0, oz + 0.5, 180f, 0f);
             prepararJugador(p);
             Morph.transformar(server, p, pk);
-            run = new Run(w, p, pk, antes, enemigos, inmortal);
+            fijarEscala(p, pk);
+            Map<String, Integer> meta = new java.util.HashMap<>(datos.poke(datos.jugador(p.getUuid(), p.getGameProfile().getName()), pk.getUuid().toString(), pk.getSpecies().getResourceIdentifier().getPath()).mejoras);
+            run = new Run(w, p, pk, slot, ox, oz, antes, fijo, inmortal, modoPrueba, meta);
+            runs.put(p.getUuid(), run);
         } catch (Throwable t) {
             // si algo falla a medias, el jugador no se queda a medio camino: se le devuelve todo
-            EmiSurvivors.LOG.error("No se pudo empezar la partida de prueba", t);
-            run = null;
-            try { Morph.restaurar(server, p, antes); Saved.restore(server, p); } catch (Throwable t2) { EmiSurvivors.LOG.error("Ademas, no se pudo devolver al jugador a su sitio", t2); }
-            try { Pausas.reanudar(); } catch (Throwable t2) { /* nada */ }
+            EmiSurvivors.LOG.error("No se pudo empezar la partida", t);
+            runs.remove(p.getUuid());
+            try { Morph.restaurar(server, p, antes); if (modoPrueba) Saved.restore(server, p); else quitarEfectos(p); } catch (Throwable t2) { EmiSurvivors.LOG.error("Ademas, no se pudo devolver al jugador a su sitio", t2); }
+            if (runs.isEmpty()) { try { Pausas.reanudar(); } catch (Throwable t2) { /* nada */ } }
             return "No se pudo empezar la partida (mira el registro del servidor); te hemos devuelto a tu sitio.";
         }
-        EmiSurvivors.LOG.info("Partida de prueba de {}: {} enemigos, Pokemon {} (tipo {}), inmortal={}", p.getGameProfile().getName(), enemigos, pk.getSpecies().getName(), run.tipo, inmortal);
-        p.sendMessage(Msg.say("¡Empieza! Muévete con WASD; tu " + pk.getSpecies().getName() + " ataca solo. Para salir: /survivor parar"), false);
+        EmiSurvivors.LOG.info("Partida de {}: Pokemon {} (tipo {}, ataque inicial {}), hueco de arena {}, fijo={}, inmortal={}", p.getGameProfile().getName(), pk.getSpecies().getName(), run.tipo, run.inicial.nombre(), slot, fijo, inmortal);
+        p.sendMessage(Msg.say("¡Empieza! Muévete con WASD; tu " + pk.getSpecies().getName() + " ataca solo con " + run.inicial.nombre() + ". Para salir: /survivor parar"), false);
         return null;
     }
 
-    /** Cancela la partida en marcha si es de {@code p} (o de cualquiera si {@code p} es null: el organizador). */
+    /** Cancela la partida de {@code p}. */
     public static String parar(ServerPlayerEntity p) {
-        if (run == null) return "No hay ninguna partida en marcha.";
-        if (p != null && !run.id.equals(p.getUuid())) return "La partida en marcha es de " + run.nombre + ".";
-        terminar(run, "Partida cancelada.");
+        Run r = runs.get(p.getUuid());
+        if (r == null) return "No estás en ninguna partida.";
+        terminar(r, "Partida cancelada.");
         return null;
+    }
+
+    /** Cancela todas las partidas (organizador). Devuelve cuantas habia. */
+    public static int pararTodas() {
+        int n = runs.size();
+        for (Run r : new ArrayList<>(runs.values())) terminar(r, "Partida cancelada por un administrador.");
+        return n;
     }
 
     public static String estado() {
-        if (run == null) return "No hay ninguna partida en marcha." + (inmortal ? " (modo prueba inmortal activado)" : "");
-        return "Partida de " + run.nombre + ": " + run.segundos() + " s, " + run.enemigos.size() + " enemigos, " + run.derrotados + " derrotados, vida " + Math.max(0, run.hp) + "/" + HP_MAX
-                + " | servidor " + Run.fmt(run.med.msptServidor()) + " ms/tick, nuestro " + Run.fmt(run.med.msNuestro()) + " ms/tick";
+        if (runs.isEmpty()) return "No hay ninguna partida en marcha." + (inmortal ? " (modo prueba inmortal activado)" : "");
+        StringBuilder sb = new StringBuilder();
+        for (Run r : runs.values()) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append("Partida de ").append(r.nombre).append(": ").append(r.segundos()).append(" s, nivel ").append(r.nivel).append(", ").append(r.enemigos.size()).append(" enemigos, ")
+                    .append(r.derrotados).append(" derrotados, vida ").append(Math.max(0, Math.round(r.hp))).append("/").append(Math.round(r.st.hpMax))
+                    .append(" | servidor ").append(Run.fmt(r.med.msptServidor())).append(" ms/tick, nuestro ").append(Run.fmt(r.med.msNuestro())).append(" ms/tick");
+        }
+        return sb.toString();
     }
 
     // ---------------------------------------------------------------- fin de la partida
 
     static void terminar(Run r, String motivo) {
-        if (r == null || run != r) return;
-        run = null;
+        if (r == null || runs.get(r.id) != r) return;
+        runs.remove(r.id);
         ServerPlayerEntity p = r.jugador();
         r.limpiar();
         int seg = r.segundos();
-        EmiSurvivors.LOG.info("Fin de la partida de {}: {} | {} s, {} derrotados, {} especies distintas, {} fallos al crear | medias con {} enemigos: servidor {} ms/tick, nuestro {} ms/tick (max servidor {} ms)",
-                r.nombre, motivo, seg, r.derrotados, r.especiesVistas.size(), r.fallosCrear, r.objetivo, Run.fmt(r.msptEstable()), Run.fmt(r.nuestroEstable()), Run.fmt(r.med.msptMax()));
+        EmiSurvivors.LOG.info("Fin de la partida de {}: {} | {} s, nivel {}, {} derrotados, {} especies distintas, {} fallos al crear{}", r.nombre, motivo, seg, r.nivel, r.derrotados, r.especiesVistas.size(), r.fallosCrear,
+                r.fijo > 0 ? " | medias con " + r.fijo + " enemigos: servidor " + Run.fmt(r.msptEstable()) + " ms/tick, nuestro " + Run.fmt(r.nuestroEstable()) + " ms/tick (max servidor " + Run.fmt(r.med.msptMax()) + " ms)" : "");
         if (p != null) {
-            try { if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) ServerPlayNetworking.send(p, EstadoPayload.apagado()); } catch (Throwable t) { /* el cliente no tiene el mod */ }
+            try {
+                if (ServerPlayNetworking.canSend(p, EstadoPayload.ID)) ServerPlayNetworking.send(p, EstadoPayload.apagado());
+                if (ServerPlayNetworking.canSend(p, GemasPayload.ID)) ServerPlayNetworking.send(p, GemasPayload.vacio());
+                if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
+            } catch (Throwable t) { /* el cliente no tiene el mod */ }
             Morph.restaurar(server, p, r.morphAntes);
             if (!Saved.restore(server, p)) quitarEfectos(p);
-            p.sendMessage(Msg.say(motivo + " Aguantaste " + (seg / 60) + ":" + String.format("%02d", seg % 60) + " y derrotaste a " + r.derrotados + " Pokémon."), false);
-            if (r.hayMedidaEstable())
-                p.sendMessage(Text.literal("Rendimiento de esta prueba (con " + r.objetivo + " enemigos): el servidor tardó de media " + Run.fmt(r.msptEstable())
+            p.sendMessage(Msg.say(motivo + " Aguantaste " + (seg / 60) + ":" + String.format("%02d", seg % 60) + ", llegaste al nivel " + r.nivel + " y derrotaste a " + r.derrotados + " Pokémon."), false);
+            if (r.fijo > 0 && r.hayMedidaEstable())
+                p.sendMessage(Text.literal("Rendimiento de esta prueba (con " + r.fijo + " enemigos): el servidor tardó de media " + Run.fmt(r.msptEstable())
                         + " ms por tick (50 es el límite); este mod gastó " + Run.fmt(r.nuestroEstable()) + " ms.").formatted(Formatting.GRAY), false);
         }
-        try { Pausas.reanudar(); } catch (Throwable t) { /* nada */ }
+        if (runs.isEmpty()) { try { Pausas.reanudar(); } catch (Throwable t) { /* nada */ } }
     }
 
     // ---------------------------------------------------------------- jugador
@@ -170,10 +228,11 @@ public final class Partida {
     }
 
     static void alSalir(ServerPlayerEntity p) {
-        if (run != null && run.id.equals(p.getUuid())) terminar(run, "Te desconectaste.");
+        Run r = runs.get(p.getUuid());
+        if (r != null) terminar(r, "Te desconectaste.");
     }
 
-    /** Modo partida: aventura, inmortal para Minecraft (la vida es la del minijuego), sin inventario, velocidad fija y sin salto. */
+    /** Modo partida: aventura, inmortal para Minecraft (la vida es la del minijuego), sin inventario y sin salto. La velocidad la pone la partida ({@link #fijarVelocidad}). */
     private static void prepararJugador(ServerPlayerEntity p) {
         p.clearStatusEffects();
         p.getInventory().clear();
@@ -183,11 +242,31 @@ public final class Partida {
         p.getAbilities().flying = false;
         p.sendAbilitiesUpdate();
         p.getHungerManager().setFoodLevel(20); p.getHungerManager().setSaturationLevel(5f);
-        atributo(p, EntityAttributes.GENERIC_MOVEMENT_SPEED, ID_VEL, VELOCIDAD - 0.1, EntityAttributeModifier.Operation.ADD_VALUE, true);
         atributo(p, EntityAttributes.GENERIC_JUMP_STRENGTH, ID_SALTO, -1.0, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL, true);
     }
 
+    /** Velocidad al andar: ~6 bloques/s por el multiplicador {@code mult} de las mejoras del jugador. */
+    static void fijarVelocidad(ServerPlayerEntity p, double mult) {
+        atributo(p, EntityAttributes.GENERIC_MOVEMENT_SPEED, ID_VEL, VELOCIDAD * mult - 0.1, EntityAttributeModifier.Operation.ADD_VALUE, true);
+    }
+
+    /** Tamano del jugador (el modelo del Pokemon transformado lo respeta): hace que mida ~1,7 bloques sea cual sea el Pokemon. */
+    static void fijarEscala(ServerPlayerEntity p, Pokemon pk) {
+        double h = 1.0;
+        try {
+            var sp = pk.getSpecies();
+            h = Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale() * pk.getScaleModifier();
+        } catch (Throwable t) { /* se queda en 1 */ }
+        double escala = Math.max(0.7, Math.min(3.0, ALTURA_JUGADOR / Math.max(0.1, h)));
+        EntityAttributeInstance inst = p.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
+        if (inst == null) return;
+        inst.removeModifier(ID_ESCALA);
+        inst.addTemporaryModifier(new EntityAttributeModifier(ID_ESCALA, escala / inst.getBaseValue() - 1.0, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+    }
+
     static void quitarEfectos(ServerPlayerEntity p) {
+        EntityAttributeInstance esc = p.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
+        if (esc != null) esc.removeModifier(ID_ESCALA);
         p.setInvulnerable(false);
         p.setGlowing(false);
         atributo(p, EntityAttributes.GENERIC_MOVEMENT_SPEED, ID_VEL, 0, EntityAttributeModifier.Operation.ADD_VALUE, false);
@@ -199,5 +278,39 @@ public final class Partida {
         if (inst == null) return;
         inst.removeModifier(id);
         if (poner) inst.addTemporaryModifier(new EntityAttributeModifier(id, v, op));
+    }
+
+    // ---------------------------------------------------------------- ayudas de prueba (administrador)
+
+    /** Para probar: da experiencia, niveles, ataques... a la partida del administrador. Devuelve el motivo si no se puede, o null. */
+    public static String dev(ServerPlayerEntity p, String que, String id, int n) {
+        Run r = runs.get(p.getUuid());
+        if (r == null) return "Primero empieza una partida con /survivor prueba.";
+        switch (que) {
+            case "xp" -> r.ganarXp(Math.max(1, n));
+            case "nivel" -> { r.nivel += Math.max(1, n); r.pendientes += Math.max(1, n); r.xpSig = Curvas.xpPara(r.nivel); r.xp = 0; }
+            case "tiempo" -> r.tick = Math.max(0, n) * 20;
+            case "jefe" -> { if (r.jefe != null && r.jefe.vivo()) return "Ya hay un jefe vivo."; r.crearJefe(p); }
+            case "elite" -> { return r.devElite() ? null : "No se pudo crear el campeón."; }
+            case "curar" -> r.hp = r.st.hpMax;
+            case "sinxp" -> { r.sinXp = !r.sinXp; return null; }
+            case "arma" -> {
+                if (Catalogo.arma(id) == null) return "Ataque desconocido: " + id;
+                int nv = Math.max(1, Math.min(Catalogo.MAX_NIVEL, n));
+                if (r.armaObj.containsKey(id)) { r.armas.put(id, nv); r.armaObj.get(id).nivel = nv; } else r.agregarArma(id, nv);
+            }
+            case "solo" -> {
+                if (Catalogo.arma(id) == null) return "Ataque desconocido: " + id;
+                r.armas.clear(); r.armaObj.clear();
+                r.agregarArma(id, Math.max(1, Math.min(Catalogo.MAX_NIVEL, n)));
+            }
+            case "pasiva" -> {
+                if (Catalogo.pasiva(id) == null) return "Mejora desconocida: " + id;
+                r.pasivas.put(id, Math.max(1, Math.min(Catalogo.MAX_NIVEL, n)));
+                r.recalcular();
+            }
+            default -> { return "Opciones: xp, nivel, tiempo, jefe, elite, curar, sinxp, arma, solo, pasiva."; }
+        }
+        return null;
     }
 }

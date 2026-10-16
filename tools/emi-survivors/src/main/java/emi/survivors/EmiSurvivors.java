@@ -1,6 +1,10 @@
 package emi.survivors;
 
+import emi.survivors.net.AccionPayload;
 import emi.survivors.net.EstadoPayload;
+import emi.survivors.net.GemasPayload;
+import emi.survivors.net.TextoPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -29,6 +33,10 @@ public class EmiSurvivors implements ModInitializer {
     @Override
     public void onInitialize() {
         PayloadTypeRegistry.playS2C().register(EstadoPayload.ID, EstadoPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(GemasPayload.ID, GemasPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(TextoPayload.ID, TextoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(AccionPayload.ID, AccionPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Acciones.recibir(ctx.player(), payload)));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(Partida::init);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Partida.shutdown());

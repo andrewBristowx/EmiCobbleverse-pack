@@ -69,6 +69,16 @@ final class Especies {
         return michi;
     }
 
+    /** Una especie por su identificador (p. ej. {@code emipokemon:snorlax_emi}, o solo {@code snorlax}), o null si no existe en este servidor. */
+    static E porId(String id) {
+        try {
+            Species sp = id.contains(":") ? PokemonSpecies.getByIdentifier(net.minecraft.util.Identifier.of(id)) : PokemonSpecies.getByName(id);
+            if (sp == null) return null;
+            int bst = 0; for (int v : sp.getBaseStats().values()) bst += v;
+            return new E(id, Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale(), bst);
+        } catch (Throwable t) { return null; }
+    }
+
     /** Las especies con BST entre {@code min} y {@code max} (ambos incluidos). */
     static List<E> entre(int min, int max) {
         List<E> out = new ArrayList<>();
