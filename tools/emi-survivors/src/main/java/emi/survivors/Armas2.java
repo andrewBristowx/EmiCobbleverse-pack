@@ -144,8 +144,8 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 11. lanzallamas
 
     static final class Lanza extends Armas.Arma {
-        static final double[] DMG = {10, 12, 13, 15, 18, 24}, RANGO = {5.0, 5.0, 5.8, 6.2, 6.8, 8.5}, ANG = {26, 28, 30, 34, 38, 48};
-        static final int[] DUR = {20, 20, 24, 24, 28, 36}, ESPERA = {40, 38, 36, 34, 30, 24};
+        static final double[] DMG = {10, 12, 13, 15, 18, 34}, RANGO = {5.0, 5.0, 5.8, 6.2, 6.8, 8.5}, ANG = {26, 28, 30, 34, 38, 48};
+        static final int[] DUR = {20, 20, 24, 24, 28, 36}, ESPERA = {40, 38, 36, 34, 30, 18};
         private int activo;
         private Vec3d dir = new Vec3d(0, 0, 1);
 
@@ -224,10 +224,10 @@ final class Armas2 {
                 Ola o = it.next();
                 o.x += o.dx * 0.6; o.z += o.dz * 0.6; o.recorrido += 0.6;
                 double px = -o.dz, pz = o.dx;
-                if (r.tick % 2 == 0) for (double j = -o.ancho; j <= o.ancho + 0.01; j += Math.max(0.8, o.ancho / 3.0)) {            // el frente de la ola: una pared de agua (polvo azul) con espuma
+                for (double j = -o.ancho; j <= o.ancho + 0.01; j += Math.max(0.7, o.ancho / 3.5)) {            // el frente de la ola: una pared de agua (polvo azul) con espuma
                     double fx = o.x + px * j, fz = o.z + pz * j;
                     r.w.spawnParticles(AGUA, fx, pp.y + 0.6, fz, 2, 0.25, 0.25, 0.25, 0.0);
-                    if (ver(r, 0.8)) r.w.spawnParticles(agua, fx, pp.y + 0.5, fz, 2, 0.3, 0.35, 0.3, 0.0);
+                    if (ver(r, 0.8)) r.w.spawnParticles(agua, fx, pp.y + 0.5, fz, 1, 0.3, 0.35, 0.3, 0.0);
                 }
                 for (Enemigo en : r.enemigos) {
                     if (en.hp <= 0 || o.golpeados.contains(en)) continue;
@@ -310,8 +310,8 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 14. hoja navaja
 
     static final class Hojas extends Armas.Arma {
-        static final double[] DMG = {10, 12, 12, 14, 16, 22};
-        static final int[] CD = {38, 36, 34, 32, 28, 22}, CNT = {2, 3, 3, 4, 5, 8}, PERF = {1, 1, 2, 2, 3, 4};
+        static final double[] DMG = {14, 14, 14, 16, 18, 22};
+        static final int[] CD = {34, 34, 32, 30, 26, 20}, CNT = {3, 4, 4, 5, 6, 8}, PERF = {1, 1, 2, 2, 3, 4};
         private static final class Hoja { double x, y, z, dx, dz; Enemigo obj; int vida = 40, perf; final Set<Enemigo> golpeados = new HashSet<>(); }
         private final List<Hoja> hojas = new ArrayList<>();
 
@@ -356,8 +356,8 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 15. danza petalo
 
     static final class Petalos extends Armas.Arma {
-        static final double[] DMG = {9, 11, 11, 13, 15, 20};
-        static final int[] CD = {44, 40, 38, 34, 30, 22}, BRAZOS = {6, 8, 8, 10, 12, 18}, PERF = {1, 1, 2, 2, 2, 3};
+        static final double[] DMG = {11, 13, 13, 15, 17, 22};
+        static final int[] CD = {44, 40, 38, 34, 30, 22}, BRAZOS = {7, 8, 8, 10, 12, 18}, PERF = {1, 1, 2, 2, 2, 3};
         private static final class Petalo { double x, z, ang, giro; int vida = 26, perf; final Set<Enemigo> golpeados = new HashSet<>(); }
         private final List<Petalo> petalos = new ArrayList<>();
         private double rot;
@@ -505,7 +505,7 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 18. ventisca
 
     static final class Ventisca extends Armas.Arma {
-        static final double[] DMG = {6, 7, 8, 10, 12, 20}, R = {3.2, 3.5, 3.9, 4.3, 4.8, 6.5}, LENTO = {0.7, 0.65, 0.6, 0.55, 0.5, 0.35};
+        static final double[] DMG = {6, 7, 8, 10, 12, 30}, R = {3.2, 3.5, 3.9, 4.3, 4.8, 6.5}, LENTO = {0.7, 0.65, 0.6, 0.55, 0.5, 0.35};
         private double ang;
 
         Ventisca(Run r, int nivel) { super(r, "ventisca", nivel); }
@@ -662,8 +662,8 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 22. cometa
 
     static final class Cometa extends Armas.Arma {
-        static final double[] DMG = {13, 16, 19, 19, 23, 34}, TAM = {1.5, 1.6, 1.8, 1.9, 2.1, 3.0};
-        static final int[] CD = {110, 100, 92, 84, 76, 58}, CNT = {1, 1, 1, 2, 2, 3};
+        static final double[] DMG = {16, 19, 22, 22, 26, 36}, TAM = {1.5, 1.6, 1.8, 1.9, 2.1, 3.0};
+        static final int[] CD = {100, 92, 86, 80, 72, 56}, CNT = {1, 1, 1, 2, 2, 3};
         private static final int VIDA = 36;
         private static final class Astro { double x, z; Vec3d dir; int t; }
         private final List<Astro> astros = new ArrayList<>();
@@ -704,7 +704,7 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 23. garra umbria
 
     static final class Garra extends Armas.Arma {
-        static final double[] DMG = {16, 19, 19, 22, 26, 36}, L = {2.8, 2.8, 3.2, 3.4, 3.6, 4.8};
+        static final double[] DMG = {16, 19, 19, 22, 26, 46}, L = {2.8, 2.8, 3.2, 3.4, 3.6, 4.8};
         static final int[] CD = {54, 50, 46, 42, 38, 30}, N = {3, 4, 5, 5, 6, 9};
         private int pendientes, espera;
 
@@ -795,8 +795,8 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 25. centinela michi
 
     static final class Centinela extends Armas.Arma {
-        static final double[] DMG = {9, 11, 11, 13, 15, 16};
-        static final int[] DISP = {14, 13, 12, 11, 10, 8}, VIDA = {160, 180, 200, 220, 240, 360}, CD = {130, 120, 110, 100, 90, 66}, MAX = {1, 2, 2, 3, 3, 5};
+        static final double[] DMG = {12, 13, 16, 16, 19, 20};
+        static final int[] DISP = {12, 11, 10, 9, 8, 7}, VIDA = {160, 180, 200, 220, 240, 360}, CD = {130, 120, 110, 100, 90, 66}, MAX = {1, 2, 2, 3, 3, 5};
         private static final class Torre { double x, z; int vida, cd; }
         private final List<Torre> torres = new ArrayList<>();
 
@@ -833,7 +833,7 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 26. aromaterapia
 
     static final class Aroma extends Armas.Arma {
-        static final double[] PCT = {8, 10, 12, 14, 16, 24}, R = {7.0, 7.5, 8.0, 8.5, 9.0, 13.0}, DMG = {6, 8, 10, 12, 14, 24};
+        static final double[] PCT = {8, 10, 12, 14, 16, 24}, R = {7.0, 7.5, 8.0, 8.5, 9.0, 13.0}, DMG = {6, 8, 10, 12, 14, 40};
         static final int[] CD = {200, 180, 170, 160, 140, 100};
         private double ang;
 
@@ -1006,7 +1006,7 @@ final class Armas2 {
     // ------------------------------------------------------------------------------------------------ 30. media luna
 
     static final class Lunar extends Armas.Arma {
-        static final double[] DMG = {22, 26, 26, 30, 34, 48}, ESQ = {10, 12, 14, 16, 18, 26};
+        static final double[] DMG = {26, 30, 30, 34, 38, 52}, ESQ = {12, 14, 16, 18, 20, 28};
         static final int[] CD = {64, 60, 56, 52, 46, 34}, NESQ = {3, 4, 5, 5, 6, 10};
         private static final class Luna { double x, z; Vec3d dir; int vida = 30; }
         private final List<Luna> lunas = new ArrayList<>();

@@ -120,7 +120,7 @@ final class Armas {
     // ------------------------------------------------------------------------------------------------ 2. orbes
 
     static final class Orbes extends Arma {
-        static final double[] DMG = {6, 6, 8, 8, 10, 14}, RAD = {2.6, 2.6, 3.2, 3.2, 3.6, 4.8}, VEL = {7, 7, 9, 9, 10, 13};
+        static final double[] DMG = {6, 6, 8, 8, 10, 22}, RAD = {2.6, 2.6, 3.2, 3.2, 3.6, 4.8}, VEL = {7, 7, 9, 9, 10, 13};
         static final int[] CNT = {2, 3, 3, 4, 5, 8};
         private double ang;
         private final Map<Enemigo, Integer> espera = new HashMap<>();
@@ -214,7 +214,7 @@ final class Armas {
     // ------------------------------------------------------------------------------------------------ 4. cadena
 
     static final class Cadena extends Arma {
-        static final double[] DMG = {16, 20, 25, 25, 31, 40}, CD = {45, 42, 38, 38, 34, 28};
+        static final double[] DMG = {16, 20, 25, 25, 31, 36}, CD = {45, 42, 38, 38, 34, 28};
         static final int[] SALTOS = {2, 3, 3, 4, 5, 6};
 
         Cadena(Run r, int nivel) { super(r, "cadena", nivel); }
@@ -224,7 +224,7 @@ final class Armas {
             if (r.masCercano(pp, 13, null) == null) return;
             List<Enemigo> hit = new ArrayList<>();
             ParticleEffect p = part(ParticleTypes.ELECTRIC_SPARK);
-            int cadenas = evo() ? 4 : 1;                     // la evolucion lanza 4 cadenas a la vez, cada una desde un enemigo distinto, y aturde
+            int cadenas = evo() ? 3 : 1;                     // la evolucion lanza 3 cadenas a la vez, cada una desde un enemigo distinto, y aturde
             for (int c = 0; c < cadenas; c++) {
                 Enemigo cur = r.masCercano(pp, 13, hit);
                 if (cur == null) break;
@@ -458,7 +458,7 @@ final class Armas {
     // ------------------------------------------------------------------------------------------------ 9. minas
 
     static final class Minas extends Arma {
-        static final double[] DMG = {40, 48, 60, 60, 72, 95}, CD = {70, 60, 54, 50, 44, 34}, RAD = {2.2, 2.2, 2.2, 2.8, 2.8, 3.6};
+        static final double[] DMG = {40, 48, 60, 60, 72, 115}, CD = {70, 60, 54, 50, 44, 34}, RAD = {2.2, 2.2, 2.2, 2.8, 2.8, 3.6};
         static final int[] MAX = {1, 3, 3, 4, 5, 7};
         private static final class Mina { double x, z; int armada = 10; }
         private final List<Mina> minas = new ArrayList<>();
@@ -502,7 +502,7 @@ final class Armas {
     // ------------------------------------------------------------------------------------------------ 10. rayo giratorio
 
     static final class Rayo extends Arma {
-        static final double[] DMG = {8, 10, 12, 15, 18, 26}, LARGO = {5.0, 5.8, 5.8, 6.6, 6.6, 8.5};
+        static final double[] DMG = {8, 10, 12, 15, 18, 40}, LARGO = {5.0, 5.8, 5.8, 6.6, 6.6, 8.5};
         static final int[] CNT = {1, 1, 2, 2, 3, 4};
         private double ang;
 
