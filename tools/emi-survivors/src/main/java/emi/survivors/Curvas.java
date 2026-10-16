@@ -35,6 +35,26 @@ final class Curvas {
     /** Multiplicador de vida de los enemigos nuevos. */
     static double vidaMul(double t) { return 1 + t / 140.0; }
 
+    // ------------------------------------------------------------ varios jugadores en la misma arena
+
+    /** Tope duro de enemigos de un solo equipo, sean los jugadores que sean (el servidor y el cliente aguantan lo que aguantan). */
+    static final int TOPE_EQUIPO = 200;
+
+    /** Cuantos enemigos de mas (en proporcion) hay por cada jugador extra: con 2 jugadores, 1,6 veces; con 3, 2,2; con 4, 2,8 (sin pasar de {@link #TOPE_EQUIPO}). */
+    static double escalaCantidad(int jugadores) { return 1 + 0.6 * (Math.max(1, Math.min(4, jugadores)) - 1); }
+
+    /** Tope de enemigos a la vez para un equipo de {@code jugadores}. */
+    static int tope(double t, int jugadores) { return (int) Math.min(TOPE_EQUIPO, tope(t) * escalaCantidad(jugadores)); }
+
+    /** Enemigos por segundo que se intentan crear para un equipo de {@code jugadores}. */
+    static double ritmo(double t, int jugadores) { return ritmo(t) * escalaCantidad(jugadores); }
+
+    /** Multiplicador de la vida del jefe segun los jugadores (el dano total sube casi en proporcion: 1, 1,8, 2,6 y 3,4). */
+    static double escalaJefe(int jugadores) { return 1 + 0.8 * (Math.max(1, Math.min(4, jugadores)) - 1); }
+
+    /** Multiplicador extra de vida de los enemigos nuevos por cada jugador de mas (mas jugadores = mas dano total, asi que aguantan algo mas). */
+    static double escalaVida(int jugadores) { return 1 + 0.15 * (Math.max(1, Math.min(4, jugadores)) - 1); }
+
     /** Multiplicador del dano por contacto de los enemigos nuevos. */
     static double danoMul(double t) { return 1 + t / 420.0; }
 

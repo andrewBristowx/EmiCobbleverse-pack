@@ -23,6 +23,7 @@ final class Enemigo {
     final double vel;           // bloques por tick
     final double radio;         // radio de contacto (bloques)
     int cdContacto;
+    Run ultimo;                 // el jugador que le dio el ultimo golpe (a el se le cuenta como derrotado)
     double kbx, kbz;            // empuje por golpes (bloques/tick, decae)
     double sepx, sepz;          // separacion de los vecinos (la calcula la partida cada tick)
 

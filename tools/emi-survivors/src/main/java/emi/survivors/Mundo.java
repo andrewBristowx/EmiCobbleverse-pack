@@ -95,6 +95,7 @@ public final class Mundo {
         for (ServerPlayerEntity p : s.getPlayerManager().getPlayerList()) {
             if (dentro(p) || Partida.participa(p) || !Saved.exists(s, p.getUuid()) || !Saved.enLobby(s, p.getUuid())) continue;
             try {
+                GrupoCtl.salir(p.getUuid(), p.getGameProfile().getName(), false);
                 Morph.restaurar(s, p, Saved.morph(s, p.getUuid()));
                 if (Saved.restore(s, p, false)) { Menu.cerrar(p); p.sendMessage(Msg.say("Has salido del mundo del minijuego: te hemos devuelto tus cosas."), false); }
             } catch (Throwable t) { EmiSurvivors.LOG.error("No se pudo devolver sus cosas a {}", p.getGameProfile().getName(), t); }
@@ -139,7 +140,8 @@ public final class Mundo {
         MinecraftServer s = Partida.server;
         if (s == null) return "El minijuego aun no esta listo.";
         Run r = Partida.de(p.getUuid());
-        if (r != null && !r.modoPrueba) Partida.terminar(r, "Has salido del minijuego.");
+        if (r != null && !r.eq.modoPrueba) Partida.quitar(r, "Has salido del minijuego.");
+        GrupoCtl.salir(p.getUuid(), p.getGameProfile().getName(), false);                  // al salir del mundo del minijuego se deja el grupo
         if (!Saved.exists(s, p.getUuid())) return dentro(p) ? "No hay nada que devolverte (pide ayuda a un administrador)." : "No estás en el mundo del minijuego.";
         String morph = Saved.morph(s, p.getUuid());
         Morph.restaurar(s, p, morph);

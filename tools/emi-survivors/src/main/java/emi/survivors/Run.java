@@ -16,34 +16,30 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 
 /**
- * Una partida de un jugador: el jugador, transformado en su Pokemon, se mueve por la arena mientras los enemigos (Pokemon de Cobblemon sin IA, movidos por codigo)
- * le persiguen; sus ataques se usan solos; los enemigos caidos sueltan gemas de experiencia; al subir de nivel la partida se PAUSA y elige 1 de 3 cartas (ataque
- * nuevo, mejora de un ataque o mejora pasiva); cada minuto sale un campeon y a los 3:00 el jefe. Se acaba cuando la vida llega a 0 (o con /survivor parar).
- * Lo que dura la partida (sin contar las pausas de las cartas) es lo que cuenta para el top.
- * Con {@code fijo > 0} es el modo de MEDIDA de la fase 0: ese numero fijo de enemigos desde el principio, sin oleadas ni jefe (para medir el rendimiento).
+ * Un JUGADOR dentro de una partida: su Pokemon, su vida, sus ataques (que se usan solos), su experiencia y sus cartas. El jugador, transformado en su Pokemon, se
+ * mueve por la arena mientras los enemigos (Pokemon de Cobblemon sin IA, movidos por codigo por el {@link Equipo}) le persiguen; los enemigos caidos sueltan gemas;
+ * al subir de nivel elige 1 de 3 cartas (ataque nuevo, mejora de un ataque o mejora pasiva). Lo comun a todos los jugadores de la partida (la arena, los enemigos,
+ * las gemas, el jefe y el reloj) esta en {@link #eq}. Con un solo jugador es la partida en solitario.
  */
 final class Run {
-    static final int RAMPA = 200;               // modo medida: ticks que tarda en llegar al numero de enemigos pedido (10 s)
-    static final int MAX_NUEVOS_POR_TICK = 3;   // crear un Pokemon de Cobblemon cuesta: se reparte
+    /** Estados del jugador: en pie o caido (sin vida: un companero puede revivirlo). */
+    static final int VIVO = 0, CAIDO = 1;
     static final int T_CARTA = Integer.getInteger("emi.survivors.carta_ticks", 20 * 30);         // 30 s para elegir carta; si no, se elige una al azar (la propiedad solo se usa en pruebas)
-    static final int MAX_GEMAS = 300;
 
+    final Equipo eq;
     final ServerWorld w;
     final UUID id;
     final String nombre;
@@ -51,54 +47,45 @@ final class Run {
     final String pokeId, especieId;
     final String tipo;
     final Catalogo.Inicial inicial;
-    final int slot;
-    final double ox, oz;                         // centro de la arena de esta partida
-    final boolean inmortal, modoPrueba;
-    final int fijo;
+    final boolean inmortal;
     final String morphAntes;
-    final Random rnd = new Random();
+    final Random rnd;
     final Map<String, Integer> meta;             // mejoras permanentes de este Pokemon
     Stats st = new Stats();
     final Map<String, Integer> armas = new LinkedHashMap<>(), pasivas = new LinkedHashMap<>();
     final Map<String, Armas.Arma> armaObj = new LinkedHashMap<>();
-    final List<Enemigo> enemigos = new ArrayList<>();
+    final List<Enemigo> enemigos;                // los enemigos de la partida (la misma lista que la del equipo)
     final List<Proyectil> proyectiles = new ArrayList<>();
-    final List<Gema> gemas = new ArrayList<>();
-    final Medidor med = new Medidor();
-    final List<Especies.E> pool1, pool2;
-    final Set<String> especiesVistas = new HashSet<>();
-    int fallosCrear;
 
-    int tick, iframes, derrotados, nivel = 1, xp, xpSig = Curvas.xpPara(1), pendientes;
-    double hp, presupuesto;
-    boolean esperandoCarta, jefeSalio, jefeDerrotado;
-    boolean sinXp;                                  // solo para pruebas (/survivor dev sinxp): no se gana experiencia
+    int tick;                                    // el reloj del equipo (lo copia el equipo en cada tick; lo usan los ataques)
+    int iframes, derrotados, nivel = 1, xp, xpSig = Curvas.xpPara(1), pendientes;
+    double hp;
+    int estado = VIVO, reviveT;
+    boolean esperandoCarta;
+    boolean sinXp;                               // solo para pruebas (/survivor dev sinxp): no se gana experiencia
     int cartaCuenta;
     List<Cartas.Carta> oferta;
-    Jefe jefe;
     Vec3d pp = Vec3d.ZERO;
     private boolean gemasEnviadas;
     private int sonidoGema;
-    // medias del servidor cuando ya estan todos los enemigos (para el resumen final)
-    double sumaEstable, sumaNuestroEstable; int nEstable;
 
-    Run(ServerWorld w, ServerPlayerEntity p, Pokemon pk, int slot, double ox, double oz, String morphAntes, int fijo, boolean inmortal, boolean modoPrueba, Map<String, Integer> meta) {
-        this.w = w; this.id = p.getUuid(); this.nombre = p.getGameProfile().getName(); this.pk = pk; this.slot = slot; this.ox = ox; this.oz = oz;
-        this.morphAntes = morphAntes; this.fijo = fijo; this.inmortal = inmortal; this.modoPrueba = modoPrueba; this.meta = new HashMap<>(meta);
+    Run(Equipo eq, ServerPlayerEntity p, Pokemon pk, String morphAntes, boolean inmortal, Map<String, Integer> meta) {
+        this.eq = eq; this.w = eq.w; this.rnd = eq.rnd; this.enemigos = eq.enemigos;
+        this.id = p.getUuid(); this.nombre = p.getGameProfile().getName(); this.pk = pk;
+        this.morphAntes = morphAntes; this.inmortal = inmortal; this.meta = new HashMap<>(meta);
         this.pokeId = pk.getUuid().toString();
         this.especieId = pk.getSpecies().getResourceIdentifier().getPath();
         this.tipo = pk.getPrimaryType().getName().toLowerCase(java.util.Locale.ROOT);
         this.inicial = Catalogo.inicial(tipo);
+        this.pp = p.getPos();
         recalcular();
         hp = st.hpMax;
         agregarArma(inicial.arma(), 1);
-        pool1 = Especies.entre(180, 330);
-        pool2 = Especies.entre(331, 405);
     }
 
     ServerPlayerEntity jugador() { return Partida.server == null ? null : Partida.server.getPlayerManager().getPlayer(id); }
 
-    int segundos() { return tick / 20; }
+    int segundos() { return eq.segundos(); }
 
     Vec3d mira() {
         ServerPlayerEntity p = jugador();
@@ -122,7 +109,7 @@ final class Run {
         if (hp > 0 && n.hpMax > antes) hp += n.hpMax - antes;       // al subir la vida maxima, tambien sube la actual
         if (hp > n.hpMax) hp = n.hpMax;
         ServerPlayerEntity p = jugador();
-        if (p != null) Partida.fijarVelocidad(p, n.vel);
+        if (p != null && estado == VIVO) Partida.fijarVelocidad(p, n.vel);
     }
 
     void agregarArma(String idArma, int nivelArma) {
@@ -130,83 +117,46 @@ final class Run {
         armaObj.put(idArma, Armas.crear(idArma, this, nivelArma));
     }
 
-    // ------------------------------------------------------------------------------------------------ un tick
+    // ------------------------------------------------------------------------------------------------ lo que hace cada tick (lo llama el equipo)
 
-    void tick() {
-        long t0 = System.nanoTime();
-        ServerPlayerEntity p = jugador();
-        if (p == null || p.isRemoved() || p.getServerWorld() != w) { Partida.terminar(this, "El jugador ya no esta en la arena."); return; }
-
-        // pausa: eligiendo carta (el tiempo no corre, los enemigos estan quietos)
-        if (esperandoCarta) {
-            if (--cartaCuenta <= 0) elegirCarta(rnd.nextInt(oferta.size()));
-            else if (cartaCuenta % 4 == 0) enviarEstado(p);
-            return;
-        }
-
-        tick++;
-        pp = p.getPos();
-        if (!Arena.dentro(this, pp.x, pp.z, -2.0)) { p.teleport(w, ox + 0.5, Arena.Y0, oz + 0.5, p.getYaw(), 0f); pp = p.getPos(); }      // por si acaso se sale del muro
-        double t = tick / 20.0;
-
-        // 1) crear enemigos
-        if (fijo > 0) {
-            int meta = Math.min(fijo, (int) ((long) fijo * tick / RAMPA));
-            for (int n = 0; n < MAX_NUEVOS_POR_TICK && enemigos.size() < meta; n++) if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
-        } else {
-            int cap = (int) Math.round(Curvas.tope(t) * Partida.factorRendimiento());
-            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t) / 20.0);
-            for (int n = 0; n < MAX_NUEVOS_POR_TICK && presupuesto >= 1.0 && enemigos.size() < cap; n++) {
-                if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
-                presupuesto -= 1.0;
-            }
-            if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); }
-            if (!jefeSalio && t >= Curvas.T_JEFE) crearJefe(p);
-        }
-
-        // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos y contar el dano por contacto
-        separar();
-        if (iframes > 0) iframes--;
-        for (Enemigo en : enemigos) if (jefe == null || en != jefe.en) en.mover(pp.x, pp.z);
-        if (jefe != null && jefe.vivo()) jefe.tick(pp);
-        for (Enemigo en : enemigos) {
-            if (en.cdContacto > 0) en.cdContacto--;
-            double dx = en.e.getX() - pp.x, dz = en.e.getZ() - pp.z, r = en.radio + 0.4;
-            if (en.cdContacto == 0 && iframes == 0 && dx * dx + dz * dz < r * r && Math.abs(en.e.getY() - pp.y) < (en.grande() ? 3.0 : 1.8)) {
-                en.cdContacto = 20;
-                danarJugador(en.dmg);
-            }
-        }
-
-        // 3) los ataques del jugador
+    /** Los ataques del jugador y sus disparos. */
+    void tickAtaques() {
         for (Armas.Arma a : armaObj.values()) a.tick(pp);
         for (Iterator<Proyectil> it = proyectiles.iterator(); it.hasNext(); ) if (!it.next().tick(enemigos)) it.remove();
-
-        // 4) retirar a los derrotados (sueltan gemas)
-        for (Iterator<Enemigo> it = enemigos.iterator(); it.hasNext(); ) {
-            Enemigo en = it.next();
-            if (en.hp > 0) continue;
-            muerte(en);
-            it.remove();
-        }
-
-        // 5) gemas, regeneracion y subir de nivel
-        tickGemas(p);
-        if (st.regen > 0 && tick % 20 == 0 && hp < st.hpMax) hp = Math.min(st.hpMax, hp + st.regen);
-        if (p.getHungerManager().getFoodLevel() < 20 && tick % 100 == 0) p.getHungerManager().setFoodLevel(20);
-
-        // 6) interfaz y medidas
-        med.registrar(System.nanoTime() - t0, Partida.server);
-        if (tick > RAMPA + 60 && tick % 10 == 0) { sumaEstable += med.msptServidor(); sumaNuestroEstable += med.msNuestro(); nEstable++; }
-        if (tick % 4 == 0) enviarEstado(p);
-        if (tick % 2 == 0) enviarGemas(p);
-        if (tick % 100 == 0) EmiSurvivors.LOG.info("[medida] {} t={}s nivel={} enemigos={} gemas={} derrotados={} hp={} | nuestro={} ms/tick (max {}) | servidor={} ms/tick (media de 100, max {})",
-                nombre, segundos(), nivel, enemigos.size(), gemas.size(), derrotados, Math.round(hp), fmt(med.msNuestro()), fmt(med.msNuestroMax()), fmt(med.msptServidor()), fmt(med.msptMax()));
-        if (hp <= 0) { Partida.terminar(this, "Te han derrotado."); return; }
-        if (pendientes > 0) ofrecerCartas();
     }
 
-    // ------------------------------------------------------------------------------------------------ dano
+    /** Recoger gemas, regenerar vida y mantener la comida llena. */
+    void tickGemasYRegen() {
+        ServerPlayerEntity p = jugador();
+        double rad2 = st.iman * st.iman;
+        for (Iterator<Gema> it = eq.gemas.iterator(); it.hasNext(); ) {
+            Gema g = it.next();
+            if (g.dueno != null && g.dueno != this) {
+                Run o = g.dueno;
+                if (o.estado == VIVO && !o.esperandoCarta && eq.miembros.contains(o)) continue;       // ya va hacia otro jugador
+                g.dueno = null; g.atraidaT = 0;                                                         // su dueño ya no puede cogerla: queda libre
+            }
+            double dx = pp.x - g.x, dz = pp.z - g.z, d2 = dx * dx + dz * dz;
+            if (g.dueno == null && d2 < rad2) g.dueno = this;
+            if (g.dueno != this) continue;
+            g.atraidaT++;
+            double d = Math.sqrt(d2), vel = Math.min(0.9, 0.25 + 0.04 * g.atraidaT);
+            if (d < 0.9) {
+                it.remove();
+                ganarXp(g.valor);
+                if (p != null && tick - sonidoGema >= 2) { sonidoGema = tick; p.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 0.25f, 0.8f + rnd.nextFloat() * 0.6f); }
+            } else { g.x += dx / d * Math.min(vel, d); g.z += dz / d * Math.min(vel, d); }
+        }
+        if (st.regen > 0 && tick % 20 == 0 && hp < st.hpMax) hp = Math.min(st.hpMax, hp + st.regen);
+        if (p != null && p.getHungerManager().getFoodLevel() < 20 && tick % 100 == 0) p.getHungerManager().setFoodLevel(20);
+    }
+
+    /** Suelta las gemas que este jugador habia empezado a atraer (para que otro pueda cogerlas si el no puede). */
+    private void soltarGemas() {
+        for (Gema g : eq.gemas) if (g.dueno == this) { g.dueno = null; g.atraidaT = 0; }
+    }
+
+    // ------------------------------------------------------------------------------------------------ dano, caer y revivir
 
     /** El jugador recibe dano (sin pasar de la armadura). Con el modo prueba «inmortal» no pierde vida. */
     void danarJugador(float dmg) {
@@ -220,6 +170,7 @@ final class Run {
     void golpear(Enemigo en, double dmgBase, double kx, double kz) {
         if (en.hp <= 0) return;
         en.hp -= (float) (dmgBase * st.dano);
+        en.ultimo = this;
         double kb = en.tipo == Enemigo.Tipo.JEFE ? 0.05 : en.tipo == Enemigo.Tipo.ELITE ? 0.35 : 1.0;
         en.kbx += kx * kb; en.kbz += kz * kb;
         w.sendEntityStatus(en.e, (byte) 2);
@@ -236,57 +187,49 @@ final class Run {
         return mejor;
     }
 
-    // ------------------------------------------------------------------------------------------------ muertes, gemas y experiencia
+    /** Se queda sin vida: cae al suelo (inmovil, sin atacar y sin que los enemigos le hagan caso) hasta que un companero lo reviva. */
+    void caer() {
+        estado = CAIDO; hp = 0; reviveT = 0; iframes = 0;
+        esperandoCarta = false; oferta = null;
+        soltarGemas();
+        ServerPlayerEntity p = jugador();
+        if (p != null) {
+            Partida.fijarVelocidad(p, 0);
+            p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_DEATH, SoundCategory.MASTER, 0.6f, 1.0f);
+            Msg.title(p, Text.literal("¡HAS CAÍDO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Un compañero puede revivirte si se queda a tu lado").formatted(Formatting.GRAY), 5, 60, 15);
+            if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
+        }
+        eq.avisar(Msg.say(nombre + " ha caído. ¡Quedaos a su lado para revivirlo!"));
+    }
 
-    private void muerte(Enemigo en) {
-        double x = en.e.getX(), y = en.e.getY(), z = en.e.getZ();
-        w.spawnParticles(ParticleTypes.POOF, x, y + 0.5, z, en.grande() ? 25 : 6, 0.3, 0.3, 0.3, 0.02);
-        en.quitar();
-        derrotados++;
-        switch (en.tipo) {
-            case JEFE -> {
-                jefeDerrotado = true; jefe = null;
-                for (int k = 0; k < 6; k++) { double a = k * Math.PI / 3; gemas.add(new Gema(x + Math.cos(a) * 2.5, z + Math.sin(a) * 2.5, 25)); }
-                nivel += 2; pendientes += 2;            // el tesoro del jefe: dos subidas de nivel
-                hp = Math.min(st.hpMax, hp + st.hpMax * 0.5);
-                ServerPlayerEntity p = jugador();
-                if (p != null) {
-                    Msg.title(p, Text.literal("¡JEFE DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Tesoro: 2 niveles y la mitad de tu vida").formatted(Formatting.YELLOW), 5, 50, 15);
-                    p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, 1.0f);
-                }
-            }
-            case ELITE -> { for (int k = 0; k < 3; k++) { double a = k * Math.PI * 2 / 3; gemas.add(new Gema(x + Math.cos(a) * 1.2, z + Math.sin(a) * 1.2, 5)); } }
-            default -> gemas.add(new Gema(x, z, en.xp));
+    /** Un companero lo ha revivido (o ha caido el jefe): vuelve a la partida con la mitad de la vida y un momento sin que le toquen. */
+    void revivir() {
+        estado = VIVO; reviveT = 0;
+        hp = Math.max(1, st.hpMax * 0.5);
+        iframes = 60;
+        ServerPlayerEntity p = jugador();
+        if (p != null) {
+            Partida.fijarVelocidad(p, st.vel);
+            p.playSoundToPlayer(SoundEvents.ITEM_TOTEM_USE, SoundCategory.MASTER, 0.5f, 1.2f);
+            Msg.title(p, Text.literal("¡REVIVIDO!").formatted(Formatting.GREEN, Formatting.BOLD), null, 3, 25, 10);
+        }
+        w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.0, pp.z, 25, 0.4, 0.6, 0.4, 0.2);
+        eq.avisar(Msg.say(nombre + " ha vuelto a la partida."));
+    }
+
+    /** El premio del jefe: dos niveles y la mitad de la vida (y si estaba caido, se levanta). */
+    void premioJefe() {
+        nivel += 2; pendientes += 2;            // el tesoro del jefe: dos subidas de nivel
+        ServerPlayerEntity p = jugador();
+        if (estado == CAIDO) revivir();
+        else hp = Math.min(st.hpMax, hp + st.hpMax * 0.5);
+        if (p != null) {
+            Msg.title(p, Text.literal("¡JEFE DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Tesoro: 2 niveles y la mitad de tu vida").formatted(Formatting.YELLOW), 5, 50, 15);
+            p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, 1.0f);
         }
     }
 
-    private void tickGemas(ServerPlayerEntity p) {
-        double rad2 = st.iman * st.iman;
-        for (Iterator<Gema> it = gemas.iterator(); it.hasNext(); ) {
-            Gema g = it.next();
-            g.edad++;
-            double dx = pp.x - g.x, dz = pp.z - g.z, d2 = dx * dx + dz * dz;
-            if (!g.atraida && d2 < rad2) g.atraida = true;
-            if (!g.atraida) continue;
-            g.atraidaT++;
-            double d = Math.sqrt(d2), vel = Math.min(0.9, 0.25 + 0.04 * g.atraidaT);
-            if (d < 0.9) {
-                it.remove();
-                ganarXp(g.valor);
-                if (tick - sonidoGema >= 2) { sonidoGema = tick; p.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 0.25f, 0.8f + rnd.nextFloat() * 0.6f); }
-            } else { g.x += dx / d * Math.min(vel, d); g.z += dz / d * Math.min(vel, d); }
-        }
-        if (gemas.size() > MAX_GEMAS) fusionarGemas();
-    }
-
-    /** Si hay demasiadas gemas, se juntan las mas lejanas en pocas grandes (asi no se pierde experiencia ni se llena el cliente). */
-    private void fusionarGemas() {
-        gemas.sort((a, b) -> Double.compare(Math.hypot(b.x - pp.x, b.z - pp.z), Math.hypot(a.x - pp.x, a.z - pp.z)));
-        int juntar = gemas.size() - MAX_GEMAS + 20, suma = 0;
-        double cx = 0, cz = 0;
-        for (int k = 0; k < juntar; k++) { Gema g = gemas.remove(0); suma += g.valor; cx += g.x; cz += g.z; }
-        gemas.add(new Gema(cx / juntar, cz / juntar, suma));
-    }
+    // ------------------------------------------------------------------------------------------------ experiencia
 
     void ganarXp(int v) {
         if (sinXp) return;
@@ -296,9 +239,10 @@ final class Run {
 
     // ------------------------------------------------------------------------------------------------ cartas
 
-    private void ofrecerCartas() {
+    void ofrecerCartas() {
         oferta = Cartas.sortear(rnd, armas, pasivas);
         esperandoCarta = true; cartaCuenta = T_CARTA;
+        soltarGemas();
         ServerPlayerEntity p = jugador();
         if (p == null) return;
         p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 0.6f, 1.0f);
@@ -309,7 +253,7 @@ final class Run {
         for (Cartas.Carta c : oferta) a.add(cartaJson(c));
         o.add("cartas", a);
         if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", o.toString()));
-        enviarEstado(p);
+        enviarEstado();
     }
 
     private JsonObject cartaJson(Cartas.Carta c) {
@@ -332,7 +276,7 @@ final class Run {
         return o;
     }
 
-    /** El jugador (o el tiempo) elige la carta {@code idx}; la partida sigue. */
+    /** El jugador (o el tiempo) elige la carta {@code idx}; la partida sigue (con un segundo sin que le toquen, por si la horda estaba encima). */
     void elegirCarta(int idx) {
         if (!esperandoCarta || oferta == null || idx < 0 || idx >= oferta.size()) return;
         Cartas.Carta c = oferta.get(idx);
@@ -347,100 +291,10 @@ final class Run {
         }
         pendientes = Math.max(0, pendientes - 1);
         esperandoCarta = false; oferta = null;
+        iframes = Math.max(iframes, 20);
         ServerPlayerEntity p = jugador();
         if (p != null && ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
-        if (p != null) enviarEstado(p);
-    }
-
-    // ------------------------------------------------------------------------------------------------ enemigos
-
-    private static final double CELDA = 1.6, SEP_MAX = 0.13;
-
-    /** Cada enemigo se aparta de los que tiene muy cerca (asi la horda forma un corro en vez de apilarse en un punto). */
-    private void separar() {
-        HashMap<Long, List<Enemigo>> rejilla = new HashMap<>();
-        for (Enemigo en : enemigos) rejilla.computeIfAbsent(clave((int) Math.floor(en.e.getX() / CELDA), (int) Math.floor(en.e.getZ() / CELDA)), k -> new ArrayList<>(4)).add(en);
-        for (Enemigo en : enemigos) {
-            int cx = (int) Math.floor(en.e.getX() / CELDA), cz = (int) Math.floor(en.e.getZ() / CELDA);
-            double sx = 0, sz = 0;
-            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
-                List<Enemigo> l = rejilla.get(clave(cx + dx, cz + dz));
-                if (l == null) continue;
-                for (Enemigo o : l) {
-                    if (o == en) continue;
-                    double ex = en.e.getX() - o.e.getX(), ez = en.e.getZ() - o.e.getZ(), d2 = ex * ex + ez * ez, min = (en.radio + o.radio) * 0.9;
-                    if (d2 >= min * min) continue;
-                    if (d2 < 1e-6) { sx += (rnd.nextDouble() - 0.5) * 0.2; sz += (rnd.nextDouble() - 0.5) * 0.2; continue; }
-                    double d = Math.sqrt(d2), f = (min - d) / min;
-                    sx += ex / d * f; sz += ez / d * f;
-                }
-            }
-            double m = Math.sqrt(sx * sx + sz * sz);
-            double k = Math.min(SEP_MAX, m * 0.14) / (m > 1e-9 ? m : 1);
-            en.sepx = sx * k; en.sepz = sz * k;
-        }
-    }
-
-    private static long clave(int cx, int cz) { return ((long) cx << 32) ^ (cz & 0xffffffffL); }
-
-    /** Un sitio donde puede aparecer un enemigo: en un anillo de 21-26 bloques del jugador, dentro de la arena y con suelo. null si no se encuentra. */
-    private Vec3d sitioDeAparicion(double distMin, double distMax) {
-        for (int intento = 0; intento < 8; intento++) {
-            double ang = rnd.nextDouble() * Math.PI * 2, r = distMin + rnd.nextDouble() * (distMax - distMin);
-            double x = pp.x + Math.cos(ang) * r, z = pp.z + Math.sin(ang) * r;
-            if (!Arena.dentro(this, x, z, 2.0)) continue;
-            BlockPos pie = new BlockPos((int) Math.floor(x), (int) Arena.Y0, (int) Math.floor(z));
-            if (!w.getBlockState(pie).getCollisionShape(w, pie).isEmpty() || w.getBlockState(pie.down()).isAir()) continue;     // sin bloque macizo en los pies y con suelo debajo
-            return new Vec3d(x, Arena.Y0, z);
-        }
-        return null;
-    }
-
-    private boolean crearEnemigo(Enemigo.Tipo pedido) {
-        double t = tick / 20.0;
-        Especies.E sp; String extra = ""; Enemigo.Tipo tipoE = pedido;
-        if (pedido == Enemigo.Tipo.ELITE) {
-            List<Especies.E> pool = pool2.isEmpty() ? pool1 : pool2;
-            if (pool.isEmpty()) return false;
-            sp = pool.get(rnd.nextInt(pool.size()));
-        } else if (rnd.nextDouble() < Curvas.P_MICHI && Especies.michi() != null) {             // 1 de cada 10 es un Michialien (el toque de Emi)
-            sp = Especies.michi(); tipoE = Enemigo.Tipo.MICHI; extra = Especies.FORMAS_MICHI[rnd.nextInt(Especies.FORMAS_MICHI.length)];
-        } else {
-            boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Curvas.pFuerte(t));
-            List<Especies.E> pool = fuerte ? pool2 : pool1;
-            if (pool.isEmpty()) pool = pool1.isEmpty() ? pool2 : pool1;
-            if (pool.isEmpty()) return false;
-            sp = pool.get(rnd.nextInt(pool.size()));
-            tipoE = fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL;
-        }
-        Vec3d s = sitioDeAparicion(21, 26);
-        if (s == null) return false;
-        double tm = fijo > 0 ? 0 : t;
-        Enemigo en = Enemigo.crear(w, sp, extra, s, tipoE, Curvas.vidaMul(tm), Curvas.danoMul(tm), Curvas.velMul(tm), 0f, rnd);
-        if (en == null) { fallosCrear++; return false; }
-        enemigos.add(en);
-        especiesVistas.add(sp.id());
-        return true;
-    }
-
-    /** Solo para pruebas (/survivor dev elite): crea un campeon ya. */
-    boolean devElite() { return crearEnemigo(Enemigo.Tipo.ELITE); }
-
-    /** El jefe: Snorlax Emi si esta Emipokemon (si no, un Snorlax normal), enorme, a unos 20 bloques del jugador. */
-    void crearJefe(ServerPlayerEntity p) {
-        jefeSalio = true;
-        Especies.E sp = Especies.porId("emipokemon:snorlax_emi");
-        String nom = "Snorlax Emi";
-        if (sp == null) { sp = Especies.porId("snorlax"); nom = "Snorlax"; }
-        if (sp == null) { EmiSurvivors.LOG.warn("No hay especie para el jefe"); return; }
-        Vec3d s = sitioDeAparicion(17, 22);
-        if (s == null) { jefeSalio = false; return; }                 // se vuelve a intentar el siguiente tick
-        double t = tick / 20.0;
-        Enemigo en = Enemigo.crear(w, sp, "", s, Enemigo.Tipo.JEFE, 1, Curvas.danoMul(t), 1, Curvas.vidaJefe(t), rnd);
-        if (en == null) { fallosCrear++; return; }
-        enemigos.add(en);
-        jefe = new Jefe(this, en, nom);
-        Msg.title(p, Text.literal("¡" + nom.toUpperCase() + "!").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), Text.literal("Esquiva los círculos y las líneas rojas").formatted(Formatting.YELLOW), 5, 50, 15);
+        if (p != null) enviarEstado();
     }
 
     // ------------------------------------------------------------------------------------------------ paquetes al cliente
@@ -457,15 +311,20 @@ final class Run {
         return sb.toString();
     }
 
-    private void enviarEstado(ServerPlayerEntity p) {
-        if (!ServerPlayNetworking.canSend(p, EstadoPayload.ID)) return;
-        boolean hayJefe = jefe != null && jefe.vivo();
-        ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), derrotados, nivel, xp, xpSig, esperandoCarta,
-                hayJefe ? jefe.nombre : "", hayJefe ? (int) Math.max(0, Math.ceil(jefe.en.hp)) : 0, hayJefe ? (int) Math.round(jefe.en.hpMax) : 0, listaArmas(), listaPasivas(), med.msptServidor(), med.msNuestro()));
+    void enviarEstado() {
+        ServerPlayerEntity p = jugador();
+        if (p == null || !ServerPlayNetworking.canSend(p, EstadoPayload.ID)) return;
+        Jefe j = eq.jefe;
+        boolean hayJefe = j != null && j.vivo();
+        ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), eq.derrotados, nivel, xp, xpSig, esperandoCarta,
+                hayJefe ? j.nombre : "", hayJefe ? (int) Math.max(0, Math.ceil(j.en.hp)) : 0, hayJefe ? (int) Math.round(j.en.hpMax) : 0, listaArmas(), listaPasivas(), eq.med.msptServidor(), eq.med.msNuestro(),
+                estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this)));
     }
 
-    private void enviarGemas(ServerPlayerEntity p) {
-        if (!ServerPlayNetworking.canSend(p, GemasPayload.ID)) return;
+    void enviarGemas() {
+        ServerPlayerEntity p = jugador();
+        if (p == null || !ServerPlayNetworking.canSend(p, GemasPayload.ID)) return;
+        List<Gema> gemas = eq.gemas;
         if (gemas.isEmpty()) {
             if (gemasEnviadas) { ServerPlayNetworking.send(p, GemasPayload.vacio()); gemasEnviadas = false; }
             return;
@@ -481,21 +340,6 @@ final class Run {
         ServerPlayNetworking.send(p, new GemasPayload(pp.x, pp.z, dx, dz, tp));
         gemasEnviadas = true;
     }
-
-    // ------------------------------------------------------------------------------------------------ fin
-
-    /** Quita todo lo de la partida del mundo (enemigos y rocas). */
-    void limpiar() {
-        for (Enemigo en : enemigos) en.quitar();
-        enemigos.clear();
-        proyectiles.clear();
-        gemas.clear();
-    }
-
-    boolean hayMedidaEstable() { return nEstable > 0; }
-
-    float msptEstable() { return nEstable == 0 ? 0f : (float) (sumaEstable / nEstable); }
-    float nuestroEstable() { return nEstable == 0 ? 0f : (float) (sumaNuestroEstable / nEstable); }
 
     static String fmt(float v) { return String.format(java.util.Locale.ROOT, "%.2f", v); }
 }

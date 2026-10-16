@@ -7,8 +7,8 @@ package emi.survivors;
 final class Gema {
     double x, z;
     final int valor;
-    boolean atraida;
-    int edad, atraidaT;         // ticks desde que se creo / desde que se siente atraida (cuanto mas, mas rapido vuela)
+    Run dueno;                  // el jugador al que ya se siente atraida (si hay varios jugadores, la gema es del primero que la atrae)
+    int atraidaT;               // ticks desde que se siente atraida (cuanto mas, mas rapido vuela)
 
     Gema(double x, double z, int valor) { this.x = x; this.z = z; this.valor = valor; }
 

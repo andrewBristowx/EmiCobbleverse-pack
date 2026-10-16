@@ -55,11 +55,44 @@ public final class SurvivorsHud {
             px += 22;
         }
 
+        int sw = mc.getWindow().getScaledWidth(), sh = mc.getWindow().getScaledHeight();
+
         // el jefe
         if (!e.jefe().isEmpty() && e.jefeMax() > 0) {
-            int sw = mc.getWindow().getScaledWidth(), bw = 220, bx = (sw - bw) / 2, by = 12;
+            int bw = 220, bx = (sw - bw) / 2, by = 12;
             g.drawCenteredTextWithShadow(tr, e.jefe(), sw / 2, by - 11, 0xFFFFB6F0);
             barra(g, bx, by, bw, 8, e.jefeHp() / (float) e.jefeMax(), 0xFFC03AB8);
+        }
+
+        // los companeros de la partida (arriba a la derecha): nombre, vida y si estan caidos o eligiendo carta
+        if (!e.companeros().isEmpty()) {
+            int cx = sw - 112, cy = 8;
+            for (String c : e.companeros().split(";")) {
+                String[] q = c.split("\\|");
+                if (q.length < 4) continue;
+                int hp, max, est;
+                try { hp = Integer.parseInt(q[1]); max = Integer.parseInt(q[2]); est = Integer.parseInt(q[3]); } catch (NumberFormatException ex) { continue; }
+                String nom = q[0].length() > 14 ? q[0].substring(0, 13) + "…" : q[0];
+                g.drawTextWithShadow(tr, nom, cx, cy, est == 1 ? 0xFFFF8A80 : 0xFFFFFFFF);
+                if (est == 1) g.drawTextWithShadow(tr, "CAÍDO", cx + 70, cy, 0xFFFF5555);
+                else if (est == 2) g.drawTextWithShadow(tr, "elige…", cx + 70, cy, 0xFFB8B8C8);
+                float fc = est == 1 || max <= 0 ? 0f : hp / (float) max;
+                barra(g, cx, cy + 11, 100, 5, fc, fc > 0.5f ? 0xFF3FD35A : fc > 0.25f ? 0xFFE6B422 : 0xFFE0433A);
+                cy += 24;
+            }
+        }
+
+        // si estas caido: aviso grande y lo que falta para que te revivan
+        if (e.caido()) {
+            g.fill(0, 0, sw, sh, 0x40A00000);
+            var m = g.getMatrices();
+            m.push(); m.translate(sw / 2f, sh / 2f - 34, 0); m.scale(2.2f, 2.2f, 1f);
+            g.drawCenteredTextWithShadow(tr, "¡ESTÁS CAÍDO!", 0, 0, 0xFFFF5555);
+            m.pop();
+            g.drawCenteredTextWithShadow(tr, e.companeros().isEmpty() ? "Esperando..." : "Un compañero puede revivirte si se queda a tu lado unos segundos", sw / 2, sh / 2 - 8, 0xFFFFFFFF);
+            int bw = 160, bx = (sw - bw) / 2, by = sh / 2 + 8;
+            barra(g, bx, by, bw, 8, e.reviveProg() / 100f, 0xFF6FE08A);
+            if (e.reviveProg() > 0) g.drawCenteredTextWithShadow(tr, "Reviviendo… " + e.reviveProg() + "%", sw / 2, by + 12, 0xFF9BF0B0);
         }
         if (Boolean.getBoolean("emi.survivors.debug"))
             g.drawTextWithShadow(tr, String.format(java.util.Locale.ROOT, "Enemigos %d · gemas %d · servidor %.1f ms/tick · mod %.2f ms · FPS %d", e.enemigos(), GemasCliente.cuantas(), e.msptServidor(), e.msNuestro(), mc.getCurrentFps()),

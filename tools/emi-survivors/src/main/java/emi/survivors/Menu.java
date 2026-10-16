@@ -17,7 +17,7 @@ final class Menu {
     private Menu() {}
 
     /** El resultado de la partida que acaba de terminar (para enseñarlo en el menu). {@code puesto} = 0 si no entra al top. */
-    record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, boolean jefe, boolean cuenta) {}
+    record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, boolean jefe, boolean cuenta, String equipo) {}
 
     static void enviar(ServerPlayerEntity p, String tab, Resultado res) {
         if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) {
@@ -27,9 +27,36 @@ final class Menu {
         ServerPlayNetworking.send(p, new TextoPayload("menu", json(p, tab, res)));
     }
 
+    /** Manda los datos del menu SOLO para refrescarlo si ya esta abierto (el cliente ignora el mensaje si no hay menu abierto): asi se actualiza el grupo sin abrirle la pantalla a nadie. */
+    static void actualizar(ServerPlayerEntity p) {
+        if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) return;
+        ServerPlayNetworking.send(p, new TextoPayload("menu_act", json(p, "jugar", null)));
+    }
+
     /** Cierra la pantalla del menu en el cliente (al salir del mundo del minijuego). */
     static void cerrar(ServerPlayerEntity p) {
         if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("menu", ""));
+    }
+
+    private static JsonArray topJson(java.util.List<Datos.Entrada> lista, ServerPlayerEntity p) {
+        JsonArray top = new JsonArray();
+        int pos = 1;
+        String yo = p.getUuid().toString();
+        for (Datos.Entrada en : lista) {
+            boolean mio = en.uuid.equals(yo);
+            for (Datos.MiembroTop m : en.miembros) if (m.uuid.equals(yo)) mio = true;
+            JsonObject e = new JsonObject();
+            e.addProperty("pos", pos++);
+            e.addProperty("nombre", en.nombre);
+            e.addProperty("mio", mio);
+            e.addProperty("especie", en.especie);
+            e.addProperty("segundos", en.segundos);
+            e.addProperty("derrotados", en.derrotados);
+            e.addProperty("nivel", en.nivel);
+            e.addProperty("jefe", en.jefe);
+            top.add(e);
+        }
+        return top;
     }
 
     static String json(ServerPlayerEntity p, String tab, Resultado res) {
@@ -88,21 +115,37 @@ final class Menu {
         }
         o.add("catalogo", cat);
 
-        JsonArray top = new JsonArray();
-        int pos = 1;
-        for (Datos.Entrada en : d.top(10)) {
-            JsonObject e = new JsonObject();
-            e.addProperty("pos", pos++);
-            e.addProperty("nombre", en.nombre);
-            e.addProperty("mio", en.uuid.equals(p.getUuid().toString()));
-            e.addProperty("especie", en.especie);
-            e.addProperty("segundos", en.segundos);
-            e.addProperty("derrotados", en.derrotados);
-            e.addProperty("nivel", en.nivel);
-            e.addProperty("jefe", en.jefe);
-            top.add(e);
+        o.add("top", topJson(d.top(10), p));
+        o.add("topGrupos", topJson(d.topGrupos(10), p));
+
+        // el grupo del jugador (si esta en uno) y los grupos a los que se puede unir
+        Grupos.Grupo g = Partida.grupos.de(p.getUuid());
+        JsonObject gr = new JsonObject();
+        gr.addProperty("enGrupo", g != null);
+        if (g != null) {
+            gr.addProperty("soyLider", g.lider.equals(p.getUuid()));
+            gr.addProperty("enPartida", g.enPartida);
+            gr.addProperty("max", Grupos.MAX);
+            JsonArray ms = new JsonArray();
+            for (Grupos.Miembro m : g.miembros) {
+                JsonObject e = new JsonObject();
+                e.addProperty("uuid", m.id.toString()); e.addProperty("nombre", m.nombre); e.addProperty("lider", m.id.equals(g.lider)); e.addProperty("yo", m.id.equals(p.getUuid()));
+                e.addProperty("listo", m.listo); e.addProperty("especie", m.especie); e.addProperty("nivel", m.nivel);
+                ms.add(e);
+            }
+            gr.add("miembros", ms);
         }
-        o.add("top", top);
+        o.add("grupo", gr);
+        JsonArray ab = new JsonArray();
+        for (Grupos.Grupo x : Partida.grupos.abiertos()) {
+            if (x == g) continue;
+            JsonObject e = new JsonObject();
+            StringBuilder nombres = new StringBuilder();
+            for (Grupos.Miembro m : x.miembros) { if (nombres.length() > 0) nombres.append(", "); nombres.append(m.nombre); }
+            e.addProperty("lider", x.lider.toString()); e.addProperty("nombre", x.lider().nombre); e.addProperty("n", x.miembros.size()); e.addProperty("miembros", nombres.toString());
+            ab.add(e);
+        }
+        o.add("abiertos", ab);
 
         if (res != null) {
             JsonObject r = new JsonObject();
@@ -114,6 +157,7 @@ final class Menu {
             r.addProperty("puesto", res.puesto());
             r.addProperty("jefe", res.jefe());
             r.addProperty("cuenta", res.cuenta());
+            r.addProperty("equipo", res.equipo());
             o.add("resultado", r);
         }
         return o.toString();

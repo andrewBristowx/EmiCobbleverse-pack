@@ -32,7 +32,7 @@ final class Arena {
     static double[] origen(int slot) { return new double[]{slot * 1024.0, (VERSION - 1) * 1024.0}; }
 
     /** ¿Esta el punto (x, z) dentro de la arena de esta partida, con un margen respecto al muro? */
-    static boolean dentro(Run r, double x, double z, double margen) {
+    static boolean dentro(Equipo r, double x, double z, double margen) {
         double dx = x - r.ox, dz = z - r.oz, lim = RADIO - margen;
         return dx * dx + dz * dz <= lim * lim;
     }

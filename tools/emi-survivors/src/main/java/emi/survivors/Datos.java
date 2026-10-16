@@ -39,15 +39,33 @@ final class Datos {
         Map<String, PokeMeta> pokemon = new HashMap<>();
     }
 
-    /** Una marca del top: la mejor partida de un jugador. */
+    static final String SOLO = "solo", GRUPO = "grupo";
+
+    /** Un jugador de un equipo del top: quien era, con que Pokemon y como le fue. */
+    static final class MiembroTop {
+        String uuid = "", nombre = "", especie = "", aspectos = "";
+        int nivelPokemon, derrotados, nivel;
+    }
+
+    /**
+     * Una marca del top: la mejor partida de un equipo. En solitario ({@code modo} = «solo») {@code uuid} es el del jugador y solo cuenta su mejor marca; en grupo
+     * ({@code modo} = «grupo») es la clave del equipo (los uuid de sus miembros ordenados y unidos con «+»: un mismo grupo solo guarda su mejor marca).
+     * {@code nombre} es el del jugador o los de todos («A + B»); {@code especie}, {@code aspectos} y {@code nivelPokemon} son los del primero. Las marcas de la fase 1 no
+     * tienen {@code modo} ni {@code miembros}: son de un jugador.
+     */
     static final class Entrada {
         String uuid = "", nombre = "", especie = "", aspectos = "";
         int nivelPokemon, segundos, derrotados, nivel;
         boolean jefe;
         long fecha;      // milisegundos desde 1970
+        String modo = SOLO;
+        List<MiembroTop> miembros = new ArrayList<>();
     }
 
-    private static final class TopArchivo { List<Entrada> entradas = new ArrayList<>(); }
+    private static final class TopArchivo {
+        List<Entrada> entradas = new ArrayList<>();     // en solitario
+        List<Entrada> grupos = new ArrayList<>();       // en grupo
+    }
 
     private final Path raiz;
     private final Map<UUID, Jugador> jugadores = new HashMap<>();
@@ -99,28 +117,33 @@ final class Datos {
         return null;
     }
 
-    /** Apunta una partida acabada: suma las monedas, cuenta la partida y, si es su mejor marca, la pone en el top. Devuelve el puesto (1 = el primero) o 0 si no entra al top. */
-    int registrar(UUID id, String nombre, String pokeId, Entrada e, int monedas) {
+    /** Apunta una partida acabada de un jugador: suma las monedas, cuenta la partida y recuerda su mejor tiempo (en total y con ese Pokemon). El top es aparte ({@link #registrarEquipo}). */
+    void registrarJugador(UUID id, String nombre, String pokeId, String especie, int segundos, int monedas) {
         Jugador j = jugador(id, nombre);
-        PokeMeta m = poke(j, pokeId, e.especie);
+        PokeMeta m = poke(j, pokeId, especie);
         j.monedas += monedas;
         j.partidas++; m.partidas++;
-        j.mejorTiempo = Math.max(j.mejorTiempo, e.segundos);
-        m.mejorTiempo = Math.max(m.mejorTiempo, e.segundos);
+        j.mejorTiempo = Math.max(j.mejorTiempo, segundos);
+        m.mejorTiempo = Math.max(m.mejorTiempo, segundos);
         guardar(id);
-        e.uuid = id.toString(); e.nombre = nombre; e.fecha = System.currentTimeMillis();
-        List<Entrada> t = top().entradas;
+    }
+
+    /** Apunta la partida de un equipo en el top (solo o de grupos, segun su {@code modo}): si mejora la marca de ese jugador o grupo, la sustituye. Devuelve el puesto (1 = el primero) o 0 si no mejora su marca (o no entra). */
+    int registrarEquipo(Entrada e) {
+        e.fecha = System.currentTimeMillis();
+        if (e.miembros == null) e.miembros = new ArrayList<>();
+        List<Entrada> t = lista(e.modo);
         Entrada previa = null;
         for (Entrada x : t) if (x.uuid.equals(e.uuid)) previa = x;
         if (previa != null) {
-            if (previa.segundos >= e.segundos) return puesto(id);      // no mejora su marca
+            if (previa.segundos >= e.segundos) return 0;      // no mejora su marca: el top se queda como estaba y no se le dice «puesto N»
             t.remove(previa);
         }
         t.add(e);
         ordenar(t);
         while (t.size() > MAX_TOP) t.remove(t.size() - 1);
         escribir(raiz.resolve("top.json"), top);
-        return puesto(id);
+        return puesto(e.uuid, e.modo);
     }
 
     // ------------------------------------------------------------ top
@@ -128,33 +151,53 @@ final class Datos {
     private TopArchivo top() {
         if (top == null) {
             top = leer(raiz.resolve("top.json"), TopArchivo.class);
-            if (top == null || top.entradas == null) top = new TopArchivo();
+            if (top == null) top = new TopArchivo();
+            if (top.entradas == null) top.entradas = new ArrayList<>();
+            if (top.grupos == null) top.grupos = new ArrayList<>();
             ordenar(top.entradas);
+            ordenar(top.grupos);
         }
         return top;
     }
+
+    private List<Entrada> lista(String modo) { return GRUPO.equals(modo) ? top().grupos : top().entradas; }
 
     private static void ordenar(List<Entrada> l) {
         l.sort(Comparator.comparingInt((Entrada x) -> -x.segundos).thenComparingLong(x -> x.fecha));      // mas tiempo primero; a igualdad, el que lo hizo antes
     }
 
-    /** Las {@code n} mejores marcas. */
-    List<Entrada> top(int n) { List<Entrada> t = top().entradas; return new ArrayList<>(t.subList(0, Math.min(n, t.size()))); }
+    /** Las {@code n} mejores marcas en solitario. */
+    List<Entrada> top(int n) { return primeras(lista(SOLO), n); }
 
-    /** Puesto (1 = primero) del jugador en el top, o 0 si no esta. */
-    int puesto(UUID id) {
-        List<Entrada> t = top().entradas;
-        for (int i = 0; i < t.size(); i++) if (t.get(i).uuid.equals(id.toString())) return i + 1;
+    /** Las {@code n} mejores marcas de grupos. */
+    List<Entrada> topGrupos(int n) { return primeras(lista(GRUPO), n); }
+
+    private static List<Entrada> primeras(List<Entrada> t, int n) { return new ArrayList<>(t.subList(0, Math.min(n, t.size()))); }
+
+    /** Puesto (1 = primero) del jugador en el top en solitario, o 0 si no esta. */
+    int puesto(UUID id) { return puesto(id.toString(), SOLO); }
+
+    /** Puesto (1 = primero) de esa clave (uuid del jugador, o los de un grupo unidos con «+») en el top de ese modo, o 0 si no esta. */
+    int puesto(String clave, String modo) {
+        List<Entrada> t = lista(modo);
+        for (int i = 0; i < t.size(); i++) if (t.get(i).uuid.equals(clave)) return i + 1;
         return 0;
     }
 
-    /** Vacia el top (para empezar un periodo nuevo) guardando antes una copia con la fecha. Devuelve el nombre de la copia, o null si no habia nada. */
+    /** Puesto del jugador en el mejor de sus tops (en solitario o en algun grupo suyo), para enseñarlo en el menu. */
+    int puestoEnGrupos(UUID id) {
+        List<Entrada> t = lista(GRUPO);
+        for (int i = 0; i < t.size(); i++) for (MiembroTop m : t.get(i).miembros) if (m.uuid.equals(id.toString())) return i + 1;
+        return 0;
+    }
+
+    /** Vacia los dos tops (para empezar un periodo nuevo) guardando antes una copia con la fecha. Devuelve el nombre de la copia, o null si no habia nada. */
     String reiniciarTop() {
-        List<Entrada> t = top().entradas;
-        if (t.isEmpty()) return null;
+        TopArchivo t = top();
+        if (t.entradas.isEmpty() && t.grupos.isEmpty()) return null;
         String copia = "top_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
         escribir(raiz.resolve(copia), top);
-        t.clear();
+        t.entradas.clear(); t.grupos.clear();
         escribir(raiz.resolve("top.json"), top);
         return copia;
     }
