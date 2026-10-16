@@ -71,7 +71,7 @@ final class Run {
     List<Cartas.Carta> oferta;
     Vec3d pp = Vec3d.ZERO;
     private boolean gemasEnviadas;
-    private int sonidoGema;
+    private int sonidoGema, gemaCadena, sonidoGolpe;          // para el sonido de las gemas (sube por una escala si se cogen seguidas) y para no repetir el del golpe cada tick
 
     Run(Equipo eq, ServerPlayerEntity p, Pokemon pk, String morphAntes, boolean inmortal, Map<String, Integer> meta) {
         this.eq = eq; this.w = eq.w; this.rnd = eq.rnd; this.enemigos = eq.enemigos;
@@ -161,7 +161,11 @@ final class Run {
             if (d < 0.9) {
                 it.remove();
                 ganarXp(g.valor);
-                if (p != null && tick - sonidoGema >= 2) { sonidoGema = tick; p.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.MASTER, 0.25f, 0.8f + rnd.nextFloat() * 0.6f); }
+                if (p != null && tick - sonidoGema >= 2) {
+                    gemaCadena = tick - sonidoGema <= 14 ? gemaCadena + 1 : 0;          // varias gemas seguidas: el sonido sube por una escala, como las monedas
+                    sonidoGema = tick;
+                    Sonidos.sfx(p, Sonidos.GEMA, 0.7f, Sonidos.tonoGema(gemaCadena));
+                }
             } else { g.x += dx / d * Math.min(vel, d); g.z += dz / d * Math.min(vel, d); }
         }
         if (focusCd > 0) focusCd--;
@@ -193,12 +197,12 @@ final class Run {
                 hp = 1; iframes = 30; focusCd = Catalogo.focusSegundos(st.focus) * 20;
                 if (Boolean.getBoolean("emi.survivors.debug")) EmiSurvivors.LOG.info("[objeto] {}: la Banda Focus lo deja con 1 de vida (se recarga en {} s)", nombre, Catalogo.focusSegundos(st.focus));
                 w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.0, pp.z, 20, 0.4, 0.6, 0.4, 0.2);
-                if (p != null) { p.playSoundToPlayer(SoundEvents.ITEM_TOTEM_USE, SoundCategory.MASTER, 0.4f, 1.6f); Msg.actionBar(p, Text.literal("¡Banda Focus! Aguantas con 1 de vida").formatted(Formatting.GOLD, Formatting.BOLD)); }
+                if (p != null) { Sonidos.sfx(p, Sonidos.FOCUS, 0.9f, 1.0f); Msg.actionBar(p, Text.literal("¡Banda Focus! Aguantas con 1 de vida").formatted(Formatting.GOLD, Formatting.BOLD)); }
             } else if (hp > 0 && st.baya > 0 && bayaCd <= 0 && hp < st.hpMax * 0.4) {
                 curar(st.hpMax * 0.25); bayaCd = Catalogo.bayaSegundos(st.baya) * 20;
                 if (Boolean.getBoolean("emi.survivors.debug")) EmiSurvivors.LOG.info("[objeto] {}: la Baya Zidra lo cura (vida {}; se recarga en {} s)", nombre, Math.round(hp), Catalogo.bayaSegundos(st.baya));
                 w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pp.x, pp.y + 1.0, pp.z, 14, 0.4, 0.5, 0.4, 0.0);
-                if (p != null) { p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.MASTER, 0.6f, 1.2f); Msg.actionBar(p, Text.literal("¡Baya Zidra! +25% de vida").formatted(Formatting.GREEN, Formatting.BOLD)); }
+                if (p != null) { Sonidos.sfx(p, Sonidos.BAYA, 0.9f, 1.0f); Msg.actionBar(p, Text.literal("¡Baya Zidra! +25% de vida").formatted(Formatting.GREEN, Formatting.BOLD)); }
             }
         }
         if (causa != null && st.casco > 0 && causa.hp > 0) {
@@ -208,7 +212,10 @@ final class Run {
             causa.kbx += dx / d * 0.9 * kb; causa.kbz += dz / d * 0.9 * kb;
             w.spawnParticles(ParticleTypes.ENCHANTED_HIT, causa.e.getX(), causa.e.getY() + 0.7, causa.e.getZ(), 6, 0.2, 0.2, 0.2, 0.1);
         }
-        if (p != null) p.networkHandler.sendPacket(new EntityStatusS2CPacket(p, (byte) 2));
+        if (p != null) {
+            p.networkHandler.sendPacket(new EntityStatusS2CPacket(p, (byte) 2));
+            if (tick - sonidoGolpe >= 5) { sonidoGolpe = tick; Sonidos.sfx(p, Sonidos.GOLPE, 0.9f, 0.95f + rnd.nextFloat() * 0.1f); }
+        }
     }
 
     /** Empuja a un enemigo en la direccion (dx, dz) con esa fuerza (menos a campeones y jefe): para atraer (hacia un punto) o apartar. */
@@ -227,12 +234,12 @@ final class Run {
                 curar(st.hpMax * 0.30);
                 for (Run m : eq.miembros) if (m != this && m.estado == VIVO && Math.hypot(m.pp.x - pp.x, m.pp.z - pp.z) < 6) m.curar(m.st.hpMax * 0.15);
                 w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pp.x, pp.y + 1.2, pp.z, 16, 0.5, 0.6, 0.5, 0.0);
-                if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.MASTER, 0.7f, 1.2f);
+                if (p != null) Sonidos.sfx(p, Sonidos.BAYA, 1.0f, 1.0f);
             }
             case Objeto.IMAN -> {
                 for (Gema g : eq.gemas) { g.dueno = this; g.atraidaT = Math.max(g.atraidaT, 26); }
                 for (int k = 0; k < 36; k++) { double a = k * Math.PI / 18; w.spawnParticles(ParticleTypes.ENCHANT, pp.x + Math.cos(a) * 3, pp.y + 1.0, pp.z + Math.sin(a) * 3, 1, 0.1, 0.3, 0.1, 0.5); }
-                if (p != null) p.playSoundToPlayer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 1.0f, 0.8f);
+                if (p != null) Sonidos.sfx(p, Sonidos.IMAN, 1.0f, 1.0f);
             }
             case Objeto.BOMBA -> {
                 w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, pp.x, pp.y + 0.5, pp.z, 1, 0, 0, 0, 0);
@@ -246,12 +253,12 @@ final class Run {
                     w.sendEntityStatus(en.e, (byte) 2);
                     w.spawnParticles(ParticleTypes.EXPLOSION, en.e.getX(), en.e.getY() + 0.6, en.e.getZ(), 1, 0, 0, 0, 0);
                 }
-                if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.MASTER, 0.8f, 0.9f);
+                if (p != null) Sonidos.sfx(p, Sonidos.BOMBA, 1.0f, 1.0f);
             }
             case Objeto.CARAMELO -> {
                 nivel++; pendientes++; xpSig = Curvas.xpPara(nivel); xp = Math.min(xp, xpSig - 1);
                 w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.2, pp.z, 24, 0.4, 0.6, 0.4, 0.2);
-                if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 0.7f, 1.3f);
+                if (p != null) Sonidos.sfx(p, Sonidos.CARAMELO, 1.0f, 1.0f);
             }
             default -> { return; }
         }
@@ -306,7 +313,7 @@ final class Run {
         ServerPlayerEntity p = jugador();
         if (p != null) {
             Partida.fijarVelocidad(p, 0);
-            p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_DEATH, SoundCategory.MASTER, 0.6f, 1.0f);
+            Sonidos.sfx(p, Sonidos.CAER, 0.9f, 1.0f);
             Msg.title(p, Text.literal("¡HAS CAÍDO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Un compañero puede revivirte si se queda a tu lado").formatted(Formatting.GRAY), 5, 60, 15);
             if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
         }
@@ -321,7 +328,7 @@ final class Run {
         ServerPlayerEntity p = jugador();
         if (p != null) {
             Partida.fijarVelocidad(p, st.vel);
-            p.playSoundToPlayer(SoundEvents.ITEM_TOTEM_USE, SoundCategory.MASTER, 0.5f, 1.2f);
+            Sonidos.sfx(p, Sonidos.REVIVIR, 1.0f, 1.0f);
             Msg.title(p, Text.literal("¡REVIVIDO!").formatted(Formatting.GREEN, Formatting.BOLD), null, 3, 25, 10);
         }
         w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.0, pp.z, 25, 0.4, 0.6, 0.4, 0.2);
@@ -337,7 +344,8 @@ final class Run {
         if (p != null) {
             Msg.title(p, Text.literal(ultimo ? "¡HAS VENCIDO A " + jefe.toUpperCase() + "!" : "¡JEFE DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD),
                     Text.literal((ultimo ? "¡Los cinco jefes caen! " : jefe + " ha caído. ") + "Tesoro: 2 niveles y la mitad de tu vida").formatted(Formatting.YELLOW), 5, 60, 15);
-            p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, ultimo ? 0.8f : 1.0f);
+            Sonidos.sfx(p, Sonidos.JEFE_DERROTADO, 1.0f, ultimo ? 0.9f : 1.0f);
+            Musica.silencio(p, 3600);                       // se oye la fanfarria; despues vuelve la musica del bioma
         }
     }
 
@@ -357,7 +365,7 @@ final class Run {
         soltarGemas();
         ServerPlayerEntity p = jugador();
         if (p == null) return;
-        p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 0.6f, 1.0f);
+        Sonidos.sfx(p, Sonidos.NIVEL, 0.9f, 1.0f);
         JsonObject o = new JsonObject();
         o.addProperty("nivel", nivel - pendientes + 1);
         o.addProperty("seg", T_CARTA / 20);
@@ -425,6 +433,7 @@ final class Run {
         esperandoCarta = false; oferta = null;
         iframes = Math.max(iframes, 20);
         ServerPlayerEntity p = jugador();
+        if (p != null && !(c.tipo().equals("arma") && c.evo())) Sonidos.sfx(p, Sonidos.CARTA, 0.9f, 1.0f);              // la evolucion tiene su propio sonido
         if (p != null && ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
         if (p != null) enviarEstado();
     }
@@ -435,7 +444,7 @@ final class Run {
         ServerPlayerEntity p = jugador();
         if (p != null) {
             Msg.title(p, Text.literal("¡EVOLUCIÓN!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(antes + " → " + despues).formatted(Formatting.YELLOW), 5, 50, 15);
-            p.playSoundToPlayer(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 0.8f, 1.2f);
+            Sonidos.sfx(p, Sonidos.EVOLUCION, 1.0f, 1.0f);
         }
         w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, pp.x, pp.y + 1.0, pp.z, 40, 0.5, 0.8, 0.5, 0.25);
         if (eq.miembros.size() > 1) eq.avisar(Msg.say(nombre + " ha evolucionado «" + antes + "» en «" + despues + "»."));

@@ -50,7 +50,10 @@ final class Jefe {
     private double bz() { return en.e.getZ(); }
     private double suelo() { return Arena.Y0 + 0.1; }
 
-    private void sonido(SoundEvent s, float vol, float pitch) { eq.w.playSound(null, bx(), en.e.getY() + 1.0, bz(), s, SoundCategory.HOSTILE, vol, pitch); }
+    /** Un sonido del jefe: lo oye todo el equipo a su volumen (la camara esta a 14 bloques de altura, asi que no se atenua con la distancia). */
+    private void sonido(SoundEvent s, float vol, float pitch) {
+        for (Run m : eq.miembros) Sonidos.sfx(m.jugador(), s, vol, pitch);
+    }
 
     // ------------------------------------------------------------------------------------------------ marcas de aviso
 
@@ -106,7 +109,7 @@ final class Jefe {
             if (p != null) Msg.title(p, Text.literal("¡" + nombre.toUpperCase() + " SE ENFURECE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Ataca más deprisa y con más fuerza").formatted(Formatting.YELLOW), 5, 40, 15);
         }
         eq.w.spawnParticles(ParticleTypes.ANGRY_VILLAGER, bx(), en.e.getY() + en.radio * 2, bz(), 24, en.radio, en.radio, en.radio, 0.0);
-        sonido(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, 0.8f, 1.1f);
+        sonido(Sonidos.JEFE_RUGIDO, 1.0f, 1.0f);
     }
 
     private Atq siguiente(List<Run> objetivos) {
@@ -173,7 +176,7 @@ final class Jefe {
                 double a = k * Math.PI * 2 / 28, r = S * 1.1;
                 eq.w.spawnParticles(impacto(), tx + Math.cos(a) * r, y0 + 0.3, tz + Math.sin(a) * r, 2, 0.1, 0.1, 0.1, 0.05);
             }
-            sonido(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 0.9f, 0.8f);
+            sonido(Sonidos.JEFE_IMPACTO, 1.0f, 1.0f);
             for (Run m : objetivos)
                 if (Marcas.dentroDeCuadrado(m.pp.x, m.pp.z, tx, tz, 2 * S, 0.3) && Math.abs(m.pp.y - y0) < 2.5) m.danarJugador(dmg * 1.4f);
             return true;
@@ -206,7 +209,7 @@ final class Jefe {
                 en.e.setYaw(yaw); en.e.setHeadYaw(yaw); en.e.setBodyYaw(yaw);
                 if (t == 1) { fondo = marca(Marcas.CRISTAL_ROJO, x0, z0, giro, ancho, largo, true, false); relleno = marca(Marcas.ALFOMBRA_ROJA, x0, z0, giro, ancho, 0.2f, true, true); }
                 if (t == 2) llenar(relleno, x0, z0, giro, ancho, largo, true, aviso - 2);
-                if (t >= aviso) { cargando = true; t = 0; sonido(SoundEvents.ENTITY_RAVAGER_ROAR, 0.8f, 1.1f); }
+                if (t >= aviso) { cargando = true; t = 0; sonido(Sonidos.JEFE_CARGA, 1.0f, 1.0f); }
                 return false;
             }
             en.e.setVelocity(Vec3d.ZERO);
@@ -247,7 +250,7 @@ final class Jefe {
                 for (double d = 2.0; d <= LARGO; d += 2.0)
                     eq.w.spawnParticles(ParticleTypes.SWEEP_ATTACK, x + Math.sin(giro) * d + Math.cos(giro) * k * 0.9, en.e.getY() + 1.0, z + Math.cos(giro) * d - Math.sin(giro) * k * 0.9, 1, 0, 0, 0, 0);
             eq.w.spawnParticles(impacto(), x + Math.sin(giro) * LARGO * 0.6, en.e.getY() + 1.0, z + Math.cos(giro) * LARGO * 0.6, 20, ANCHO * 0.3, 0.4, ANCHO * 0.3, 0.02);
-            sonido(SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 0.7f);
+            sonido(Sonidos.JEFE_ZARPAZO, 1.0f, 1.0f);
             for (Run m : objetivos)
                 if (Marcas.dentroDeRayo(m.pp.x, m.pp.z, x, z, giro, ANCHO, LARGO, 0.3) || Math.hypot(m.pp.x - x, m.pp.z - z) < en.radio + 1.0) m.danarJugador(dmg * 1.5f);
             return true;
@@ -291,7 +294,7 @@ final class Jefe {
                 quitar(fondo[k]); quitar(relleno[k]);
                 eq.w.spawnParticles(ParticleTypes.EXPLOSION, x[k], suelo() + 0.6, z[k], 1, 0, 0, 0, 0);
                 eq.w.spawnParticles(impacto(), x[k], suelo() + 0.5, z[k], 14, LADO * 0.25, 0.4, LADO * 0.25, 0.05);
-                if (k % 3 == 0) sonido(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 0.5f, 1.1f);
+                if (k % 3 == 0) sonido(Sonidos.JEFE_IMPACTO, 0.55f, 1.25f);
                 for (Run m : objetivos) if (Marcas.dentroDeCuadrado(m.pp.x, m.pp.z, x[k], z[k], LADO, 0.3)) m.danarJugador(dmg * 0.9f);
             }
             return !quedan;
@@ -323,7 +326,7 @@ final class Jefe {
             if (t == 1) carril = marca(Marcas.CRISTAL_VERDE, cx + px * off, cz + pz * off, Math.atan2(dx, dz), (float) HUECO, (float) R_MAX, true, false);
             if (t <= aviso) {
                 if (t % 4 == 0) eq.w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, cx + dx * 4 + px * off, suelo() + 0.5, cz + dz * 4 + pz * off, 5, 1.5, 0.3, 1.5, 0.0);
-                if (t == aviso) sonido(SoundEvents.BLOCK_BEACON_ACTIVATE, 1.0f, 0.6f);
+                if (t == aviso) sonido(Sonidos.JEFE_AVISO, 1.0f, 1.0f);
                 return false;
             }
             r += V;
@@ -392,7 +395,7 @@ final class Jefe {
                 for (Entity e : haces) quitar(e);
                 haces.clear();
                 for (int k = 0; k < rayos; k++) haces.add(marca(Marcas.ALFOMBRA_ROJA, cx, cz, Math.PI / 2 - angulo(k, 0), (float) ANCHO, (float) LARGO, true, true));
-                sonido(SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, 1.0f, 0.7f);
+                sonido(Sonidos.JEFE_RAYO, 1.0f, 1.0f);
             }
             if (t <= aviso) return false;
             double giro = (t - aviso) * w;
@@ -423,7 +426,7 @@ final class Jefe {
                 eq.w.spawnParticles(impacto(), bx(), en.e.getY() + en.radio * 1.5, bz(), 6, en.radio * 0.5, 0.8, en.radio * 0.5, 0.05);
             }
             if (t == 1) {
-                sonido(SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, 1.0f, 0.8f);
+                sonido(Sonidos.JEFE_INVOCA, 1.0f, 1.0f);
                 for (Run m : eq.miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡" + nombre + " invoca refuerzos!").formatted(Formatting.GOLD, Formatting.BOLD)); }
             }
             if (t < aviso) return false;

@@ -45,6 +45,9 @@ public class EmiSurvivors implements ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Partida.alSalir(handler.player));
 
         ServerTickEvents.END_SERVER_TICK.register(Mundo::tick);
+        ServerTickEvents.END_SERVER_TICK.register(Musica::tick);
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Musica.olvidar(handler.player.getUuid()));
+        ServerLifecycleEvents.SERVER_STOPPING.register(s -> Musica.limpiar());
 
         // en una partida y en la sala no se toca nada (ni bloques, ni objetos, ni entidades, ni a los Pokemon enemigos), salvo el terminal y el objeto del menu de la sala
         UseItemCallback.EVENT.register((p, w, hand) -> {

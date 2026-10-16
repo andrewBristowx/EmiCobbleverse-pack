@@ -313,7 +313,7 @@ public final class MenuPantalla extends Lienzo {
         parrafo(g, p.ataqueTexto, tx + 30, y + 56, RW - 140 - 38, GRIS, 0.9f);
         StringBuilder sb = new StringBuilder();
         for (Mejora m : catalogo) { int n = p.mejoras.getOrDefault(m.id(), 0); if (n > 0) sb.append(m.nombre()).append(' ').append(n).append("  "); }
-        texto(g, sb.length() == 0 ? "Sin mejoras permanentes todavía (mira la pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 88, 0xFFFFE070, 0.85f);
+        texto(g, sb.length() == 0 ? "Sin mejoras todavía (pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 88, 0xFFFFE070, 0.85f);
         texto(g, p.partidas == 0 ? "Aún no has jugado con él." : "Mejor tiempo con él: " + tiempo(p.mejorTiempo) + " (" + p.partidas + " partidas)", tx, y + 99, GRIS, 0.85f);
         int[] za = zonaArenas();
         arenas(g, mx, my, za[0], za[1]);

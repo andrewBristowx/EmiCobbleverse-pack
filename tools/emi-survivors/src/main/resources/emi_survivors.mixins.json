@@ -5,6 +5,6 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "emi-survivors-refmap.json",
   "mixins": ["EnemigoSinEmpujonesMixin"],
-  "client": ["CameraMixin", "KeyboardInputMixin", "InGameHudMixin", "BossBarHudMixin", "BetterThirdPersonMixin", "GameRendererMixin", "MusicTrackerMixin"],
+  "client": ["CameraMixin", "KeyboardInputMixin", "InGameHudMixin", "BossBarHudMixin", "BetterThirdPersonMixin", "GameRendererMixin", "MusicTrackerMixin", "SoundSystemMixin"],
   "injectors": { "defaultRequire": 1 }
 }

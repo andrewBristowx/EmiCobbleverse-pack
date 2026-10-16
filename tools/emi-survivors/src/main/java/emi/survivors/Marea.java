@@ -92,7 +92,7 @@ final class Marea {
             ServerPlayerEntity p = m.jugador();
             if (p == null) continue;
             Msg.title(p, Text.literal(titulo()).formatted(color(), Formatting.BOLD), Text.literal(Mareas.subtitulo(tipo)).formatted(Formatting.YELLOW), 5, 50, 15);
-            p.playSoundToPlayer(SoundEvents.EVENT_RAID_HORN.value(), SoundCategory.MASTER, 0.45f, 1.0f);
+            Sonidos.sfx(p, Sonidos.MAREA_CUERNO, 0.9f, 1.0f);
         }
         if (Boolean.getBoolean("emi.survivors.debug")) EmiSurvivors.LOG.info("[marea] {}: {} (marea {}) a los {} s", eq.nombres(), titulo(), numero, eq.segundos());
     }
@@ -169,6 +169,6 @@ final class Marea {
     }
 
     private void sonido() {
-        for (Run m : eq.miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) p.playSoundToPlayer(SoundEvents.ENTITY_RAVAGER_ROAR, SoundCategory.MASTER, 0.5f, 1.2f); }
+        for (Run m : eq.miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Sonidos.sfx(p, Sonidos.MAREA_ESTAMPIDA, 0.9f, 1.0f); }
     }
 }

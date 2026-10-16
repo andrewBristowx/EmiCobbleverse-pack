@@ -1,0 +1,197 @@
+{
+  "musica.sala": {
+    "sounds": [
+      {
+        "name": "emi_survivors:musica_sala",
+        "stream": true
+      }
+    ]
+  },
+  "musica.pradera": {
+    "sounds": [
+      {
+        "name": "emi_survivors:musica_pradera",
+        "stream": true
+      }
+    ]
+  },
+  "musica.bosque": {
+    "sounds": [
+      {
+        "name": "emi_survivors:musica_bosque",
+        "stream": true
+      }
+    ]
+  },
+  "musica.cosmos": {
+    "sounds": [
+      {
+        "name": "emi_survivors:musica_cosmos",
+        "stream": true
+      }
+    ]
+  },
+  "musica.jefe": {
+    "sounds": [
+      {
+        "name": "emi_survivors:musica_jefe",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.gema": {
+    "sounds": [
+      "emi_survivors:sfx_gema"
+    ]
+  },
+  "sfx.nivel": {
+    "sounds": [
+      "emi_survivors:sfx_nivel"
+    ]
+  },
+  "sfx.carta": {
+    "sounds": [
+      "emi_survivors:sfx_carta"
+    ]
+  },
+  "sfx.evolucion": {
+    "sounds": [
+      "emi_survivors:sfx_evolucion"
+    ]
+  },
+  "sfx.empieza": {
+    "sounds": [
+      "emi_survivors:sfx_empieza"
+    ]
+  },
+  "sfx.golpe": {
+    "sounds": [
+      "emi_survivors:sfx_golpe"
+    ]
+  },
+  "sfx.caer": {
+    "sounds": [
+      "emi_survivors:sfx_caer"
+    ]
+  },
+  "sfx.revivir": {
+    "sounds": [
+      "emi_survivors:sfx_revivir"
+    ]
+  },
+  "sfx.derrota": {
+    "sounds": [
+      "emi_survivors:sfx_derrota"
+    ]
+  },
+  "sfx.jefe_derrotado": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_derrotado"
+    ]
+  },
+  "sfx.baya": {
+    "sounds": [
+      "emi_survivors:sfx_baya"
+    ]
+  },
+  "sfx.iman": {
+    "sounds": [
+      "emi_survivors:sfx_iman"
+    ]
+  },
+  "sfx.bomba": {
+    "sounds": [
+      "emi_survivors:sfx_bomba"
+    ]
+  },
+  "sfx.caramelo": {
+    "sounds": [
+      "emi_survivors:sfx_caramelo"
+    ]
+  },
+  "sfx.focus": {
+    "sounds": [
+      "emi_survivors:sfx_focus"
+    ]
+  },
+  "sfx.jefe_aparece": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_aparece"
+    ]
+  },
+  "sfx.jefe_rugido": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_rugido"
+    ]
+  },
+  "sfx.jefe_impacto": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_impacto"
+    ]
+  },
+  "sfx.jefe_carga": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_carga"
+    ]
+  },
+  "sfx.jefe_zarpazo": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_zarpazo"
+    ]
+  },
+  "sfx.jefe_aviso": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_aviso"
+    ]
+  },
+  "sfx.jefe_rayo": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_rayo"
+    ]
+  },
+  "sfx.jefe_invoca": {
+    "sounds": [
+      "emi_survivors:sfx_jefe_invoca"
+    ]
+  },
+  "sfx.marea_cuerno": {
+    "sounds": [
+      "emi_survivors:sfx_marea_cuerno"
+    ]
+  },
+  "sfx.marea_estampida": {
+    "sounds": [
+      "emi_survivors:sfx_marea_estampida"
+    ]
+  },
+  "sfx.trueno": {
+    "sounds": [
+      "emi_survivors:sfx_trueno"
+    ]
+  },
+  "sfx.brillo": {
+    "sounds": [
+      "emi_survivors:sfx_brillo"
+    ]
+  },
+  "sfx.temblor": {
+    "sounds": [
+      "emi_survivors:sfx_temblor"
+    ]
+  },
+  "sfx.explosion_suave": {
+    "sounds": [
+      "emi_survivors:sfx_explosion_suave"
+    ]
+  },
+  "sfx.menu_clic": {
+    "sounds": [
+      "emi_survivors:sfx_menu_clic"
+    ]
+  },
+  "sfx.menu_comprar": {
+    "sounds": [
+      "emi_survivors:sfx_menu_comprar"
+    ]
+  }
+}

@@ -89,6 +89,16 @@ final class Equipo {
         return l.isEmpty() ? (pool1.isEmpty() ? pool2 : pool1) : l;
     }
 
+    /** Para el resumen del log: de los enemigos normales que han salido, cuantos eran de un tipo favorito del bioma (cuenta cada vez que se elige una especie). */
+    int normalesTotal, normalesDelBioma;
+
+    private Especies.E elegirNormal(List<Especies.E> pool) {
+        Especies.E sp = pool.get(rnd.nextInt(pool.size()));
+        normalesTotal++;
+        if (bioma.tipos().contains(sp.tipo1()) || bioma.tipos().contains(sp.tipo2())) normalesDelBioma++;
+        return sp;
+    }
+
     /** El nombre del mundo (bioma) de esta partida, para la interfaz. */
     String zona() { return bioma.nombre(); }
 
@@ -230,7 +240,11 @@ final class Equipo {
 
         // 7) quien se queda sin vida cae; si caen todos, se acabo
         for (Run m : miembros) if (m.estado == Run.VIVO && m.hp <= 0) m.caer();
-        if (vivos().isEmpty()) { Partida.terminarEquipo(this, miembros.size() == 1 ? "Te han derrotado." : "Han caído todos los jugadores."); return; }
+        if (vivos().isEmpty()) {
+            for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); Musica.sonarDespues(p, Sonidos.DERROTA, 700, 1.0f); Musica.silencio(p, 5500); }       // se oye la melodia triste; luego suena la de la sala
+            Partida.terminarEquipo(this, miembros.size() == 1 ? "Te han derrotado." : "Han caído todos los jugadores.");
+            return;
+        }
         for (Run m : miembros) if (m.estado == Run.VIVO && m.pendientes > 0 && !m.esperandoCarta) m.ofrecerCartas();
     }
 
@@ -339,7 +353,7 @@ final class Equipo {
                 boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Curvas.pFuerte(t));
                 List<Especies.E> pool = pool(fuerte);
                 if (pool.isEmpty()) return false;
-                sp = pool.get(rnd.nextInt(pool.size()));
+                sp = elegirNormal(pool);
                 tipoE = fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL;
             }
         }
@@ -383,7 +397,7 @@ final class Equipo {
         boolean fuerte = rnd.nextDouble() < Curvas.pFuerte(t);
         List<Especies.E> pool = pool(fuerte);
         if (pool.isEmpty()) return null;
-        Especies.E sp = pool.get(rnd.nextInt(pool.size()));
+        Especies.E sp = elegirNormal(pool);
         Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t), Curvas.velMul(t), 0f, rnd);
         if (en == null) { fallosCrear++; return null; }
         enemigos.add(en);
@@ -408,7 +422,7 @@ final class Equipo {
         boolean fuerte = rnd.nextDouble() < Curvas.pFuerte(t);
         List<Especies.E> pool = pool(fuerte);
         if (pool.isEmpty()) return;
-        Especies.E sp = pool.get(rnd.nextInt(pool.size()));
+        Especies.E sp = elegirNormal(pool);
         Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t) * 1.3, Curvas.velMul(t), 0f, rnd);
         if (en == null) { fallosCrear++; return; }
         en.rdx = ux; en.rdz = uz;
@@ -453,7 +467,7 @@ final class Equipo {
             Marcas.quitar(this, b.fondo); Marcas.quitar(this, b.relleno);
             w.spawnParticles(ParticleTypes.EXPLOSION, b.x, Arena.Y0 + 0.8, b.z, 2, 1.0, 0.3, 1.0, 0.0);
             w.spawnParticles(ParticleTypes.FLAME, b.x, Arena.Y0 + 0.6, b.z, 24, Bomba.LADO * 0.25, 0.4, Bomba.LADO * 0.25, 0.08);
-            w.playSound(null, b.x, Arena.Y0 + 1, b.z, net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE.value(), net.minecraft.sound.SoundCategory.HOSTILE, 0.7f, 1.2f);
+            for (Run m : miembros) { double dd = Math.hypot(m.pp.x - b.x, m.pp.z - b.z); if (dd < 30) Sonidos.sfx(m.jugador(), Sonidos.EXPLOSION_SUAVE, 0.9f * (float) (1.0 - dd / 30.0), 1.1f); }
             for (Run m : objetivos) if (Marcas.dentroDeCuadrado(m.pp.x, m.pp.z, b.x, b.z, Bomba.LADO, 0.3)) m.danarJugador(Pers.danoBomba(tick / 20.0));
             it.remove();
         }
@@ -487,7 +501,7 @@ final class Equipo {
             ServerPlayerEntity p = m.jugador();
             if (p == null) continue;
             Msg.title(p, Text.literal("¡" + d.nombre().toUpperCase() + "!").formatted(color, Formatting.BOLD), Text.literal(d.aviso()).formatted(Formatting.YELLOW), 5, 60, 15);
-            p.playSoundToPlayer(net.minecraft.sound.SoundEvents.ENTITY_WITHER_SPAWN, net.minecraft.sound.SoundCategory.MASTER, 0.35f, 1.2f);
+            Sonidos.sfx(p, Sonidos.JEFE_APARECE, 0.85f, 1.0f);
         }
         EmiSurvivors.LOG.info("[jefe] {}: sale el jefe {} ({}) a los {} s con {} de vida", nombres(), n, d.nombre(), segundos(), Math.round(hp));
         return true;

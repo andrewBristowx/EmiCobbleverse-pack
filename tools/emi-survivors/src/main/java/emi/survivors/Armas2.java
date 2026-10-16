@@ -131,7 +131,7 @@ final class Armas2 {
     }
 
     static void sonido(Run r, double x, double y, double z, SoundEvent s, float vol, float tono) {
-        r.w.playSound(null, x, y, z, s, SoundCategory.PLAYERS, vol, tono);
+        Sonidos.sfx(r.jugador(), s, vol, tono);               // lo oye solo su dueño, a su volumen (la camara esta a 14 bloques del suelo)
     }
 
     /** Diferencia de angulos (rad) envuelta a -PI..PI. */
@@ -292,7 +292,7 @@ final class Armas2 {
                 if (along < -0.5 || along > L + en.radio || Math.abs(across) > W + en.radio) continue;
                 r.golpear(en, DMG[i()], h.dir.x * 0.5, h.dir.z * 0.5);
             }
-            sonido(r, pp.x, pp.y, pp.z, SoundEvents.BLOCK_BEACON_ACTIVATE, 0.5f, 1.6f);
+            sonido(r, pp.x, pp.y, pp.z, Sonidos.BRILLO, 0.7f, 1.0f);
         }
 
         private void brillar(Vec3d pp, Haz h, double L, double W) {
@@ -493,7 +493,7 @@ final class Armas2 {
                 r.w.spawnParticles(ParticleTypes.EXPLOSION, pp.x + Math.cos(a) * Rr * 0.9, pp.y + 0.3, pp.z + Math.sin(a) * Rr * 0.9, 1, 0, 0, 0, 0);
             }
             r.w.spawnParticles(TIERRA, pp.x, pp.y + 0.3, pp.z, (int) (90 * r.densidad()), Rr * 0.5, 0.2, Rr * 0.5, 0.2);
-            sonido(r, pp.x, pp.y, pp.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 0.6f, 0.6f);
+            sonido(r, pp.x, pp.y, pp.z, Sonidos.TEMBLOR, 0.9f, 1.0f);
             for (Enemigo en : cerca(r, pp.x, pp.z, Rr)) {
                 Vec3d f = unitario(en.e.getX() - pp.x, en.e.getZ() - pp.z);
                 r.golpear(en, DMG[i()], f.x * 1.0, f.z * 1.0);
@@ -612,7 +612,7 @@ final class Armas2 {
                     r.golpear(en, DMG[i()], 0, 0);
                     en.aturdir(evo() ? 30 : 14);
                 }
-                if (sonar) { sonido(r, x, y, z, SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, 0.25f, 1.4f); sonar = false; }
+                if (sonar) { sonido(r, x, y, z, Sonidos.TRUENO, 0.5f, 1.1f); sonar = false; }
             }
             cd = cdt(CD[i()]);
         }
@@ -782,7 +782,7 @@ final class Armas2 {
                 if (h.t < VIDA[i()]) continue;
                 r.w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, h.x, y, h.z, 1, 0, 0, 0, 0);
                 r.w.spawnParticles(ParticleTypes.END_ROD, h.x, y, h.z, 40, Rr * 0.3, 0.5, Rr * 0.3, 0.3);
-                sonido(r, h.x, y, h.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 0.5f, 0.7f);
+                sonido(r, h.x, y, h.z, Sonidos.EXPLOSION_SUAVE, 0.7f, 0.8f);
                 for (Enemigo en : cerca(r, h.x, h.z, Rr)) {
                     Vec3d f = unitario(en.e.getX() - h.x, en.e.getZ() - h.z);
                     r.golpear(en, DMG[i()], f.x * 1.2, f.z * 1.2);

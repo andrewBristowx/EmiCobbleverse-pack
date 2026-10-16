@@ -63,6 +63,7 @@ final class Acciones {
                     if (!Mundo.enSala(p) || Partida.participa(p)) return;
                     String err = comprar(p, a.a(), a.b());
                     if (err != null) p.sendMessage(Msg.err(err), false);
+                    else Sonidos.sfx(p, Sonidos.MENU_COMPRAR, 0.9f, 1.0f);
                     Menu.enviar(p, "mejoras", null);
                 }
                 case "menu" -> { if (Mundo.enSala(p) && !Partida.participa(p)) Menu.enviar(p, a.a().isEmpty() ? "jugar" : a.a(), null); }

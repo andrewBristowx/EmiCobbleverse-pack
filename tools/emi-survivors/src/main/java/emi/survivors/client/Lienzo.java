@@ -4,10 +4,13 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.List;
 
@@ -45,11 +48,17 @@ public abstract class Lienzo extends Screen {
         m.pop();
     }
 
+    private static final SoundEvent SONIDO_CLIC = SoundEvent.of(Identifier.of("emi_survivors", "sfx.menu_clic"));
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         clic((int) Math.floor((mouseX - ox) / escala), (int) Math.floor((mouseY - oy) / escala), button);
+        if (sonidoClic()) MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SONIDO_CLIC, 1.0f, 0.8f));
         return true;
     }
+
+    /** ¿Suena el «clic» propio al pulsar? (la pantalla de cartas no: el servidor pone el sonido de la carta elegida.) */
+    protected boolean sonidoClic() { return true; }
 
     // ------------------------------------------------------------ ayudas de dibujo
 

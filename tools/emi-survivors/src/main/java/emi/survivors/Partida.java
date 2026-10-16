@@ -242,6 +242,8 @@ public final class Partida {
             EmiSurvivors.LOG.info("Partida de {}: Pokemon {} (tipo {}, ataque inicial {}), hueco de arena {}, equipo de {}, fijo={}, inmortal={}", run.nombre, run.pk.getSpecies().getName(), run.tipo, run.inicial.nombre(), slot,
                     eq.miembros.size(), fijo, run.inmortal);
             ServerPlayerEntity p = run.jugador();
+            Sonidos.sfx(p, Sonidos.EMPIEZA, 1.0f, 1.0f);
+            Musica.silencio(p, 1500);                                     // se oye la fanfarria de «¡empieza!» y despues entra la musica del bioma
             if (p != null) p.sendMessage(Msg.say("¡Empieza! Muévete con WASD; tu " + run.pk.getSpecies().getName() + " ataca solo con " + run.inicial.nombre() + ". Para salir: /survivor parar"
                     + (eq.miembros.size() > 1 ? ". Si un compañero cae, quédate a su lado unos segundos para revivirlo." : "")), false);
         }
@@ -322,7 +324,8 @@ public final class Partida {
         int seg = eq.segundos();
         boolean cuenta = cuentaPartida(eq);
         eq.limpiar();
-        EmiSurvivors.LOG.info("Fin de la partida de {}: {} | {} s, {} derrotados, {} especies distintas, {} fallos al crear{}", eq.nombres(), motivo, seg, eq.derrotados, eq.especiesVistas.size(), eq.fallosCrear,
+        EmiSurvivors.LOG.info("Fin de la partida de {} ({}): {} | {} s, {} derrotados, {} especies distintas ({} % de los normales eran de tipos del bioma), {} fallos al crear{}", eq.nombres(), eq.bioma.id(), motivo, seg, eq.derrotados, eq.especiesVistas.size(),
+                eq.normalesTotal == 0 ? 0 : Math.round(100.0 * eq.normalesDelBioma / eq.normalesTotal), eq.fallosCrear,
                 eq.fijo > 0 ? " | medias con " + eq.fijo + " enemigos: servidor " + Run.fmt(eq.msptEstable()) + " ms/tick, nuestro " + Run.fmt(eq.nuestroEstable()) + " ms/tick (max servidor " + Run.fmt(eq.med.msptMax()) + " ms)" : "");
         // el top es del equipo: lo que ha aguantado entre todos
         int puesto = 0;

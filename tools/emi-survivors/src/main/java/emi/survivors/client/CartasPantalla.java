@@ -41,6 +41,8 @@ public final class CartasPantalla extends Lienzo {
 
     @Override public boolean shouldCloseOnEsc() { return false; }
 
+    @Override protected boolean sonidoClic() { return false; }
+
     private static final int CW = 170, CH = 230, SEP = 22;
 
     private int x0() { return (W - (cartas.size() * CW + (cartas.size() - 1) * SEP)) / 2; }
