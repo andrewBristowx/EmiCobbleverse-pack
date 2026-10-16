@@ -46,6 +46,7 @@ final class Armas {
         final String id;
         int nivel;
         int cd;
+        int usadoEn = -1000;                     // el tick en que se uso por ultima vez (lo apunta cdt(); la interfaz lo usa para encender la ranura)
 
         Arma(Run r, String id, int nivel) { this.r = r; this.id = id; this.nivel = nivel; }
 
@@ -58,7 +59,7 @@ final class Armas {
         final boolean evo() { return nivel >= Catalogo.NIVEL_EVO; }
 
         /** Ticks hasta el siguiente uso (con la mejora de recarga del jugador; nunca menos de 4). */
-        final int cdt(double base) { return Math.max(4, (int) Math.round(base * r.st.recarga)); }
+        final int cdt(double base) { usadoEn = r.tick; return Math.max(4, (int) Math.round(base * r.st.recarga)); }
 
         final double area(double v) { return v * r.st.area; }
 

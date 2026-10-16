@@ -68,7 +68,7 @@ public final class CartasPantalla extends Lienzo {
             caja(g, x, y, CW, CH, c.evo() ? (sobre ? 0xFF3A3220 : 0xFF2A2418) : sobre ? 0xFF2A2A45 : 0xFF1B1B30, col);
             g.fill(x + 1, y + 1, x + CW - 1, y + 26, col & 0x00FFFFFF | 0x66000000);
             textoCentrado(g, "[" + (i + 1) + "]", x + CW / 2, y + 9, BLANCO, 1.1f);
-            icono(g, c.icono(), x + CW / 2 - 24, y + 36, 3f);
+            icono(g, c.icono(), x + CW / 2 - 24, y + 36, 2f);
             parrafoCentrado(g, c.titulo(), x + CW / 2, y + 96, CW - 16, BLANCO, 1.25f);
             String etiqueta = c.evo() ? "¡EVOLUCIÓN!" : c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
             if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() || c.evo() ? ORO : col, 1.1f);

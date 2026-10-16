@@ -45,6 +45,7 @@ final class Run {
     final String nombre;
     final Pokemon pk;
     final String pokeId, especieId;
+    final String nombrePokemon;                  // lo que se lee en la interfaz: el mote, o la especie
     final String tipo;
     final Catalogo.Inicial inicial;
     final boolean inmortal;
@@ -78,6 +79,8 @@ final class Run {
         this.morphAntes = morphAntes; this.inmortal = inmortal; this.meta = new HashMap<>(meta);
         this.pokeId = pk.getUuid().toString();
         this.especieId = pk.getSpecies().getResourceIdentifier().getPath();
+        net.minecraft.text.Text mote = pk.getNickname();
+        this.nombrePokemon = mote != null && !mote.getString().isBlank() ? mote.getString() : pk.getSpecies().getName();
         this.tipo = pk.getPrimaryType().getName().toLowerCase(java.util.Locale.ROOT);
         this.inicial = Catalogo.inicial(tipo);
         this.pp = p.getPos();
@@ -104,6 +107,12 @@ final class Run {
         if (nivelArma >= Catalogo.NIVEL_EVO && a.evo() != null) return a.evo().nombre();
         return id.equals(inicial.arma()) ? inicial.nombre() : a.nombre();
     }
+
+    /** La clave del icono del ataque en su nivel (el del tipo si es con el que empezo el Pokemon, o el de su evolucion si ya evoluciono). */
+    String iconoArma(String id, int nivelArma) { return Catalogo.icono(Catalogo.arma(id), nivelArma, inicial.arma(), tipo); }
+
+    /** Las michiestrellitas que llevarias si la partida acabara ahora (la misma cuenta del final). */
+    int estrellas() { return Curvas.monedas(segundos(), derrotados, nivel, eq.jefesDerrotados, st.monedas); }
 
     // ------------------------------------------------------------------------------------------------ estadisticas y mejoras
 
@@ -375,7 +384,7 @@ final class Run {
                 } else {
                     String texto = d.textos()[c.nivel() - 1];
                     if (c.nivel() == Catalogo.MAX_NIVEL && d.evo() != null) texto += " Evoluciona con: " + Catalogo.pasiva(d.evo().requiere()).nombre() + ".";
-                    o.addProperty("titulo", nombreArma(c.id(), c.nivel())); o.addProperty("texto", texto); o.addProperty("icono", d.icono());
+                    o.addProperty("titulo", nombreArma(c.id(), c.nivel())); o.addProperty("texto", texto); o.addProperty("icono", iconoArma(c.id(), c.nivel()));
                 }
             }
             case "pasiva" -> {
@@ -389,8 +398,8 @@ final class Run {
                 }
                 o.addProperty("titulo", d.nombre()); o.addProperty("texto", texto); o.addProperty("icono", d.icono());
             }
-            case "curar" -> { o.addProperty("titulo", "Pastel Michi"); o.addProperty("texto", "Recuperas el 40% de tu vida."); o.addProperty("icono", "minecraft:cake"); }
-            default -> { o.addProperty("titulo", "Estrella Fugaz"); o.addProperty("texto", "Ganas experiencia al instante."); o.addProperty("icono", "minecraft:nether_star"); }
+            case "curar" -> { o.addProperty("titulo", "Pastel Michi"); o.addProperty("texto", "Recuperas el 40% de tu vida."); o.addProperty("icono", "x_curar"); }
+            default -> { o.addProperty("titulo", "Estrella Fugaz"); o.addProperty("texto", "Ganas experiencia al instante."); o.addProperty("icono", "x_xp"); }
         }
         return o;
     }
@@ -436,7 +445,12 @@ final class Run {
 
     private String listaArmas() {
         StringBuilder sb = new StringBuilder();
-        for (var e : armas.entrySet()) { if (sb.length() > 0) sb.append(','); sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(nombreArma(e.getKey(), e.getValue())); }
+        for (var e : armas.entrySet()) {
+            if (sb.length() > 0) sb.append(',');
+            Armas.Arma ao = armaObj.get(e.getKey());
+            int hace = ao == null ? 99 : Math.max(0, Math.min(99, tick - ao.usadoEn));          // ticks desde el ultimo uso (la ranura se enciende un momento)
+            sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(nombreArma(e.getKey(), e.getValue())).append(':').append(iconoArma(e.getKey(), e.getValue())).append(':').append(hace);
+        }
         return sb.toString();
     }
 
@@ -454,7 +468,7 @@ final class Run {
         ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), eq.derrotados, nivel, xp, xpSig, esperandoCarta,
                 hayJefe ? j.nombre : "", hayJefe ? (int) Math.max(0, Math.ceil(j.en.hp)) : 0, hayJefe ? (int) Math.round(j.en.hpMax) : 0, listaArmas(), listaPasivas(), eq.med.msptServidor(), eq.med.msNuestro(),
                 estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this),
-                eq.marea == null ? "" : eq.marea.titulo(), eq.marea == null ? 0 : eq.marea.segundosRestantes()));
+                eq.marea == null ? "" : eq.marea.titulo(), eq.marea == null ? 0 : eq.marea.segundosRestantes(), nombrePokemon, eq.zona(), estrellas()));
     }
 
     void enviarGemas() {

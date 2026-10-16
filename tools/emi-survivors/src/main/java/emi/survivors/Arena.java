@@ -28,6 +28,9 @@ final class Arena {
     /** Radio jugable (hasta el muro) y radio de la isla. */
     static final int RADIO = 46, RADIO_ISLA = 50;
     /** Version del diseño de la arena: 1 fue la llanura de la fase 0; 2 es la isla con muro de la fase 1. */
+    /** El nombre de la zona que sale en la interfaz (en la 2D habra una por bioma). */
+    static final String ZONA = "Pradera Michialien";
+
     static final int VERSION = 2;
 
     /** Centro (x, z) de la arena del hueco {@code slot}. */

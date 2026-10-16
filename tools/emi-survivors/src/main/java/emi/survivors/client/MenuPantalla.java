@@ -295,12 +295,12 @@ public final class MenuPantalla extends Lienzo {
         texto(g, p.titulo() + (p.brillante ? " ★" : ""), tx, y + 8, ORO, 1.5f);
         texto(g, "Nv. " + p.nivel + " · Tipo " + TIPOS.getOrDefault(p.tipo, p.tipo), tx, y + 26, COLORES.getOrDefault(p.tipo, GRIS) | 0xFF000000, 1f);
         icono(g, p.ataqueIcono, tx, y + 42, 1f);
-        texto(g, "Ataque: " + p.ataque, tx + 22, y + 42, BLANCO, 1f);
-        parrafo(g, p.ataqueTexto, tx + 22, y + 54, RW - 140 - 30, GRIS, 0.9f);
+        texto(g, "Ataque: " + p.ataque, tx + 30, y + 44, BLANCO, 1f);
+        parrafo(g, p.ataqueTexto, tx + 30, y + 56, RW - 140 - 38, GRIS, 0.9f);
         StringBuilder sb = new StringBuilder();
         for (Mejora m : catalogo) { int n = p.mejoras.getOrDefault(m.id(), 0); if (n > 0) sb.append(m.nombre()).append(' ').append(n).append("  "); }
-        texto(g, sb.length() == 0 ? "Sin mejoras permanentes todavía (mira la pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 84, 0xFFFFE070, 0.85f);
-        texto(g, p.partidas == 0 ? "Aún no has jugado con él." : "Mejor tiempo con él: " + tiempo(p.mejorTiempo) + " (" + p.partidas + " partidas)", tx, y + 98, GRIS, 0.85f);
+        texto(g, sb.length() == 0 ? "Sin mejoras permanentes todavía (mira la pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 90, 0xFFFFE070, 0.85f);
+        texto(g, p.partidas == 0 ? "Aún no has jugado con él." : "Mejor tiempo con él: " + tiempo(p.mejorTiempo) + " (" + p.partidas + " partidas)", tx, y + 104, GRIS, 0.85f);
         boolean lleno = partidas >= maxPartidas;
         boolean sobre = dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32);
         if (!enGrupo) {
@@ -332,9 +332,9 @@ public final class MenuPantalla extends Lienzo {
             int y = CY + 28 + i * 34;
             int nivel = p.mejoras.getOrDefault(m.id(), 0);
             caja(g, RX, y, RW, 31, 0xFF1B1B30, 0xFF55557A);
-            icono(g, m.icono(), RX + 6, y + 7, 1.1f);
-            texto(g, m.nombre(), RX + 30, y + 5, BLANCO, 1f);
-            texto(g, m.texto(), RX + 30, y + 17, GRIS, 0.75f);
+            icono(g, m.icono(), RX + 4, y + 3, 1f);
+            texto(g, m.nombre(), RX + 33, y + 5, BLANCO, 1f);
+            texto(g, m.texto(), RX + 33, y + 17, GRIS, 0.75f);
             for (int k = 0; k < m.costos().length; k++) g.fill(RX + 212 + k * 9, y + 5, RX + 219 + k * 9, y + 11, k < nivel ? 0xFFFFD34E : 0xFF555566);
             int bx = RX + 266, bw = 88;
             if (nivel >= m.costos().length) boton(g, bx, y + 4, bw, 22, "AL MÁXIMO", 0xFF555566, false, false, 0.9f);

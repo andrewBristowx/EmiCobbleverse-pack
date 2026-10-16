@@ -72,6 +72,9 @@ final class Equipo {
         pool2 = Especies.entre(331, 405);
     }
 
+    /** El nombre del mundo (bioma) de esta partida, para la interfaz. */
+    String zona() { return Arena.ZONA; }
+
     int segundos() { return tick / 20; }
 
     /** Los jugadores que siguen en pie (aunque ahora esten eligiendo carta). */

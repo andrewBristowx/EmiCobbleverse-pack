@@ -94,7 +94,7 @@ final class Menu {
             e.add("aspectos", asp);
             e.addProperty("ataque", ini.nombre());
             e.addProperty("ataqueTexto", Catalogo.arma(ini.arma()).textos()[0]);
-            e.addProperty("ataqueIcono", Catalogo.arma(ini.arma()).icono());
+            e.addProperty("ataqueIcono", Catalogo.iconoInicial(tipo));
             Datos.PokeMeta m = j.pokemon.get(id);
             JsonObject mej = new JsonObject();
             if (m != null) for (var en : m.mejoras.entrySet()) mej.addProperty(en.getKey(), en.getValue());

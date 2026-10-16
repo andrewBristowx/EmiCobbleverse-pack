@@ -6,15 +6,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Base de las pantallas del minijuego: se dibujan en un lienzo fijo de 640x360 que se escala a la ventana (asi se ven igual con cualquier tamano de interfaz).
@@ -86,18 +81,9 @@ public abstract class Lienzo extends Screen {
         return l.size();
     }
 
-    private static final Map<String, ItemStack> ICONOS = new HashMap<>();
-
-    /** Un icono de objeto de Minecraft (por su id, p. ej. {@code minecraft:arrow}) a tamano {@code tam} (1 = 16x16). */
-    public static void icono(DrawContext g, String id, int x, int y, float tam) {
-        ItemStack st = ICONOS.computeIfAbsent(id, k -> {
-            try { return new ItemStack(Registries.ITEM.get(Identifier.of(k))); } catch (Exception e) { return ItemStack.EMPTY; }
-        });
-        if (st.isEmpty()) return;
-        var m = g.getMatrices();
-        m.push(); m.translate(x, y, 0); m.scale(tam, tam, 1f);
-        g.drawItem(st, 0, 0);
-        m.pop();
+    /** Un icono propio del atlas (ver {@link Iconos}; la clave puede ser {@code a_disparo}, {@code p_vida}...) a tamano {@code tam} (1 = 24x24 pixeles del lienzo). */
+    public static void icono(DrawContext g, String clave, int x, int y, float tam) {
+        Iconos.dibujar(g, clave, x, y, Math.round(Iconos.CELDA * tam));
     }
 
     /** Un marco con relleno (borde de 1 px). */

@@ -12,16 +12,18 @@ final class Meta {
 
     static final int MAX = 5;
 
-    record Mejora(String id, String nombre, String icono, String texto) {}
+    record Mejora(String id, String nombre, String texto) {
+        String icono() { return "m_" + id; }
+    }
 
     static final List<Mejora> MEJORAS = List.of(
-            new Mejora("vigor", "Vigor", "minecraft:golden_apple", "+12 de vida máxima por nivel."),
-            new Mejora("fuerza", "Fuerza", "minecraft:blaze_powder", "+4% de daño por nivel."),
-            new Mejora("agilidad", "Agilidad", "minecraft:feather", "+2,5% de velocidad por nivel."),
-            new Mejora("sabiduria", "Sabiduría", "minecraft:experience_bottle", "+6% de experiencia por nivel."),
-            new Mejora("iman", "Imán", "minecraft:ender_eye", "+10% de radio para recoger gemas por nivel."),
-            new Mejora("recuperacion", "Recuperación", "minecraft:glistering_melon_slice", "+0,15 de vida por segundo por nivel."),
-            new Mejora("suerte", "Suerte", "minecraft:rabbit_foot", "+5% de michiestrellitas al acabar por nivel."));
+            new Mejora("vigor", "Vigor", "+12 de vida máxima por nivel."),
+            new Mejora("fuerza", "Fuerza", "+4% de daño por nivel."),
+            new Mejora("agilidad", "Agilidad", "+2,5% de velocidad por nivel."),
+            new Mejora("sabiduria", "Sabiduría", "+6% de experiencia por nivel."),
+            new Mejora("iman", "Imán", "+10% de radio para recoger gemas por nivel."),
+            new Mejora("recuperacion", "Recuperación", "+0,15 de vida por segundo por nivel."),
+            new Mejora("suerte", "Suerte", "+5% de michiestrellitas al acabar por nivel."));
 
     static Mejora mejora(String id) { for (Mejora m : MEJORAS) if (m.id().equals(id)) return m; return null; }
 
