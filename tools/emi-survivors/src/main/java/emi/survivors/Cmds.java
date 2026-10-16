@@ -92,7 +92,7 @@ public final class Cmds {
 
     private static int inmortal(CommandContext<ServerCommandSource> c, boolean on) {
         Partida.inmortal = on;
-        c.getSource().sendFeedback(() -> Msg.say("Modo prueba inmortal " + (on ? "activado" : "desactivado") + " (vale para la siguiente partida)."), true);
+        c.getSource().sendFeedback(() -> Msg.say("Modo prueba inmortal " + (on ? "activado" : "desactivado") + " (solo para las partidas de administradores: no pierden vida y no cuentan para el top; los demás jugadores no se ven afectados)."), true);
         return 1;
     }
 

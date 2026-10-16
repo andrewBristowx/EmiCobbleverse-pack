@@ -27,6 +27,7 @@ final class Acciones {
                     if (r != null) r.elegirCarta(Integer.parseInt(a.a().trim()));
                 }
                 case "jugar" -> {
+                    if (Partida.participa(p)) { Menu.cerrar(p); return; }                  // doble clic: la partida ya esta en marcha
                     String err = Partida.iniciar(p, Integer.parseInt(a.a().trim()), 0, false);
                     if (err != null) { p.sendMessage(Msg.err(err), false); Menu.enviar(p, "jugar", null); }
                     else Menu.cerrar(p);

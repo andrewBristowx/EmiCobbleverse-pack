@@ -158,7 +158,7 @@ public final class Partida {
             Morph.transformar(server, p, pk);
             fijarEscala(p, pk);
             Map<String, Integer> meta = new java.util.HashMap<>(datos.poke(datos.jugador(p.getUuid(), p.getGameProfile().getName()), pk.getUuid().toString(), pk.getSpecies().getResourceIdentifier().getPath()).mejoras);
-            run = new Run(w, p, pk, slot, ox, oz, antes, fijo, inmortal, modoPrueba, meta);
+            run = new Run(w, p, pk, slot, ox, oz, antes, fijo, inmortal && Perm.admin(p.getCommandSource()), modoPrueba, meta);   // el modo inmortal es solo de administradores
             runs.put(p.getUuid(), run);
         } catch (Throwable t) {
             // si algo falla a medias, el jugador no se queda a medio camino: se le devuelve todo
@@ -171,7 +171,7 @@ public final class Partida {
             if (runs.isEmpty()) { try { Pausas.reanudar(); } catch (Throwable t2) { /* nada */ } }
             return "No se pudo empezar la partida (mira el registro del servidor); te hemos devuelto a tu sitio.";
         }
-        EmiSurvivors.LOG.info("Partida de {}: Pokemon {} (tipo {}, ataque inicial {}), hueco de arena {}, fijo={}, inmortal={}", p.getGameProfile().getName(), pk.getSpecies().getName(), run.tipo, run.inicial.nombre(), slot, fijo, inmortal);
+        EmiSurvivors.LOG.info("Partida de {}: Pokemon {} (tipo {}, ataque inicial {}), hueco de arena {}, fijo={}, inmortal={}", p.getGameProfile().getName(), pk.getSpecies().getName(), run.tipo, run.inicial.nombre(), slot, fijo, run.inmortal);
         p.sendMessage(Msg.say("¡Empieza! Muévete con WASD; tu " + pk.getSpecies().getName() + " ataca solo con " + run.inicial.nombre() + ". Para salir: /survivor parar"), false);
         return null;
     }

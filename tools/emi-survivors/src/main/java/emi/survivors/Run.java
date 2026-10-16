@@ -41,7 +41,7 @@ import java.util.UUID;
 final class Run {
     static final int RAMPA = 200;               // modo medida: ticks que tarda en llegar al numero de enemigos pedido (10 s)
     static final int MAX_NUEVOS_POR_TICK = 3;   // crear un Pokemon de Cobblemon cuesta: se reparte
-    static final int T_CARTA = 20 * 30;         // 30 s para elegir carta; si no, se elige una al azar
+    static final int T_CARTA = Integer.getInteger("emi.survivors.carta_ticks", 20 * 30);         // 30 s para elegir carta; si no, se elige una al azar (la propiedad solo se usa en pruebas)
     static final int MAX_GEMAS = 300;
 
     final ServerWorld w;

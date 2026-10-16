@@ -36,7 +36,11 @@ public final class EmiSurvivorsClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(EstadoPayload.ID, (p, ctx) -> {
             estado = p.activo() ? p : null; ultimo = System.currentTimeMillis();
-            ctx.client().execute(() -> { poner(p.activo()); if (!p.activo()) { GemasCliente.borrar(); cerrarCartas(); } });
+            ctx.client().execute(() -> {
+                poner(p.activo());
+                if (!p.activo()) { GemasCliente.borrar(); cerrarCartas(); }
+                else if (ctx.client().currentScreen instanceof MenuPantalla) ctx.client().setScreen(null);       // la partida ya esta en marcha: el menu sobra
+            });
         });
         ClientPlayNetworking.registerGlobalReceiver(GemasPayload.ID, (p, ctx) -> ctx.client().execute(() -> GemasCliente.recibir(p)));
         ClientPlayNetworking.registerGlobalReceiver(TextoPayload.ID, (p, ctx) -> ctx.client().execute(() -> texto(p)));

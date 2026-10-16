@@ -83,8 +83,11 @@ public final class Saved {
         }
     }
 
-    /** Devuelve todo al jugador y borra el archivo. false si no habia nada guardado. */
-    public static boolean restore(MinecraftServer server, ServerPlayerEntity p) {
+    /** Devuelve todo al jugador (tambien a su sitio de antes) y borra el archivo. false si no habia nada guardado. */
+    public static boolean restore(MinecraftServer server, ServerPlayerEntity p) { return restore(server, p, true); }
+
+    /** {@code volver} = llevarle tambien a donde estaba antes (si ya se ha ido por su cuenta a otro sitio, no: se queda donde esta). */
+    public static boolean restore(MinecraftServer server, ServerPlayerEntity p, boolean volver) {
         Path f = file(server, p.getUuid());
         if (!Files.exists(f)) return false;
         p.setGlowing(false);        // por si se quedo brillando por la proteccion
@@ -111,7 +114,7 @@ public final class Saved {
             BlockPos s = w.getSpawnPos();
             x = s.getX() + 0.5; y = s.getY(); z = s.getZ() + 0.5;
         }
-        p.teleport(w, x, y, z, yaw, pitch);
+        if (volver) p.teleport(w, x, y, z, yaw, pitch);
         p.clearStatusEffects();
         p.changeGameMode(GameMode.byId(t.getInt("mode")));
         p.getAbilities().flying = false;

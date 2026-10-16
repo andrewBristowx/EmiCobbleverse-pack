@@ -11,6 +11,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -77,14 +78,27 @@ public final class Mundo {
         for (int i = 0; i < p.getInventory().size(); i++) if (esItemMenu(p.getInventory().getStack(i))) return;
         p.getInventory().setStack(4, itemMenu());
         p.getInventory().selectedSlot = 4;
+        p.networkHandler.sendPacket(new UpdateSelectedSlotS2CPacket(4));          // el cliente no se entera solo de que cambia la ranura elegida
     }
 
-    /** Cada segundo: a quien esta en la sala se le devuelve el objeto del menu si lo ha perdido. */
+    /** Cada segundo: a quien esta en la sala se le devuelve el objeto del menu si lo ha perdido; a quien se ha ido de la sala sin pasar por SALIR, sus cosas. */
     static void tick(MinecraftServer s) {
         if (s.getTicks() % 20 != 7) return;
         ServerWorld w = sala();
-        if (w == null) return;
-        for (ServerPlayerEntity p : w.getPlayers()) if (!Partida.participa(p)) darItemMenu(p);
+        if (w != null) {
+            for (ServerPlayerEntity p : w.getPlayers()) if (!Partida.participa(p)) darItemMenu(p);
+            List<net.minecraft.entity.Entity> suelo = new java.util.ArrayList<>();          // objetos tirados al suelo de la sala (la estrella del menu...): se quitan, no se acumulan
+            for (net.minecraft.entity.Entity e : w.iterateEntities()) if (e instanceof net.minecraft.entity.ItemEntity) suelo.add(e);
+            for (net.minecraft.entity.Entity e : suelo) e.discard();
+        }
+        // alguien con lo suyo guardado que ya no esta ni en la sala ni en una arena (se fue con un comando de otro mod: /spawn, /home, /tpa...): se le devuelve lo suyo donde este
+        for (ServerPlayerEntity p : s.getPlayerManager().getPlayerList()) {
+            if (dentro(p) || Partida.participa(p) || !Saved.exists(s, p.getUuid()) || !Saved.enLobby(s, p.getUuid())) continue;
+            try {
+                Morph.restaurar(s, p, Saved.morph(s, p.getUuid()));
+                if (Saved.restore(s, p, false)) { Menu.cerrar(p); p.sendMessage(Msg.say("Has salido del mundo del minijuego: te hemos devuelto tus cosas."), false); }
+            } catch (Throwable t) { EmiSurvivors.LOG.error("No se pudo devolver sus cosas a {}", p.getGameProfile().getName(), t); }
+        }
     }
 
     // ------------------------------------------------------------------------------------------------ entrar y salir
@@ -96,8 +110,9 @@ public final class Mundo {
         ServerWorld w = sala();
         if (w == null) return "No existe la dimension emi_survivors:entrada (¿esta instalado el mod en el servidor?).";
         if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) return "Tu juego no tiene el mod Emi Survivors (hace falta para ver el menú): actualiza el pack y vuelve a entrar.";
-        if (dentro(p)) return "Ya estás en el mundo del minijuego. Usa /survivor menu para abrir el menú.";
         if (Partida.participa(p)) return "Ya estás en una partida.";
+        if (enSala(p)) { Menu.enviar(p, "jugar", null); return null; }                 // ya estaba en la sala: solo se le vuelve a abrir el menu
+        if (enArena(p) && Saved.exists(s, p.getUuid())) { volverASala(p, null); return null; }   // en una arena sin partida (se quedo a medias): de vuelta a la sala
         if (!Morph.disponible()) return "Falta el mod CobbleMorph (el jugador va transformado en su Pokémon).";
         boolean yaGuardado = Saved.exists(s, p.getUuid()) && Saved.enLobby(s, p.getUuid());       // ya habia entrado y algo lo saco de la sala: sus cosas siguen guardadas
         if (Saved.exists(s, p.getUuid()) && !yaGuardado) return "Tienes cosas guardadas de una partida anterior: sal y vuelve a entrar al servidor para recuperarlas.";

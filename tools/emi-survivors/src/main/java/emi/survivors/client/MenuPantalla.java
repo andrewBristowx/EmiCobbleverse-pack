@@ -65,6 +65,8 @@ public final class MenuPantalla extends Lienzo {
     private Resultado resultado;
     private int monedas, partidas, maxPartidas, miPuesto, miMejor;
     private int tab, sel;
+    /** Ya se ha pulsado JUGAR y se espera al servidor (la primera vez que se usa una arena tarda un par de segundos): no se vuelve a mandar. */
+    private boolean preparando;
     private final long t0 = System.nanoTime();
 
     public MenuPantalla(String json) {
@@ -78,6 +80,7 @@ public final class MenuPantalla extends Lienzo {
     /** Carga (o recarga) los datos del servidor, conservando la pestaña y el Pokemon elegido mientras se pueda. */
     public void cargar(String json) {
         JsonObject o = JsonParser.parseString(json).getAsJsonObject();
+        preparando = false;
         String idSel = sel >= 0 && sel < equipo.size() ? equipo.get(sel).id : null;
         String t = o.has("tab") ? o.get("tab").getAsString() : "jugar";
         for (int i = 0; i < TABS_ID.length; i++) if (TABS_ID[i].equals(t)) tab = i;
@@ -259,7 +262,7 @@ public final class MenuPantalla extends Lienzo {
         texto(g, sb.length() == 0 ? "Sin mejoras permanentes todavía (mira la pestaña MEJORAS)." : "Mejoras: " + sb, tx, y + 84, 0xFFFFE070, 0.85f);
         texto(g, p.partidas == 0 ? "Aún no has jugado con él." : "Mejor tiempo con él: " + tiempo(p.mejorTiempo) + " (" + p.partidas + " partidas)", tx, y + 98, GRIS, 0.85f);
         boolean lleno = partidas >= maxPartidas;
-        boton(g, RX + RW / 2 - 100, 296, 200, 32, lleno ? "MUNDO LLENO" : "¡A JUGAR!", 0xFF2E9B4E, !lleno, dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32), 1.4f);
+        boton(g, RX + RW / 2 - 100, 296, 200, 32, lleno ? "MUNDO LLENO" : preparando ? "PREPARANDO..." : "¡A JUGAR!", 0xFF2E9B4E, !lleno && !preparando, dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32), 1.4f);
         textoCentrado(g, "Partidas en curso: " + partidas + "/" + maxPartidas, RX + RW / 2, 332, GRIS, 0.8f);
     }
 
@@ -329,7 +332,7 @@ public final class MenuPantalla extends Lienzo {
             for (int i = 0; i < equipo.size(); i++) if (dentro(mx, my, LX, CY + i * 43, LW, 40)) { sel = i; return; }
         }
         Poke p = elegido();
-        if (tab == T_JUGAR && p != null && partidas < maxPartidas && dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32)) { enviar("jugar", String.valueOf(p.slot), ""); return; }
+        if (tab == T_JUGAR && p != null && partidas < maxPartidas && !preparando && dentro(mx, my, RX + RW / 2 - 100, 296, 200, 32)) { preparando = true; enviar("jugar", String.valueOf(p.slot), ""); return; }
         if (tab == T_MEJORAS && p != null) {
             for (int i = 0; i < catalogo.size(); i++) {
                 Mejora m = catalogo.get(i);
