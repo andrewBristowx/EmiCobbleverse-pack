@@ -211,7 +211,7 @@ public final class SurvivorsHud {
         }
         if (Boolean.getBoolean("emi.survivors.debug"))
             g.drawTextWithShadow(tr, String.format(Locale.ROOT, "Enemigos %d · gemas %d · servidor %.1f ms/tick · mod %.2f ms · FPS %d", e.enemigos(), GemasCliente.cuantas(), e.msptServidor(), e.msNuestro(), mc.getCurrentFps()),
-                    6, H - 12 - TILE - 8, 0xFFB8B8C8);
+                    6, H - 64, 0xFFB8B8C8);
     }
 
     /** Una ranura de ataque: marco (rosa si acaba de usarse, dorado si lo acabas de conseguir o ya evoluciono), icono, numero y puntos de nivel. */

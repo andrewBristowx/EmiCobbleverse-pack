@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -102,6 +102,31 @@ public final class PruebaLogica {
         Stats s3 = new Stats();
         Catalogo.aplicarPasivas(s3, Map.of("moneda", 5, "critico", 1));
         ok(Math.abs(s3.monedas - 1.5) < 1e-9 && Math.abs(s3.critico - 0.08) < 1e-9, "Moneda Amuleto +50% y Periscopio +8% al nivel 1");
+    }
+
+    /** Todos los ataques, evoluciones, objetos, mejoras y tipos tienen su icono en el atlas (lo que genera assets/generar_iconos.py). */
+    static void iconos() throws Exception {
+        System.out.println("== iconos");
+        Path json = Path.of("../src/main/resources/assets/emi_survivors/iconos.json");
+        com.google.gson.JsonObject o = com.google.gson.JsonParser.parseString(Files.readString(json)).getAsJsonObject();
+        com.google.gson.JsonObject ic = o.getAsJsonObject("iconos");
+        int celda = o.get("celda").getAsInt(), cols = o.get("columnas").getAsInt(), filas = o.get("filas").getAsInt();
+        int n = 0;
+        for (Catalogo.Arma a : Catalogo.ARMAS) {
+            ok(ic.has(a.icono()), "falta el icono " + a.icono()); ok(ic.has(a.evo().icono()), "falta el icono " + a.evo().icono()); n += 2;
+        }
+        for (Catalogo.Pasiva p : Catalogo.PASIVAS) { ok(ic.has(p.icono()), "falta el icono " + p.icono()); n++; }
+        for (Meta.Mejora m : Meta.MEJORAS) { ok(ic.has(m.icono()), "falta el icono " + m.icono()); n++; }
+        for (String t : List.of("normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy", "stellar")) {
+            ok(ic.has(Catalogo.iconoInicial(t)), "falta el icono del ataque inicial del tipo " + t); n++;
+        }
+        ok(ic.has("x_curar") && ic.has("x_xp"), "faltan los iconos de las tarjetas curar y experiencia");
+        for (var e : ic.entrySet()) {
+            int c = e.getValue().getAsJsonArray().get(0).getAsInt(), f = e.getValue().getAsJsonArray().get(1).getAsInt();
+            ok(c >= 0 && c < cols && f >= 0 && f < filas, "el icono " + e.getKey() + " esta fuera del atlas");
+        }
+        ok(o.get("ancho").getAsInt() == cols * celda && o.get("alto").getAsInt() == filas * celda, "el tamano del atlas no cuadra con sus columnas y filas");
+        System.out.println("  " + n + " iconos comprobados (" + ic.size() + " en el atlas)");
     }
 
     static void cartas() {
