@@ -51,7 +51,7 @@ public final class CartasPantalla extends Lienzo {
 
     private static int color(Carta c) {
         if (c.evo()) return 0xFFFFD34E;
-        return switch (c.tipo()) { case "fusion" -> 0xFFC77DFF; case "arma" -> 0xFFFF8A4D; case "pasiva" -> AZUL; case "curar" -> VERDE; default -> ORO; };
+        return switch (c.tipo()) { case "fusion", "fusionp" -> 0xFFC77DFF; case "extra" -> VERDE; case "arma" -> 0xFFFF8A4D; case "pasiva" -> AZUL; case "curar" -> VERDE; default -> ORO; };
     }
 
     @Override
@@ -79,8 +79,8 @@ public final class CartasPantalla extends Lienzo {
                 textoCentrado(g, "+", x + CW / 2, y + 52, BLANCO, 2f);
             }
             parrafoCentrado(g, c.titulo(), x + CW / 2, y + 96, CW - 16, BLANCO, 1.25f);
-            String etiqueta = c.evo() ? "¡EVOLUCIÓN!" : c.tipo().equals("fusion") ? "¡FUSIÓN!" : c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
-            if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() || c.evo() || c.tipo().equals("fusion") ? ORO : col, 1.1f);
+            String etiqueta = c.evo() ? "¡EVOLUCIÓN!" : c.tipo().equals("fusion") || c.tipo().equals("fusionp") ? "¡FUSIÓN!" : c.tipo().equals("extra") ? "Mejora ×" + c.nivel() : c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
+            if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() || c.evo() || c.tipo().equals("fusion") || c.tipo().equals("fusionp") ? ORO : col, 1.1f);
             parrafo(g, c.texto(), x + 12, y + 152, CW - 24, GRIS, 1f);
         }
         // tiempo que queda

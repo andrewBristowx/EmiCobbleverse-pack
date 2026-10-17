@@ -62,6 +62,8 @@ final class Equipo {
     int mareasSalidas;
     boolean avisoPers;                              // ya se explico que significan los colores de los enemigos con personalidad
     private final List<Bomba> bombas = new ArrayList<>();      // las bombas que dejan los enemigos explosivos al caer
+    private final List<DisparoEnemigo> disparos = new ArrayList<>();      // las bolas que lanzan los enemigos a distancia (ver Ataque)
+    boolean avisoAtaque;                            // ya se explico que algunos enemigos atacan de lejos o con area
     int jugadoresAlEmpezar = 1;                  // cuantos jugadores empezaron la partida (para las misiones de grupo; aunque alguien se vaya)
     int jefesSalidos, jefesDerrotados;              // cuantos jefes han salido y cuantos se han derrotado (uno cada 3 minutos; ver Jefes)
     private final List<double[]> refuerzos = new ArrayList<>();      // sitios (x, z) donde faltan por aparecer los refuerzos que ha invocado un jefe
@@ -236,10 +238,12 @@ final class Equipo {
             Run obj = masCercano(objetivos, en.e.getX(), en.e.getZ());
             if (obj == null) en.mover(en.e.getX(), en.e.getZ(), 0);
             else if (en.pers == Pers.EMBISTE) en.embestir(obj, w, rnd);
+            else if (en.ataque != null) en.atacar(this, obj, clima.velEnemigos());
             else en.mover(obj.pp.x, obj.pp.z, clima.velEnemigos());
         }
         if (jefe != null && jefe.vivo()) jefe.tick(objetivos);
         tickBombas(objetivos);
+        for (Iterator<DisparoEnemigo> it = disparos.iterator(); it.hasNext(); ) if (!it.next().tick(w, objetivos)) it.remove();
         for (Enemigo en : enemigos) {
             if (en.tesoro) continue;
             if (en.cdContacto > 0) en.cdContacto--;
@@ -424,7 +428,18 @@ final class Equipo {
         especiesVistas.add(sp.id());
         if (shiny) marcarShiny(en);
         if (normal && !shiny && fijo == 0 && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) && rnd.nextDouble() < Pers.probabilidad(t) * Curvas.mundoPers(mundo)) aplicarPers(en, Pers.sortear(rnd));
+        if (en.pers == null && !shiny && fijo == 0 && tm >= 0 && (normal ? rnd.nextDouble() < Ataque.probabilidad(t) * Curvas.mundoPers(mundo) && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) : true)) darAtaque(en);
         return true;
+    }
+
+    /** Le da a un enemigo el ataque que le toca por su tipo (ver {@link Ataque}). Hay como mucho 24 enemigos con ataque a la vez (cuesta). */
+    void darAtaque(Enemigo en) {
+        int n = 0;
+        for (Enemigo o : enemigos) if (o.ataque != null) n++;
+        if (n >= 24) return;
+        en.ataque = Ataque.paraTipo(en.especie.tipo1(), en.especie.tipo2());
+        en.atT = 30 + rnd.nextInt(60);                          // para que no disparen todos a la vez nada mas aparecer
+        avisarAtaque();
     }
 
     private boolean avisoShiny;
@@ -504,6 +519,18 @@ final class Equipo {
         return true;
     }
 
+    /** Solo para pruebas (/survivor dev ataque <nombre>): un enemigo con ese ataque a unos 8 bloques del jugador. */
+    boolean devAtaque(Ataque a, Run r) {
+        double ang = rnd.nextDouble() * Math.PI * 2;
+        double x = r.pp.x + Math.cos(ang) * 8, z = r.pp.z + Math.sin(ang) * 8;
+        if (!Arena.dentro(this, x, z, 3.0)) { x = r.pp.x - Math.cos(ang) * 8; z = r.pp.z - Math.sin(ang) * 8; }
+        Enemigo en = crearNormalEn(x, z);
+        if (en == null) return false;
+        en.ataque = a; en.atT = 20;
+        avisarAtaque();
+        return true;
+    }
+
     /** Un enemigo de la estampida: sale de (x, z) y corre en la direccion (ux, uz) por un carril de {@code largo} bloques, sin perseguir a nadie, y se va al llegar al final. */
     void crearCorredor(double x, double z, double ux, double uz, double largo) {
         double t = tick / 20.0;
@@ -536,15 +563,28 @@ final class Equipo {
         static final double LADO = 6.0;
         static final int AVISO = 24;
         final double x, z;
+        final double lado;                  // lado del cuadrado (6 las de los explosivos y las de los eventos; menos las de los enemigos con mortero)
+        final float dano;                   // -1 = el de las bombas normales (Pers.danoBomba)
         int t;
         net.minecraft.entity.Entity fondo, relleno;
 
-        Bomba(double x, double z) {
-            this.x = x; this.z = z;
-            fondo = Marcas.crear(Equipo.this, Marcas.CRISTAL_ROJO, x, Marcas.Y_FONDO, z, 0, (float) LADO, 0.05f, (float) LADO, false);
+        Bomba(double x, double z) { this(x, z, LADO, -1f); }
+
+        Bomba(double x, double z, double lado, float dano) {
+            this.x = x; this.z = z; this.lado = lado; this.dano = dano;
+            fondo = Marcas.crear(Equipo.this, Marcas.CRISTAL_ROJO, x, Marcas.Y_FONDO, z, 0, (float) lado, 0.05f, (float) lado, false);
             relleno = Marcas.crear(Equipo.this, Marcas.ALFOMBRA_ROJA, x, Marcas.Y_RELLENO, z, 0, 0.2f, 1f, 0.2f, false);
         }
     }
+
+    /** El mortero de un enemigo a distancia: un cuadrado rojo pequeno donde estabas que explota en 1,2 s. Con 16 bombas a la vez no se pone mas. */
+    void ponerBombaPequena(double x, double z, double lado, float dano) { if (bombas.size() < 16) bombas.add(new Bomba(x, z, lado, dano)); }
+
+    /** Una bola de un enemigo a distancia (hasta 60 a la vez). */
+    void ponerDisparo(DisparoEnemigo d) { if (disparos.size() < 60) disparos.add(d); }
+
+    /** La primera vez que sale un enemigo con ataque se explica que se avisan. */
+    void avisarAtaque() { if (!avisoAtaque) { avisoAtaque = true; avisar(Msg.say(Ataque.LEYENDA)); } }
 
     /** Deja una bomba avisada en el suelo (la misma de los enemigos explosivos); con 12 a la vez no se pone mas. */
     void ponerBomba(double x, double z) { if (bombas.size() < 12) bombas.add(new Bomba(x, z)); }
@@ -553,13 +593,13 @@ final class Equipo {
         for (Iterator<Bomba> it = bombas.iterator(); it.hasNext(); ) {
             Bomba b = it.next();
             b.t++;
-            if (b.t == 2) Marcas.poner(b.relleno, b.x, Marcas.Y_RELLENO, b.z, 0, (float) Bomba.LADO, 1f, (float) Bomba.LADO, false, Bomba.AVISO - 2);
+            if (b.t == 2) Marcas.poner(b.relleno, b.x, Marcas.Y_RELLENO, b.z, 0, (float) b.lado, 1f, (float) b.lado, false, Bomba.AVISO - 2);
             if (b.t < Bomba.AVISO) continue;
             Marcas.quitar(this, b.fondo); Marcas.quitar(this, b.relleno);
             w.spawnParticles(ParticleTypes.EXPLOSION, b.x, Arena.Y0 + 0.8, b.z, 2, 1.0, 0.3, 1.0, 0.0);
-            w.spawnParticles(ParticleTypes.FLAME, b.x, Arena.Y0 + 0.6, b.z, 24, Bomba.LADO * 0.25, 0.4, Bomba.LADO * 0.25, 0.08);
+            w.spawnParticles(ParticleTypes.FLAME, b.x, Arena.Y0 + 0.6, b.z, 24, b.lado * 0.25, 0.4, b.lado * 0.25, 0.08);
             for (Run m : miembros) { double dd = Math.hypot(m.pp.x - b.x, m.pp.z - b.z); if (dd < 30) Sonidos.sfx(m.jugador(), Sonidos.EXPLOSION_SUAVE, 0.9f * (float) (1.0 - dd / 30.0), 1.1f); }
-            for (Run m : objetivos) if (Marcas.dentroDeCuadrado(m.pp.x, m.pp.z, b.x, b.z, Bomba.LADO, 0.3)) m.danarJugador(Pers.danoBomba(tick / 20.0));
+            for (Run m : objetivos) if (Marcas.dentroDeCuadrado(m.pp.x, m.pp.z, b.x, b.z, b.lado, 0.3)) m.danarJugador(b.dano >= 0 ? b.dano : Pers.danoBomba(tick / 20.0));
             it.remove();
         }
     }
@@ -577,7 +617,7 @@ final class Equipo {
      */
     void entrarDuelo() {
         for (Enemigo en : enemigos) en.quitar();
-        enemigos.clear(); refuerzos.clear(); bombas.clear();
+        enemigos.clear(); refuerzos.clear(); bombas.clear(); disparos.clear();
         if (marea != null) { marea.limpiar(); marea = null; }
         evento.limpiar(); tesoros.limpiar();
         Marcas.quitarTodas(this);
@@ -600,7 +640,7 @@ final class Equipo {
     void salirDuelo() {
         if (!duelo) return;
         for (Enemigo en : enemigos) en.quitar();
-        enemigos.clear(); bombas.clear();
+        enemigos.clear(); bombas.clear(); disparos.clear();
         Marcas.quitarTodas(this);
         gemas.removeIf(g -> g.x > ox + 150); objetos.removeIf(o -> o.x > ox + 150);
         tesoros.limpiar();                                   // los barriles se vuelven a poner
@@ -826,6 +866,7 @@ final class Equipo {
         objetos.clear();
         refuerzos.clear();
         bombas.clear();
+        disparos.clear();
         if (marea != null) { marea.limpiar(); marea = null; }
         clima.limpiar();
         grieta.limpiar();

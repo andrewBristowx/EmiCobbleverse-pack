@@ -179,8 +179,24 @@ public final class SurvivorsHud {
         // una ranura por cada ataque que no esta fusionado dentro de otro; los fusionados salen en mini en la columna de su ranura
         java.util.List<Ranura> cabezas = new java.util.ArrayList<>();
         for (Ranura r : atq) if (r.cabeza().isEmpty()) cabezas.add(r);
+        // objetos: una ranura por cada uno que no esta fusionado dentro de otro; los fusionados salen en mini a la derecha de su ranura (id:nivel:cabeza)
+        String[] ps = e.pasivas().isEmpty() ? new String[0] : e.pasivas().split(",");
+        java.util.List<String[]> cabP = new java.util.ArrayList<>();
+        java.util.List<String[]> unidosP = new java.util.ArrayList<>();
+        for (String sp : ps) {
+            String[] q = sp.split(":", 3);
+            if (q.length < 2) continue;
+            if (q.length > 2 && !q[2].isEmpty()) unidosP.add(q); else cabP.add(q);
+        }
+        int[] anchosP = new int[Catalogo.MAX_PASIVAS];
+        int anchoP = (Catalogo.MAX_PASIVAS - 1) * SEP_P;
+        for (int i = 0; i < Catalogo.MAX_PASIVAS; i++) {
+            anchosP[i] = TILE_P;
+            if (i < cabP.size()) for (String[] u : unidosP) if (u[2].equals(cabP.get(i)[0])) { anchosP[i] = TILE_P + COL_FUSION; break; }
+            anchoP += anchosP[i];
+        }
         int[] anchos = new int[Catalogo.MAX_ARMAS];
-        int anchoA = (Catalogo.MAX_ARMAS - 1) * SEP, anchoP = Catalogo.MAX_PASIVAS * TILE_P + (Catalogo.MAX_PASIVAS - 1) * SEP_P, hueco = 12;
+        int anchoA = (Catalogo.MAX_ARMAS - 1) * SEP, hueco = 12;
         for (int i = 0; i < Catalogo.MAX_ARMAS; i++) {
             anchos[i] = TILE;
             if (i < cabezas.size()) for (Ranura r : atq) if (r.cabeza().equals(cabezas.get(i).id())) { anchos[i] = TILE + COL_FUSION; break; }
@@ -203,16 +219,15 @@ public final class SurvivorsHud {
             xa += anchos[i] + SEP;
         }
         int px = x0 + anchoA + hueco, yP = yA;
-        String[] ps = e.pasivas().isEmpty() ? new String[0] : e.pasivas().split(",");
+        int xp = px;
         for (int i = 0; i < Catalogo.MAX_PASIVAS; i++) {
-            int x = px + i * (TILE_P + SEP_P);
             String id = "";
             int nivel = 0;
-            if (i < ps.length) {
-                String[] q = ps[i].split(":");
-                if (q.length >= 2) { id = q[0]; try { nivel = Integer.parseInt(q[1]); } catch (NumberFormatException ex) { nivel = 1; } }
-            }
-            ranuraObjeto(g, x, yP, id, nivel);
+            if (i < cabP.size()) { id = cabP.get(i)[0]; try { nivel = Integer.parseInt(cabP.get(i)[1]); } catch (NumberFormatException ex) { nivel = 1; } }
+            ranuraObjeto(g, xp, yP, id, nivel);
+            int k = 0;
+            for (String[] u : unidosP) if (u[2].equals(id) && k < 3) { Iconos.dibujar(g, "p_" + u[0], xp + TILE_P + 1, yP + 1 + k * 11, 10); k++; }        // los fusionados: iconos pequenos en la columna de la derecha
+            xp += anchosP[i] + SEP_P;
         }
 
         // ---- si estas caido: aviso grande y lo que falta para que te revivan

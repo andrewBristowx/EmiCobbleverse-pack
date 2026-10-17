@@ -1864,8 +1864,8 @@ file = "mods/emi-streamlabs-1.2.0.jar"
 hash = "194d923b6a1430bb6c4535e71046c9b0ad6a940374af5b76f4b8b5bf2680af92"
 
 [[files]]
-file = "mods/emi-survivors-0.24.0.jar"
-hash = "1ea7ecc68aec26f08b00ae9aa6917d89442087d242cec3b1f3e66199295e2a56"
+file = "mods/emi-survivors-0.25.0.jar"
+hash = "0e121812e1c1591255987b37ac3ab6d6df64dfe8602972fd251044e3bb8220f9"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"

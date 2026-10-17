@@ -512,6 +512,12 @@ public final class Partida {
                 if (pp == null) return "Personalidades: veloz, bruto, embiste, explosivo.";
                 if (!r.eq.devPers(pp, r)) return "No se pudo crear el enemigo.";
             }
+            case "ataque" -> {                    // crea un enemigo con ese ataque cerca
+                Ataque at = null;
+                for (Ataque x : Ataque.values()) if (x.name().equalsIgnoreCase(id)) at = x;
+                if (at == null) return "Ataques: tirador, abanico, mortero, pisoton, zarpazo.";
+                if (!r.eq.devAtaque(at, r)) return "No se pudo crear el enemigo.";
+            }
             case "clima" -> {
                 Clima cl = null;
                 for (Clima x : Clima.values()) if (x.name().equalsIgnoreCase(id)) cl = x;
@@ -558,12 +564,17 @@ public final class Partida {
                 if (t < 0) return "Objetos: baya, iman, bomba, caramelo.";
                 r.eq.soltarObjeto(t, r.pp.x + 2.5 + 2.0 * r.eq.objetos.size(), r.pp.z - 1.5);       // cada uno un poco mas lejos del anterior, para verlos todos
             }
+            case "extra" -> {                     // pone la mejora repetible («vida» o «regen») a n veces
+                if (!id.equals("vida") && !id.equals("regen")) return "Mejoras repetibles: vida, regen.";
+                r.extras.put(id, Math.max(0, n));
+                r.recalcular();
+            }
             case "pasiva" -> {
                 if (Catalogo.pasiva(id) == null) return "Mejora desconocida: " + id;
                 r.pasivas.put(id, Math.max(1, Math.min(Catalogo.MAX_NIVEL, n)));
                 r.recalcular();
             }
-            default -> { return "Opciones: xp, nivel, tiempo, jefe [n], jefehp <%>, marea <tipo>, pers <nombre>, elite, curar, dano, sinxp, dps, arma, solo, pasiva, objeto, usar."; }
+            default -> { return "Opciones: xp, nivel, tiempo, jefe [n], jefehp <%>, marea <tipo>, pers <nombre>, ataque <nombre>, extra <vida|regen> [n], elite, curar, dano, sinxp, dps, arma, solo, pasiva, objeto, usar."; }
         }
         return null;
     }

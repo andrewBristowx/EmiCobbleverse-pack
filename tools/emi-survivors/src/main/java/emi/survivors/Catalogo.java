@@ -185,6 +185,20 @@ public final class Catalogo {
         return l;
     }
 
+    // ------------------------------------------------------------ mejoras repetibles (cuando ya no queda nada que subir)
+
+    /** Cuanta vida maxima da la {@code n}-esima vez que coges «Más vida» (cada vez un 7 % menos que la anterior). */
+    static double ganaVidaExtra(int n) { return 20 * Math.pow(0.93, Math.max(0, n - 1)); }
+
+    /** Cuanta regeneracion (vida por segundo) da la {@code n}-esima vez que coges «Más regeneración» (cada vez un 10 % menos). */
+    static double ganaRegenExtra(int n) { return 0.4 * Math.pow(0.90, Math.max(0, n - 1)); }
+
+    /** Vida maxima total de haber cogido «Más vida» {@code n} veces (suma de las ganancias; nunca pasa de ~286). */
+    static double vidaExtra(int n) { return n <= 0 ? 0 : 20 * (1 - Math.pow(0.93, n)) / 0.07; }
+
+    /** Regeneracion total de haber cogido «Más regeneración» {@code n} veces (nunca pasa de 4 por segundo). */
+    static double regenExtra(int n) { return n <= 0 ? 0 : 0.4 * (1 - Math.pow(0.90, n)) / 0.10; }
+
     // ------------------------------------------------------------ vida de la Banda Focus y de la Baya Zidra
 
     /** Segundos que tarda en recargarse la Banda Focus segun su nivel (1..5). */
@@ -217,6 +231,12 @@ public final class Catalogo {
                 default -> { }
             }
         }
+    }
+
+    /** Suma las mejoras repetibles («vida», «regen» -> veces cogidas) a las estadisticas. */
+    static void aplicarExtras(Stats s, Map<String, Integer> extras) {
+        s.hpMax += vidaExtra(extras.getOrDefault("vida", 0));
+        s.regen += regenExtra(extras.getOrDefault("regen", 0));
     }
 
     // ------------------------------------------------------------ ataque inicial segun el tipo del Pokemon
