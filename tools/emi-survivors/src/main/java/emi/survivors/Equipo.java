@@ -297,6 +297,7 @@ final class Equipo {
         if (faseFinal && !gigantePuesto) gigantePuesto = crearJefe(Jefes.GIGANTE_N);
         for (Run m : miembros) {
             if (m.estado != Run.VIVO || m.esperandoCarta) continue;
+            if (m.retrasoCartas > 0) { m.retrasoCartas--; continue; }               // tras viajar de mundo se ve el titulo antes de que salgan las cartas
             if (m.pendientes > 0) m.ofrecerCartas();
             else if (m.fusiones > 0) m.ofrecerFusion();
         }
@@ -634,7 +635,7 @@ final class Equipo {
             m.w = w2;
             if (m.estado == Run.CAIDO) m.revivir();
             m.hp = m.st.hpMax;
-            m.nivel += 2; m.pendientes += 2;                     // premio de superar el mundo
+            m.nivel += 2; m.pendientes += 2; m.retrasoCartas = 100;      // premio de superar el mundo (las cartas salen a los 5 s)
             m.iframes = Math.max(m.iframes, 60);
             double ang = k++ * Math.PI * 2 / n, dist = n == 1 ? 0 : 2.5;
             if (p != null) {
