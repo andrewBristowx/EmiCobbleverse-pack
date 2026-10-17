@@ -37,8 +37,8 @@ final class Equipo {
     static final int REVIVIR_TICKS = 60;        // 3 s a su lado para revivir a un companero caido
     static final double REVIVIR_DIST = 2.6;
 
-    final ServerWorld w;
-    final Biomas.Bioma bioma;                    // el bioma (la arena) de esta partida
+    ServerWorld w;                               // la dimension del mundo en el que esta ahora el equipo (cambia al superar la Sentencia)
+    Biomas.Bioma bioma;                          // el bioma (la arena) del mundo actual
     final int slot;
     final double ox, oz;                         // centro de la arena de esta partida
     final int fijo;                              // > 0 = modo de MEDIDA de la fase 0 (ese numero de enemigos desde el principio, sin oleadas ni jefe)
@@ -51,7 +51,7 @@ final class Equipo {
     final List<Objeto> objetos = new ArrayList<>();
     final List<Entity> marcas = new ArrayList<>();          // las marcas de aviso del suelo que hay ahora (ataques de jefes, mareas): ver Marcas
     final Medidor med = new Medidor();
-    final List<Especies.E> pool1, pool2, sesgo1, sesgo2;       // las especies que pueden salir, y de ellas las de los tipos favoritos del bioma
+    List<Especies.E> pool1, pool2, sesgo1, sesgo2;       // las especies que pueden salir, y de ellas las de los tipos favoritos del bioma
     final Set<String> especiesVistas = new HashSet<>();
     int tick, derrotados, fallosCrear, ticksParado;
     double presupuesto;
@@ -70,11 +70,28 @@ final class Equipo {
 
     Equipo(ServerWorld w, int slot, double ox, double oz, int fijo, boolean modoPrueba, Biomas.Bioma bioma) {
         this.w = w; this.slot = slot; this.ox = ox; this.oz = oz; this.fijo = fijo; this.modoPrueba = modoPrueba; this.bioma = bioma;
+        mundo = Math.max(0, Mundos.indice(bioma.id()));
+        jefesSalidos = Jefes.POR_MUNDO * mundo;
+        prepararEspecies();
+    }
+
+    /** Las especies que pueden salir en el mundo actual. */
+    private void prepararEspecies() {
         pool1 = Especies.entre(180, 330);
         pool2 = Especies.entre(331, 405);
         sesgo1 = favoritas(pool1);
         sesgo2 = favoritas(pool2);
     }
+
+    // ------------------------------------------------------------------------------------------------ mundos en secuencia (pradera -> bosque -> cosmos -> Michi Gigante)
+    int mundo;                                   // 0 = pradera, 1 = bosque, 2 = cosmos (ver Mundos)
+    int tickMundo0;                              // el tick del equipo en que se entro al mundo actual (los horarios de jefes, mareas, grietas... cuentan desde ahi)
+    int mareasBase;                              // marcas ya salidas al entrar al mundo actual
+    boolean faseFinal;                           // ya se paso la Sentencia del ultimo mundo: toca el Michi Gigante
+    boolean victoria;                            // el Michi Gigante ha caido
+
+    /** Segundos desde que el equipo entro al mundo actual. */
+    double tm() { return (tick - tickMundo0) / 20.0; }
 
     /** De esas especies, las que tienen alguno de los tipos favoritos del bioma. */
     private List<Especies.E> favoritas(List<Especies.E> l) {
@@ -102,18 +119,18 @@ final class Equipo {
 
     /** El nombre del mundo (bioma) de esta partida, para la interfaz. */
     /** El clima de la partida (cambia cada 2:30; ver {@link Clima}). */
-    final ClimaEquipo clima = new ClimaEquipo(this);
+    ClimaEquipo clima = new ClimaEquipo(this);
     /** Las grietas con legendarios (ver {@link Grietas}). */
-    final GrietaEquipo grieta = new GrietaEquipo(this);
+    GrietaEquipo grieta = new GrietaEquipo(this);
     /** La prueba final (ver {@link Sentencia}). */
-    final SentenciaEquipo sentencia = new SentenciaEquipo(this);
+    SentenciaEquipo sentencia = new SentenciaEquipo(this);
     /** Los eventos cortos de la partida (ver {@link Eventos}). */
-    final EventoEquipo evento = new EventoEquipo(this);
+    EventoEquipo evento = new EventoEquipo(this);
     /** Tesoros pequeños y cofres grandes del mapa (ver {@link Tesoros}). */
-    final TesorosEquipo tesoros = new TesorosEquipo(this);
+    TesorosEquipo tesoros = new TesorosEquipo(this);
 
     /** ¿Ya no salen cosas nuevas (la Sentencia ha empezado)? */
-    boolean mundoCerrado() { return Sentencia.toca(tick / 20.0); }
+    boolean mundoCerrado() { return Sentencia.toca(tm()); }
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
     String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
@@ -192,17 +209,17 @@ final class Equipo {
                 presupuesto -= 1.0;
             }
             if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
-            boolean final_ = Sentencia.toca(t);                                       // desde la Sentencia ya no salen jefes ni mareas nuevos
-            if (!final_ && (jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.tocan(t)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
-            if (!final_ && marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < Mareas.tocan(t)) {
-                mareasSalidas = Math.max(mareasSalidas, Mareas.tocan(t) - 1);          // si una marea llega tarde (habia un jefe vivo), las que se perdieron no se acumulan
+            boolean final_ = Sentencia.toca(tm());                                       // desde la Sentencia ya no salen jefes ni mareas nuevos
+            if (!final_ && (jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.POR_MUNDO * mundo + Jefes.tocanEnMundo(tm(), mundo)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
+            if (!final_ && marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < mareasBase + Mareas.tocan(tm())) {
+                mareasSalidas = Math.max(mareasSalidas, mareasBase + Mareas.tocan(tm()) - 1);          // si una marea llega tarde (habia un jefe vivo), las que se perdieron no se acumulan
                 iniciarMarea(++mareasSalidas, null);
             }
         }
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
-        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); sentencia.tick(tick); evento.tick(tick); tesoros.tick(tick); }
+        if (fijo == 0) { int tw = tick - tickMundo0; clima.tick(tw); grieta.tick(tw); sentencia.tick(tw); evento.tick(tw); tesoros.tick(tw); }
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
@@ -272,7 +289,9 @@ final class Equipo {
             Partida.terminarEquipo(this, miembros.size() == 1 ? "Te han derrotado." : "Han caído todos los jugadores.");
             return;
         }
-        if (sentencia.superada()) { Partida.terminarEquipo(this, "¡Habéis superado la Sentencia!"); return; }
+        if (victoria) { Partida.terminarEquipo(this, "¡Habéis derrotado al Michi Gigante!"); return; }
+        if (sentencia.superada() && !faseFinal) { if (Mundos.hayOtro(mundo)) pasarDeMundo(); else empezarFinal(); }
+        if (faseFinal && !gigantePuesto) gigantePuesto = crearJefe(Jefes.GIGANTE_N);
         for (Run m : miembros) {
             if (m.estado != Run.VIVO || m.esperandoCarta) continue;
             if (m.pendientes > 0) m.ofrecerCartas();
@@ -544,6 +563,49 @@ final class Equipo {
     /** Solo para pruebas (/survivor dev elite): crea un campeon ya. */
     boolean devElite() { return crearEnemigo(Enemigo.Tipo.ELITE); }
 
+    boolean gigantePuesto;
+
+    /** Pasa al siguiente mundo: lo del mundo viejo se limpia, el equipo viaja a la arena del nuevo y los horarios (jefes, mareas, climas...) vuelven a empezar. */
+    private void pasarDeMundo() {
+        Biomas.Bioma nuevo = Mundos.siguiente(mundo);
+        ServerWorld w2 = Partida.mundo(nuevo);
+        if (w2 == null) { EmiSurvivors.LOG.warn("[mundos] no existe la dimension de {}: se acaba la partida con victoria", nuevo.id()); victoria = true; return; }
+        EmiSurvivors.LOG.info("[mundos] {} pasa de {} a {} a los {} s", nombres(), bioma.id(), nuevo.id(), segundos());
+        limpiar();
+        jefe = null;
+        Arena.preparar(w2, slot, nuevo);
+        Arena.limpiarRestos(w2, slot);
+        ServerWorld viejo = w;
+        w = w2; bioma = nuevo; mundo++; tickMundo0 = tick; mareasBase = mareasSalidas; jefesSalidos = Jefes.POR_MUNDO * mundo;
+        prepararEspecies();
+        clima = new ClimaEquipo(this); grieta = new GrietaEquipo(this); sentencia = new SentenciaEquipo(this); evento = new EventoEquipo(this); tesoros = new TesorosEquipo(this);
+        int n = miembros.size(), k = 0;
+        for (Run m : miembros) {
+            ServerPlayerEntity p = m.jugador();
+            m.w = w2;
+            if (m.estado == Run.CAIDO) m.revivir();
+            m.hp = m.st.hpMax;
+            m.nivel += 2; m.pendientes += 2;                     // premio de superar el mundo
+            m.iframes = Math.max(m.iframes, 60);
+            double ang = k++ * Math.PI * 2 / n, dist = n == 1 ? 0 : 2.5;
+            if (p != null) {
+                p.teleport(w2, ox + 0.5 + Math.cos(ang) * dist, Arena.Y0, oz + 0.5 + Math.sin(ang) * dist, 180f, 0f);
+                m.pp = p.getPos();
+                Msg.title(p, Text.literal("¡MUNDO SUPERADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nuevo.nombre() + " · +2 niveles y vida completa").formatted(Formatting.YELLOW), 5, 70, 15);
+                Sonidos.sfx(p, Sonidos.JEFE_DERROTADO, 1.0f, 1.0f);
+                Musica.silencio(p, 2500);
+            }
+        }
+        avisar(Msg.say("★ ¡Habéis superado la Sentencia! Viajáis a: " + nuevo.nombre() + "."));
+    }
+
+    /** Se paso la Sentencia del ultimo mundo: sale el Michi Gigante. */
+    private void empezarFinal() {
+        faseFinal = true;
+        EmiSurvivors.LOG.info("[mundos] {} empieza el combate final a los {} s", nombres(), segundos());
+        avisar(Msg.say("★ ¡Habéis superado la última Sentencia! Pero algo enorme se acerca..."));
+    }
+
     boolean jefeDerrotado() { return jefesDerrotados > 0; }
 
     /**
@@ -631,6 +693,7 @@ final class Equipo {
                 if (j != null) j.limpiar();
                 int n = j != null ? j.numero : jefesDerrotados + 1;
                 jefesDerrotados++; jefe = null;
+                if (n == Jefes.GIGANTE_N) victoria = true;
                 for (int k = 0; k < 6; k++) { double a = k * Math.PI / 3; gemas.add(new Gema(x + Math.cos(a) * 2.5, z + Math.sin(a) * 2.5, 25 + 10 * (n - 1))); }
                 for (Run m : miembros) m.premioJefe(n, j == null ? "El jefe" : j.nombre, Jefes.esElUltimo(n));
                 soltarObjeto(Objeto.BAYA, x + 1.8, z); soltarObjeto(Objeto.BAYA, x - 1.8, z); soltarObjeto(Objeto.IMAN, x, z + 1.8);

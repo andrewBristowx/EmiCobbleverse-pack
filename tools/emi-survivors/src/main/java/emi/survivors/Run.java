@@ -40,7 +40,7 @@ final class Run {
     static final int T_CARTA = Integer.getInteger("emi.survivors.carta_ticks", 20 * 30);         // 30 s para elegir carta; si no, se elige una al azar (la propiedad solo se usa en pruebas)
 
     final Equipo eq;
-    final ServerWorld w;
+    ServerWorld w;
     final UUID id;
     final String nombre;
     final Pokemon pk;

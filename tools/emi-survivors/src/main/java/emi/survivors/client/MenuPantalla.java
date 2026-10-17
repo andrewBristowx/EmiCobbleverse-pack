@@ -405,24 +405,24 @@ public final class MenuPantalla extends Lienzo {
     }
 
     /** Solo elige la arena quien la decide: el jugador que juega solo, o el lider de un grupo (que aun no esta jugando). */
-    private boolean puedeElegirArena() { return !preparando && (!enGrupo || (soyLider && !grupoJugando)); }
+    private boolean puedeElegirArena() { return false; }          // desde la 0.18.0 no se elige: se recorren en orden, un mundo por cada Sentencia superada
 
     private void arenas(DrawContext g, int mx, int my, int yb, int hc) {
         if (biomas.isEmpty()) return;
         boolean puede = puedeElegirArena();
         String actual = enGrupo ? biomaGrupo : biomaSolo;
-        texto(g, enGrupo && !soyLider ? "ARENA (la elige el líder del grupo)" : "ELIGE LA ARENA", RX, yb, ORO, 0.9f);
+        texto(g, "EL RECORRIDO · una Sentencia por mundo y, al final, ¡el Michi Gigante!", RX, yb, ORO, 0.85f);
         for (int i = 0; i < biomas.size(); i++) {
             Bioma b = biomas.get(i);
             int x = RX + i * (CW + CGAP), y = yb + 12;
-            boolean sel = b.id().equals(actual), sobre = puede && dentro(mx, my, x, y, CW, hc);
+            boolean sel = false, sobre = false;
             caja(g, x, y, CW, hc, sel ? 0xFF2E2E58 : sobre ? 0xFF25254A : 0xFF1B1B30, sel ? ORO : sobre ? b.color() : 0xFF55557A);
             g.fill(x + 1, y + 1, x + 4, y + hc - 1, puede || sel ? b.color() : (b.color() & 0x00FFFFFF) | 0x66000000);
             boolean alto = hc >= 60;
             int ix = x + 9, iy = alto ? y + 6 : y + (hc - 24) / 2, tx = ix + 29;
             icono(g, "b_" + b.id(), ix, iy, 1f);
             String[] nom = b.nombre().split(" ", 2);
-            texto(g, nom[0], tx, iy + 2, sel ? ORO : puede ? BLANCO : GRIS, 1.05f);
+            texto(g, (i + 1) + ". " + nom[0], tx, iy + 2, BLANCO, 1.05f);
             if (nom.length > 1) texto(g, nom[1], tx, iy + 14, GRIS, 0.8f);
             if (alto) {
                 int l = parrafo(g, b.texto(), x + 8, y + 36, CW - 12, GRIS, 0.75f);

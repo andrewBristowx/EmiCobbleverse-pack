@@ -54,13 +54,24 @@ final class Jefes {
                     new Ataque[]{Ataque.HAZ, Ataque.INVOCAR, Ataque.ANILLO, Ataque.LLUVIA, Ataque.CARGA, Ataque.SALTO}, true, "¡El rey de los michialiens!", "gold", 4),
     };
 
+    /** El numero con el que se identifica al Michi Gigante, el jefe final de la partida (sale tras la Sentencia del ultimo mundo). */
+    static final int GIGANTE_N = 100;
+    static final Def GIGANTE = new Def("gigante", "Michi Gigante", "gatitoalien", "gatitoalien", "accessory=devil_horns gold=true", "gatitoalien", 14.0f, 2.2, 45f, 90000, 50,
+            new Ataque[]{Ataque.HAZ, Ataque.SALTO, Ataque.INVOCAR, Ataque.ANILLO, Ataque.LLUVIA, Ataque.CARGA, Ataque.CONO}, true, "¡El michi más grande del cosmos!", "light_purple", 4);
+
+    /** Cuantos jefes salen en cada mundo (el 1.º y el 2.º en la pradera, el 3.º y el 4.º en el bosque, el 5.º en el cosmos). */
+    static final int POR_MUNDO = 2;
+
+    /** Cuantos jefes le tocan YA al mundo {@code mundo} (0 = el primero) a los {@code t} segundos de ese mundo (aparte de los de mundos anteriores). */
+    static int tocanEnMundo(double t, int mundo) { return Math.min(tocan(t), Math.max(0, Math.min(POR_MUNDO, TODOS.length - POR_MUNDO * mundo))); }
+
     /** Segundos en que sale el primer jefe y cada cuantos sale el siguiente. */
     static final int PRIMERO = 180, CADA = 180;
 
-    static Def def(int n) { return TODOS[(Math.max(1, n) - 1) % TODOS.length]; }
+    static Def def(int n) { if (n == GIGANTE_N) return GIGANTE; return TODOS[(Math.max(1, n) - 1) % TODOS.length]; }
 
     /** En que vuelta de los cinco jefes va el jefe numero {@code n} (0 = la primera). */
-    static int ciclo(int n) { return (Math.max(1, n) - 1) / TODOS.length; }
+    static int ciclo(int n) { return n == GIGANTE_N ? 0 : (Math.max(1, n) - 1) / TODOS.length; }
 
     /** El segundo en que le toca salir al jefe numero {@code n}. */
     static int segundo(int n) { return PRIMERO + CADA * (Math.max(1, n) - 1); }
@@ -81,7 +92,7 @@ final class Jefes {
     static int refuerzos(int jugadores, int n, boolean furia) { return Math.min(24, 6 + 2 * (Math.max(1, Math.min(4, jugadores)) - 1) + 3 * ciclo(n) + (furia ? 4 : 0)); }
 
     /** Cuantos de los cinco jefes de una vuelta se han derrotado (para el titulo del ultimo: «¡Has vencido a …!»). */
-    static boolean esElUltimo(int n) { return Math.max(1, n) % TODOS.length == 0; }
+    static boolean esElUltimo(int n) { return n == GIGANTE_N || Math.max(1, n) % TODOS.length == 0; }
 
     /** Monedas extra por jefe derrotado (se suman al acabar la partida). */
     static final int MONEDAS_POR_JEFE = 20;

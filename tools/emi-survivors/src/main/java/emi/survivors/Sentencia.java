@@ -1,14 +1,14 @@
 package emi.survivors;
 
 /**
- * La Sentencia: la prueba final de una partida. A los {@link #INICIO_SEG} segundos (20:00) empieza una cuenta atras de {@link #DURACION_SEG} segundos en la que llueven
+ * La Sentencia: la prueba final de una partida. Al acabar cada mundo ({@link #INICIO_SEG} segundos desde que se entra, 7:00) empieza una cuenta atras de {@link #DURACION_SEG} segundos en la que llueven
  * explosiones avisadas bajo los jugadores, cada vez mas seguidas, y salen mas enemigos; ya no salen jefes, mareas ni grietas nuevas. Si el equipo sigue en pie cuando
  * acaba, SUPERA la Sentencia: la partida termina con victoria (premio de michiestrellitas, marca especial en el top y logro). Sin Minecraft: se prueba con un main.
  */
 final class Sentencia {
     private Sentencia() {}
 
-    static final int INICIO_SEG = Integer.getInteger("emi.survivors.sentencia_inicio", 20 * 60), DURACION_SEG = Integer.getInteger("emi.survivors.sentencia_duracion", 90);      // las propiedades solo se usan en pruebas
+    static final int INICIO_SEG = Integer.getInteger("emi.survivors.sentencia_inicio", 7 * 60), DURACION_SEG = Integer.getInteger("emi.survivors.sentencia_duracion", 90);      // las propiedades solo se usan en pruebas
     /** Michiestrellitas extra que gana cada jugador que supera la Sentencia (antes del bonus de suerte). */
     static final int MONEDAS = 100;
     /** Multiplicador del ritmo de aparicion de enemigos durante la Sentencia. */

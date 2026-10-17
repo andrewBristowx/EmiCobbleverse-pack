@@ -90,7 +90,7 @@ final class TesorosEquipo {
     private void abrirCofre() {
         Vec3d s = eq.sitioDeAparicion(16, 26);
         if (s == null) return;
-        cofresAbiertos = Math.max(cofresAbiertos + 1, Tesoros.cofresQueTocan(eq.tick / 20.0));
+        cofresAbiertos = Math.max(cofresAbiertos + 1, Tesoros.cofresQueTocan(eq.tm()));
         cx = s.x; cz = s.z; carga = 0; tc = 0; restante = Tesoros.DURACION_COFRE_SEG * 20; cofreActivo = true;
         // el cofre: un cuerpo de barril alargado con la tapa dorada, sobre un cuadrado dorado en el suelo
         visualCofre.add(Marcas.crear(eq, "minecraft:barrel", cx, Arena.Y0, cz, 0, 2.4f, 1.5f, 1.6f, false));

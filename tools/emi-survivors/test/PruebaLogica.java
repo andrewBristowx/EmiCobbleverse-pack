@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros(); fusiones();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros(); fusiones(); mundos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -592,7 +592,7 @@ public final class PruebaLogica {
 
     static void sentencia() throws Exception {
         System.out.println("== sentencia");
-        ok(!Sentencia.toca(1199.9) && Sentencia.toca(1200), "la Sentencia empieza a los 20:00");
+        ok(!Sentencia.toca(419.9) && Sentencia.toca(420), "la Sentencia de cada mundo empieza a los 7:00");
         ok(Sentencia.ticksEntreTandas(0) == 40 && Sentencia.ticksEntreTandas(Sentencia.DURACION_SEG) == 14 && Sentencia.ticksEntreTandas(45) < 40 && Sentencia.ticksEntreTandas(45) > 14, "las explosiones se van acelerando (40 -> 14 ticks)");
         ok(Sentencia.ticksEntreTandas(-5) == 40 && Sentencia.ticksEntreTandas(500) == 14, "los limites se respetan");
         ok(Sentencia.extrasPorTanda(0) == 1 && Sentencia.extrasPorTanda(45) == 2 && Sentencia.extrasPorTanda(89) == 3 && Sentencia.extrasPorTanda(500) == 3, "de 1 a 3 explosiones extra por tanda");
@@ -628,6 +628,18 @@ public final class PruebaLogica {
         Retos.aplicar(j, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 0, 0, 0, 6), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
         ok(j.doradosTotal == 6 && j.logros.getOrDefault("dorado", 0) == 2, "logro Cazamichis: 6 dorados = 2 escalones (1 y 5)");
         System.out.println("  eventos: bien");
+    }
+
+    static void mundos() {
+        ok(Mundos.ORDEN.equals(java.util.List.of("pradera", "bosque", "cosmos")), "el recorrido es pradera, bosque, cosmos");
+        ok(Mundos.indice("bosque") == 1 && Mundos.indice("nada") == -1, "indice del mundo");
+        ok(Mundos.hayOtro(0) && Mundos.hayOtro(1) && !Mundos.hayOtro(2), "tras el cosmos ya no hay otro mundo");
+        ok(Mundos.siguiente(0).id().equals("bosque") && Mundos.siguiente(1).id().equals("cosmos"), "el siguiente mundo");
+        ok(Jefes.tocanEnMundo(10, 0) == 0 && Jefes.tocanEnMundo(190, 0) == 1 && Jefes.tocanEnMundo(370, 0) == 2, "dos jefes en el primer mundo (3:00 y 6:00)");
+        ok(Jefes.tocanEnMundo(1000, 0) == 2 && Jefes.tocanEnMundo(1000, 1) == 2 && Jefes.tocanEnMundo(1000, 2) == 1, "el cosmos solo tiene un jefe (el quinto)");
+        ok(Jefes.def(Jefes.GIGANTE_N) == Jefes.GIGANTE && Jefes.ciclo(Jefes.GIGANTE_N) == 0 && Jefes.vida(Jefes.GIGANTE_N) == Jefes.GIGANTE.vida() && Jefes.esElUltimo(Jefes.GIGANTE_N), "el Michi Gigante es un jefe aparte");
+        ok(Jefes.GIGANTE.alto() > Jefes.def(5).alto() * 2 && Jefes.GIGANTE.vida() > Jefes.def(5).vida(), "el gigante es mucho mas grande y fuerte que el Rey");
+        ok(Sentencia.INICIO_SEG == 420 || System.getProperty("emi.survivors.sentencia_inicio") != null, "cada mundo dura 7:00 antes de la Sentencia");
     }
 
     static void fusiones() {

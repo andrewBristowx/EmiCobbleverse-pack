@@ -39,7 +39,7 @@ final class Acciones {
                 case "jugar" -> {
                     if (Partida.participa(p)) { Menu.cerrar(p); return; }                  // doble clic: la partida ya esta en marcha
                     if (Partida.grupos.de(p.getUuid()) != null) { p.sendMessage(Msg.err("Estás en un grupo: usa «¡LISTO!» o «¡EMPEZAR!», o sal del grupo para jugar solo."), false); Menu.enviar(p, "jugar", null); return; }
-                    String err = Partida.iniciar(p, Integer.parseInt(a.a().trim()), 0, false, Biomas.deIdOPradera(a.b()));
+                    String err = Partida.iniciar(p, Integer.parseInt(a.a().trim()), 0, false, Biomas.PRADERA);
                     if (err != null) { p.sendMessage(Msg.err(err), false); Menu.enviar(p, "jugar", null); }
                     else Menu.cerrar(p);
                 }
@@ -52,7 +52,7 @@ final class Acciones {
                     String err = GrupoCtl.empezar(p, Integer.parseInt(a.a().trim()));          // en la arena que haya elegido el lider (se guarda en el grupo)
                     if (err != null) respuesta(p, err);
                 }
-                case "bioma" -> respuesta(p, GrupoCtl.elegirBioma(p, Biomas.porId(a.a())));
+                case "bioma" -> respuesta(p, "La arena ya no se elige: se recorren en orden.");
                 case "refrescar" -> {
                     long ahora = System.currentTimeMillis();
                     Long antes = ULTIMO_REFRESCO.put(p.getUuid(), ahora);
