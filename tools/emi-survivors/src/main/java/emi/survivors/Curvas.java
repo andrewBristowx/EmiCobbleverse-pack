@@ -22,8 +22,11 @@ final class Curvas {
     static int monedas(int segundos, int derrotados, int nivel, int jefes, double mult) { return monedas(segundos, derrotados, nivel, jefes, 0, mult); }
 
     /** Igual, con {@code shinies} = los shinies que derroto ese jugador ({@link #MONEDAS_POR_SHINY} cada uno). */
-    static int monedas(int segundos, int derrotados, int nivel, int jefes, int shinies, double mult) {
-        double base = segundos / 12.0 + derrotados / 15.0 + nivel * 2.0 + Jefes.MONEDAS_POR_JEFE * Math.max(0, jefes) + MONEDAS_POR_SHINY * Math.max(0, shinies);
+    static int monedas(int segundos, int derrotados, int nivel, int jefes, int shinies, double mult) { return monedas(segundos, derrotados, nivel, jefes, shinies, 0, mult); }
+
+    /** Igual, con {@code legendarios} = los legendarios de las grietas que derroto ({@link Grietas#MONEDAS_POR_LEGENDARIO} cada uno). */
+    static int monedas(int segundos, int derrotados, int nivel, int jefes, int shinies, int legendarios, double mult) {
+        double base = segundos / 12.0 + derrotados / 15.0 + nivel * 2.0 + Jefes.MONEDAS_POR_JEFE * Math.max(0, jefes) + MONEDAS_POR_SHINY * Math.max(0, shinies) + Grietas.MONEDAS_POR_LEGENDARIO * Math.max(0, legendarios);
         return (int) Math.max(0, Math.round(base * mult));
     }
 

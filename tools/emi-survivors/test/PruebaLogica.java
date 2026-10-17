@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -452,7 +452,7 @@ public final class PruebaLogica {
         }
         int logrosTotal = 0;
         for (Retos.Familia f : Retos.FAMILIAS) for (int pr : f.premios()) logrosTotal += pr;
-        ok(logrosTotal < 300, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
+        ok(logrosTotal < 350, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
         ok(Curvas.monedas(300, 100, 10, 0, 1.0) == Curvas.monedas(300, 100, 10, 0, 0, 1.0), "sin shinies, las monedas son las de siempre");
         ok(Curvas.monedas(300, 100, 10, 0, 4, 1.0) - Curvas.monedas(300, 100, 10, 0, 0, 1.0) == 4 * Curvas.MONEDAS_POR_SHINY, "cada shiny suma " + Curvas.MONEDAS_POR_SHINY + " michiestrellitas");
         ok(Curvas.P_SHINY > 0 && Curvas.P_SHINY <= 0.01, "los shinies son raros (" + Curvas.P_SHINY + ")");
@@ -570,6 +570,24 @@ public final class PruebaLogica {
         ok(vistos.size() == Clima.values().length, "con el tiempo salen todos los climas");
         ok(Clima.TORMENTA.resumen().contains("Eléctrico") && Clima.LLUVIA.resumen().contains("Fuego"), "el resumen nombra los tipos en español: " + Clima.LLUVIA.resumen());
         System.out.println("  clima: bien");
+    }
+
+    static void grietas() throws Exception {
+        System.out.println("== grietas");
+        ok(Grietas.tocan(0) == 0 && Grietas.tocan(109.9) == 0 && Grietas.tocan(110) == 1 && Grietas.tocan(289) == 1 && Grietas.tocan(290) == 2, "las grietas tocan a los 110 s y cada 180 s");
+        ok(Grietas.vida(100, 1) < Grietas.vida(600, 1) && Grietas.vida(100, 1) < Grietas.vida(100, 3), "la vida del legendario sube con el tiempo y con los jugadores");
+        for (String b : new String[]{"pradera", "bosque", "cosmos"}) {
+            List<String> l = Grietas.legendarios(b);
+            ok(l.size() >= 5 && new HashSet<>(l).size() == l.size(), "lista de legendarios de " + b);
+        }
+        ok(Grietas.legendarios("loquesea").equals(Grietas.legendarios("pradera")), "un bioma raro usa la lista de la pradera");
+        ok(Grietas.direccion(10, 0).equals("a la derecha") && Grietas.direccion(-10, 1).equals("a la izquierda") && Grietas.direccion(0, -10).equals("arriba") && Grietas.direccion(0, 10).equals("abajo"), "direcciones simples");
+        ok(Grietas.direccion(10, -10).equals("arriba a la derecha") && Grietas.direccion(-10, 10).equals("abajo a la izquierda") && Grietas.direccion(0.1, 0.1).equals("abajo a la derecha"), "direcciones en diagonal");
+        ok(Curvas.monedas(300, 100, 10, 0, 0, 2, 1.0) - Curvas.monedas(300, 100, 10, 0, 0, 0, 1.0) == 2 * Grietas.MONEDAS_POR_LEGENDARIO, "cada legendario suma " + Grietas.MONEDAS_POR_LEGENDARIO + " michiestrellitas");
+        Datos.Jugador j = new Datos(Files.createTempDirectory("survivors_gr")).jugador(UUID.randomUUID(), "Gus");
+        Retos.aplicar(j, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 0, 6), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
+        ok(j.legendariosTotal == 6 && j.logros.getOrDefault("grieta", 0) == 2, "logro Domagrietas: 6 legendarios = 2 escalones (1 y 5)");
+        System.out.println("  grietas: bien");
     }
 
     static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }

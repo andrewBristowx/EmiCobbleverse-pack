@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.12.0 (fase 4A: climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.13.0 (fase 4B: grietas con legendarios; sobre la 0.12.0: fase 4A, climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -32,8 +32,8 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
    - **3C. Shinies** — HECHA (0.10.0, esta): 1 de cada 250 enemigos normales sale shiny (variocolor), con contorno amarillo y brillo; da 5 veces más experiencia, un objeto seguro y +3 michiestrellitas al acabar, y cuenta para el logro «Cazashinies».
    - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — HECHA (0.9.0): pestaña TIENDA donde se gastan las coronas en 7 tickets de los banners de Emipokemon y 5 objetos de Pokémon (Ultra Ball, Caramelo Raro, Revivir Máximo, Cápsula Habilidad y Master Ball). **Decisiones del dueño: máximo 10 de cada artículo al día y se entrega al correo (`/correo`).** Qué se vende y los precios son una primera propuesta del asistente (`Tienda.java`): el dueño los ajusta.
 4. **Final y extras** (el dueño dijo «continúa» tras la fase 3 el 2026-10-17; reparto del asistente, cada entrega se prueba y se entrega por separado):
-   - **4A. Climas** — HECHA (0.12.0, esta): cada 2:30 cambia el clima (sol, lluvia, tormenta, nieve, niebla o despejado); favorece a unos tipos de Pokémon y perjudica a otros; la tormenta lanza rayos avisados en el suelo.
-   - **4B. Grietas con legendarios** — siguiente.
+   - **4A. Climas** — HECHA (0.12.0): cada 2:30 cambia el clima (sol, lluvia, tormenta, nieve, niebla o despejado); favorece a unos tipos de Pokémon y perjudica a otros; la tormenta lanza rayos avisados en el suelo.
+   - **4B. Grietas con legendarios** — HECHA (0.13.0, esta): cada 3 minutos se abre una grieta (cuadrado morado en el suelo); si los jugadores se quedan dentro, sale un legendario enorme que da un tesoro al caer.
    - **4C. La «Sentencia» final** — después.
    - **4D. Eventos y más temas de Emi** — después.
 
@@ -99,6 +99,13 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
 - **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
 - **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
+
+### Grietas con legendarios (0.13.0)
+- **Cuándo** (`Grietas.java`): la primera a los **110 s** y después una cada **180 s**, pero solo si no hay un jefe vivo, no sale uno en los próximos 45 s y no hay una marea en marcha (si no, espera). Solo una a la vez. Sale un título («¡UNA GRIETA!»), un mensaje en el chat y un sonido.
+- **La grieta abierta**: un **cuadrado morado de 7×7** en el suelo (las mismas marcas de aviso que los jefes) a 14-22 bloques de un jugador, con un anillo de partículas y una columna para verla de lejos. La interfaz (debajo de la línea de zona) dice **hacia dónde está desde tu pantalla** («GRIETA abajo a la izquierda · 45 %»; la cámara mira al norte, así que arriba = norte) y cuántos segundos quedan. Para abrirla hay que **estar dentro, en pie**: cada jugador dentro suma 1 por tick hasta 160 (8 s para uno solo; con más jugadores, menos), y un cuadrado magenta va creciendo en el centro. Si no se abre en **60 s**, se cierra («Habrá otra más adelante»).
+- **El legendario** (`GrietaEquipo.java`): al llenarse sale en el centro un legendario **elegido al azar según el bioma** (los que existan en el servidor; pradera: Entei, Raikou, Suicune, Virizion, Terrakion, Cobalion, Tapu Bulu, Keldeo; bosque: Spectrier, Marshadow, Zarude, Hoopa, Calyrex, Giratina; cosmos: Mewtwo, Solgaleo, Necrozma, Deoxys, Zeraora, Magearna, Genesect, Dialga, Palkia). Es un **campeón gigante** (×1,5), con **contorno morado**, barra de vida arriba (como los jefes), vida `700 × (1 + t/200)` × el factor de jefe por jugadores (≈780 a los 2:00, ≈3000 a los 11:00 en solitario), daño de contacto 18, velocidad 2,3 b/s, y **cada 5 s marca una explosión bajo cada jugador en pie** (la bomba avisada de los enemigos explosivos).
+- **Al derrotarlo**: 8 gemas grandes alrededor, un Caramelo Raro, un Imán y una Baya en el suelo, **+1 nivel para todos**, título y sonido; y +8 michiestrellitas al acabar para quien le dio el último golpe (mensaje en el chat). **Logro «Domagrietas»** (1, 5 y 20 legendarios; 3, 8 y 20 coronas).
+- `/survivor dev grieta` (administradores): abre una grieta ya; si el legendario está vivo, lo derrota para probar el tesoro.
 
 ### Climas (0.12.0)
 - **Cuándo**: el primer cambio a los **60 s** y después uno cada **150 s** (`Clima.PRIMERO_SEG`, `CADA_SEG`); el nuevo es siempre distinto del actual. Sale un título («¡Llueve!», «¡Tormenta!»…) con «Favorece: …» y el chat cuenta los números; la **zona** de la interfaz (arriba en el centro) añade el clima: «PRADERA MICHIALIEN · LLUVIA». No hay clima en las partidas de medida (`/survivor medida`).
@@ -258,6 +265,16 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.13.0: grietas con legendarios)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): cuándo tocan las grietas, que la vida del legendario suba con el tiempo y los jugadores, las listas por bioma (sin repetidos), las frases de dirección, las michiestrellitas por legendario y el logro Domagrietas.
+- **En el juego** (servidor ligero + cliente real, un jugador, pradera y cosmos): abrir la grieta (título, chat, cuadrado morado, texto de la interfaz «GRIETA abajo a la izquierda · 0 % 0:56»), meterse dentro, que salga el legendario (Raikou en la pradera con 779 de vida; Genesect en el cosmos con 762), su barra de vida y su título, las explosiones avisadas bajo el jugador, y derrotarlo: +1 nivel con su pantalla de cartas y el aviso.
+**No probado / límites**:
+- **Pelear de verdad con el legendario** (solo se derrotó con el comando de pruebas; no se midió cuánto aguanta ni cuánto daña a un jugador real), ni jugar entero con las grietas intercaladas con jefes y mareas.
+- Que **todos los legendarios de las listas existan** en el servidor y se vean bien andando (solo salieron Raikou y Genesect; los que no existan se saltan; los que vuelan o flotan, como Mewtwo o Giratina, podrían moverse raro porque aquí caminan por el suelo).
+- Los **ticks de carga con varios jugadores**, el pack entero (con Emipokemon y el resto), el sonido y el servidor real.
+- **El equilibrio**: vida, daño, tiempos y premios son estimaciones.
 
 ## Probado / no probado (0.12.0: climas)
 **Probado**:

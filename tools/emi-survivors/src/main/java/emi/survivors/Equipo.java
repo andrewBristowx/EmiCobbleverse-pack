@@ -103,6 +103,8 @@ final class Equipo {
     /** El nombre del mundo (bioma) de esta partida, para la interfaz. */
     /** El clima de la partida (cambia cada 2:30; ver {@link Clima}). */
     final ClimaEquipo clima = new ClimaEquipo(this);
+    /** Las grietas con legendarios (ver {@link Grietas}). */
+    final GrietaEquipo grieta = new GrietaEquipo(this);
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
     String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
@@ -190,7 +192,7 @@ final class Equipo {
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
-        if (fijo == 0) clima.tick(tick);
+        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); }
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
@@ -328,7 +330,7 @@ final class Equipo {
     private static long clave(int cx, int cz) { return ((long) cx << 32) ^ (cz & 0xffffffffL); }
 
     /** Un sitio donde puede aparecer un enemigo: en un anillo de 21-26 bloques de un jugador en pie al azar, dentro de la arena y con suelo. null si no se encuentra. */
-    private Vec3d sitioDeAparicion(double distMin, double distMax) {
+    Vec3d sitioDeAparicion(double distMin, double distMax) {
         List<Run> base = vivos();
         if (base.isEmpty()) base = miembros;
         if (base.isEmpty()) return null;
@@ -503,6 +505,9 @@ final class Equipo {
         }
     }
 
+    /** Deja una bomba avisada en el suelo (la misma de los enemigos explosivos); con 12 a la vez no se pone mas. */
+    void ponerBomba(double x, double z) { if (bombas.size() < 12) bombas.add(new Bomba(x, z)); }
+
     private void tickBombas(List<Run> objetivos) {
         for (Iterator<Bomba> it = bombas.iterator(); it.hasNext(); ) {
             Bomba b = it.next();
@@ -598,6 +603,7 @@ final class Equipo {
         en.quitar();
         derrotados++;
         if (en.pers == Pers.EXPLOSIVO && bombas.size() < 12) bombas.add(new Bomba(x, z));
+        if (en.legendario) grieta.alDerrotar(en, x, z);
         if (en.ultimo != null && miembros.contains(en.ultimo)) { en.ultimo.derrotados++; en.ultimo.alDerrotar(en); }
         switch (en.tipo) {
             case JEFE -> {
@@ -683,6 +689,7 @@ final class Equipo {
         bombas.clear();
         if (marea != null) { marea.limpiar(); marea = null; }
         clima.limpiar();
+        grieta.limpiar();
         Marcas.quitarTodas(this);
         for (Run m : miembros) m.proyectiles.clear();
     }

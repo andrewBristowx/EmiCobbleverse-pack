@@ -36,6 +36,7 @@ final class Enemigo {
     double edx, edz;            // direccion de su embestida
     int rumboT;                 // estampida: si es > 0 sigue la direccion (rdx, rdz) y no persigue; al llegar a 0 desaparece sin soltar nada
     double rdx, rdz;
+    boolean legendario;         // el legendario que sale de una grieta (ver Grietas)
     boolean shiny;              // un variocolor: mas vida y experiencia, suelta un objeto seguro y cuenta como shiny derrotado
     boolean sinBotin;           // desaparece sin soltar gemas ni contar como derrotado
 

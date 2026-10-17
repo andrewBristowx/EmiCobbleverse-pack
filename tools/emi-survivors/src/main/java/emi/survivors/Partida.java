@@ -369,11 +369,11 @@ public final class Partida {
         List<String> retosLineas = new ArrayList<>();
         if (cuenta) {
             try {
-                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefesDerrotados, r.shinies, r.st.monedas);
+                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefesDerrotados, r.shinies, r.legendarios, r.st.monedas);
                 datos.registrarJugador(r.id, r.nombre, r.pokeId, r.especieId, seg, monedas);
                 int evos = 0;
                 for (int nivelArma : r.armas.values()) if (nivelArma >= Catalogo.NIVEL_EVO) evos++;
-                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId, r.shinies), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId, r.shinies, r.legendarios), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
                 retosLineas = nv.lineas; retosCoronas = nv.coronas;
             } catch (RuntimeException ex) { EmiSurvivors.LOG.error("No se pudo guardar el resultado de la partida de {}", r.nombre, ex); }
         }
@@ -394,6 +394,7 @@ public final class Partida {
             Mundo.volverASala(p, new Menu.Resultado(motivo, seg, r.derrotados, r.nivel, monedas, puesto, eq.jefesDerrotados, cuenta, otros.toString(), retosLineas, retosCoronas));
         }
         for (String l : retosLineas) p.sendMessage(Msg.say(l), false);
+        if (cuenta && r.legendarios > 0) p.sendMessage(Msg.say("✦ Legendarios derrotados: " + r.legendarios + " (+" + Grietas.MONEDAS_POR_LEGENDARIO * r.legendarios + " michiestrellitas, antes de la suerte)."), false);
         if (cuenta && r.shinies > 0) p.sendMessage(Msg.say("✦ Shinies derrotados: " + r.shinies + " (+" + Curvas.MONEDAS_POR_SHINY * r.shinies + " michiestrellitas, antes de la suerte)."), false);
         p.sendMessage(Msg.say(motivo + " Aguantasteis " + (seg / 60) + ":" + String.format("%02d", seg % 60) + ", llegaste al nivel " + r.nivel + " y derrotaste a " + r.derrotados + " Pokémon."
                 + (cuenta ? " Ganas " + monedas + " michiestrellitas." + (puesto > 0 ? " Puesto " + puesto + " del top." : "") : "")), false);
@@ -511,6 +512,7 @@ public final class Partida {
                 if (cl == null) return "Climas: despejado, sol, lluvia, tormenta, nieve, niebla.";
                 r.eq.clima.forzar(cl);
             }
+            case "grieta" -> { return r.eq.grieta.forzar() ? null : "Ya hay una grieta abierta (entra en ella para abrirla)."; }
             case "shiny" -> { return r.eq.devShiny(r) ? null : "No se pudo crear el shiny."; }
             case "elite" -> { return r.eq.devElite() ? null : "No se pudo crear el campeón."; }
             case "curar" -> r.hp = r.st.hpMax;
