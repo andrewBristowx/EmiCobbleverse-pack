@@ -55,6 +55,9 @@ final class Run {
     Stats st = new Stats();
     final Map<String, Integer> armas = new LinkedHashMap<>(), pasivas = new LinkedHashMap<>();
     final Map<String, Armas.Arma> armaObj = new LinkedHashMap<>();
+    final Map<String, String> fusion = new LinkedHashMap<>();       // ataque fusionado -> ataque cabeza de su ranura (ver Fusiones)
+    int fusiones;                                // ofertas de fusion que le quedan por ver
+    private boolean ofertaFusion;                // la oferta que esta en pantalla es de fusion (no gasta una subida de nivel)
     final List<Enemigo> enemigos;                // los enemigos de la partida (la misma lista que la del equipo)
     final List<Proyectil> proyectiles = new ArrayList<>();
 
@@ -278,7 +281,7 @@ final class Run {
     }
 
     /** Cuantas particulas «de adorno» se dibujan: con muchos ataques a la vez la pantalla se llena, asi que se reducen (1 = todas; con 6 ataques, la mitad). */
-    double densidad() { return armas.size() >= 5 ? 0.5 : armas.size() >= 3 ? 0.75 : 1.0; }
+    double densidad() { return armas.size() >= 7 ? 0.35 : armas.size() >= 5 ? 0.5 : armas.size() >= 3 ? 0.75 : 1.0; }
 
     /** Un ataque del jugador golpea a un enemigo: dano base por la mejora de dano, empuje (menor en elites y jefe) y destello rojo. */
     void golpear(Enemigo en, double dmgBase, double kx, double kz) { golpear(en, dmgBase, kx, kz, false); }
@@ -364,7 +367,8 @@ final class Run {
     // ------------------------------------------------------------------------------------------------ cartas
 
     void ofrecerCartas() {
-        oferta = Cartas.sortear(rnd, armas, pasivas);
+        oferta = Cartas.sortear(rnd, armas, pasivas, fusion);
+        ofertaFusion = false;
         esperandoCarta = true; cartaCuenta = T_CARTA;
         soltarGemas();
         ServerPlayerEntity p = jugador();
@@ -376,9 +380,38 @@ final class Run {
         JsonArray a = new JsonArray();
         for (Cartas.Carta c : oferta) a.add(cartaJson(c));
         o.add("cartas", a);
+        o.addProperty("fusion", ofertaFusion);
         if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", o.toString()));
         enviarEstado();
     }
+
+    /** Ofrece fusionar dos ataques (hasta 3 parejas al azar y, por si no quieres, una estrella fugaz). Si no hay ninguna pareja posible, se pierde la oferta. */
+    void ofrecerFusion() {
+        List<String[]> pares = Fusiones.sortear(rnd, armas.keySet(), fusion, 3);
+        fusiones = Math.max(0, fusiones - 1);
+        if (pares.isEmpty()) return;
+        List<Cartas.Carta> l = new ArrayList<>();
+        for (String[] pr : pares) l.add(new Cartas.Carta("fusion", pr[0] + "+" + pr[1], 0));
+        if (l.size() < 3) l.add(Cartas.XP);
+        oferta = l; ofertaFusion = true;
+        esperandoCarta = true; cartaCuenta = T_CARTA;
+        soltarGemas();
+        ServerPlayerEntity p = jugador();
+        if (p == null) return;
+        Sonidos.sfx(p, Sonidos.EVOLUCION, 0.8f, 1.2f);
+        JsonObject o = new JsonObject();
+        o.addProperty("nivel", nivel);
+        o.addProperty("seg", T_CARTA / 20);
+        o.addProperty("fusion", true);
+        JsonArray a = new JsonArray();
+        for (Cartas.Carta c : oferta) a.add(cartaJson(c));
+        o.add("cartas", a);
+        if (ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", o.toString()));
+        enviarEstado();
+    }
+
+    /** Ataque nuevo, gemas de experiencia... lo que haga falta al conseguir un premio de fusion: una oferta mas. */
+    void darFusion() { fusiones++; }
 
     private JsonObject cartaJson(Cartas.Carta c) {
         JsonObject o = new JsonObject();
@@ -398,6 +431,15 @@ final class Run {
                     if (c.nivel() == Catalogo.MAX_NIVEL && d.evo() != null) texto += " Evoluciona con: " + Catalogo.pasiva(d.evo().requiere()).nombre() + ".";
                     o.addProperty("titulo", nombreArma(c.id(), c.nivel())); o.addProperty("texto", texto); o.addProperty("icono", iconoArma(c.id(), c.nivel()));
                 }
+            }
+            case "fusion" -> {
+                String[] ab = c.id().split("\\+");
+                Catalogo.Arma da = Catalogo.arma(ab[0]), db = Catalogo.arma(ab[1]);
+                int ta = Fusiones.tamano(ab[0], fusion), tb = Fusiones.tamano(ab[1], fusion);
+                o.addProperty("titulo", nombreArma(ab[0], armas.getOrDefault(ab[0], 1)) + " + " + nombreArma(ab[1], armas.getOrDefault(ab[1], 1)));
+                o.addProperty("texto", "Los dos ataques pasan a ocupar UNA sola ranura (" + (ta + tb) + " en ella) y te queda una ranura libre. Los dos siguen subiendo de nivel.");
+                o.addProperty("icono", iconoArma(ab[0], armas.getOrDefault(ab[0], 1)));
+                o.addProperty("icono2", iconoArma(ab[1], armas.getOrDefault(ab[1], 1)));
             }
             case "pasiva" -> {
                 Catalogo.Pasiva d = Catalogo.pasiva(c.id());
@@ -429,17 +471,34 @@ final class Run {
                     if (c.evo()) alEvolucionar(antes, c.id());
                 }
             }
+            case "fusion" -> {
+                String[] ab = c.id().split("\\+");
+                if (Fusiones.fusionar(fusion, armas.keySet(), ab[0], ab[1])) alFusionar(ab[0], ab[1]);
+            }
             case "pasiva" -> { pasivas.put(c.id(), c.nivel()); recalcular(); }
             case "curar" -> hp = Math.min(st.hpMax, hp + st.hpMax * 0.4);
             default -> ganarXp(Math.max(1, (int) (xpSig * 0.6)));
         }
-        pendientes = Math.max(0, pendientes - 1);
+        if (!ofertaFusion) pendientes = Math.max(0, pendientes - 1);
+        ofertaFusion = false;
         esperandoCarta = false; oferta = null;
         iframes = Math.max(iframes, 20);
         ServerPlayerEntity p = jugador();
         if (p != null && !(c.tipo().equals("arma") && c.evo())) Sonidos.sfx(p, Sonidos.CARTA, 0.9f, 1.0f);              // la evolucion tiene su propio sonido
         if (p != null && ServerPlayNetworking.canSend(p, TextoPayload.ID)) ServerPlayNetworking.send(p, new TextoPayload("cartas", ""));
         if (p != null) enviarEstado();
+    }
+
+    /** Dos ataques acaban de fusionarse: aviso, sonido y particulas. */
+    private void alFusionar(String a, String b) {
+        String na = nombreArma(a, armas.getOrDefault(a, 1)), nb = nombreArma(b, armas.getOrDefault(b, 1));
+        ServerPlayerEntity p = jugador();
+        if (p != null) {
+            Msg.title(p, Text.literal("¡FUSIÓN!").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), Text.literal(na + " + " + nb + " · una ranura libre").formatted(Formatting.YELLOW), 5, 50, 15);
+            Sonidos.sfx(p, Sonidos.EVOLUCION, 1.0f, 1.3f);
+        }
+        w.spawnParticles(ParticleTypes.END_ROD, pp.x, pp.y + 1.0, pp.z, 40, 0.5, 0.8, 0.5, 0.2);
+        if (eq.miembros.size() > 1) eq.avisar(Msg.say(nombre + " ha fusionado «" + na + "» con «" + nb + "»."));
     }
 
     /** Un ataque acaba de evolucionar: titulo, sonido, particulas y aviso a los companeros. */
@@ -462,7 +521,7 @@ final class Run {
             if (sb.length() > 0) sb.append(',');
             Armas.Arma ao = armaObj.get(e.getKey());
             int hace = ao == null ? 99 : Math.max(0, Math.min(99, tick - ao.usadoEn));          // ticks desde el ultimo uso (la ranura se enciende un momento)
-            sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(nombreArma(e.getKey(), e.getValue())).append(':').append(iconoArma(e.getKey(), e.getValue())).append(':').append(hace);
+            sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(nombreArma(e.getKey(), e.getValue())).append(':').append(iconoArma(e.getKey(), e.getValue())).append(':').append(hace).append(':').append(fusion.getOrDefault(e.getKey(), ""));
         }
         return sb.toString();
     }

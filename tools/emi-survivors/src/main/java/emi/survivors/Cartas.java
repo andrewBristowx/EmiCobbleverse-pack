@@ -13,7 +13,7 @@ import java.util.Random;
 final class Cartas {
     private Cartas() {}
 
-    /** @param tipo "arma", "pasiva", "curar" o "xp"; {@code nivel} = nivel que tendra tras elegirla (1 = nueva; 6 = evolucion) */
+    /** @param tipo "arma", "pasiva", "curar", "xp" o "fusion" (id = «cabeza+unido»); {@code nivel} = nivel que tendra tras elegirla (1 = nueva; 6 = evolucion) */
     record Carta(String tipo, String id, int nivel) {
         boolean nueva() { return nivel == 1; }
         boolean evo() { return "arma".equals(tipo) && nivel >= Catalogo.NIVEL_EVO; }
@@ -33,12 +33,12 @@ final class Cartas {
     }
 
     /** Las cartas de cada categoria: [0] subir ataque, [1] ataque nuevo, [2] subir objeto, [3] objeto nuevo. */
-    static List<List<Carta>> categorias(Map<String, Integer> armas, Map<String, Integer> pasivas) {
+    static List<List<Carta>> categorias(Map<String, Integer> armas, Map<String, Integer> pasivas, Map<String, String> fusion) {
         List<Carta> subirArma = new ArrayList<>(), nuevaArma = new ArrayList<>(), subirPasiva = new ArrayList<>(), nuevaPasiva = new ArrayList<>();
         for (Catalogo.Arma a : Catalogo.ARMAS) {
             int n = armas.getOrDefault(a.id(), 0);
             if (n > 0 && n < Catalogo.MAX_NIVEL) subirArma.add(new Carta("arma", a.id(), n + 1));
-            else if (n == 0 && armas.size() < Catalogo.MAX_ARMAS) nuevaArma.add(new Carta("arma", a.id(), 1));
+            else if (n == 0 && Fusiones.ranuras(armas.keySet(), fusion) < Catalogo.MAX_ARMAS) nuevaArma.add(new Carta("arma", a.id(), 1));
         }
         for (Catalogo.Pasiva p : Catalogo.PASIVAS) {
             int n = pasivas.getOrDefault(p.id(), 0);
@@ -51,11 +51,14 @@ final class Cartas {
     private static final double[] PESOS = {P_SUBIR_ARMA, P_NUEVA_ARMA, P_SUBIR_PASIVA, P_NUEVA_PASIVA};
 
     /** 3 cartas distintas (o menos si no hay mas; se rellena con curar / xp). */
-    static List<Carta> sortear(Random rnd, Map<String, Integer> armas, Map<String, Integer> pasivas) {
+    static List<Carta> sortear(Random rnd, Map<String, Integer> armas, Map<String, Integer> pasivas) { return sortear(rnd, armas, pasivas, Map.of()); }
+
+    /** Igual, sabiendo que ataques estan fusionados (una ranura con varios ataques cuenta como una). */
+    static List<Carta> sortear(Random rnd, Map<String, Integer> armas, Map<String, Integer> pasivas, Map<String, String> fusion) {
         List<Carta> out = new ArrayList<>(3);
         List<Carta> evos = evoluciones(armas, pasivas);
         while (out.size() < 2 && !evos.isEmpty()) out.add(evos.remove(rnd.nextInt(evos.size())));
-        List<List<Carta>> cat = new ArrayList<>(categorias(armas, pasivas));
+        List<List<Carta>> cat = new ArrayList<>(categorias(armas, pasivas, fusion));
         while (out.size() < 3) {
             double total = 0;
             for (int i = 0; i < cat.size(); i++) if (!cat.get(i).isEmpty()) total += PESOS[i];

@@ -20,10 +20,11 @@ import java.util.List;
  */
 @Environment(EnvType.CLIENT)
 public final class CartasPantalla extends Lienzo {
-    private record Carta(String tipo, boolean nueva, boolean evo, int nivel, String titulo, String texto, String icono) {}
+    private record Carta(String tipo, boolean nueva, boolean evo, int nivel, String titulo, String texto, String icono, String icono2) {}
 
     private final List<Carta> cartas = new ArrayList<>();
     private final int nivelJugador, segundos;
+    private final boolean fusion;
     private final long t0 = System.currentTimeMillis();
     private boolean enviada;
 
@@ -32,10 +33,11 @@ public final class CartasPantalla extends Lienzo {
         JsonObject o = JsonParser.parseString(json).getAsJsonObject();
         nivelJugador = o.get("nivel").getAsInt();
         segundos = o.get("seg").getAsInt();
+        fusion = o.has("fusion") && o.get("fusion").getAsBoolean();
         JsonArray a = o.getAsJsonArray("cartas");
         for (var e : a) {
             JsonObject c = e.getAsJsonObject();
-            cartas.add(new Carta(c.get("tipo").getAsString(), c.get("nueva").getAsBoolean(), c.has("evo") && c.get("evo").getAsBoolean(), c.get("nivel").getAsInt(), c.get("titulo").getAsString(), c.get("texto").getAsString(), c.get("icono").getAsString()));
+            cartas.add(new Carta(c.get("tipo").getAsString(), c.get("nueva").getAsBoolean(), c.has("evo") && c.get("evo").getAsBoolean(), c.get("nivel").getAsInt(), c.get("titulo").getAsString(), c.get("texto").getAsString(), c.get("icono").getAsString(), c.has("icono2") ? c.get("icono2").getAsString() : ""));
         }
     }
 
@@ -49,13 +51,13 @@ public final class CartasPantalla extends Lienzo {
 
     private static int color(Carta c) {
         if (c.evo()) return 0xFFFFD34E;
-        return switch (c.tipo()) { case "arma" -> 0xFFFF8A4D; case "pasiva" -> AZUL; case "curar" -> VERDE; default -> ORO; };
+        return switch (c.tipo()) { case "fusion" -> 0xFFC77DFF; case "arma" -> 0xFFFF8A4D; case "pasiva" -> AZUL; case "curar" -> VERDE; default -> ORO; };
     }
 
     @Override
     protected void dibujar(DrawContext g, int mx, int my, float delta) {
-        textoCentrado(g, "¡NIVEL " + nivelJugador + "!", W / 2, 22, ORO, 2.2f);
-        textoCentrado(g, "Elige una mejora (clic o tecla 1, 2, 3)", W / 2, 52, GRIS, 1f);
+        textoCentrado(g, fusion ? "¡FUSIÓN!" : "¡NIVEL " + nivelJugador + "!", W / 2, 22, fusion ? 0xFFC77DFF : ORO, 2.2f);
+        textoCentrado(g, fusion ? "Junta dos ataques en una ranura (clic o tecla 1, 2, 3)" : "Elige una mejora (clic o tecla 1, 2, 3)", W / 2, 52, GRIS, 1f);
         int restante = Math.max(0, segundos - (int) ((System.currentTimeMillis() - t0) / 1000));
         for (int i = 0; i < cartas.size(); i++) {
             Carta c = cartas.get(i);
@@ -70,10 +72,15 @@ public final class CartasPantalla extends Lienzo {
             caja(g, x, y, CW, CH, c.evo() ? (sobre ? 0xFF3A3220 : 0xFF2A2418) : sobre ? 0xFF2A2A45 : 0xFF1B1B30, col);
             g.fill(x + 1, y + 1, x + CW - 1, y + 26, col & 0x00FFFFFF | 0x66000000);
             textoCentrado(g, "[" + (i + 1) + "]", x + CW / 2, y + 9, BLANCO, 1.1f);
-            icono(g, c.icono(), x + CW / 2 - 24, y + 36, 2f);
+            if (c.icono2().isEmpty()) icono(g, c.icono(), x + CW / 2 - 24, y + 36, 2f);
+            else {                                                      // fusion: los dos ataques con un «+» en medio
+                icono(g, c.icono(), x + CW / 2 - 52, y + 40, 1.5f);
+                icono(g, c.icono2(), x + CW / 2 + 16, y + 40, 1.5f);
+                textoCentrado(g, "+", x + CW / 2, y + 52, BLANCO, 2f);
+            }
             parrafoCentrado(g, c.titulo(), x + CW / 2, y + 96, CW - 16, BLANCO, 1.25f);
-            String etiqueta = c.evo() ? "¡EVOLUCIÓN!" : c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
-            if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() || c.evo() ? ORO : col, 1.1f);
+            String etiqueta = c.evo() ? "¡EVOLUCIÓN!" : c.tipo().equals("fusion") ? "¡FUSIÓN!" : c.tipo().equals("arma") || c.tipo().equals("pasiva") ? (c.nueva() ? "¡NUEVO!" : "Nivel " + c.nivel()) : "";
+            if (!etiqueta.isEmpty()) textoCentrado(g, etiqueta, x + CW / 2, y + 128, c.nueva() || c.evo() || c.tipo().equals("fusion") ? ORO : col, 1.1f);
             parrafo(g, c.texto(), x + 12, y + 152, CW - 24, GRIS, 1f);
         }
         // tiempo que queda

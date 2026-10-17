@@ -273,7 +273,11 @@ final class Equipo {
             return;
         }
         if (sentencia.superada()) { Partida.terminarEquipo(this, "¡Habéis superado la Sentencia!"); return; }
-        for (Run m : miembros) if (m.estado == Run.VIVO && m.pendientes > 0 && !m.esperandoCarta) m.ofrecerCartas();
+        for (Run m : miembros) {
+            if (m.estado != Run.VIVO || m.esperandoCarta) continue;
+            if (m.pendientes > 0) m.ofrecerCartas();
+            else if (m.fusiones > 0) m.ofrecerFusion();
+        }
     }
 
     String nombres() {

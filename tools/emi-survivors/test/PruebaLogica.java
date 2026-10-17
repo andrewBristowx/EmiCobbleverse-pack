@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros(); fusiones();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -628,6 +628,36 @@ public final class PruebaLogica {
         Retos.aplicar(j, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 0, 0, 0, 6), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
         ok(j.doradosTotal == 6 && j.logros.getOrDefault("dorado", 0) == 2, "logro Cazamichis: 6 dorados = 2 escalones (1 y 5)");
         System.out.println("  eventos: bien");
+    }
+
+    static void fusiones() {
+        ok(Catalogo.MAX_ARMAS == 4, "hay 4 ranuras de ataque");
+        java.util.Map<String, String> f = new java.util.LinkedHashMap<>();
+        java.util.List<String> armas = new java.util.ArrayList<>(java.util.List.of("a", "b", "c", "d"));
+        ok(Fusiones.ranuras(armas, f) == 4 && Fusiones.pares(armas, f).size() == 6, "4 ataques sueltos: 4 ranuras y 6 parejas");
+        // con las 4 ranuras llenas no salen ataques nuevos; tras fusionar, si
+        java.util.Map<String, Integer> niv = new java.util.LinkedHashMap<>();
+        for (String a : armas) niv.put(a, 1);
+        niv.clear();
+        for (Catalogo.Arma x : Catalogo.ARMAS.subList(0, 4)) niv.put(x.id(), 1);
+        java.util.List<String> ids = new java.util.ArrayList<>(niv.keySet());
+        java.util.Random rnd = new java.util.Random(7);
+        for (int i = 0; i < 200; i++) for (Cartas.Carta c : Cartas.sortear(rnd, niv, new java.util.LinkedHashMap<>(), f)) ok(!c.nueva() || !c.tipo().equals("arma"), "con 4 ranuras llenas no sale un ataque nuevo: " + c);
+        ok(Fusiones.fusionar(f, ids, ids.get(0), ids.get(1)), "fusionar dos ataques");
+        ok(Fusiones.ranuras(ids, f) == 3 && Fusiones.tamano(ids.get(0), f) == 2, "tras fusionar ocupan 3 ranuras y el grupo tiene 2");
+        boolean sale = false;
+        for (int i = 0; i < 200; i++) for (Cartas.Carta c : Cartas.sortear(rnd, niv, new java.util.LinkedHashMap<>(), f)) sale |= c.tipo().equals("arma") && c.nueva();
+        ok(sale, "con una ranura libre vuelven a salir ataques nuevos");
+        ok(!Fusiones.fusionar(f, ids, ids.get(0), ids.get(1)) && !Fusiones.fusionar(f, ids, ids.get(1), ids.get(2)), "no se fusiona uno que ya esta dentro de un grupo ni con el mismo");
+        ok(Fusiones.fusionar(f, ids, ids.get(0), ids.get(2)) && Fusiones.tamano(ids.get(0), f) == 3, "se puede seguir sumando al grupo");
+        ok(Fusiones.fusionar(f, ids, ids.get(0), ids.get(3)) && Fusiones.tamano(ids.get(0), f) == 4 && Fusiones.ranuras(ids, f) == 1, "hasta 4 en una ranura");
+        java.util.Map<String, String> g = new java.util.LinkedHashMap<>();
+        java.util.List<String> ocho = new java.util.ArrayList<>(java.util.List.of("1", "2", "3", "4", "5"));
+        Fusiones.fusionar(g, ocho, "1", "2"); Fusiones.fusionar(g, ocho, "3", "4");
+        ok(Fusiones.fusionar(g, ocho, "1", "3") && Fusiones.tamano("1", g) == 4 && g.get("4").equals("1"), "al unir dos grupos, el de la cabeza que se une pasa entero");
+        ok(!Fusiones.fusionar(g, ocho, "1", "5") || Fusiones.tamano("1", g) <= 4, "un grupo nunca pasa de 4");
+        ok(Fusiones.pares(ocho, g).isEmpty() || Fusiones.pares(ocho, g).stream().allMatch(pr -> Fusiones.tamano(pr[0], g) + Fusiones.tamano(pr[1], g) <= 4), "las parejas ofrecidas caben");
+        ok(Fusiones.grupo("1", ocho, g).size() == 4, "grupo() devuelve los 4");
     }
 
     static void tesoros() {

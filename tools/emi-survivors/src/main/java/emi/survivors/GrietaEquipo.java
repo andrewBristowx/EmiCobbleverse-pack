@@ -146,9 +146,10 @@ final class GrietaEquipo {
         eq.soltarObjeto(Objeto.BAYA, ex, ez + 1.8);
         for (Run m : eq.miembros) {
             m.nivel++; m.pendientes++;                      // un nivel para todos
+            m.darFusion();                                  // y la posibilidad de fusionar dos ataques
             ServerPlayerEntity p = m.jugador();
             if (p != null) {
-                Msg.title(p, Text.literal("¡LEGENDARIO DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nombreLeg + " ha caído · +1 nivel y un tesoro en el suelo").formatted(Formatting.YELLOW), 5, 60, 15);
+                Msg.title(p, Text.literal("¡LEGENDARIO DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nombreLeg + " ha caído · +1 nivel, un tesoro y una fusión").formatted(Formatting.YELLOW), 5, 60, 15);
                 Sonidos.sfx(p, Sonidos.JEFE_DERROTADO, 0.8f, 1.2f);
             }
         }

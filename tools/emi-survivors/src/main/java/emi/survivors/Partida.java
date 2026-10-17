@@ -526,6 +526,7 @@ public final class Partida {
             case "elite" -> { return r.eq.devElite() ? null : "No se pudo crear el campeón."; }
             case "curar" -> r.hp = r.st.hpMax;
             case "dano" -> r.hp -= Math.max(1, n);
+            case "fusion" -> { r.darFusion(); return null; }
             case "sinxp" -> { r.sinXp = !r.sinXp; return null; }
             case "arma" -> {
                 if (Catalogo.arma(id) == null) return "Ataque desconocido: " + id;
@@ -534,7 +535,7 @@ public final class Partida {
             }
             case "solo" -> {
                 if (Catalogo.arma(id) == null) return "Ataque desconocido: " + id;
-                r.armas.clear(); r.armaObj.clear();
+                r.armas.clear(); r.armaObj.clear(); r.fusion.clear();
                 r.agregarArma(id, Math.max(1, Math.min(Catalogo.NIVEL_EVO, n)));
             }
             case "dps" -> {                       // mide el dano que hacen los ataques desde la ultima vez (y vuelve a empezar): sale en el registro del servidor

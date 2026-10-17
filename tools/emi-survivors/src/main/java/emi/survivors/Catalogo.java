@@ -13,7 +13,7 @@ import java.util.Map;
 public final class Catalogo {
     private Catalogo() {}
 
-    public static final int MAX_NIVEL = 5, NIVEL_EVO = 6, MAX_ARMAS = 6, MAX_PASIVAS = 6;
+    public static final int MAX_NIVEL = 5, NIVEL_EVO = 6, MAX_ARMAS = 4, MAX_PASIVAS = 6;
 
     /**
      * Los iconos son claves del atlas {@code textures/iconos.png} (lo genera {@code assets/generar_iconos.py}): {@code a_<ataque>}, {@code e_<ataque>} (su evolucion),

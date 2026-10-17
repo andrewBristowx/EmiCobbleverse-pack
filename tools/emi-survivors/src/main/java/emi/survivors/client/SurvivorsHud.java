@@ -25,7 +25,7 @@ public final class SurvivorsHud {
 
     private static final int CONTORNO = 0xFF0C0F1A, NAVY = 0xFF121828, NAVY_VACIO = 0x70182030, BORDE = 0xFF3A4260, BORDE_VACIO = 0x60506080;
     private static final int ROSA = 0xFFFF5AA5, ORO = 0xFFFFD34E, GRIS = 0xFF8A93B0, ACERO = 0xFF9DB4D8, VIDA = 0xFFFF5A6E, XP = 0xFF5BC8F5, JEFE = 0xFFC03AB8;
-    private static final int TILE = 34, TILE_P = 28, SEP = 4, SEP_P = 3, NIVEL_ENCENDIDO = 7;      // ranuras de ataque 34x34, de objeto 28x34
+    private static final int TILE = 34, TILE_P = 28, SEP = 4, SEP_P = 3, NIVEL_ENCENDIDO = 7, COL_FUSION = 13;      // ranuras de ataque 34x34, de objeto 28x34
 
     // lo que llevabas la ultima vez (para resaltar un ataque que acabas de conseguir o de subir de nivel)
     private static final Map<String, Integer> antes = new HashMap<>();
@@ -33,7 +33,7 @@ public final class SurvivorsHud {
     private static long resaltadoHasta;
     private static int ultimoSegundo;
 
-    private record Ranura(String id, int nivel, String nombre, String icono, int hace) {}
+    private record Ranura(String id, int nivel, String nombre, String icono, int hace, String cabeza) {}
 
     // ------------------------------------------------------------------------------------------------ dibujos de ayuda
 
@@ -90,9 +90,9 @@ public final class SurvivorsHud {
         Ranura[] r = new Ranura[l.length];
         int n = 0;
         for (String s : l) {
-            String[] p = s.split(":", 5);
+            String[] p = s.split(":", 6);
             if (p.length < 5) continue;
-            try { r[n++] = new Ranura(p[0], Integer.parseInt(p[1]), p[2], p[3], Integer.parseInt(p[4])); } catch (NumberFormatException e) { /* se salta */ }
+            try { r[n++] = new Ranura(p[0], Integer.parseInt(p[1]), p[2], p[3], Integer.parseInt(p[4]), p.length > 5 ? p[5] : ""); } catch (NumberFormatException e) { /* se salta */ }
         }
         return n == r.length ? r : java.util.Arrays.copyOf(r, n);
     }
@@ -176,14 +176,31 @@ public final class SurvivorsHud {
             if (r.nivel() > ant) { resaltado = r.id(); resaltadoHasta = ahora + 3500; }               // un ataque nuevo o que sube de nivel: marco dorado y su nombre un rato
             antes.put(r.id(), r.nivel());
         }
-        int anchoA = Catalogo.MAX_ARMAS * TILE + (Catalogo.MAX_ARMAS - 1) * SEP, anchoP = Catalogo.MAX_PASIVAS * TILE_P + (Catalogo.MAX_PASIVAS - 1) * SEP_P, hueco = 12;
-        int x0 = (W - (anchoA + hueco + anchoP)) / 2, yA = H - 6 - TILE;
+        // una ranura por cada ataque que no esta fusionado dentro de otro; los fusionados salen en mini en la columna de su ranura
+        java.util.List<Ranura> cabezas = new java.util.ArrayList<>();
+        for (Ranura r : atq) if (r.cabeza().isEmpty()) cabezas.add(r);
+        int[] anchos = new int[Catalogo.MAX_ARMAS];
+        int anchoA = (Catalogo.MAX_ARMAS - 1) * SEP, anchoP = Catalogo.MAX_PASIVAS * TILE_P + (Catalogo.MAX_PASIVAS - 1) * SEP_P, hueco = 12;
         for (int i = 0; i < Catalogo.MAX_ARMAS; i++) {
-            Ranura r = i < atq.length ? atq[i] : null;
-            int x = x0 + i * (TILE + SEP);
-            boolean luz = r != null && r.id().equals(resaltado) && ahora < resaltadoHasta;
-            ranuraAtaque(g, x, yA, i + 1, r, r != null && r.hace() <= NIVEL_ENCENDIDO, luz);
-            if (luz) g.drawCenteredTextWithShadow(tr, r.nombre(), x + TILE / 2, yA - 11, r.nivel() >= Catalogo.NIVEL_EVO ? ORO : 0xFFFFFFFF);
+            anchos[i] = TILE;
+            if (i < cabezas.size()) for (Ranura r : atq) if (r.cabeza().equals(cabezas.get(i).id())) { anchos[i] = TILE + COL_FUSION; break; }
+            anchoA += anchos[i];
+        }
+        int x0 = (W - (anchoA + hueco + anchoP)) / 2, yA = H - 6 - TILE;
+        int xa = x0;
+        for (int i = 0; i < Catalogo.MAX_ARMAS; i++) {
+            Ranura r = i < cabezas.size() ? cabezas.get(i) : null;
+            java.util.List<Ranura> unidos = new java.util.ArrayList<>();
+            if (r != null) for (Ranura q : atq) if (q.cabeza().equals(r.id())) unidos.add(q);
+            boolean luz = r != null && ahora < resaltadoHasta && (r.id().equals(resaltado) || unidos.stream().anyMatch(q -> q.id().equals(resaltado)));
+            boolean enc = r != null && r.hace() <= NIVEL_ENCENDIDO;
+            for (Ranura q : unidos) enc |= q.hace() <= NIVEL_ENCENDIDO;
+            ranuraAtaque(g, xa, yA, i + 1, r, enc, luz);
+            for (int k = 0; k < unidos.size() && k < 3; k++) {                       // los ataques fusionados: iconos pequenos en la columna de la derecha
+                Iconos.dibujar(g, unidos.get(k).icono(), xa + TILE + 1, yA + 1 + k * 11, 10);
+            }
+            if (luz) g.drawCenteredTextWithShadow(tr, r.nombre(), xa + TILE / 2, yA - 11, r.nivel() >= Catalogo.NIVEL_EVO ? ORO : 0xFFFFFFFF);
+            xa += anchos[i] + SEP;
         }
         int px = x0 + anchoA + hueco, yP = yA;
         String[] ps = e.pasivas().isEmpty() ? new String[0] : e.pasivas().split(",");
