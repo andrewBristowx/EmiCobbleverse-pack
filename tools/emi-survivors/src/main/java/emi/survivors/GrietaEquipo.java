@@ -50,7 +50,7 @@ final class GrietaEquipo {
         double seg = tick / 20.0;
         switch (fase) {
             case NINGUNA -> {
-                if (Grietas.tocan(seg) > abiertas && (eq.jefe == null || !eq.jefe.vivo()) && Jefes.tocan(seg + 45) <= eq.jefesSalidos && eq.marea == null) abrir();
+                if (!Sentencia.toca(seg) && Grietas.tocan(seg) > abiertas && (eq.jefe == null || !eq.jefe.vivo()) && Jefes.tocan(seg + 45) <= eq.jefesSalidos && eq.marea == null) abrir();
             }
             case ABIERTA -> abierta();
             case LEGENDARIO -> {

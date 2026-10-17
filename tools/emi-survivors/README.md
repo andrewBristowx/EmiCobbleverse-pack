@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.13.0 (fase 4B: grietas con legendarios; sobre la 0.12.0: fase 4A, climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.14.0 (fase 4C: la Sentencia final; sobre la 0.13.0: fase 4B, grietas con legendarios; sobre la 0.12.0: fase 4A, climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -33,8 +33,8 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
    - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — HECHA (0.9.0): pestaña TIENDA donde se gastan las coronas en 7 tickets de los banners de Emipokemon y 5 objetos de Pokémon (Ultra Ball, Caramelo Raro, Revivir Máximo, Cápsula Habilidad y Master Ball). **Decisiones del dueño: máximo 10 de cada artículo al día y se entrega al correo (`/correo`).** Qué se vende y los precios son una primera propuesta del asistente (`Tienda.java`): el dueño los ajusta.
 4. **Final y extras** (el dueño dijo «continúa» tras la fase 3 el 2026-10-17; reparto del asistente, cada entrega se prueba y se entrega por separado):
    - **4A. Climas** — HECHA (0.12.0): cada 2:30 cambia el clima (sol, lluvia, tormenta, nieve, niebla o despejado); favorece a unos tipos de Pokémon y perjudica a otros; la tormenta lanza rayos avisados en el suelo.
-   - **4B. Grietas con legendarios** — HECHA (0.13.0, esta): cada 3 minutos se abre una grieta (cuadrado morado en el suelo); si los jugadores se quedan dentro, sale un legendario enorme que da un tesoro al caer.
-   - **4C. La «Sentencia» final** — después.
+   - **4B. Grietas con legendarios** — HECHA (0.13.0): cada 3 minutos se abre una grieta (cuadrado morado en el suelo); si los jugadores se quedan dentro, sale un legendario enorme que da un tesoro al caer.
+   - **4C. La «Sentencia» final** — HECHA (0.14.0, esta): a los 20:00 empieza una cuenta atrás de 90 s con lluvia de explosiones avisadas; quien sobrevive gana la partida. **El diseño es del asistente (el dueño no precisó cómo la imaginaba): si quiere otra cosa —un jefe final, otro minuto, otra duración—, es fácil de cambiar.**
    - **4D. Eventos y más temas de Emi** — después.
 
 ## Cómo se juega (jugador)
@@ -99,6 +99,12 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
 - **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
 - **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
+
+### La Sentencia (0.14.0)
+- **Cuándo**: a los **20:00** (`Sentencia.INICIO_SEG`), tras los cinco jefes y sus repeticiones. Título «¡LA SENTENCIA!», aviso en el chat y sonido. Desde ese momento **ya no salen jefes, mareas ni grietas nuevas** (los que ya estén en marcha siguen) y el ritmo de enemigos sube un 50 % (`Sentencia.RITMO`).
+- **Qué pasa** (`SentenciaEquipo.java`): durante **90 s** (`DURACION_SEG`) caen **explosiones avisadas** —las mismas bombas de 6×6 de los enemigos explosivos, un cuadrado rojo que se rellena 1,2 s y explota— **bajo cada jugador en pie** y varias más cerca de ellos: una tanda cada 2 s al principio y cada 0,7 s al final, con 1 a 3 explosiones extra por tanda. Hay que moverse sin parar. La interfaz muestra «LA SENTENCIA · sobrevive 1:23».
+- **Ganar**: si el equipo sigue en pie cuando acaba la cuenta, **supera la Sentencia**: título «¡SENTENCIA SUPERADA!», la partida termina con victoria («¡Habéis superado la Sentencia!»), cada jugador gana **+100 michiestrellitas** y el logro **«Sentenciado»** (1, 5 y 20 victorias; 8, 20 y 50 coronas). En el **top** la marca se guarda con `sentencia: true` y sale «✔» (solo/grupos) junto al nombre. Si caen todos antes, la partida acaba como siempre.
+- `/survivor dev sentencia` (administradores) la empieza ya. Para pruebas, `-Demi.survivors.sentencia_inicio=<s>` y `-Demi.survivors.sentencia_duracion=<s>` cambian cuándo empieza y cuánto dura.
 
 ### Grietas con legendarios (0.13.0)
 - **Cuándo** (`Grietas.java`): la primera a los **110 s** y después una cada **180 s**, pero solo si no hay un jefe vivo, no sale uno en los próximos 45 s y no hay una marea en marcha (si no, espera). Solo una a la vez. Sale un título («¡UNA GRIETA!»), un mensaje en el chat y un sonido.
@@ -265,6 +271,15 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.14.0: la Sentencia)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): cuándo empieza, que las explosiones se aceleren (de 40 a 14 ticks) y los límites, las explosiones extra (1-3), las michiestrellitas extra por ganar y el logro Sentenciado.
+- **En el juego** (servidor ligero + cliente real, una partida normal de un jugador con la Sentencia a los 25 s y 20 s de duración, que se curaba con un comando): sale el título y el aviso, la interfaz muestra «LA SENTENCIA · sobrevive 0:16», caen los cuadrados rojos bajo el jugador, a los 20 s la partida termina con «¡Habéis superado la Sentencia!», salen **108 michiestrellitas** (100 de la Sentencia más lo normal) y el aviso del logro «Sentenciado 1/3 … +8 coronas». También se vio con el tiempo real puesto a 20:00 que la Sentencia empieza a los 1200 s.
+**No probado / límites**:
+- **Sobrevivir de verdad a 90 s a los 20:00** (con la horda, los jefes repetidos y las bombas de daño 60 a esa hora): el tiempo y el daño son cálculos; se probó acortado y con el jugador curándose por comando. Puede ser demasiado fácil o demasiado difícil.
+- La marca **«✔» en el top** (el dato se guarda y la pantalla lo lee, pero en las pruebas la marca ganadora no era la mejor del top y no llegó a verse), el top de grupos con victoria, varios jugadores, jefes vivos al empezar la Sentencia, el pack entero y el servidor real.
+- Que **20:00** sea el minuto bueno (nadie ha llegado ahí jugando a mano) y que **terminar la partida** al ganar sea lo que el dueño quiere (la alternativa es seguir jugando).
 
 ## Probado / no probado (0.13.0: grietas con legendarios)
 **Probado**:

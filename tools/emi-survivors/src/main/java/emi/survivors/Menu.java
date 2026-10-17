@@ -54,6 +54,7 @@ final class Menu {
             e.addProperty("derrotados", en.derrotados);
             e.addProperty("nivel", en.nivel);
             e.addProperty("jefe", en.jefe);
+            e.addProperty("sentencia", en.sentencia);
             e.addProperty("jefes", Math.max(en.jefes, en.jefe ? 1 : 0));
             top.add(e);
         }

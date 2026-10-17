@@ -105,6 +105,8 @@ final class Equipo {
     final ClimaEquipo clima = new ClimaEquipo(this);
     /** Las grietas con legendarios (ver {@link Grietas}). */
     final GrietaEquipo grieta = new GrietaEquipo(this);
+    /** La prueba final (ver {@link Sentencia}). */
+    final SentenciaEquipo sentencia = new SentenciaEquipo(this);
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
     String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
@@ -177,14 +179,15 @@ final class Equipo {
         } else {
             double fm = marea != null && marea.enemigosPropios() ? 1.25 : 1.0;
             int cap = (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
-            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * (marea == null ? 1.0 : marea.factorRitmo()) / 20.0);
+            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * (marea == null ? 1.0 : marea.factorRitmo()) * (sentencia.activa() ? Sentencia.RITMO : 1.0) / 20.0);
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && presupuesto >= 1.0 && enemigos.size() < cap; k++) {
                 if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
                 presupuesto -= 1.0;
             }
             if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
-            if ((jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.tocan(t)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
-            if (marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < Mareas.tocan(t)) {
+            boolean final_ = Sentencia.toca(t);                                       // desde la Sentencia ya no salen jefes ni mareas nuevos
+            if (!final_ && (jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.tocan(t)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
+            if (!final_ && marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < Mareas.tocan(t)) {
                 mareasSalidas = Math.max(mareasSalidas, Mareas.tocan(t) - 1);          // si una marea llega tarde (habia un jefe vivo), las que se perdieron no se acumulan
                 iniciarMarea(++mareasSalidas, null);
             }
@@ -192,7 +195,7 @@ final class Equipo {
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
-        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); }
+        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); sentencia.tick(tick); }
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
@@ -259,6 +262,7 @@ final class Equipo {
             Partida.terminarEquipo(this, miembros.size() == 1 ? "Te han derrotado." : "Han caído todos los jugadores.");
             return;
         }
+        if (sentencia.superada()) { Partida.terminarEquipo(this, "¡Habéis superado la Sentencia!"); return; }
         for (Run m : miembros) if (m.estado == Run.VIVO && m.pendientes > 0 && !m.esperandoCarta) m.ofrecerCartas();
     }
 

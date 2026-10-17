@@ -43,7 +43,7 @@ final class Datos {
         List<Retos.Prog> dia = new ArrayList<>(), semana = new ArrayList<>();
         // logros (desde 0.8.0): escalones conseguidos de cada familia y los contadores que los miden (los de antes se cuentan desde que se instala la 0.8.0)
         Map<String, Integer> logros = new HashMap<>();
-        int derrotadosTotal, jefesTotal, evolucionesTotal, partidasGrupo, mejorNivel, mejorJefes, shiniesTotal, legendariosTotal;
+        int derrotadosTotal, jefesTotal, evolucionesTotal, partidasGrupo, mejorNivel, mejorJefes, shiniesTotal, legendariosTotal, sentenciasTotal;
         long segundosTotal;
         List<String> biomas = new ArrayList<>(), especies = new ArrayList<>();
         // tienda de recompensas (desde 0.9.0): lo comprado hoy de cada articulo (se vacia al cambiar el dia, ver {@link Tienda#refrescar})
@@ -68,6 +68,7 @@ final class Datos {
     static final class Entrada {
         String uuid = "", nombre = "", especie = "", aspectos = "";
         int nivelPokemon, segundos, derrotados, nivel;
+        boolean sentencia;           // el equipo supero la Sentencia (gano la partida)
         boolean jefe;                // mato a algun jefe (de la fase 1: el unico)
         int jefes;                   // cuantos jefes mato (desde 0.5.0; las marcas viejas con jefe=true cuentan como 1)
         long fecha;      // milisegundos desde 1970

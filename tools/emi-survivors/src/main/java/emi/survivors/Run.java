@@ -478,8 +478,9 @@ final class Run {
         Jefe j = eq.jefe;
         boolean hayJefe = j != null && j.vivo();
         Enemigo leg = hayJefe ? null : eq.grieta.legendarioVivo();
-        String evento = eq.marea != null ? eq.marea.titulo() : eq.grieta.texto(this);
-        int eventoSeg = eq.marea != null ? eq.marea.segundosRestantes() : eq.grieta.segundosRestantes();
+        boolean sent = eq.sentencia.activa();
+        String evento = sent ? eq.sentencia.texto() : eq.marea != null ? eq.marea.titulo() : eq.grieta.texto(this);
+        int eventoSeg = sent ? eq.sentencia.segundosRestantes() : eq.marea != null ? eq.marea.segundosRestantes() : eq.grieta.segundosRestantes();
         ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), eq.derrotados, nivel, xp, xpSig, esperandoCarta,
                 hayJefe ? j.nombre : leg != null ? eq.grieta.nombreLegendario() : "", hayJefe ? (int) Math.max(0, Math.ceil(j.en.hp)) : leg != null ? (int) Math.max(0, Math.ceil(leg.hp)) : 0, hayJefe ? (int) Math.round(j.en.hpMax) : leg != null ? (int) Math.round(leg.hpMax) : 0, listaArmas(), listaPasivas(), eq.med.msptServidor(), eq.med.msNuestro(),
                 estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this),

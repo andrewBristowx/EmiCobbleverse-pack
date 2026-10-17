@@ -104,7 +104,7 @@ public final class Cmds {
         for (String k : new String[]{"marea", "pers", "clima"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word()).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), 1)))));
         dev.then(CommandManager.literal("jefehp").then(CommandManager.argument("n", IntegerArgumentType.integer(0, 100)).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefehp", "", IntegerArgumentType.getInteger(c, "n"))))));
-        for (String k : new String[]{"elite", "curar", "sinxp", "dps", "shiny", "grieta"})
+        for (String k : new String[]{"elite", "curar", "sinxp", "dps", "shiny", "grieta", "sentencia"})
             dev.then(CommandManager.literal(k).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", 1))));
         for (String k : new String[]{"arma", "solo", "pasiva", "objeto", "usar"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word())

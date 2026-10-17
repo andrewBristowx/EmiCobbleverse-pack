@@ -342,6 +342,7 @@ public final class Partida {
 
     private static Datos.Entrada entradaDelEquipo(Equipo eq, List<Run> ms, int seg) {
         Datos.Entrada e = new Datos.Entrada();
+        e.sentencia = eq.sentencia.superada();
         e.segundos = seg; e.derrotados = eq.derrotados; e.jefe = eq.jefesDerrotados > 0; e.jefes = eq.jefesDerrotados;
         List<String> ids = new ArrayList<>(), nombres = new ArrayList<>();
         int nivelMax = 1;
@@ -369,11 +370,11 @@ public final class Partida {
         List<String> retosLineas = new ArrayList<>();
         if (cuenta) {
             try {
-                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefesDerrotados, r.shinies, r.legendarios, r.st.monedas);
+                monedas = Curvas.monedas(seg, r.derrotados, r.nivel, eq.jefesDerrotados, r.shinies, r.legendarios, eq.sentencia.superada(), r.st.monedas);
                 datos.registrarJugador(r.id, r.nombre, r.pokeId, r.especieId, seg, monedas);
                 int evos = 0;
                 for (int nivelArma : r.armas.values()) if (nivelArma >= Catalogo.NIVEL_EVO) evos++;
-                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId, r.shinies, r.legendarios), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId, r.shinies, r.legendarios, eq.sentencia.superada() ? 1 : 0), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
                 retosLineas = nv.lineas; retosCoronas = nv.coronas;
             } catch (RuntimeException ex) { EmiSurvivors.LOG.error("No se pudo guardar el resultado de la partida de {}", r.nombre, ex); }
         }
@@ -512,6 +513,7 @@ public final class Partida {
                 if (cl == null) return "Climas: despejado, sol, lluvia, tormenta, nieve, niebla.";
                 r.eq.clima.forzar(cl);
             }
+            case "sentencia" -> { r.eq.sentencia.empezar(); }
             case "grieta" -> { return r.eq.grieta.forzar() ? null : "Ya hay una grieta abierta (entra en ella para abrirla)."; }
             case "shiny" -> { return r.eq.devShiny(r) ? null : "No se pudo crear el shiny."; }
             case "elite" -> { return r.eq.devElite() ? null : "No se pudo crear el campeón."; }

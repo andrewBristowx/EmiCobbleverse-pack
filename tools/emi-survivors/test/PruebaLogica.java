@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -452,7 +452,7 @@ public final class PruebaLogica {
         }
         int logrosTotal = 0;
         for (Retos.Familia f : Retos.FAMILIAS) for (int pr : f.premios()) logrosTotal += pr;
-        ok(logrosTotal < 350, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
+        ok(logrosTotal < 500, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
         ok(Curvas.monedas(300, 100, 10, 0, 1.0) == Curvas.monedas(300, 100, 10, 0, 0, 1.0), "sin shinies, las monedas son las de siempre");
         ok(Curvas.monedas(300, 100, 10, 0, 4, 1.0) - Curvas.monedas(300, 100, 10, 0, 0, 1.0) == 4 * Curvas.MONEDAS_POR_SHINY, "cada shiny suma " + Curvas.MONEDAS_POR_SHINY + " michiestrellitas");
         ok(Curvas.P_SHINY > 0 && Curvas.P_SHINY <= 0.01, "los shinies son raros (" + Curvas.P_SHINY + ")");
@@ -588,6 +588,21 @@ public final class PruebaLogica {
         Retos.aplicar(j, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 0, 6), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
         ok(j.legendariosTotal == 6 && j.logros.getOrDefault("grieta", 0) == 2, "logro Domagrietas: 6 legendarios = 2 escalones (1 y 5)");
         System.out.println("  grietas: bien");
+    }
+
+    static void sentencia() throws Exception {
+        System.out.println("== sentencia");
+        ok(!Sentencia.toca(1199.9) && Sentencia.toca(1200), "la Sentencia empieza a los 20:00");
+        ok(Sentencia.ticksEntreTandas(0) == 40 && Sentencia.ticksEntreTandas(Sentencia.DURACION_SEG) == 14 && Sentencia.ticksEntreTandas(45) < 40 && Sentencia.ticksEntreTandas(45) > 14, "las explosiones se van acelerando (40 -> 14 ticks)");
+        ok(Sentencia.ticksEntreTandas(-5) == 40 && Sentencia.ticksEntreTandas(500) == 14, "los limites se respetan");
+        ok(Sentencia.extrasPorTanda(0) == 1 && Sentencia.extrasPorTanda(45) == 2 && Sentencia.extrasPorTanda(89) == 3 && Sentencia.extrasPorTanda(500) == 3, "de 1 a 3 explosiones extra por tanda");
+        ok(Curvas.monedas(1290, 500, 30, 5, 0, 0, true, 1.0) - Curvas.monedas(1290, 500, 30, 5, 0, 0, false, 1.0) == Sentencia.MONEDAS, "superar la Sentencia suma " + Sentencia.MONEDAS + " michiestrellitas");
+        Datos.Jugador j = new Datos(Files.createTempDirectory("survivors_sen")).jugador(UUID.randomUUID(), "Sol");
+        Retos.aplicar(j, new Retos.Partida(1290, 500, 30, 5, "pradera", 1, 0, "eevee", 0, 0, 1), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
+        ok(j.sentenciasTotal == 1 && j.logros.getOrDefault("sentencia", 0) == 1, "logro Sentenciado: la primera victoria da el escalon 1");
+        Datos.Entrada e = new Datos.Entrada();
+        ok(!e.sentencia, "una marca nueva no es de victoria");
+        System.out.println("  sentencia: bien");
     }
 
     static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }

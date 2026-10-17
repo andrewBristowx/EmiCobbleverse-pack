@@ -57,7 +57,7 @@ public final class MenuPantalla extends Lienzo {
     }
 
     private record Mejora(String id, String nombre, String texto, String icono, int[] costos) {}
-    private record Marca(int pos, String nombre, boolean mio, String especie, int segundos, int derrotados, int nivel, int jefes) {}
+    private record Marca(int pos, String nombre, boolean mio, String especie, int segundos, int derrotados, int nivel, int jefes, boolean sentencia) {}
     private record Resultado(String motivo, int segundos, int derrotados, int nivel, int monedas, int puesto, int jefes, boolean cuenta, String equipo, int retosCoronas) {}
     private record MisionC(String texto, int prog, int objetivo, int premio, boolean hecha, boolean segundos) {}
     private record LogroC(String nombre, String texto, int hechos, int total, long valor, long meta, String valorTxt, String metaTxt, int premio, boolean completo) {}
@@ -150,13 +150,13 @@ public final class MenuPantalla extends Lienzo {
         for (JsonElement e : o.getAsJsonArray("top")) {
             JsonObject j = e.getAsJsonObject();
             top.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
-                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0));
+                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0, j.has("sentencia") && j.get("sentencia").getAsBoolean()));
         }
         topGrupos.clear();
         if (o.has("topGrupos")) for (JsonElement e : o.getAsJsonArray("topGrupos")) {
             JsonObject j = e.getAsJsonObject();
             topGrupos.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
-                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0));
+                    j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : j.get("jefe").getAsBoolean() ? 1 : 0, j.has("sentencia") && j.get("sentencia").getAsBoolean()));
         }
         biomas.clear();
         if (o.has("biomas")) for (JsonElement e : o.getAsJsonArray("biomas")) {
@@ -171,7 +171,7 @@ public final class MenuPantalla extends Lienzo {
             for (JsonElement e : per.getValue().getAsJsonArray()) {
                 JsonObject j = e.getAsJsonObject();
                 l.add(new Marca(j.get("pos").getAsInt(), j.get("nombre").getAsString(), j.get("mio").getAsBoolean(), j.get("especie").getAsString(), j.get("segundos").getAsInt(),
-                        j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : 0));
+                        j.get("derrotados").getAsInt(), j.get("nivel").getAsInt(), j.has("jefes") ? j.get("jefes").getAsInt() : 0, j.has("sentencia") && j.get("sentencia").getAsBoolean()));
             }
             tops.put(modo.getKey() + "/" + per.getKey(), l);
         }
@@ -538,9 +538,9 @@ public final class MenuPantalla extends Lienzo {
             g.fill(20, y, 620, y + 20, m.mio() ? 0x663A3A10 : ((m.pos() & 1) == 0 ? 0x22FFFFFF : 0x11FFFFFF));
             int col = m.mio() ? ORO : m.pos() == 1 ? 0xFFFFE070 : BLANCO;
             texto(g, String.valueOf(m.pos()), xs[0], y + 6, col, 1f);
-            if (topDeGrupos) texto(g, recortar(m.nombre(), 46) + (m.jefes() > 1 ? " ★×" + m.jefes() : m.jefes() == 1 ? " ★" : ""), xs[1], y + 6, col, 1f);
+            if (topDeGrupos) texto(g, recortar(m.nombre(), 46) + (m.jefes() > 1 ? " ★×" + m.jefes() : m.jefes() == 1 ? " ★" : "") + (m.sentencia() ? " ✔" : ""), xs[1], y + 6, col, 1f);
             else {
-                texto(g, m.nombre() + (m.jefes() > 1 ? " ★×" + m.jefes() : m.jefes() == 1 ? " ★" : ""), xs[1], y + 6, col, 1f);
+                texto(g, m.nombre() + (m.jefes() > 1 ? " ★×" + m.jefes() : m.jefes() == 1 ? " ★" : "") + (m.sentencia() ? " ✔" : ""), xs[1], y + 6, col, 1f);
                 texto(g, m.especie(), xs[2], y + 6, col, 1f);
             }
             texto(g, tiempo(m.segundos()), xs[3], y + 6, col, 1f);
