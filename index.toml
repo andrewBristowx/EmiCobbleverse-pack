@@ -1832,6 +1832,10 @@ hash = "9bef602ef888f741dbd48091fe188697619acb29b9f57cadb9a0dc5b3fe55529"
 metafile = true
 
 [[files]]
+file = "mods/emi-ajustes-1.0.0.jar"
+hash = "486948b39b7cff29c38a45f63bac344d569e957de9b45fa1cb36bf4c003e1e09"
+
+[[files]]
 file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 

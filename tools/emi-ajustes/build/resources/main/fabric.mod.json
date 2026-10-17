@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_ajustes",
+  "version": "1.0.0",
+  "name": "Emi Ajustes",
+  "description": "Pequeños arreglos de rendimiento para mods de terceros del servidor de Emi (sin tocar sus archivos).",
+  "authors": ["SomitadePony"],
+  "license": "All-Rights-Reserved",
+  "environment": "server",
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1"
+  },
+  "mixins": ["emi_ajustes.mixins.json"]
+}
