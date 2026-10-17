@@ -41,6 +41,9 @@ final class Enemigo {
     boolean legendario;         // el legendario que sale de una grieta (ver Grietas)
     boolean shiny;              // un variocolor: mas vida y experiencia, suelta un objeto seguro y cuenta como shiny derrotado
     boolean sinBotin;           // desaparece sin soltar gemas ni contar como derrotado
+    Ataque ataque;              // su ataque propio (a distancia o area, ver Ataque); null = solo hace dano al tocar
+    int atFase, atT;            // fase del ataque (0 anda, 1 se prepara/avisa, 2 en el aire) y ticks que le quedan en ella
+    double atx, atz;            // donde apunta (la posicion del jugador cuando fija el blanco)
 
     private Enemigo(PokemonEntity e, Especies.E especie, Tipo tipo, int xp, float hp, float dmg, double velBloquesPorSegundo, double radio) {
         this.e = e; this.especie = especie; this.tipo = tipo; this.xp = xp; this.hp = this.hpMax = hp; this.dmg = dmg; this.vel = velBloquesPorSegundo / 20.0; this.radio = radio;
@@ -165,6 +168,114 @@ final class Enemigo {
                 mover(e.getX() + edx * 10, e.getZ() + edz * 10, 3.4);
                 if (--embT <= 0) { embFase = 0; embT = 70 + rnd.nextInt(50); }
             }
+        }
+    }
+
+    /**
+     * Un tick de un enemigo con ataque propio (ver {@link Ataque}). Los de a distancia se quedan a {@link Ataque#DISTANCIA} bloques, se cargan unos ticks (particulas sobre la
+     * cabeza) y lanzan su ataque; los de cuerpo a cuerpo siguen acercandose y avisan antes de golpear. {@code velFactor} = el efecto del clima en la velocidad.
+     */
+    void atacar(Equipo eq, Run obj, double velFactor) {
+        ServerWorld w = eq.w;
+        double dx = obj.pp.x - e.getX(), dz = obj.pp.z - e.getZ(), d = Math.sqrt(dx * dx + dz * dz);
+        if (aturdidoT > 0 && atFase != 0) { atFase = 0; atT = 40; }                  // aturdido: se le corta el ataque
+        net.minecraft.particle.ParticleEffect p = Arena.particula(especie.tipo1());
+        double cabeza = e.getY() + radio * 2.6;
+        switch (ataque) {
+            case TIRADOR, ABANICO, MORTERO -> {
+                if (atFase == 0) {
+                    mover(obj.pp.x, obj.pp.z, d > Ataque.DISTANCIA ? velFactor : 0);
+                    if (--atT <= 0) {
+                        if (d >= 3.0 && d <= Ataque.DISTANCIA + 4.0) { atFase = 1; atT = ataque == Ataque.MORTERO ? 14 : 18; atx = obj.pp.x; atz = obj.pp.z; }
+                        else atT = 10;
+                    }
+                } else {
+                    mover(obj.pp.x, obj.pp.z, 0);
+                    if (atT > 6) { atx = obj.pp.x; atz = obj.pp.z; }                     // sigue al jugador hasta 0,3 s antes de disparar; luego el blanco queda fijo
+                    if (atT % 3 == 0) w.spawnParticles(p, e.getX(), cabeza, e.getZ(), 3, 0.15, 0.15, 0.15, 0.01);
+                    if (atT == 6 && ataque != Ataque.MORTERO) trazarAviso(w);
+                    if (--atT <= 0) { disparar(eq, obj, p); atFase = 0; atT = (int) ((ataque == Ataque.TIRADOR ? 70 + eq.rnd.nextInt(40) : ataque == Ataque.ABANICO ? 100 + eq.rnd.nextInt(40) : 110 + eq.rnd.nextInt(50)) * (grande() ? 0.6 : 1.0)); }
+                }
+            }
+            case PISOTON -> {
+                double r = radioPiston();
+                if (atFase == 0) {
+                    mover(obj.pp.x, obj.pp.z, velFactor);
+                    if (--atT <= 0) { if (d < radio + 2.6) { atFase = 1; atT = 16; } else atT = 8; }
+                } else {
+                    mover(obj.pp.x, obj.pp.z, 0);
+                    if (atT % 2 == 0) anillo(w, r, Armas.ROJO, 14);
+                    if (--atT <= 0) {
+                        anillo(w, r, net.minecraft.particle.ParticleTypes.EXPLOSION, 8);
+                        w.spawnParticles(net.minecraft.particle.ParticleTypes.POOF, e.getX(), e.getY() + 0.2, e.getZ(), 14, r * 0.4, 0.1, r * 0.4, 0.05);
+                        log("pisa");
+                        golpeDeArea(eq, e.getX(), e.getZ(), r, dmg * 1.6f);
+                        atFase = 0; atT = (int) ((70 + eq.rnd.nextInt(40)) * (grande() ? 0.6 : 1.0));
+                    }
+                }
+            }
+            case ZARPAZO -> {
+                if (atFase == 0) {
+                    mover(obj.pp.x, obj.pp.z, velFactor);
+                    if (--atT <= 0) { if (d > 3.0 && d < 8.5) { atFase = 1; atT = 12; atx = obj.pp.x; atz = obj.pp.z; } else atT = 8; }
+                } else if (atFase == 1) {                                                   // se agacha: avisa
+                    mover(atx, atz, 0);
+                    if (atT % 3 == 0) w.spawnParticles(net.minecraft.particle.ParticleTypes.CRIT, e.getX(), e.getY() + 0.2, e.getZ(), 4, radio * 0.5, 0.05, radio * 0.5, 0.05);
+                    if (--atT <= 0) { atFase = 2; atT = 10; double l = Math.max(1e-6, Math.hypot(atx - e.getX(), atz - e.getZ())); edx = (atx - e.getX()) / l; edz = (atz - e.getZ()) / l; edAlcance = Math.min(l, 8.0); }
+                } else {                                                                     // salto: sube 5 ticks y baja 5
+                    double sp = edAlcance / 10.0;
+                    e.setVelocity(Vec3d.ZERO);
+                    e.move(MovementType.SELF, new Vec3d(edx * sp, atT > 5 ? 0.42 : -0.42, edz * sp));
+                    ponerPose(PoseType.WALK);
+                    if (--atT <= 0) {
+                        anillo(w, 2.4 + radio * 0.4, net.minecraft.particle.ParticleTypes.CRIT, 12);
+                        log("cae con el zarpazo");
+                        golpeDeArea(eq, e.getX(), e.getZ(), 2.4 + radio * 0.4, dmg * 1.4f);
+                        atFase = 0; atT = (int) ((60 + eq.rnd.nextInt(40)) * (grande() ? 0.6 : 1.0));
+                    }
+                }
+            }
+        }
+    }
+
+    private double edAlcance;       // distancia del salto del zarpazo
+
+    private double radioPiston() { return 3.2 + radio * 0.6; }
+
+    /** Un circulo de particulas de radio {@code r} alrededor del enemigo. */
+    private void anillo(ServerWorld w, double r, net.minecraft.particle.ParticleEffect p, int n) {
+        for (int k = 0; k < n; k++) { double a = k * Math.PI * 2 / n; w.spawnParticles(p, e.getX() + Math.cos(a) * r, e.getY() + 0.15, e.getZ() + Math.sin(a) * r, 1, 0, 0, 0, 0); }
+    }
+
+    /** Dana a los jugadores en pie que estan a menos de {@code r} bloques de (x, z). */
+    private void golpeDeArea(Equipo eq, double x, double z, double r, float dano) {
+        for (Run m : eq.objetivos()) if (m.iframes <= 0 && Math.hypot(m.pp.x - x, m.pp.z - z) < r && Math.abs(m.pp.y - e.getY()) < 2.2) m.danarJugador(dano);
+    }
+
+    /** Unas particulas a lo largo de la linea del disparo, justo antes de lanzarlo (el aviso de donde va). */
+    private void trazarAviso(ServerWorld w) {
+        double dx = atx - e.getX(), dz = atz - e.getZ(), l = Math.max(1e-6, Math.hypot(dx, dz));
+        for (int k = 1; k <= 8; k++) { double f = k * 1.2 / l; w.spawnParticles(net.minecraft.particle.ParticleTypes.CRIT, e.getX() + dx * f, e.getY() + 0.9, e.getZ() + dz * f, 1, 0, 0, 0, 0); }
+    }
+
+    private void log(String que) {
+        if (Boolean.getBoolean("emi.survivors.debug")) EmiSurvivors.LOG.info("[ataque] {} ({}) {} en ({}, {})", especie.id(), ataque.nombre, que, Math.round(e.getX()), Math.round(e.getZ()));
+    }
+
+    private void disparar(Equipo eq, Run obj, net.minecraft.particle.ParticleEffect p) {
+        log("dispara");
+        double dx = atx - e.getX(), dz = atz - e.getZ(), l = Math.max(1e-6, Math.hypot(dx, dz));
+        double ux = dx / l, uz = dz / l;
+        Vec3d o = new Vec3d(e.getX() + ux * (radio + 0.3), e.getY() + 0.9, e.getZ() + uz * (radio + 0.3));
+        switch (ataque) {
+            case TIRADOR -> eq.ponerDisparo(new DisparoEnemigo(o, new Vec3d(ux, 0, uz), 0.5, dmg * 0.8f, p, 40));
+            case ABANICO -> {
+                for (int k = -1; k <= 1; k++) {
+                    double a = k * 0.42, c = Math.cos(a), s = Math.sin(a);
+                    eq.ponerDisparo(new DisparoEnemigo(o, new Vec3d(ux * c - uz * s, 0, ux * s + uz * c), 0.4, dmg * 0.6f, p, 44));
+                }
+            }
+            default -> eq.ponerBombaPequena(obj.pp.x, obj.pp.z, 3.5, dmg * 1.4f);
         }
     }
 

@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros(); fusiones(); mundos();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros(); fusiones(); extrasYObjetos(); mundos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -154,11 +154,11 @@ public final class PruebaLogica {
         for (Catalogo.Arma a : Catalogo.ARMAS) armas.put(a.id(), a.id().equals("tajo") ? 4 : Catalogo.NIVEL_EVO);
         for (Catalogo.Pasiva p : Catalogo.PASIVAS) pasivas.put(p.id(), Catalogo.MAX_NIVEL);
         List<Cartas.Carta> l = Cartas.sortear(rnd, armas, pasivas);
-        ok(l.get(0).equals(new Cartas.Carta("arma", "tajo", 5)) && l.size() == 3 && l.contains(Cartas.CURAR) && l.contains(Cartas.XP), "la unica subida posible sale primero y se rellena con curar y xp: " + l);
+        ok(l.contains(new Cartas.Carta("arma", "tajo", 5)) && l.size() == 3 && l.stream().noneMatch(c -> c.tipo().equals("xp")), "la unica subida posible sale, y el resto son fusiones de objetos o mejoras repetibles, sin experiencia: " + l);
         // todo al maximo y evolucionado: solo curar y xp
         armas.put("tajo", Catalogo.NIVEL_EVO);
         l = Cartas.sortear(rnd, armas, pasivas);
-        ok(l.size() == 3 && l.contains(Cartas.CURAR) && l.contains(Cartas.XP) && l.stream().filter(c -> c.tipo().equals("arma") || c.tipo().equals("pasiva")).count() == 0 || l.size() == 2, "todo evolucionado: no queda nada que subir: " + l);
+        ok(l.size() == 3 && l.stream().filter(c -> c.tipo().equals("arma") || c.tipo().equals("pasiva")).count() == 0, "todo evolucionado: no queda nada que subir: " + l);
         // evoluciones: el ataque al nivel 5 con su objeto ofrece la carta dorada, siempre
         armas.clear(); pasivas.clear();
         armas.put("disparo", Catalogo.MAX_NIVEL); armas.put("orbes", 3);
@@ -689,6 +689,66 @@ public final class PruebaLogica {
         ok(!Fusiones.fusionar(g, ocho, "1", "5") || Fusiones.tamano("1", g) <= 4, "un grupo nunca pasa de 4");
         ok(Fusiones.pares(ocho, g).isEmpty() || Fusiones.pares(ocho, g).stream().allMatch(pr -> Fusiones.tamano(pr[0], g) + Fusiones.tamano(pr[1], g) <= 4), "las parejas ofrecidas caben");
         ok(Fusiones.grupo("1", ocho, g).size() == 4, "grupo() devuelve los 4");
+    }
+
+    /** Sin cartas de experiencia, mejoras repetibles que dan cada vez menos, y objetos que se fusionan en una ranura. */
+    static void extrasYObjetos() {
+        System.out.println("== extras y fusion de objetos");
+        Random rnd = new Random(11);
+        Map<String, Integer> armas = new HashMap<>(), pasivas = new HashMap<>(), extras = new HashMap<>();
+        for (Catalogo.Arma a : Catalogo.ARMAS) armas.put(a.id(), Catalogo.NIVEL_EVO);
+        for (Catalogo.Pasiva p : Catalogo.PASIVAS) pasivas.put(p.id(), Catalogo.MAX_NIVEL);
+        Map<String, String> fa = new java.util.LinkedHashMap<>(), fp = new java.util.LinkedHashMap<>();
+        // 16 objetos al maximo y 6 ranuras: lo que sale son fusiones de objetos (y rellenos), nunca experiencia
+        boolean fusionp = false;
+        for (int i = 0; i < 300; i++) for (Cartas.Carta c : Cartas.sortear(rnd, armas, pasivas, fa, fp, extras)) {
+            ok(!c.tipo().equals("xp"), "ya no hay cartas de experiencia: " + c);
+            fusionp |= c.tipo().equals("fusionp");
+        }
+        ok(fusionp, "con todo al maximo salen fusiones de objetos");
+        List<Cartas.Carta> l = Cartas.sortear(rnd, armas, pasivas, fa, fp, extras);
+        ok(l.size() == 3 && l.stream().allMatch(c -> c.tipo().equals("fusionp")), "con muchos objetos y todo al maximo, 3 fusiones de objetos: " + l);
+        // todo al maximo y sin nada que fusionar (un solo objeto): vida y regeneracion repetibles, subiendo de nivel cada vez
+        pasivas.clear();
+        for (Catalogo.Pasiva p : Catalogo.PASIVAS) pasivas.put(p.id(), Catalogo.MAX_NIVEL);
+        List<String> todas = new java.util.ArrayList<>(pasivas.keySet());
+        for (int g = 0; g < 4; g++) for (int k = 1; k < 4; k++) Fusiones.fusionar(fp, todas, todas.get(g * 4), todas.get(g * 4 + k));          // 16 objetos en 4 ranuras de 4: no hay objeto nuevo ni pareja posible
+        ok(Fusiones.ranuras(todas, fp) == 4 && Fusiones.pares(todas, fp).isEmpty(), "16 objetos fusionados en 4 grupos de 4 ya no admiten mas fusiones");
+        extras.put("vida", 4);
+        l = Cartas.sortear(rnd, armas, pasivas, fa, fp, extras);
+        ok(l.contains(new Cartas.Carta("extra", "vida", 5)) && l.contains(new Cartas.Carta("extra", "regen", 1)) && l.contains(Cartas.CURAR), "sin nada que subir ni fusionar: vida (5.a vez), regeneracion y curar: " + l);
+        extras.clear(); fp.clear();
+        // fusionar objetos libera ranuras: con 6 objetos y 6 ranuras no cabe uno nuevo; tras fusionar dos, si
+        Map<String, Integer> seis = new HashMap<>();
+        for (int i = 0; i < 6; i++) seis.put(Catalogo.PASIVAS.get(i).id(), Catalogo.MAX_NIVEL);
+        Map<String, Integer> pocas = new HashMap<>();
+        for (int i = 0; i < 6; i++) pocas.put(Catalogo.ARMAS.get(i).id(), Catalogo.NIVEL_EVO);
+        boolean nueva = false;
+        for (int i = 0; i < 300; i++) for (Cartas.Carta c : Cartas.sortear(rnd, pocas, seis, fa, fp, extras)) nueva |= c.tipo().equals("pasiva") && c.nueva();
+        ok(!nueva, "con las 6 ranuras de objeto llenas no sale un objeto nuevo");
+        List<String> ids = new java.util.ArrayList<>(seis.keySet());
+        ok(Fusiones.fusionar(fp, ids, ids.get(0), ids.get(1)) && Fusiones.ranuras(ids, fp) == 5, "fusionar dos objetos deja 5 ranuras ocupadas");
+        for (int i = 0; i < 300 && !nueva; i++) for (Cartas.Carta c : Cartas.sortear(rnd, pocas, seis, fa, fp, extras)) nueva |= c.tipo().equals("pasiva") && c.nueva();
+        ok(nueva, "con una ranura de objeto libre vuelven a salir objetos nuevos");
+        // rendimientos decrecientes
+        ok(Math.abs(Catalogo.ganaVidaExtra(1) - 20) < 1e-9 && Catalogo.ganaVidaExtra(2) < Catalogo.ganaVidaExtra(1) && Catalogo.ganaVidaExtra(30) < Catalogo.ganaVidaExtra(10), "cada vez da menos vida");
+        ok(Catalogo.ganaRegenExtra(2) < Catalogo.ganaRegenExtra(1) && Catalogo.ganaRegenExtra(20) < Catalogo.ganaRegenExtra(5), "cada vez da menos regeneracion");
+        ok(Math.abs(Catalogo.vidaExtra(3) - (Catalogo.ganaVidaExtra(1) + Catalogo.ganaVidaExtra(2) + Catalogo.ganaVidaExtra(3))) < 1e-9, "la vida total es la suma de lo ganado");
+        ok(Math.abs(Catalogo.regenExtra(3) - (Catalogo.ganaRegenExtra(1) + Catalogo.ganaRegenExtra(2) + Catalogo.ganaRegenExtra(3))) < 1e-9, "la regeneracion total es la suma de lo ganado");
+        ok(Catalogo.vidaExtra(100000) < 290 && Catalogo.regenExtra(100000) < 4.01, "tienen un techo (vida ~286, regeneracion 4/s)");
+        Stats st = new Stats(); double hp0 = st.hpMax, rg0 = st.regen;
+        Map<String, Integer> ex = new HashMap<>(); ex.put("vida", 5); ex.put("regen", 5);
+        Catalogo.aplicarExtras(st, ex);
+        ok(st.hpMax > hp0 && st.regen > rg0, "los extras suben la vida y la regeneracion");
+        // ataques de enemigos
+        ok(Ataque.probabilidad(0) == 0 && Ataque.probabilidad(20) == 0 && Ataque.probabilidad(300) >= 0.39 && Ataque.probabilidad(5000) == 0.40, "los enemigos con ataque empiezan a salir a los 20 s y llegan al 40 %");
+        ok(Ataque.paraTipo("water", "") == Ataque.TIRADOR && Ataque.paraTipo("grass", "poison") == Ataque.ABANICO && Ataque.paraTipo("fire", "") == Ataque.MORTERO
+                && Ataque.paraTipo("fighting", "") == Ataque.PISOTON && Ataque.paraTipo("dark", "") == Ataque.ZARPAZO, "cada tipo tiene su ataque");
+        ok(Ataque.paraTipo("", "") != null && Ataque.paraTipo("", "fire") == Ataque.MORTERO, "sin tipo conocido sale uno por defecto, y se mira el secundario");
+        boolean dist = false, cerca = false;
+        for (Ataque a : Ataque.values()) { dist |= a.distancia; cerca |= !a.distancia; }
+        ok(dist && cerca, "hay ataques a distancia y de cuerpo a cuerpo");
+        System.out.println("  extras y fusion de objetos: bien");
     }
 
     static void tesoros() {

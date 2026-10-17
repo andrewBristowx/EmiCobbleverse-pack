@@ -56,6 +56,8 @@ final class Run {
     final Map<String, Integer> armas = new LinkedHashMap<>(), pasivas = new LinkedHashMap<>();
     final Map<String, Armas.Arma> armaObj = new LinkedHashMap<>();
     final Map<String, String> fusion = new LinkedHashMap<>();       // ataque fusionado -> ataque cabeza de su ranura (ver Fusiones)
+    final Map<String, String> fusionP = new LinkedHashMap<>();      // objeto fusionado -> objeto cabeza de su ranura
+    final Map<String, Integer> extras = new LinkedHashMap<>();      // mejoras repetibles («vida», «regen») -> veces cogidas (cada vez dan un poco menos)
     int retrasoCartas;                           // ticks que faltan para que salgan las cartas pendientes (tras viajar de mundo)
     int fusiones;                                // ofertas de fusion que le quedan por ver
     private boolean ofertaFusion;                // la oferta que esta en pantalla es de fusion (no gasta una subida de nivel)
@@ -130,6 +132,7 @@ final class Run {
         Stats n = new Stats();
         Meta.aplicar(n, meta);
         Catalogo.aplicarPasivas(n, pasivas);
+        Catalogo.aplicarExtras(n, extras);
         st = n;
         if (hp > 0 && n.hpMax > antes) hp += n.hpMax - antes;       // al subir la vida maxima, tambien sube la actual
         if (hp > n.hpMax) hp = n.hpMax;
@@ -369,7 +372,7 @@ final class Run {
     // ------------------------------------------------------------------------------------------------ cartas
 
     void ofrecerCartas() {
-        oferta = Cartas.sortear(rnd, armas, pasivas, fusion);
+        oferta = Cartas.sortear(rnd, armas, pasivas, fusion, fusionP, extras);
         ofertaFusion = false;
         esperandoCarta = true; cartaCuenta = T_CARTA;
         soltarGemas();
@@ -394,7 +397,7 @@ final class Run {
         if (pares.isEmpty()) return;
         List<Cartas.Carta> l = new ArrayList<>();
         for (String[] pr : pares) l.add(new Cartas.Carta("fusion", pr[0] + "+" + pr[1], 0));
-        if (l.size() < 3) l.add(Cartas.XP);
+        if (l.size() < 3) l.add(Cartas.CURAR);
         oferta = l; ofertaFusion = true;
         esperandoCarta = true; cartaCuenta = T_CARTA;
         soltarGemas();
@@ -443,6 +446,22 @@ final class Run {
                 o.addProperty("icono", iconoArma(ab[0], armas.getOrDefault(ab[0], 1)));
                 o.addProperty("icono2", iconoArma(ab[1], armas.getOrDefault(ab[1], 1)));
             }
+            case "fusionp" -> {
+                String[] ab = c.id().split("\\+");
+                Catalogo.Pasiva da = Catalogo.pasiva(ab[0]), db = Catalogo.pasiva(ab[1]);
+                int ta = Fusiones.tamano(ab[0], fusionP), tb = Fusiones.tamano(ab[1], fusionP);
+                o.addProperty("titulo", da.nombre() + " + " + db.nombre());
+                o.addProperty("texto", "Los dos objetos pasan a ocupar UNA sola ranura de objeto (" + (ta + tb) + " en ella) y te queda una libre. Siguen funcionando y subiendo de nivel.");
+                o.addProperty("icono", da.icono());
+                o.addProperty("icono2", db.icono());
+            }
+            case "extra" -> {
+                boolean vida = "vida".equals(c.id());
+                o.addProperty("titulo", vida ? "Más vida" : "Más regeneración");
+                o.addProperty("texto", vida ? "+" + String.format(java.util.Locale.ROOT, "%.1f", Catalogo.ganaVidaExtra(c.nivel())) + " de vida máxima (y te cura otro tanto). Cada vez que la coges da un poco menos."
+                        : "+" + String.format(java.util.Locale.ROOT, "%.2f", Catalogo.ganaRegenExtra(c.nivel())) + " de vida por segundo. Cada vez que la coges da un poco menos.");
+                o.addProperty("icono", vida ? "p_vida" : "p_regen");
+            }
             case "pasiva" -> {
                 Catalogo.Pasiva d = Catalogo.pasiva(c.id());
                 String texto = d.texto();
@@ -478,6 +497,11 @@ final class Run {
                 if (Fusiones.fusionar(fusion, armas.keySet(), ab[0], ab[1])) alFusionar(ab[0], ab[1]);
             }
             case "pasiva" -> { pasivas.put(c.id(), c.nivel()); recalcular(); }
+            case "fusionp" -> {
+                String[] ab = c.id().split("\\+");
+                if (Fusiones.fusionar(fusionP, pasivas.keySet(), ab[0], ab[1])) alFusionarObjetos(ab[0], ab[1]);
+            }
+            case "extra" -> { extras.put(c.id(), c.nivel()); recalcular(); alExtra(c); }
             case "curar" -> hp = Math.min(st.hpMax, hp + st.hpMax * 0.4);
             default -> ganarXp(Math.max(1, (int) (xpSig * 0.6)));
         }
@@ -501,6 +525,26 @@ final class Run {
         }
         w.spawnParticles(ParticleTypes.END_ROD, pp.x, pp.y + 1.0, pp.z, 40, 0.5, 0.8, 0.5, 0.2);
         if (eq.miembros.size() > 1) eq.avisar(Msg.say(nombre + " ha fusionado «" + na + "» con «" + nb + "»."));
+    }
+
+    /** Dos objetos acaban de fusionarse: aviso, sonido y particulas. */
+    private void alFusionarObjetos(String a, String b) {
+        String na = Catalogo.pasiva(a).nombre(), nb = Catalogo.pasiva(b).nombre();
+        ServerPlayerEntity p = jugador();
+        if (p != null) {
+            Msg.title(p, Text.literal("¡FUSIÓN DE OBJETOS!").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), Text.literal(na + " + " + nb + " · una ranura de objeto libre").formatted(Formatting.YELLOW), 5, 50, 15);
+            Sonidos.sfx(p, Sonidos.EVOLUCION, 1.0f, 1.3f);
+        }
+        w.spawnParticles(ParticleTypes.END_ROD, pp.x, pp.y + 1.0, pp.z, 40, 0.5, 0.8, 0.5, 0.2);
+        if (eq.miembros.size() > 1) eq.avisar(Msg.say(nombre + " ha fusionado «" + na + "» con «" + nb + "»."));
+    }
+
+    /** Una mejora repetible: cura lo que da de vida maxima (recalcular() ya lo hace) y avisa en la barra de acciones. */
+    private void alExtra(Cartas.Carta c) {
+        ServerPlayerEntity p = jugador();
+        boolean vida = "vida".equals(c.id());
+        if (p != null) Msg.actionBar(p, Text.literal(vida ? "Más vida ×" + c.nivel() + ": vida máxima " + Math.round(st.hpMax) : "Más regeneración ×" + c.nivel() + ": +" + String.format(java.util.Locale.ROOT, "%.1f", st.regen) + " de vida por segundo").formatted(Formatting.GREEN, Formatting.BOLD));
+        w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pp.x, pp.y + 1.0, pp.z, 10, 0.4, 0.5, 0.4, 0.0);
     }
 
     /** Un ataque acaba de evolucionar: titulo, sonido, particulas y aviso a los companeros. */
@@ -530,7 +574,7 @@ final class Run {
 
     private String listaPasivas() {
         StringBuilder sb = new StringBuilder();
-        for (var e : pasivas.entrySet()) { if (sb.length() > 0) sb.append(','); sb.append(e.getKey()).append(':').append(e.getValue()); }
+        for (var e : pasivas.entrySet()) { if (sb.length() > 0) sb.append(','); sb.append(e.getKey()).append(':').append(e.getValue()).append(':').append(fusionP.getOrDefault(e.getKey(), "")); }
         return sb.toString();
     }
 
