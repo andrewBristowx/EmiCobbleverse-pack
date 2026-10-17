@@ -59,6 +59,7 @@ final class Run {
     final List<Proyectil> proyectiles = new ArrayList<>();
 
     int tick;                                    // el reloj del equipo (lo copia el equipo en cada tick; lo usan los ataques)
+    int doradosAtrapados;                        // Michialiens dorados de los eventos que ha atrapado (da el ultimo golpe)
     int legendarios;                             // legendarios de las grietas que ha derrotado (da el ultimo golpe) en esta partida
     int shinies;                                 // shinies que ha derrotado en esta partida
     int iframes, derrotados, nivel = 1, xp, xpSig = Curvas.xpPara(1), pendientes;
@@ -356,7 +357,7 @@ final class Run {
 
     void ganarXp(int v) {
         if (sinXp) return;
-        xp += Math.max(1, (int) Math.round(v * st.xp));
+        xp += Math.max(1, (int) Math.round(v * st.xp * eq.evento.xpMul()));
         while (xp >= xpSig) { xp -= xpSig; nivel++; xpSig = Curvas.xpPara(nivel); pendientes++; }
     }
 
@@ -479,8 +480,9 @@ final class Run {
         boolean hayJefe = j != null && j.vivo();
         Enemigo leg = hayJefe ? null : eq.grieta.legendarioVivo();
         boolean sent = eq.sentencia.activa();
-        String evento = sent ? eq.sentencia.texto() : eq.marea != null ? eq.marea.titulo() : eq.grieta.texto(this);
-        int eventoSeg = sent ? eq.sentencia.segundosRestantes() : eq.marea != null ? eq.marea.segundosRestantes() : eq.grieta.segundosRestantes();
+        String gr = eq.grieta.texto(this);
+        String evento = sent ? eq.sentencia.texto() : eq.marea != null ? eq.marea.titulo() : !gr.isEmpty() ? gr : eq.evento.texto();
+        int eventoSeg = sent ? eq.sentencia.segundosRestantes() : eq.marea != null ? eq.marea.segundosRestantes() : !gr.isEmpty() ? eq.grieta.segundosRestantes() : eq.evento.segundosRestantes();
         ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), eq.derrotados, nivel, xp, xpSig, esperandoCarta,
                 hayJefe ? j.nombre : leg != null ? eq.grieta.nombreLegendario() : "", hayJefe ? (int) Math.max(0, Math.ceil(j.en.hp)) : leg != null ? (int) Math.max(0, Math.ceil(leg.hp)) : 0, hayJefe ? (int) Math.round(j.en.hpMax) : leg != null ? (int) Math.round(leg.hpMax) : 0, listaArmas(), listaPasivas(), eq.med.msptServidor(), eq.med.msNuestro(),
                 estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this),

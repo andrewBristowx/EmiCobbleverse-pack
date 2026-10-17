@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.14.0 (fase 4C: la Sentencia final; sobre la 0.13.0: fase 4B, grietas con legendarios; sobre la 0.12.0: fase 4A, climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.15.0 (fase 4D: eventos de partida; sobre la 0.14.0: fase 4C, la Sentencia final; sobre la 0.13.0: fase 4B, grietas con legendarios; sobre la 0.12.0: fase 4A, climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -34,8 +34,8 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
 4. **Final y extras** (el dueño dijo «continúa» tras la fase 3 el 2026-10-17; reparto del asistente, cada entrega se prueba y se entrega por separado):
    - **4A. Climas** — HECHA (0.12.0): cada 2:30 cambia el clima (sol, lluvia, tormenta, nieve, niebla o despejado); favorece a unos tipos de Pokémon y perjudica a otros; la tormenta lanza rayos avisados en el suelo.
    - **4B. Grietas con legendarios** — HECHA (0.13.0): cada 3 minutos se abre una grieta (cuadrado morado en el suelo); si los jugadores se quedan dentro, sale un legendario enorme que da un tesoro al caer.
-   - **4C. La «Sentencia» final** — HECHA (0.14.0, esta): a los 20:00 empieza una cuenta atrás de 90 s con lluvia de explosiones avisadas; quien sobrevive gana la partida. **El diseño es del asistente (el dueño no precisó cómo la imaginaba): si quiere otra cosa —un jefe final, otro minuto, otra duración—, es fácil de cambiar.**
-   - **4D. Eventos y más temas de Emi** — después.
+   - **4C. La «Sentencia» final** — HECHA (0.14.0): a los 20:00 empieza una cuenta atrás de 90 s con lluvia de explosiones avisadas; quien sobrevive gana la partida. **El diseño es del asistente (el dueño no precisó cómo la imaginaba): si quiere otra cosa —un jefe final, otro minuto, otra duración—, es fácil de cambiar.**
+   - **4D. Eventos y más temas de Emi** — HECHA a medias (0.15.0, esta): **cuatro eventos de partida** (lluvia de estrellas, hora dorada, regalo de Emi y Michialien dorado) con su logro. **No se ha hecho un cuarto bioma ni más decoración de Emi**: una arena nueva necesita su dimensión, su música y su icono y el menú de tres tarjetas no tiene sitio para una cuarta sin rehacerlo; se puede hacer como entrega aparte si el dueño la quiere.
 
 ## Cómo se juega (jugador)
 1. `/survivor entrar` te lleva al **mundo del minijuego**: una sala con damero rosa y lila, con las estatuas gigantes de dos peluches Michialien (el dorado con corona y el normal) en islotes de cristal y el **terminal** (una mesa de encantamientos con cuatro farolas) en el centro. Se guarda tu inventario, posición, modo de juego, hambre y punto de reaparición (en disco: sobrevive a un reinicio del servidor) y vas como persona, en modo aventura, sin poder romper ni tocar nada. Se abre el **menú** solo; para volver a abrirlo: clic derecho con la **estrella del menú** (ranura 5), tocar el **terminal** o `/survivor menu`.
@@ -99,6 +99,14 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
 - **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
 - **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
+
+### Eventos de partida (0.15.0)
+- **Cuándo** (`Eventos.java`): el primero entre los 75 y los 95 s y después uno cada ~150 s (±20 s de azar); solo hay uno a la vez, nunca el mismo dos veces seguidas y no salen desde que empieza la Sentencia. Son aparte de las mareas, grietas y climas. Salen título y mensaje; la interfaz lo muestra en la línea de eventos (si hay marea, grieta o Sentencia, esas mandan).
+- **Lluvia de estrellas** (20 s): cada 0,4 s caen 2 gemas de experiencia (valen 4) alrededor de cada jugador, con un rayo de partículas para verlas.
+- **Hora dorada** (30 s): **toda la experiencia vale el doble** (`EventoEquipo.xpMul`, usado en `Run.ganarXp`); la interfaz dice «HORA DORADA · experiencia x2».
+- **Regalo de Emi** (al instante): **vida completa** para todos y **un objeto bueno** del suelo junto a cada jugador, con corazones.
+- **Michialien dorado** (25 s): un GatitoAlien dorado con contorno amarillo-dorado y destellos **que huye** del jugador más cercano (4,6 b/s; gira cerca del muro para no quedarse atrapado), **no hace daño** y tiene vida ×2,5. Si lo derrotas: 10 gemas grandes, un Caramelo Raro y un Imán, título «¡MICHIALIEN ATRAPADO!»; si se acaba el tiempo, «se ha escapado» y no suelta nada. **Logro «Cazamichis»** (1, 5 y 20 atrapados; 2, 5 y 15 coronas).
+- `/survivor dev evento <lluvia_estrellas|hora_dorada|regalo_emi|michi_dorado>` (administradores) lanza ese evento ya; con el Michialien dorado en marcha, repetir `michi_dorado` lo atrapa.
 
 ### La Sentencia (0.14.0)
 - **Cuándo**: a los **20:00** (`Sentencia.INICIO_SEG`), tras los cinco jefes y sus repeticiones. Título «¡LA SENTENCIA!», aviso en el chat y sonido. Desde ese momento **ya no salen jefes, mareas ni grietas nuevas** (los que ya estén en marcha siguen) y el ritmo de enemigos sube un 50 % (`Sentencia.RITMO`).
@@ -271,6 +279,15 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.15.0: eventos de partida)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): las horas de los eventos (orden, ±20 s, misma semilla = mismas horas), que no se repita el mismo evento seguido, que salgan todos, los datos de cada uno y el logro Cazamichis.
+- **En el juego** (servidor ligero + cliente real, un jugador, pradera): el título y la línea de la interfaz del Michialien dorado («¡MICHIALIEN DORADO! ¡Atrápalo! 0:21»); que el dorado **se escapa** si nadie lo alcanza («El Michialien dorado se ha escapado...»); atraparlo (con el comando) da el título «¡MICHIALIEN ATRAPADO!» y las gemas y objetos; el regalo de Emi; y la lluvia de estrellas (las gemas que caen subieron de nivel al jugador y salió la pantalla de cartas).
+**No probado / límites**:
+- **Que se pueda atrapar de verdad**: el Michialien dorado corre a 4,6 b/s y la velocidad del jugador y el alcance de sus ataques cambian con el Pokémon y las mejoras; solo lo vi escaparse y atraparlo con el comando. Puede ser imposible o demasiado fácil.
+- **La hora dorada medida** (la cuenta es ×2 sobre la experiencia ganada; no se midió en una partida), los eventos con **varios jugadores**, con jefes o legendarios a la vez, el pack entero y el servidor real.
+- **El equilibrio** de tiempos, premios y frecuencia (~uno cada 2:30).
 
 ## Probado / no probado (0.14.0: la Sentencia)
 **Probado**:

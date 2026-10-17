@@ -20,10 +20,11 @@ final class Retos {
     private Retos() {}
 
     /** Lo que se mide de la partida de un jugador cuando acaba. {@code jefes} = jefes que mato el equipo; {@code jugadores} = cuantos jugaban (1 = en solitario). */
-    record Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies, int legendarios, int sentencias) {
-        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies, int legendarios) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, shinies, legendarios, 0); }
-        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, 0, 0, 0); }
-        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, shinies, 0, 0); }
+    record Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies, int legendarios, int sentencias, int dorados) {
+        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies, int legendarios, int sentencias) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, shinies, legendarios, sentencias, 0); }
+        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies, int legendarios) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, shinies, legendarios, 0, 0); }
+        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, 0, 0, 0, 0); }
+        Partida(int segundos, int derrotados, int nivel, int jefes, String bioma, int jugadores, int evoluciones, String especie, int shinies) { this(segundos, derrotados, nivel, jefes, bioma, jugadores, evoluciones, especie, shinies, 0, 0, 0); }
     }
 
     /** El avance de una mision en un jugador (la mision es la de ese id). */
@@ -83,6 +84,7 @@ final class Retos {
             new Familia("coleccionista", "Coleccionista", "Juega con {n} Pokémon distintos", "n", new long[]{3, 10, 25}, new int[]{2, 4, 10}, j -> j.especies.size()),
             new Familia("shiny", "Cazashinies", "Derrota a {n} shinies en total", "n", new long[]{1, 5, 25, 100}, new int[]{2, 4, 10, 20}, j -> j.shiniesTotal),
             new Familia("grieta", "Domagrietas", "Derrota a {n} legendarios de las grietas", "n", new long[]{1, 5, 20}, new int[]{3, 8, 20}, j -> j.legendariosTotal),
+            new Familia("dorado", "Cazamichis", "Atrapa {n} Michialiens dorados", "n", new long[]{1, 5, 20}, new int[]{2, 5, 15}, j -> j.doradosTotal),
             new Familia("sentencia", "Sentenciado", "Supera la Sentencia {n} veces", "n", new long[]{1, 5, 20}, new int[]{8, 20, 50}, j -> j.sentenciasTotal),
             new Familia("fiel", "Fiel al juego", "Juega {n} en total", "h", new long[]{3600, 36000, 180000}, new int[]{2, 8, 20}, j -> j.segundosTotal));
 
@@ -165,6 +167,7 @@ final class Retos {
         j.shiniesTotal += s.shinies();
         j.legendariosTotal += s.legendarios();
         j.sentenciasTotal += s.sentencias();
+        j.doradosTotal += s.dorados();
         if (s.jugadores() > 1) j.partidasGrupo++;
         j.mejorNivel = Math.max(j.mejorNivel, s.nivel());
         j.mejorJefes = Math.max(j.mejorJefes, s.jefes());

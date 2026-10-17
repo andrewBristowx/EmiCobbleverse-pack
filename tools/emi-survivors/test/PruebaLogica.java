@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -452,7 +452,7 @@ public final class PruebaLogica {
         }
         int logrosTotal = 0;
         for (Retos.Familia f : Retos.FAMILIAS) for (int pr : f.premios()) logrosTotal += pr;
-        ok(logrosTotal < 500, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
+        ok(logrosTotal < 600, "todos los logros juntos dan pocas coronas (" + logrosTotal + ")");
         ok(Curvas.monedas(300, 100, 10, 0, 1.0) == Curvas.monedas(300, 100, 10, 0, 0, 1.0), "sin shinies, las monedas son las de siempre");
         ok(Curvas.monedas(300, 100, 10, 0, 4, 1.0) - Curvas.monedas(300, 100, 10, 0, 0, 1.0) == 4 * Curvas.MONEDAS_POR_SHINY, "cada shiny suma " + Curvas.MONEDAS_POR_SHINY + " michiestrellitas");
         ok(Curvas.P_SHINY > 0 && Curvas.P_SHINY <= 0.01, "los shinies son raros (" + Curvas.P_SHINY + ")");
@@ -603,6 +603,31 @@ public final class PruebaLogica {
         Datos.Entrada e = new Datos.Entrada();
         ok(!e.sentencia, "una marca nueva no es de victoria");
         System.out.println("  sentencia: bien");
+    }
+
+    static void eventos() {
+        System.out.println("== eventos");
+        for (long semilla : new long[]{1, 42, 999, -7}) {
+            int ant = -1;
+            for (int n = 0; n < 8; n++) {
+                int s = Eventos.segundo(n, semilla);
+                ok(s > ant, "los eventos van en orden (semilla " + semilla + ", n " + n + ": " + s + ")");
+                ok(n > 0 || (s >= Eventos.PRIMERO_SEG && s <= Eventos.PRIMERO_SEG + Eventos.AZAR_SEG), "el primero sale entre 75 y 95 s");
+                ok(n == 0 || Math.abs(s - (Eventos.PRIMERO_SEG + Eventos.CADA_SEG * n)) <= Eventos.AZAR_SEG, "cada uno sale a +-20 s de su hora");
+                ant = s;
+            }
+        }
+        ok(Eventos.segundo(3, 5) == Eventos.segundo(3, 5), "la misma semilla da las mismas horas");
+        Random rnd = new Random(3);
+        Eventos a = null; Set<Eventos> vistos = new HashSet<>();
+        for (int i = 0; i < 200; i++) { Eventos e = Eventos.sortear(rnd, a); ok(e != a, "nunca el mismo dos veces seguidas"); vistos.add(e); a = e; }
+        ok(vistos.size() == Eventos.values().length, "salen todos los eventos");
+        for (Eventos e : Eventos.values()) ok(!e.titulo.isBlank() && !e.subtitulo.isBlank() && e.duracionSeg >= 0, "datos de " + e);
+        ok(Eventos.REGALO_EMI.duracionSeg == 0 && Eventos.HORA_DORADA.duracionSeg == 30, "duraciones");
+        Datos.Jugador j = new Datos.Jugador();
+        Retos.aplicar(j, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 0, 0, 0, 6), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
+        ok(j.doradosTotal == 6 && j.logros.getOrDefault("dorado", 0) == 2, "logro Cazamichis: 6 dorados = 2 escalones (1 y 5)");
+        System.out.println("  eventos: bien");
     }
 
     static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }

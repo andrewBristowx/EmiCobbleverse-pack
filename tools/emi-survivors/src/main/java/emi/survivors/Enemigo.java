@@ -36,6 +36,7 @@ final class Enemigo {
     double edx, edz;            // direccion de su embestida
     int rumboT;                 // estampida: si es > 0 sigue la direccion (rdx, rdz) y no persigue; al llegar a 0 desaparece sin soltar nada
     double rdx, rdz;
+    boolean huye, dorado;        // el Michialien dorado de un evento: huye del jugador mas cercano, no hace dano y suelta un tesoro grande
     boolean legendario;         // el legendario que sale de una grieta (ver Grietas)
     boolean shiny;              // un variocolor: mas vida y experiencia, suelta un objeto seguro y cuenta como shiny derrotado
     boolean sinBotin;           // desaparece sin soltar gemas ni contar como derrotado
@@ -164,6 +165,15 @@ final class Enemigo {
                 if (--embT <= 0) { embFase = 0; embT = 70 + rnd.nextInt(50); }
             }
         }
+    }
+
+    /** Un tick de un enemigo que HUYE de {@code de} (el jugador mas cercano): corre en sentido contrario, y si se acerca al muro tira hacia el centro de la arena. */
+    void huir(double px, double pz, double cx, double cz, double radioArena) {
+        double dx = e.getX() - px, dz = e.getZ() - pz, d = Math.max(1e-6, Math.sqrt(dx * dx + dz * dz));
+        double tx = e.getX() + dx / d * 10, tz = e.getZ() + dz / d * 10;
+        double ex = e.getX() - cx, ez = e.getZ() - cz, de = Math.sqrt(ex * ex + ez * ez);
+        if (de > radioArena - 8) { tx = tx * 0.4 + cx * 0.6 + (-ez / Math.max(1e-6, de)) * 6; tz = tz * 0.4 + cz * 0.6 + (ex / Math.max(1e-6, de)) * 6; }     // cerca del muro: gira hacia dentro
+        mover(tx, tz);
     }
 
     /** Un tick de un enemigo de la estampida: corre por su carril (el triple de deprisa) y, al acabar su tiempo, se va sin soltar nada. */

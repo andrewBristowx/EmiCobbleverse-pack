@@ -374,7 +374,7 @@ public final class Partida {
                 datos.registrarJugador(r.id, r.nombre, r.pokeId, r.especieId, seg, monedas);
                 int evos = 0;
                 for (int nivelArma : r.armas.values()) if (nivelArma >= Catalogo.NIVEL_EVO) evos++;
-                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId, r.shinies, r.legendarios, eq.sentencia.superada() ? 1 : 0), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+                Retos.Novedades nv = datos.retos(r.id, r.nombre, new Retos.Partida(seg, r.derrotados, r.nivel, eq.jefesDerrotados, eq.bioma.id(), eq.jugadoresAlEmpezar, evos, r.especieId, r.shinies, r.legendarios, eq.sentencia.superada() ? 1 : 0, r.doradosAtrapados), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
                 retosLineas = nv.lineas; retosCoronas = nv.coronas;
             } catch (RuntimeException ex) { EmiSurvivors.LOG.error("No se pudo guardar el resultado de la partida de {}", r.nombre, ex); }
         }
@@ -512,6 +512,12 @@ public final class Partida {
                 for (Clima x : Clima.values()) if (x.name().equalsIgnoreCase(id)) cl = x;
                 if (cl == null) return "Climas: despejado, sol, lluvia, tormenta, nieve, niebla.";
                 r.eq.clima.forzar(cl);
+            }
+            case "evento" -> {
+                Eventos ev = null;
+                for (Eventos x : Eventos.values()) if (x.name().equalsIgnoreCase(id)) ev = x;
+                if (ev == null) return "Eventos: lluvia_estrellas, hora_dorada, regalo_emi, michi_dorado.";
+                if (!r.eq.evento.forzar(ev)) return "Ya hay un evento en marcha.";
             }
             case "sentencia" -> { r.eq.sentencia.empezar(); }
             case "grieta" -> { return r.eq.grieta.forzar() ? null : "Ya hay una grieta abierta (entra en ella para abrirla)."; }

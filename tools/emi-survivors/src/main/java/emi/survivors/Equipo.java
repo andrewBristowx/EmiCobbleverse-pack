@@ -107,6 +107,8 @@ final class Equipo {
     final GrietaEquipo grieta = new GrietaEquipo(this);
     /** La prueba final (ver {@link Sentencia}). */
     final SentenciaEquipo sentencia = new SentenciaEquipo(this);
+    /** Los eventos cortos de la partida (ver {@link Eventos}). */
+    final EventoEquipo evento = new EventoEquipo(this);
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
     String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
@@ -195,7 +197,7 @@ final class Equipo {
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
-        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); sentencia.tick(tick); }
+        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); sentencia.tick(tick); evento.tick(tick); }
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
@@ -204,6 +206,7 @@ final class Equipo {
             if (jefe != null && en == jefe.en) continue;
             if (en.shiny && tick % 5 == 0) w.spawnParticles(ParticleTypes.END_ROD, en.e.getX(), en.e.getY() + en.radio * 2.2, en.e.getZ(), 2, 0.35, 0.45, 0.35, 0.02);          // el brillo de los shinies
             if (en.rumboT > 0) { en.correr(); continue; }                                  // estampida: sigue su carril
+            if (en.huye) { Run cerca = masCercano(objetivos, en.e.getX(), en.e.getZ()); if (cerca != null) en.huir(cerca.pp.x, cerca.pp.z, ox, oz, Arena.RADIO); continue; }       // el Michialien dorado: huye
             Run obj = masCercano(objetivos, en.e.getX(), en.e.getZ());
             if (obj == null) en.mover(en.e.getX(), en.e.getZ(), 0);
             else if (en.pers == Pers.EMBISTE) en.embestir(obj, w, rnd);
@@ -608,6 +611,7 @@ final class Equipo {
         derrotados++;
         if (en.pers == Pers.EXPLOSIVO && bombas.size() < 12) bombas.add(new Bomba(x, z));
         if (en.legendario) grieta.alDerrotar(en, x, z);
+        if (en.dorado) { evento.alDerrotarDorado(en, x, z); return; }
         if (en.ultimo != null && miembros.contains(en.ultimo)) { en.ultimo.derrotados++; en.ultimo.alDerrotar(en); }
         switch (en.tipo) {
             case JEFE -> {
@@ -694,6 +698,7 @@ final class Equipo {
         if (marea != null) { marea.limpiar(); marea = null; }
         clima.limpiar();
         grieta.limpiar();
+        evento.limpiar();
         Marcas.quitarTodas(this);
         for (Run m : miembros) m.proyectiles.clear();
     }
