@@ -116,6 +116,8 @@ public final class Sala {
         ServerWorld w = sala();
         if (w == null) return "No existe la dimension emi_carreras:entrada (¿esta instalado el mod en el servidor?).";
         if (Carrera.participa(p)) return "Ya estás en una carrera.";
+        String ns = p.getWorld().getRegistryKey().getValue().getNamespace();
+        if (ns.equals("emi_survivors") || ns.equals("emi_huida")) return "Estás en otro minijuego: sal primero (/survivor salir o /huida salir).";
         if (enSala(p)) { Menu.abrir(p, "jugar"); return null; }                       // ya estaba en la sala: solo se le vuelve a abrir el menu
         if (p.getWorld().getRegistryKey() == Carrera.MUNDO && Saved.exists(s, p.getUuid())) { volverASala(p, null); return null; }   // en la pista sin carrera (se quedo a medias): de vuelta a la sala
         if (!Morph.disponible()) return "Falta el mod CobbleMorph (el jugador va transformado en su Pokémon).";

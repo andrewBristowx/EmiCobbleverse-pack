@@ -11,7 +11,7 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * La conversacion con «Ms. President», la michi con traje y maletin que patrocina los minijuegos: su retrato (parpadea, 4 fotogramas en {@code textures/ms_president.png})
- * y un cuadro de dialogo con el texto escribiendose letra a letra. Clic, espacio o intro pasan a la siguiente frase; la ultima ofrece unirse al juego o dejarlo para luego.
+ * y un cuadro de dialogo con el texto escribiendose letra a letra. Clic, espacio o intro pasan a la siguiente frase; la ultima deja elegir a que juego unirse (Emi Survivors o Carreras) o dejarlo para luego.
  */
 @Environment(EnvType.CLIENT)
 public final class MsPresidentPantalla extends Lienzo {
@@ -20,10 +20,20 @@ public final class MsPresidentPantalla extends Lienzo {
     private static final String[] PAGINAS = {
             "¡Muy buenas! Soy Ms. President, presidenta de Michialien S.A., la empresa más adorable de todo el universo.",
             "Este mundo va a estar lleno de minijuegos: carreras de Pokémon, huidas de monstruos enormes, hordas que sobrevivir... ¡y yo los patrocino todos!",
-            "¿Te animas a probar uno? Ahora mismo puedes unirte a «Emi Survivors»: sobrevive a la horda con tus Pokémon, pasa de mundo en mundo y vence al Michi Gigante."
+            "¿Te animas a probar uno? Elige: «Emi Survivors» (sobrevive a la horda con tus Pokémon, pasa de mundo en mundo y vence al Michi Gigante) o las «Carreras» (corre con tu Pokémon, entrena tú solo en las pistas y gana estrellas)."
     };
     /** Duracion (ms) de cada fotograma del retrato: ojos abiertos, cerrados, abiertos, cerrados (el parpadeo doble del GIF original). */
     private static final int[] DURACION = {1400, 200, 160, 200};
+
+    private static final String[] BOTONES = {"Emi Survivors", "Carreras", "Ahora no"};
+    private static final int BOTON_W = 100, BOTON_H = 26;
+    private static final int[] BOTON_X = {14, 120, 226};
+
+    /** Aclara un color (el boton bajo el raton). */
+    private static int mezclar(int c) {
+        int r = Math.min(255, ((c >> 16) & 255) + 28), gg = Math.min(255, ((c >> 8) & 255) + 28), b = Math.min(255, (c & 255) + 28);
+        return 0xFF000000 | (r << 16) | (gg << 8) | b;
+    }
 
     private final long t0 = System.currentTimeMillis();
     private long inicioPagina = t0;
@@ -52,10 +62,10 @@ public final class MsPresidentPantalla extends Lienzo {
         if (!ultima()) { pagina++; inicioPagina = System.currentTimeMillis(); }
     }
 
-    private void unirse() {
+    private void unirse(String juego) {
         if (enviado) return;
         enviado = true;
-        ClientPlayNetworking.send(new AccionPayload("ms_unirse", "", ""));
+        ClientPlayNetworking.send(new AccionPayload("ms_unirse", juego, ""));
         close();
     }
 
@@ -79,13 +89,14 @@ public final class MsPresidentPantalla extends Lienzo {
             if (fin && (System.currentTimeMillis() / 400) % 2 == 0) texto(g, "Siguiente ▶", bx + bw - 76, by + bh - 16, ORO, 0.9f);
             texto(g, "(clic o espacio)", bx + 14, by + bh - 16, GRIS, 0.8f);
         } else if (fin) {
-            // las dos opciones
-            int w = 150, h = 26, y = by + bh - 40;
-            boolean sobre1 = dentro(mx, my, bx + 14, y, w, h), sobre2 = dentro(mx, my, bx + bw - 14 - w, y, w, h);
-            caja(g, bx + 14, y, w, h, sobre1 ? 0xFF3CBF63 : 0xFF2E9B4E, sobre1 ? BLANCO : 0xFF6FE08A);
-            textoCentrado(g, "¡Unirme al juego!", bx + 14 + w / 2, y + 9, BLANCO, 1.0f);
-            caja(g, bx + bw - 14 - w, y, w, h, sobre2 ? 0xFF4A4A6A : 0xFF33334F, sobre2 ? BLANCO : 0xFF6A6A8A);
-            textoCentrado(g, "Ahora no, gracias", bx + bw - 14 - w / 2, y + 9, GRIS, 1.0f);
+            // las tres opciones
+            int y = by + bh - 40;
+            for (int i = 0; i < 3; i++) {
+                int x = BOTON_X[i] + bx, c = i == 2 ? 0xFF33334F : (i == 0 ? 0xFF2E9B4E : 0xFFD2693C);
+                boolean sobre = dentro(mx, my, x, y, BOTON_W, BOTON_H);
+                caja(g, x, y, BOTON_W, BOTON_H, sobre ? mezclar(c) : c, sobre ? BLANCO : (i == 2 ? 0xFF6A6A8A : (i == 0 ? 0xFF6FE08A : 0xFFFFB27A)));
+                textoCentrado(g, BOTONES[i], x + BOTON_W / 2, y + 9, i == 2 ? GRIS : BLANCO, 1.0f);
+            }
         }
         textoCentrado(g, "Michialien S.A. · patrocinador oficial de los minijuegos", W / 2, H - 22, 0xFF8F78D8, 0.8f);
     }
@@ -93,9 +104,10 @@ public final class MsPresidentPantalla extends Lienzo {
     @Override
     protected void clic(int mx, int my, int boton) {
         if (ultima() && terminoDeEscribir()) {
-            int bx = 262, by = 62, bw = 338, bh = 168, w = 150, h = 26, y = by + bh - 40;
-            if (dentro(mx, my, bx + 14, y, w, h)) { unirse(); return; }
-            if (dentro(mx, my, bx + bw - 14 - w, y, w, h)) { close(); return; }
+            int bx = 262, by = 62, bh = 168, y = by + bh - 40;
+            if (dentro(mx, my, bx + BOTON_X[0], y, BOTON_W, BOTON_H)) { unirse("survivors"); return; }
+            if (dentro(mx, my, bx + BOTON_X[1], y, BOTON_W, BOTON_H)) { unirse("carreras"); return; }
+            if (dentro(mx, my, bx + BOTON_X[2], y, BOTON_W, BOTON_H)) { close(); return; }
             return;
         }
         avanzar();
@@ -104,7 +116,7 @@ public final class MsPresidentPantalla extends Lienzo {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            if (ultima() && terminoDeEscribir()) unirse(); else avanzar();
+            if (!ultima()) avanzar(); else if (!terminoDeEscribir()) avanzar();          // en la ultima pagina hay que elegir con el raton
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
