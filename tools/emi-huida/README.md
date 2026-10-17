@@ -1,4 +1,4 @@
-# Emi Huida (`emi_huida`) — 0.11.1 (prototipo)
+# Emi Huida (`emi_huida`) — 0.11.2 (prototipo; 0.11.2 = pausas de Emipokemon compartidas con carreras y survivors, y también se para el tope de entidades)
 
 Minijuego de **huida de un Pokémon perseguidor** al estilo Crash Bandicoot (plan del documento «Plan evento persecución»: «Nivel 1: La huida del Tyrantrum»).
 Mod de servidor + parte de cliente (cámara, teclas e interfaz). **Hay que instalarlo también en los clientes** (ya va en el pack): un cliente sin el mod no puede jugar (no tendría la cámara ni el control).
