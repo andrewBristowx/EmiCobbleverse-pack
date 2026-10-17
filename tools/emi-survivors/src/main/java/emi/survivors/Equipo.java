@@ -101,7 +101,11 @@ final class Equipo {
     }
 
     /** El nombre del mundo (bioma) de esta partida, para la interfaz. */
-    String zona() { return bioma.nombre(); }
+    /** El clima de la partida (cambia cada 2:30; ver {@link Clima}). */
+    final ClimaEquipo clima = new ClimaEquipo(this);
+
+    /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
+    String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
 
     int segundos() { return tick / 20; }
 
@@ -186,6 +190,7 @@ final class Equipo {
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
+        if (fijo == 0) clima.tick(tick);
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
@@ -197,7 +202,7 @@ final class Equipo {
             Run obj = masCercano(objetivos, en.e.getX(), en.e.getZ());
             if (obj == null) en.mover(en.e.getX(), en.e.getZ(), 0);
             else if (en.pers == Pers.EMBISTE) en.embestir(obj, w, rnd);
-            else en.mover(obj.pp.x, obj.pp.z);
+            else en.mover(obj.pp.x, obj.pp.z, clima.velEnemigos());
         }
         if (jefe != null && jefe.vivo()) jefe.tick(objetivos);
         tickBombas(objetivos);
@@ -677,6 +682,7 @@ final class Equipo {
         refuerzos.clear();
         bombas.clear();
         if (marea != null) { marea.limpiar(); marea = null; }
+        clima.limpiar();
         Marcas.quitarTodas(this);
         for (Run m : miembros) m.proyectiles.clear();
     }

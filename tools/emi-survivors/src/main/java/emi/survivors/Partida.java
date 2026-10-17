@@ -505,6 +505,12 @@ public final class Partida {
                 if (pp == null) return "Personalidades: veloz, bruto, embiste, explosivo.";
                 if (!r.eq.devPers(pp, r)) return "No se pudo crear el enemigo.";
             }
+            case "clima" -> {
+                Clima cl = null;
+                for (Clima x : Clima.values()) if (x.name().equalsIgnoreCase(id)) cl = x;
+                if (cl == null) return "Climas: despejado, sol, lluvia, tormenta, nieve, niebla.";
+                r.eq.clima.forzar(cl);
+            }
             case "shiny" -> { return r.eq.devShiny(r) ? null : "No se pudo crear el shiny."; }
             case "elite" -> { return r.eq.devElite() ? null : "No se pudo crear el campeón."; }
             case "curar" -> r.hp = r.st.hpMax;

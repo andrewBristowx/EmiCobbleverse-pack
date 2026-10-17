@@ -284,7 +284,7 @@ final class Run {
     /** Igual; con {@code critico} el golpe es critico seguro. Con el Periscopio hay probabilidad de critico (el doble de dano) y con la Cinta Experto mas dano a campeones y jefes. */
     void golpear(Enemigo en, double dmgBase, double kx, double kz, boolean critico) {
         if (en.hp <= 0) return;
-        double d = dmgBase * st.dano;
+        double d = dmgBase * st.dano * eq.clima.multiplicador(tipo);
         if (st.experto > 0 && en.grande()) d *= 1 + st.experto;
         boolean crit = critico || (st.critico > 0 && rnd.nextDouble() < st.critico);
         if (crit) d *= 2;

@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -550,6 +550,26 @@ public final class PruebaLogica {
         j.coronas = 10;
         ok(Tienda.comprar(j, "master", ahora + dia, z, bien) != null && j.coronas == 10, "la Master Ball cuesta mas de 10");
         System.out.println("  tienda: bien");
+    }
+
+    static void clima() {
+        System.out.println("== clima");
+        ok(Clima.cambiosHasta(0) == 0 && Clima.cambiosHasta(59.9) == 0 && Clima.cambiosHasta(60) == 1 && Clima.cambiosHasta(209) == 1 && Clima.cambiosHasta(210) == 2, "los cambios tocan a los 60 s y cada 150 s");
+        ok(Clima.LLUVIA.multiplicador("water") == 1.25 && Clima.LLUVIA.multiplicador("fire") == 0.85 && Clima.LLUVIA.multiplicador("normal") == 1.0, "la lluvia sube el agua, baja el fuego y no toca lo demas");
+        ok(Clima.DESPEJADO.multiplicador("fire") == 1.0 && Clima.DESPEJADO.resumen().isEmpty(), "despejado no cambia nada");
+        for (Clima c : Clima.values()) {
+            ok(!c.nombre.isBlank(), "nombre de " + c);
+            for (String ty : c.favorables) ok(!c.perjudicados.contains(ty), c + ": un tipo no puede subir y bajar a la vez (" + ty + ")");
+            if (c != Clima.DESPEJADO) ok(!c.resumen().isBlank() && !c.aviso.isBlank(), c + ": tiene resumen y aviso");
+        }
+        ok(Clima.NIEVE.velEnemigos < 1.0 && Clima.SOL.velEnemigos == 1.0, "solo la nieve ralentiza a los enemigos");
+        Random rnd = new Random(7);
+        Clima actual = Clima.DESPEJADO;
+        Set<Clima> vistos = new HashSet<>();
+        for (int i = 0; i < 300; i++) { Clima n = Clima.sortear(rnd, actual); ok(n != actual, "el clima siguiente es distinto"); vistos.add(n); actual = n; }
+        ok(vistos.size() == Clima.values().length, "con el tiempo salen todos los climas");
+        ok(Clima.TORMENTA.resumen().contains("Eléctrico") && Clima.LLUVIA.resumen().contains("Fuego"), "el resumen nombra los tipos en español: " + Clima.LLUVIA.resumen());
+        System.out.println("  clima: bien");
     }
 
     static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }

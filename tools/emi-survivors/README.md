@@ -1,4 +1,4 @@
-# Emi Survivors (`emi_survivors`) — 0.11.0 (arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
+# Emi Survivors (`emi_survivors`) — 0.12.0 (fase 4A: climas; sobre la 0.11.0: arena más grande y enemigos que caminan; fase 3C: shinies; sobre la 3D: tienda de recompensas con coronas, entregada al correo; sobre la 3B: misiones y logros con una moneda nueva, las coronas; sobre la 3A: tops por periodo y 12 mejoras permanentes; sobre la 2D: tres biomas, música y sonidos propios; sobre la 2C: jefes, mareas y personalidades + interfaz con iconos propios)
 
 Minijuego de **supervivencia contra hordas de Pokémon** (estilo Vampire Survivors / Survivor.io) para el servidor de Emi: tu Pokémon ataca solo, tú solo te
 mueves, las oleadas crecen, subes de nivel y eliges mejoras. **Solo o en grupo de hasta 4 jugadores en la misma arena.** Servidor + cámara, teclas e interfaz de cliente (hay que instalarlo también en los clientes; ya va
@@ -31,7 +31,11 @@ propio y los Pokémon son los modelos 3D de Cobblemon. Solo se toman las ideas d
    - **3B. Misiones y logros** — HECHA (0.8.0): 3 misiones del día y 3 de la semana (las mismas para todos, salen de la fecha) y 11 logros con escalones, que dan **coronas**, una moneda aparte y escasa (**decisión del dueño, 2026-10-16**: las michiestrellitas son solo para las mejoras; las coronas son para la tienda de recompensas (3D)). Los premios reales los sigue dando el dueño a mano.
    - **3C. Shinies** — HECHA (0.10.0, esta): 1 de cada 250 enemigos normales sale shiny (variocolor), con contorno amarillo y brillo; da 5 veces más experiencia, un objeto seguro y +3 michiestrellitas al acabar, y cuenta para el logro «Cazashinies».
    - **3D. Tienda de recompensas (idea del dueño, 2026-10-16)** — HECHA (0.9.0): pestaña TIENDA donde se gastan las coronas en 7 tickets de los banners de Emipokemon y 5 objetos de Pokémon (Ultra Ball, Caramelo Raro, Revivir Máximo, Cápsula Habilidad y Master Ball). **Decisiones del dueño: máximo 10 de cada artículo al día y se entrega al correo (`/correo`).** Qué se vende y los precios son una primera propuesta del asistente (`Tienda.java`): el dueño los ajusta.
-4. **Final y extras**: grietas con legendarios, «Sentencia» final, climas, eventos, más temas de Emi.
+4. **Final y extras** (el dueño dijo «continúa» tras la fase 3 el 2026-10-17; reparto del asistente, cada entrega se prueba y se entrega por separado):
+   - **4A. Climas** — HECHA (0.12.0, esta): cada 2:30 cambia el clima (sol, lluvia, tormenta, nieve, niebla o despejado); favorece a unos tipos de Pokémon y perjudica a otros; la tormenta lanza rayos avisados en el suelo.
+   - **4B. Grietas con legendarios** — siguiente.
+   - **4C. La «Sentencia» final** — después.
+   - **4D. Eventos y más temas de Emi** — después.
 
 ## Cómo se juega (jugador)
 1. `/survivor entrar` te lleva al **mundo del minijuego**: una sala con damero rosa y lila, con las estatuas gigantes de dos peluches Michialien (el dorado con corona y el normal) en islotes de cristal y el **terminal** (una mesa de encantamientos con cuatro farolas) en el centro. Se guarda tu inventario, posición, modo de juego, hambre y punto de reaparición (en disco: sobrevive a un reinicio del servidor) y vas como persona, en modo aventura, sin poder romper ni tocar nada. Se abre el **menú** solo; para volver a abrirlo: clic derecho con la **estrella del menú** (ranura 5), tocar el **terminal** o `/survivor menu`.
@@ -95,6 +99,19 @@ Todo se **sintetiza por código** (`audio/`: `sinte.py` = osciladores sin aliasi
 - **Logros**: 11 familias con 2-4 escalones cada una (Cazador, Veterano, Aguante, Campeón, Matajefes, Rey de reyes, Evolucionista, Mejores amigos, Viajero, Coleccionista, Fiel al juego; 36 escalones y 256 coronas en total). Al subir de escalón se cobra al acabar la partida.
 - **Cuándo cuenta**: solo en las partidas que cuentan para el top (no las de administrador en modo prueba ni las medidas). Al acabar, el chat dice qué misión o logro se ha cumplido y las coronas ganadas, y la tarjeta de «Tu última partida» suma «Retos: +N coronas». Los jugadores que ya tenían partidas reciben los logros de lo que ya habían hecho (partidas jugadas y mejor tiempo) en su primera partida con 0.8.0; el resto de contadores empiezan de cero.
 - **Menú**: nueva pestaña **MISIONES** (las del día y las de la semana con barra de avance, y los logros de 6 en 6 con `<` `>`).
+
+### Climas (0.12.0)
+- **Cuándo**: el primer cambio a los **60 s** y después uno cada **150 s** (`Clima.PRIMERO_SEG`, `CADA_SEG`); el nuevo es siempre distinto del actual. Sale un título («¡Llueve!», «¡Tormenta!»…) con «Favorece: …» y el chat cuenta los números; la **zona** de la interfaz (arriba en el centro) añade el clima: «PRADERA MICHIALIEN · LLUVIA». No hay clima en las partidas de medida (`/survivor medida`).
+- **Efectos** (`Clima.java`; cuenta el **tipo principal del Pokémon del jugador**, no el de cada ataque): **+25 % de daño** a los tipos favorecidos y **−15 %** a los perjudicados.
+  - **Sol**: favorece Fuego, Planta y Tierra; perjudica Agua y Hielo.
+  - **Lluvia**: favorece Agua, Eléctrico y Bicho; perjudica Fuego.
+  - **Tormenta**: favorece Eléctrico, Volador y Agua; perjudica Fuego; **y caen rayos** (ver abajo).
+  - **Nieve**: favorece Hielo y Acero; perjudica Fuego y Planta; **los enemigos van un 10 % más lentos**.
+  - **Niebla**: favorece Fantasma, Siniestro, Psíquico y Hada.
+  - **Despejado**: sin efectos.
+- **Rayos de la tormenta** (`ClimaEquipo.java`): cada 4,5 s sale un **cuadrado rojo de 3×3** cerca de un jugador (a veces justo debajo, para obligarle a moverse) que se rellena durante 1,4 s (las mismas marcas que los jefes) y entonces cae el rayo: quita **~16 de vida** (escalada con el tiempo, como el daño de los enemigos) a los jugadores que estén dentro y **mata a los enemigos normales** que estén dentro (90 de daño; el jefe no lo sufre).
+- **Ambiente**: partículas alrededor de cada jugador (gotas y ondas en el suelo, copos, nubes, destellos de sol). Con la opción de depuración, el registro escribe `[clima]` (cambios y cada rayo, con cuántos jugadores y enemigos pilló).
+- `/survivor dev clima <despejado|sol|lluvia|tormenta|nieve|niebla>` (administradores): pone ese clima ahora.
 
 ### Arena más grande y enemigos que caminan (0.11.0, pedido del dueño: «que se vean caminando y no en pose T, y hacer más grandes los espacios»)
 - **Pose de caminar**: los enemigos eran entidades de Cobblemon con la IA apagada y la pose se quedaba **siempre en «de pie» (STAND)** aunque se movieran (se midió: `{STAND=14}` con 14 enemigos andando), así que muchos modelos se veían rígidos. Ahora `Enemigo` apaga el recálculo de pose de Cobblemon (`setEnablePoseTypeRecalculation(false)`) y pone **WALK mientras se mueve y STAND cuando está parado** (`PokemonEntity.POSE_TYPE` en el rastreador de datos; solo se manda al cliente cuando cambia). Medido después: `{WALK=15}`. Con la opción de depuración (`-Demi.survivors.debug=true`) el registro del servidor escribe `[poses]` cada 5 s.
@@ -241,6 +258,16 @@ Cómo leerla (con honestidad): **es una comparación entre ataques, no el daño 
 - Un jugador que **solo da vueltas en círculo** (8 direcciones, con el ataque inicial y sin ir a por las gemas) aguantó **4:28** (nivel 4, 89 derrotados) y no llegó a matar al jefe, que salió a los 3:00.
 - Un jugador **quieto e inmortal con cartas automáticas** (se eligen solas al cabo de 1 s) llegó a **nivel 9 a los 2:00, 13 a los 3:00 y 21 a los 4:28** (1167 derrotados) y mató al jefe unos 27 s después de que saliera. Es solo para ver el ritmo de subida de nivel: un jugador real se mueve y recoge gemas de otra manera.
 - Los números de las curvas son primeras estimaciones: **hay que jugarlo con gente y retocarlos** (`Curvas.java`, `Meta.java`, `Catalogo.java`; los textos del menú y las cartas salen de esos archivos).
+
+## Probado / no probado (0.12.0: climas)
+**Probado**:
+- **Lógica pura** (`test/probar.sh`, «TODO BIEN»): cuándo tocan los cambios (60 s, 210 s…), los multiplicadores por tipo, que ningún clima suba y baje el mismo tipo, que el siguiente clima sea siempre distinto y que con el tiempo salgan todos, y que los textos nombren los tipos en español.
+- **En el juego** (servidor ligero + cliente real, un jugador): los cambios de clima con su título y el mensaje del chat, la zona de la interfaz con el clima («… · TORMENTA»), gotas y copos de nieve en pantalla, el cuadrado rojo del aviso del rayo rellenándose, y siete rayos seguidos: los que cayeron sobre el jugador y la horda dieron «1 jugador y hasta 7 enemigos dentro» y le bajaron la vida; los que cayeron lejos no hicieron nada.
+**No probado / límites**:
+- **El efecto del +25 % / −15 %** medido en el juego (solo está probada la cuenta de los multiplicadores y que se aplica en `Run.golpear`; no se midió el daño real con `dev dps` en cada clima), y que la nieve de verdad ralentiza a los enemigos (lo mismo: la cuenta, no una medida).
+- **Que se vea bien en todas las pantallas**: la lluvia son gotas pequeñas y desde la cámara cenital cuesta verlas; el título y el subtítulo caben en 960×540 pero no se probó a otras resoluciones. La niebla es solo un poco de nubes pegadas al suelo (no reduce la visión).
+- **Varios jugadores** (el clima es del equipo: el aviso y los rayos van a todos, solo se probó con uno), los jefes en tormenta, el pack entero y el servidor real.
+- **El equilibrio**: cuánta vida quita un rayo y cada cuánto cae son estimaciones.
 
 ## Probado / no probado (0.10.0: shinies)
 **Probado**:
