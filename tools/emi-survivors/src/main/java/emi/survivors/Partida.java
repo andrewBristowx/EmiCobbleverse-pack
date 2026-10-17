@@ -47,8 +47,10 @@ public final class Partida {
     private static final Identifier ID_VEL = Identifier.of("emi_survivors", "velocidad");
     private static final Identifier ID_SALTO = Identifier.of("emi_survivors", "sin_salto");
     private static final Identifier ID_ESCALA = Identifier.of("emi_survivors", "escala");
-    /** Altura (bloques) a la que se normaliza el tamano del Pokemon del jugador: asi un Unown diminuto y un Snorlax se ven parecidos de grandes. */
-    static final double ALTURA_JUGADOR = 1.7;
+    /** Altura (bloques) a la que se normaliza el tamano del Pokemon del jugador, la misma para todos: asi un Unown diminuto y un Snorlax se ven igual de grandes, y pequenos (los enemigos miden 1-1,7). */
+    static final double ALTURA_JUGADOR = 0.9;
+    /** Limites de la escala del jugador (la de Minecraft admite de 0,0625 a 16): lo bastante anchos para que ninguna especie se salga del tamano comun. */
+    static final double ESCALA_MIN = 0.1, ESCALA_MAX = 4.0;
 
     static MinecraftServer server;
     static Datos datos;
@@ -122,6 +124,7 @@ public final class Partida {
     static int topePorEquipo() { return Math.max(40, MAX_ENEMIGOS_TOTAL / Math.max(1, equipos.size())); }
 
     static void tick(MinecraftServer s) {
+        if (s.getTicks() % 20 == 0) Pausas.actualizar(s);          // con alguien en la sala o en una arena, Emipokemon no limpia ni lanza bosses
         for (Equipo eq : new ArrayList<>(equipos)) {
             if (!equipos.contains(eq)) continue;
             try { eq.tick(); }
@@ -223,6 +226,10 @@ public final class Partida {
                 runs.put(p.getUuid(), run);
             }
             equipos.add(eq);
+            for (Run run : eq.miembros) {                                  // el cliente empieza sin gemas ni objetos de una partida anterior
+                ServerPlayerEntity pj = run.jugador();
+                try { if (pj != null && ServerPlayNetworking.canSend(pj, GemasPayload.ID)) ServerPlayNetworking.send(pj, GemasPayload.vacio()); } catch (Throwable t) { /* el cliente no tiene el mod */ }
+            }
             if (grupo != null) grupos.alEmpezar(grupo);
         } catch (Throwable t) {
             // si algo falla a medias, nadie se queda a medio camino: se le devuelve todo a todos
@@ -236,7 +243,6 @@ public final class Partida {
                 } catch (Throwable t2) { EmiSurvivors.LOG.error("Ademas, no se pudo devolver al jugador a su sitio", t2); }
             }
             eq.limpiar();
-            if (equipos.isEmpty()) { try { Pausas.reanudar(); } catch (Throwable t2) { /* nada */ } }
             return "No se pudo empezar la partida (mira el registro del servidor); te hemos devuelto a tu sitio.";
         }
         for (Run run : eq.miembros) {
@@ -337,7 +343,6 @@ public final class Partida {
         for (Run r : ms) { runs.remove(r.id); cerrarJugador(r, eq, motivo, seg, cuenta, puesto); }
         eq.miembros.clear();
         if (eq.grupo != null) grupos.alTerminar(eq.grupo);                        // el grupo sigue junto en la sala, pero nadie esta listo
-        if (equipos.isEmpty()) { try { Pausas.reanudar(); } catch (Throwable t) { /* nada */ } }
     }
 
     private static Datos.Entrada entradaDelEquipo(Equipo eq, List<Run> ms, int seg) {
@@ -442,7 +447,7 @@ public final class Partida {
             var sp = pk.getSpecies();
             h = Math.max(sp.getHitbox().height(), sp.getHitbox().width() * 0.8f) * sp.getBaseScale() * pk.getScaleModifier();
         } catch (Throwable t) { /* se queda en 1 */ }
-        double escala = Math.max(0.7, Math.min(3.0, ALTURA_JUGADOR / Math.max(0.1, h)));
+        double escala = Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, ALTURA_JUGADOR / Math.max(0.05, h)));
         EntityAttributeInstance inst = p.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (inst == null) return;
         inst.removeModifier(ID_ESCALA);

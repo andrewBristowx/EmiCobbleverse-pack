@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Mientras dura una partida se paran, SOLO EN MEMORIA, la limpieza de objetos («clearlag») y los eventos con aviso general de Emipokemon
+ * Mientras haya alguien en el minijuego (sala o partida) se paran, SOLO EN MEMORIA, la limpieza de objetos («clearlag») y los eventos con aviso general de Emipokemon
  * (bosses del mundo Mega/Gigantamax/Tera, evento shiny, entrenador legendario), para que no salgan avisos ni apariciones en plena partida.
  * Todo por reflexion sobre la configuracion de Emipokemon: si el mod no esta, no hace nada. Al terminar la partida se devuelve cada valor y se
  * adelantan los temporizadores del tiempo parado (el siguiente boss no sale de golpe al acabar la huida).
@@ -17,7 +17,7 @@ import java.util.Map;
 final class Pausas {
     private Pausas() {}
 
-    private static final String[] BANDERAS = {"itemCleanupEnabled", "arrowCleanupEnabled"};
+    private static final String[] BANDERAS = {"itemCleanupEnabled", "arrowCleanupEnabled", "entityCapEnabled"};   // limpieza de objetos, de flechas y tope de entidades por mundo (este borra las que sobran)
     private static final String[] EVENTOS = {"megaBoss", "gigantamaxBoss", "teraBoss", "shinyEvent", "legendaryTrainer"};
     private static final String[][] SERVICIOS = {
             {"com.emipokemon.raid.MegaBossService"}, {"com.emipokemon.raid.GigantamaxBossService"}, {"com.emipokemon.raid.TeraBossService"},
@@ -26,9 +26,21 @@ final class Pausas {
     private static final Map<String, Boolean> guardado = new LinkedHashMap<>();
     private static final Map<String, Long> ticksAntes = new LinkedHashMap<>();
     private static boolean pausado;
+    private static boolean sinEmipokemon;                   // si el mod no esta instalado no se vuelve a buscar cada segundo
+
+    /**
+     * Se llama cada segundo: mientras haya alguien en el minijuego (la sala o cualquier arena) la limpieza y los bosses de Emipokemon estan parados;
+     * cuando no queda nadie, se reanudan.
+     */
+    static void actualizar(MinecraftServer s) {
+        boolean alguien = false;
+        for (var p : s.getPlayerManager().getPlayerList())
+            if ("emi_survivors".equals(p.getServerWorld().getRegistryKey().getValue().getNamespace())) { alguien = true; break; }
+        if (alguien) pausar(); else reanudar();
+    }
 
     static synchronized void pausar() {
-        if (pausado) return;
+        if (pausado || sinEmipokemon) return;
         try {
             Object cfg = config();
             if (cfg == null) return;
@@ -43,7 +55,8 @@ final class Pausas {
                 if (t != null) ticksAntes.put(s[0], t);
             }
             pausado = true;
-            EmiSurvivors.LOG.info("Partida en marcha: limpieza de objetos y eventos de Emipokemon en pausa ({})", guardado.keySet());
+            EmiSurvivors.LOG.info("Hay jugadores en el minijuego: limpieza de objetos y eventos de Emipokemon en pausa ({})", guardado.keySet());
+        } catch (ClassNotFoundException t) { sinEmipokemon = true;
         } catch (Throwable t) { EmiSurvivors.LOG.debug("pausar eventos: {}", t.toString()); }
     }
 
@@ -63,7 +76,7 @@ final class Pausas {
                 Long antes = ticksAntes.get(s[0]), ahora = ticks(s[0]);
                 if (antes != null && ahora != null && ahora > antes) desplazar(s[0], ahora - antes);
             }
-            EmiSurvivors.LOG.info("Fin de la partida: limpieza de objetos y eventos de Emipokemon reanudados");
+            EmiSurvivors.LOG.info("Ya no queda nadie en el minijuego: limpieza de objetos y eventos de Emipokemon reanudados");
         } catch (Throwable t) { EmiSurvivors.LOG.warn("reanudar eventos: {}", t.toString()); }
         guardado.clear(); ticksAntes.clear();
     }

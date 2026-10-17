@@ -48,15 +48,26 @@ final class Arena {
     }
 
     /**
-     * Quita lo que haya quedado de una partida anterior en la arena de ese hueco (Pokemon enemigos y marcas de aviso con la etiqueta {@code emi_survivors}). Si el servidor
-     * se paro en pleno ataque, esas entidades se guardaron con el mundo y {@link Partida#init} no las encuentra porque sus trozos de mapa no estan cargados todavia.
+     * Quita lo que haya quedado de una partida anterior en la arena de ese hueco (y en su escenario de duelo): todo lo que no sea un jugador, tenga o no la etiqueta
+     * {@code emi_survivors} (Pokemon enemigos, marcas de aviso, objetos sueltos, bolas de experiencia, proyectiles...). Si el servidor se paro en pleno ataque, esas
+     * entidades se guardaron con el mundo y {@link Partida#init} no las encuentra porque sus trozos de mapa no estan cargados todavia.
      */
     static void limpiarRestos(ServerWorld w, int slot) {
-        double[] o = origen(slot);
-        Box caja = new Box(o[0] - 100, w.getBottomY(), o[1] - 100, o[0] + 100, w.getTopY(), o[1] + 100);
-        java.util.List<Entity> restos = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains("emi_survivors"));
-        for (Entity e : restos) e.discard();
-        if (!restos.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} restos de una partida anterior de la arena {}.", restos.size(), slot);
+        int n = barrer(w, slot);
+        if (n > 0) EmiSurvivors.LOG.info("Se han quitado {} restos de una partida anterior de la arena {}.", n, slot);
+    }
+
+    /** Borra toda entidad que no sea un jugador de la arena del hueco {@code slot} y de su escenario de duelo en el mundo {@code w}; devuelve cuantas. */
+    static int barrer(ServerWorld w, int slot) {
+        double[] o = origen(slot), d = origenDuelo(slot);
+        int n = 0;
+        for (double[] c : new double[][]{{o[0], o[1], 100}, {d[0], d[1], 60}}) {
+            Box caja = new Box(c[0] - c[2], w.getBottomY(), c[1] - c[2], c[0] + c[2], w.getTopY(), c[1] + c[2]);
+            java.util.List<Entity> restos = w.getEntitiesByClass(Entity.class, caja, e -> !(e instanceof net.minecraft.entity.player.PlayerEntity));
+            for (Entity e : restos) e.discard();
+            n += restos.size();
+        }
+        return n;
     }
 
     /** Radio jugable del escenario del duelo con un legendario, y a cuantos bloques (hacia +x) del centro de la arena esta. */

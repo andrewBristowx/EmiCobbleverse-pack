@@ -56,6 +56,7 @@ final class Run {
     final Map<String, Integer> armas = new LinkedHashMap<>(), pasivas = new LinkedHashMap<>();
     final Map<String, Armas.Arma> armaObj = new LinkedHashMap<>();
     final Map<String, String> fusion = new LinkedHashMap<>();       // ataque fusionado -> ataque cabeza de su ranura (ver Fusiones)
+    int retrasoCartas;                           // ticks que faltan para que salgan las cartas pendientes (tras viajar de mundo)
     int fusiones;                                // ofertas de fusion que le quedan por ver
     private boolean ofertaFusion;                // la oferta que esta en pantalla es de fusion (no gasta una subida de nivel)
     final List<Enemigo> enemigos;                // los enemigos de la partida (la misma lista que la del equipo)
