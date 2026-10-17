@@ -196,6 +196,10 @@
   "item.emi_plush.gigante_gatitoalien_gold_flower_crown": "Peluche Gigante GatitoAlien Dorado con Corona de Flores",
   "block.emi_plush.gigante_gatitoalien_gold_pirate": "Peluche Gigante GatitoAlien Pirata Dorado",
   "item.emi_plush.gigante_gatitoalien_gold_pirate": "Peluche Gigante GatitoAlien Pirata Dorado",
+  "block.emi_plush.gatitoalien_suit": "Peluche Ms. President",
+  "item.emi_plush.gatitoalien_suit": "Peluche Ms. President",
+  "block.emi_plush.gatitoalien_carrito": "Peluche Michialien en Carrito",
+  "item.emi_plush.gatitoalien_carrito": "Peluche Michialien en Carrito",
   "cobblemon.ability.toquedemidas": "Toque de Midas",
   "cobblemon.ability.toquedemidas.desc": "Quien lo golpea con contacto pierde 1 de Velocidad (oro pegajoso). Al entrar al combate sube 1 su Defensa.",
   "cobblemon.ability.gafaschulas": "Gafas Chulas",
@@ -221,7 +225,5 @@
   "cobblemon.ability.floracin": "Floración",
   "cobblemon.ability.floracin.desc": "Recupera 1/16 de sus PS cada turno (1/8 con sol intenso) y es inmune a los movimientos de polvo y esporas.",
   "cobblemon.ability.saqueo": "Saqueo",
-  "cobblemon.ability.saqueo.desc": "Al derrotar a un Pokémon sube 1 nivel su Ataque y recupera 1/4 de sus PS máximos.",
-  "block.emi_plush.gatitoalien_suit": "Peluche Ms. President",
-  "item.emi_plush.gatitoalien_suit": "Peluche Ms. President"
+  "cobblemon.ability.saqueo.desc": "Al derrotar a un Pokémon sube 1 nivel su Ataque y recupera 1/4 de sus PS máximos."
 }

@@ -25,10 +25,14 @@ public class EmiCarreras implements ModInitializer {
     public void onInitialize() {
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.carreras.net.EstadoPayload.ID, emi.carreras.net.EstadoPayload.CODEC);
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.carreras.net.PoderPayload.ID, emi.carreras.net.PoderPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.carreras.net.TextoPayload.ID, emi.carreras.net.TextoPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S().register(emi.carreras.net.AccionPayload.ID, emi.carreras.net.AccionPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(emi.carreras.net.AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Acciones.recibir(ctx.player(), payload)));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(Carrera::init);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Carrera.shutdown());
         ServerTickEvents.END_SERVER_TICK.register(Carrera::tick);
+        ServerTickEvents.END_SERVER_TICK.register(Sala::tick);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Carrera.alEntrar(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Carrera.alSalir(handler.player));
 
@@ -59,6 +63,21 @@ public class EmiCarreras implements ModInitializer {
             if (!world.isClient && player instanceof ServerPlayerEntity sp) Carrera.usarPoder(sp);
             return ActionResult.FAIL;
         });
-        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> !Carrera.participa(player));
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> !Carrera.participa(player) && !Sala.bloqueado(player));
+
+        // en la sala no se toca nada (ni bloques, ni objetos, ni entidades), salvo el terminal y el objeto del menu
+        UseItemCallback.EVENT.register((p, w, hand) -> {
+            if (w.isClient || !Sala.bloqueado(p)) return TypedActionResult.pass(p.getStackInHand(hand));
+            if (Sala.esItemMenu(p.getStackInHand(hand)) && p instanceof ServerPlayerEntity sp) Menu.abrir(sp, "jugar");
+            return TypedActionResult.fail(p.getStackInHand(hand));
+        });
+        UseBlockCallback.EVENT.register((p, w, hand, hit) -> {
+            if (w.isClient || !Sala.bloqueado(p)) return ActionResult.PASS;
+            if (hit.getBlockPos().equals(Sala.TERMINAL) && p instanceof ServerPlayerEntity sp) { Menu.abrir(sp, "jugar"); return ActionResult.SUCCESS; }
+            return ActionResult.FAIL;
+        });
+        UseEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Sala.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Sala.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && Sala.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
     }
 }

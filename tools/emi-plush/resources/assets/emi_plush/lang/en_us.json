@@ -196,6 +196,10 @@
   "item.emi_plush.gigante_gatitoalien_gold_flower_crown": "Giant Golden GatitoAlien with Flower Crown Plush",
   "block.emi_plush.gigante_gatitoalien_gold_pirate": "Giant Golden GatitoAlien Pirate Plush",
   "item.emi_plush.gigante_gatitoalien_gold_pirate": "Giant Golden GatitoAlien Pirate Plush",
+  "block.emi_plush.gatitoalien_suit": "Ms. President Plush",
+  "item.emi_plush.gatitoalien_suit": "Ms. President Plush",
+  "block.emi_plush.gatitoalien_carrito": "Michialien in a Toy Car Plush",
+  "item.emi_plush.gatitoalien_carrito": "Michialien in a Toy Car Plush",
   "cobblemon.ability.toquedemidas": "Midas",
   "cobblemon.ability.toquedemidas.desc": "Attackers that make contact lose 1 Speed (sticky gold). It raises its own Defense by 1 on entry.",
   "cobblemon.ability.gafaschulas": "Cool Shades",
@@ -221,7 +225,5 @@
   "cobblemon.ability.floracin": "Bloom",
   "cobblemon.ability.floracin.desc": "It restores 1/16 of its HP every turn (1/8 under harsh sunlight) and is immune to powder and spore moves.",
   "cobblemon.ability.saqueo": "Plunder",
-  "cobblemon.ability.saqueo.desc": "When it knocks out a Pokémon it raises its Attack by 1 stage and restores 1/4 of its max HP.",
-  "block.emi_plush.gatitoalien_suit": "Ms. President Plush",
-  "item.emi_plush.gatitoalien_suit": "Ms. President Plush"
+  "cobblemon.ability.saqueo.desc": "When it knocks out a Pokémon it raises its Attack by 1 stage and restores 1/4 of its max HP."
 }

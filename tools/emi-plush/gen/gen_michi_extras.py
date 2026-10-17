@@ -173,6 +173,39 @@ def traje(g, f):
             b['parent'] = 'arm_left' if b['name'].endswith('_l') else 'arm_right'; b['pivot'] = [-20.0 if b['name'].endswith('_l') else 20.0, 14.8, -4.8]
     return []
 
+# ---------------------------------------------------------------- carrito de juguete (solo aspecto `cart`: el peluche exclusivo de la tienda de emi-carreras; no es una forma Pokemon)
+CAR_D = (160, 30, 46); TIRE = (40, 38, 48); TIRE_L = (66, 64, 78); CHROME = (214, 218, 232)
+def carro(face, i, j, w, h):
+    c = RED if (i * 5 + j * 3) % 13 else RED_L
+    if face in ('east', 'west') and 0 < j < h - 1 and h // 2 - 1 <= j <= h // 2: c = WHITE           # franja blanca de carreras en los costados
+    if i == 0 or j == 0: c = CAR_D
+    return c + (255,)
+def rueda(face, i, j, w, h): return (TIRE_L if (i + j) % 4 == 0 else TIRE) + (255,)
+def parrilla(face, i, j, w, h): return (BLACK if i % 2 == 0 else (80, 80, 100)) + (255,)
+def bandera(face, i, j, w, h): return (PINK_L if (i + j) % 5 == 0 else PINK) + (255,)
+
+def varios(g, f, origenes, size, painter, nombre='acc_cart'):
+    """Varios cubos iguales (p. ej. las cuatro ruedas) que comparten el mismo sitio de textura: la zona libre es pequeña y asi gasta una cuarta parte."""
+    cube(g, f, nombre, origenes[0], size, painter)
+    b = next(x for x in g['minecraft:geometry'][0]['bones'] if x['name'] == nombre)
+    uv = b['cubes'][-1]['uv']
+    for o in origenes[1:]: b['cubes'].append({'origin': list(o), 'size': list(size), 'uv': list(uv)})
+
+def carrito(g, f):
+    c = lambda o, sz, p=carro: cube(g, f, 'acc_cart', o, sz, p)
+    c((-22, 1, -34), (44, 9, 16))                                                   # el capo, delante del michi
+    varios(g, f, [(-26, 1, -18), (22, 1, -18)], (4, 10, 36), carro)                 # los costados, a los lados del cuerpo
+    c((-22, 1, 18), (44, 9, 7))                                                     # el maletero (la cola sale por encima)
+    varios(g, f, [(-24, 0.5, -36.5), (-24, 0.5, 24.5)], (48, 3, 3), flat(YELLOW))       # parachoques delantero y trasero
+    varios(g, f, [(-16, 5, -35), (10, 5, -35)], (6, 4, 2), flat(HALO))              # faros
+    c((-8, 5, -35), (16, 4, 2), parrilla)                                           # parrilla
+    varios(g, f, [(-20, 5, 24), (14, 5, 24)], (6, 3, 2), flat(RED_D))               # pilotos traseros
+    c((-23, 9, 22), (2, 19, 2), flat(CHROME))                                       # antena con banderin rosa
+    c((-22.5, 21, 13), (1, 6, 10), bandera)
+    varios(g, f, [(x0, 0, z0) for x0 in (-30, 24) for z0 in (-30, 8)], (6, 12, 12), rueda)                       # cuatro ruedas
+    varios(g, f, [(xh, 3, z0 + 3) for xh in (-31, 30) for z0 in (-30, 8)], (1, 6, 6), flat(YELLOW))             # tapacubos amarillos (salen 1 por fuera)
+    return []
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -228,6 +261,7 @@ ACCESORIOS = {
         cube(g, f, 'acc_pirate', (-5, 33, -14.5), (10, 5, 3), flat((60, 52, 70))),
         cube(g, f, 'acc_pirate', (-3, 33.5, -15), (6, 4, 1), skull)],
     'suit': lambda g, f: traje(g, f),
+    'cart': lambda g, f: carrito(g, f),
 }
 
 def main():

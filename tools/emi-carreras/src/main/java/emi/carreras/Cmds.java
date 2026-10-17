@@ -21,9 +21,28 @@ public final class Cmds {
         var root = CommandManager.literal("carrera");
         // --- jugadores
         root.then(CommandManager.literal("unirse").executes(c -> con(c, () -> Carrera.unirse(c.getSource().getPlayerOrThrow()))));
-        root.then(CommandManager.literal("salir").executes(c -> con(c, () -> Carrera.salir(c.getSource().getPlayerOrThrow()))));
+        root.then(CommandManager.literal("entrar").executes(c -> con(c, () -> Sala.entrar(c.getSource().getPlayerOrThrow()))));
+        root.then(CommandManager.literal("menu").executes(c -> con(c, () -> { var p = c.getSource().getPlayerOrThrow(); if (!Sala.enSala(p)) return "Solo se abre dentro de la sala de carreras (/carrera entrar)."; Menu.abrir(p, "jugar"); return null; })));
+        // salir: si estas apuntado a una carrera te baja de ella; si no, sales de la sala y vuelves a tu sitio
+        root.then(CommandManager.literal("salir").executes(c -> con(c, () -> {
+            var p = c.getSource().getPlayerOrThrow();
+            if (Carrera.corr.containsKey(p.getUuid())) return Carrera.salir(p);
+            return Sala.salir(p);
+        })));
         root.then(CommandManager.literal("elegir").then(CommandManager.argument("hueco", IntegerArgumentType.integer(1, 6))
                 .executes(c -> con(c, () -> Carrera.elegir(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "hueco"))))));
+        root.then(CommandManager.literal("crear").executes(c -> con(c, () -> Carrera.crearDesdeSala(c.getSource().getPlayerOrThrow(), Carrera.pistaPorDefecto(), false), "Carrera abierta."))
+                .then(CommandManager.argument("pista", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(Carrera.ids(), b))
+                        .executes(c -> con(c, () -> Carrera.crearDesdeSala(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "pista"), false), "Carrera abierta."))));
+        root.then(CommandManager.literal("entrenar").executes(c -> con(c, () -> Carrera.crearDesdeSala(c.getSource().getPlayerOrThrow(), Carrera.pistaPorDefecto(), true)))
+                .then(CommandManager.argument("pista", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(Carrera.ids(), b))
+                        .executes(c -> con(c, () -> Carrera.crearDesdeSala(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "pista"), true)))));
+        root.then(CommandManager.literal("listo").executes(c -> con(c, () -> Carrera.marcarListo(c.getSource().getPlayerOrThrow(), true))));
+        root.then(CommandManager.literal("nolisto").executes(c -> con(c, () -> Carrera.marcarListo(c.getSource().getPlayerOrThrow(), false))));
+        root.then(CommandManager.literal("lanzar").executes(c -> con(c, () -> Carrera.empezarDesdeSala(c.getSource().getPlayerOrThrow(), Perm.admin(c.getSource())))));
+        root.then(CommandManager.literal("cancelar").executes(c -> con(c, () -> Carrera.cancelarDesdeSala(c.getSource().getPlayerOrThrow(), Perm.admin(c.getSource())))));
         root.then(CommandManager.literal("estado").executes(Cmds::estado));
         root.then(CommandManager.literal("ayuda").executes(Cmds::ayuda));
         root.executes(Cmds::ayuda);
@@ -47,6 +66,7 @@ public final class Cmds {
         }, "Hecho."))));
         root.then(admin("_poder").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.word())
                 .executes(c -> con(c, () -> Carrera.probar(c.getSource().getPlayerOrThrow(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre")), "Poder dado."))));
+        root.then(admin("_meta").executes(c -> con(c, () -> Carrera.probarMeta(c.getSource().getPlayerOrThrow()), "Meta cruzada.")));
         root.then(admin("_estrellas").then(CommandManager.argument("cantidad", IntegerArgumentType.integer(1, 50))
                 .executes(c -> con(c, () -> Carrera.probarEstrellas(c.getSource().getPlayerOrThrow(), IntegerArgumentType.getInteger(c, "cantidad")), "Michiestrellitas dadas."))));
         d.register(root);
@@ -85,7 +105,7 @@ public final class Cmds {
     }
 
     private static int ayuda(CommandContext<ServerCommandSource> c) {
-        String[] l = {"/carrera unirse · /carrera salir · /carrera elegir <1-6> · /carrera estado",
+        String[] l = {"/carrera entrar (la sala de carreras) · /carrera unirse · /carrera salir · /carrera elegir <1-6> · /carrera estado",
                 "Corres con uno de tus Pokémon terrestres (todos igual de rápidos). Pasa por todos los puntos de control.",
                 "Recoge los huevos misteriosos y usa el poder con clic derecho (agáchate para tirarlo hacia atrás).",
                 "Organizador: /carrera abrir [pista] · pistas · empezar · parar · cerrar · expulsar <jugador> · instalar · recargar"};
