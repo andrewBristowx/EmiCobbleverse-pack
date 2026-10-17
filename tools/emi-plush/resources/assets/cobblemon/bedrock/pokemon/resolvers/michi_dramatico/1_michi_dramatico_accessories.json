@@ -92,6 +92,12 @@
         "suit-accessory"
       ],
       "model": "cobblemon:michi_dramatico_suit.geo"
+    },
+    {
+      "aspects": [
+        "cart-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_cart.geo"
     }
   ]
 }

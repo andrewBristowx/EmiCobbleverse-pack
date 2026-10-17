@@ -165,12 +165,14 @@ for acc, fn, es, en in ACC:
     MICHI.append((f'gatitoalien_gold_{acc}', acc, True, f'GatitoAlien Dorado {es}' if es.startswith('con ') else f'GatitoAlien {es} Dorado', f'Golden GatitoAlien {en}'))
 # el peluche de Ms. President (el GatitoAlien con traje y maletin): no es una forma Pokemon, asi que no sale de ACC; lo vende la tienda de emi-survivors (1000 michiestrellitas, una vez)
 MICHI.append(('gatitoalien_suit', 'suit', False, 'Ms. President', 'Ms. President'))
+# el peluche exclusivo de la tienda de emi-carreras (1000 estrellas, una vez): el Michialien en un carrito de juguete; tampoco es forma Pokemon ni sale en el gasha
+MICHI.append(('gatitoalien_carrito', 'cart', False, 'Michialien en Carrito', 'Michialien in a Toy Car'))
 MICHI_NOMBRES = [(i, es, en) for i, _, _, es, en in MICHI]
 IDS = [f'{sp}_emi' for sp, *_ in ESPECIES] + [i for i, *_ in MICHI]
 KU = 4
 # Peluches GIGANTES (solo la familia del GatitoAlien): mismo modelo y textura que el peluche normal, dibujados al doble (como los gigantes de Pokeblocks).
 # id gigante_<id> -> modelo base. La clase de su entidad de bloque lleva «Gigantic» en el nombre: Pokeblocks usa eso para darles su forma grande.
-GIGANTES = [('gigante_michi_dramatico', 'michi_dramatico')] + [(f'gigante_{i}', i) for i, *_ in MICHI if i != 'gatitoalien_suit']
+GIGANTES = [('gigante_michi_dramatico', 'michi_dramatico')] + [(f'gigante_{i}', i) for i, *_ in MICHI if i not in ('gatitoalien_suit', 'gatitoalien_carrito')]
 ESCALA_GIGANTE = 2.0
 
 def build_michi(ident, acc, dorado):
