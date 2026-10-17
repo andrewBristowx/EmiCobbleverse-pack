@@ -827,6 +827,8 @@ final class Equipo {
         tesoros.limpiar();
         Marcas.quitarTodas(this);
         for (Run m : miembros) m.proyectiles.clear();
+        try { int n = Arena.barrer(w, slot); if (n > 0) EmiSurvivors.LOG.info("Arena {} limpia: {} entidades sueltas quitadas al acabar.", slot, n); }   // nada de esta partida (enemigos, objetos, experiencia) queda para la siguiente
+        catch (Throwable t) { EmiSurvivors.LOG.warn("No se pudo barrer la arena {}: {}", slot, t.toString()); }
     }
 
     boolean hayMedidaEstable() { return nEstable > 0; }
