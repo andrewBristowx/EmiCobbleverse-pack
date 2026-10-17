@@ -1,0 +1,18 @@
+{
+  "type": "emi_survivors:arena_cosmos",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "emi_survivors:cosmos",
+      "features": false,
+      "lakes": false,
+      "layers": [
+        {
+          "block": "minecraft:air",
+          "height": 1
+        }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

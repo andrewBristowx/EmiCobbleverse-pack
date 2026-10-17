@@ -1,0 +1,6 @@
+# duracion de cada bucle de musica en ticks (la copia de Sonidos.java tiene que coincidir)
+bosque=1280
+cosmos=1536
+jefe=1024
+pradera=1200
+sala=1600
