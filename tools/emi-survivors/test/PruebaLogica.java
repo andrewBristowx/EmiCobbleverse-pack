@@ -22,7 +22,7 @@ public final class PruebaLogica {
     }
 
     public static void main(String[] args) throws Exception {
-        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos();
+        curvas(); catalogo(); iconos(); cartas(); objetos(); jefes(); mareas(); meta(); datos(); grupos(); biomas(); periodos(); retos(); tienda(); clima(); grietas(); sentencia(); eventos(); tesoros();
         System.out.println(fallos == 0 ? "\nTODO BIEN" : "\nFALLOS: " + fallos);
         System.exit(fallos == 0 ? 0 : 1);
     }
@@ -628,6 +628,15 @@ public final class PruebaLogica {
         Retos.aplicar(j, new Retos.Partida(100, 10, 3, 0, "pradera", 1, 0, "eevee", 0, 0, 0, 6), System.currentTimeMillis(), java.time.ZoneId.of("Europe/Madrid"));
         ok(j.doradosTotal == 6 && j.logros.getOrDefault("dorado", 0) == 2, "logro Cazamichis: 6 dorados = 2 escalones (1 y 5)");
         System.out.println("  eventos: bien");
+    }
+
+    static void tesoros() {
+        System.out.println("== tesoros");
+        ok(Tesoros.vida(0) == 30 && Tesoros.vida(800) == 130, "la vida del tesoro pequeño sube con el tiempo");
+        ok(Tesoros.cofresQueTocan(44) == 0 && Tesoros.cofresQueTocan(45) == 1 && Tesoros.cofresQueTocan(144) == 1 && Tesoros.cofresQueTocan(145) == 2, "el primer cofre a los 45 s y otro cada 100 s");
+        ok(Tesoros.segundoCofre(0) == 45 && Tesoros.segundoCofre(2) == 245, "segundo del cofre n");
+        ok(Tesoros.PEQUENOS >= 8 && Tesoros.CARGA_COFRE >= 60 && Tesoros.DURACION_COFRE_SEG * 20 > Tesoros.CARGA_COFRE, "numeros razonables (da tiempo a abrirlo en solitario)");
+        System.out.println("  tesoros: bien");
     }
 
     static Retos.Prog prog(String id) { Retos.Prog p = new Retos.Prog(); p.id = id; return p; }

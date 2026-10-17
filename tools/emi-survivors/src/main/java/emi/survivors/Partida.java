@@ -519,6 +519,7 @@ public final class Partida {
                 if (ev == null) return "Eventos: lluvia_estrellas, hora_dorada, regalo_emi, michi_dorado.";
                 if (!r.eq.evento.forzar(ev)) return "Ya hay un evento en marcha.";
             }
+            case "cofre" -> { return r.eq.tesoros.forzarCofre() ? null : "Ya hay un cofre grande."; }
             case "sentencia" -> { r.eq.sentencia.empezar(); }
             case "grieta" -> { return r.eq.grieta.forzar() ? null : "Ya hay una grieta abierta (entra en ella para abrirla)."; }
             case "shiny" -> { return r.eq.devShiny(r) ? null : "No se pudo crear el shiny."; }

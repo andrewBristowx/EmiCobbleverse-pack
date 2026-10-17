@@ -481,8 +481,9 @@ final class Run {
         Enemigo leg = hayJefe ? null : eq.grieta.legendarioVivo();
         boolean sent = eq.sentencia.activa();
         String gr = eq.grieta.texto(this);
-        String evento = sent ? eq.sentencia.texto() : eq.marea != null ? eq.marea.titulo() : !gr.isEmpty() ? gr : eq.evento.texto();
-        int eventoSeg = sent ? eq.sentencia.segundosRestantes() : eq.marea != null ? eq.marea.segundosRestantes() : !gr.isEmpty() ? eq.grieta.segundosRestantes() : eq.evento.segundosRestantes();
+        String cf = eq.tesoros.texto(this);
+        String evento = sent ? eq.sentencia.texto() : eq.marea != null ? eq.marea.titulo() : !gr.isEmpty() ? gr : !cf.isEmpty() ? cf : eq.evento.texto();
+        int eventoSeg = sent ? eq.sentencia.segundosRestantes() : eq.marea != null ? eq.marea.segundosRestantes() : !gr.isEmpty() ? eq.grieta.segundosRestantes() : !cf.isEmpty() ? eq.tesoros.segundosRestantes() : eq.evento.segundosRestantes();
         ServerPlayNetworking.send(p, new EstadoPayload(true, (int) Math.max(0, Math.ceil(hp)), (int) Math.round(st.hpMax), segundos(), enemigos.size(), eq.derrotados, nivel, xp, xpSig, esperandoCarta,
                 hayJefe ? j.nombre : leg != null ? eq.grieta.nombreLegendario() : "", hayJefe ? (int) Math.max(0, Math.ceil(j.en.hp)) : leg != null ? (int) Math.max(0, Math.ceil(leg.hp)) : 0, hayJefe ? (int) Math.round(j.en.hpMax) : leg != null ? (int) Math.round(leg.hpMax) : 0, listaArmas(), listaPasivas(), eq.med.msptServidor(), eq.med.msNuestro(),
                 estado == CAIDO, estado == CAIDO ? Math.min(100, reviveT * 100 / Equipo.REVIVIR_TICKS) : 0, eq.companerosDe(this),

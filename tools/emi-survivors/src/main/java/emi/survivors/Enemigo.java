@@ -37,6 +37,7 @@ final class Enemigo {
     int rumboT;                 // estampida: si es > 0 sigue la direccion (rdx, rdz) y no persigue; al llegar a 0 desaparece sin soltar nada
     double rdx, rdz;
     boolean huye, dorado;        // el Michialien dorado de un evento: huye del jugador mas cercano, no hace dano y suelta un tesoro grande
+    boolean tesoro;             // un tesoro pequeño: enemigo-sombra invisible que no se mueve ni hace daño y que se rompe con los ataques (ver Tesoros)
     boolean legendario;         // el legendario que sale de una grieta (ver Grietas)
     boolean shiny;              // un variocolor: mas vida y experiencia, suelta un objeto seguro y cuenta como shiny derrotado
     boolean sinBotin;           // desaparece sin soltar gemas ni contar como derrotado

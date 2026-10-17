@@ -109,6 +109,11 @@ final class Equipo {
     final SentenciaEquipo sentencia = new SentenciaEquipo(this);
     /** Los eventos cortos de la partida (ver {@link Eventos}). */
     final EventoEquipo evento = new EventoEquipo(this);
+    /** Tesoros pequeños y cofres grandes del mapa (ver {@link Tesoros}). */
+    final TesorosEquipo tesoros = new TesorosEquipo(this);
+
+    /** ¿Ya no salen cosas nuevas (la Sentencia ha empezado)? */
+    boolean mundoCerrado() { return Sentencia.toca(tick / 20.0); }
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
     String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
@@ -180,7 +185,7 @@ final class Equipo {
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && enemigos.size() < meta; k++) if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
         } else {
             double fm = marea != null && marea.enemigosPropios() ? 1.25 : 1.0;
-            int cap = (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
+            int cap = tesoros.cantidad() + (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
             presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * (marea == null ? 1.0 : marea.factorRitmo()) * (sentencia.activa() ? Sentencia.RITMO : 1.0) / 20.0);
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && presupuesto >= 1.0 && enemigos.size() < cap; k++) {
                 if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
@@ -197,13 +202,14 @@ final class Equipo {
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
-        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); sentencia.tick(tick); evento.tick(tick); }
+        if (fijo == 0) { clima.tick(tick); grieta.tick(tick); sentencia.tick(tick); evento.tick(tick); tesoros.tick(tick); }
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
         for (Run m : miembros) if (m.iframes > 0) m.iframes--;
         for (Enemigo en : enemigos) {
             if (jefe != null && en == jefe.en) continue;
+            if (en.tesoro) continue;                                                       // un tesoro pequeño: no se mueve
             if (en.shiny && tick % 5 == 0) w.spawnParticles(ParticleTypes.END_ROD, en.e.getX(), en.e.getY() + en.radio * 2.2, en.e.getZ(), 2, 0.35, 0.45, 0.35, 0.02);          // el brillo de los shinies
             if (en.rumboT > 0) { en.correr(); continue; }                                  // estampida: sigue su carril
             if (en.huye) { Run cerca = masCercano(objetivos, en.e.getX(), en.e.getZ()); if (cerca != null) en.huir(cerca.pp.x, cerca.pp.z, ox, oz, Arena.RADIO); continue; }       // el Michialien dorado: huye
@@ -215,6 +221,7 @@ final class Equipo {
         if (jefe != null && jefe.vivo()) jefe.tick(objetivos);
         tickBombas(objetivos);
         for (Enemigo en : enemigos) {
+            if (en.tesoro) continue;
             if (en.cdContacto > 0) en.cdContacto--;
             if (en.cdContacto > 0) continue;
             for (Run m : objetivos) {
@@ -606,6 +613,7 @@ final class Equipo {
     private void muerte(Enemigo en) {
         double x = en.e.getX(), y = en.e.getY(), z = en.e.getZ();
         if (en.sinBotin) { en.quitar(); return; }                    // un corredor de la estampida que llego al final: se va sin mas
+        if (en.tesoro) { en.quitar(); tesoros.alRomper(en, x, z); return; }       // un tesoro pequeño roto: no cuenta como derrotado
         w.spawnParticles(ParticleTypes.POOF, x, y + 0.5, z, en.grande() ? 25 : 6, 0.3, 0.3, 0.3, 0.02);
         en.quitar();
         derrotados++;
@@ -699,6 +707,7 @@ final class Equipo {
         clima.limpiar();
         grieta.limpiar();
         evento.limpiar();
+        tesoros.limpiar();
         Marcas.quitarTodas(this);
         for (Run m : miembros) m.proyectiles.clear();
     }
