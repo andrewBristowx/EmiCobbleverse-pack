@@ -13,6 +13,7 @@ public final class Corredor {
     public int slot = 0;                 // hueco elegido del equipo (1..6); 0 = aun no ha elegido
     public Pokemon pokemon;              // el Pokemon elegido (o prestado)
     public boolean prestado;
+    public boolean listo;                // ha pulsado «listo» en la sala (cuando lo estan todos, la carrera sale sola)
     public PokemonEntity visual;
     public int hueco;                    // posicion en la parrilla
 
@@ -30,6 +31,7 @@ public final class Corredor {
     public Poder poder;
     public boolean mejorado;             // el poder que lleva esta mejorado (10 michiestrellitas)
     public int estrellas;                // michiestrellitas que lleva
+    public int recogidas, golpesDados, golpesRecibidos;   // de esta carrera: michiestrellitas recogidas (todas), golpes acertados y recibidos (para las estrellas y los logros)
     public int escudoHasta, paradoHasta, lentoHasta, turboHasta, ciegoHasta, golpeInmuneHasta, usoCooldown;
     public double lentoFactor, turboFactor;
     public double ultimoModificador = Double.NaN;

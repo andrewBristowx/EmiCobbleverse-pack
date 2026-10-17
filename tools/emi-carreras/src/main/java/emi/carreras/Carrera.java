@@ -76,6 +76,14 @@ public final class Carrera {
     static final List<Fijo> fijos = new ArrayList<>();
     static final Corredor PELIGRO = new Corredor(new UUID(0, 0), "un Voltorb");
     static String musicaActual; static int musicaProx;
+    static Datos datos;                                   // estrellas, estadisticas y tiempos de los jugadores (se carga al arrancar)
+    static boolean entrenamiento;                         // la carrera en marcha es un entrenamiento en solitario
+    static int jugadoresAlEmpezar;
+    static UUID anfitrion;                                // quien abrio la carrera desde la sala (el que la empieza); null si la abrio un organizador con /carrera abrir
+    static int listosDesde = -1;                          // tick desde el que estan todos listos (cuenta atras para empezar solos)
+    static int cambios;                                   // sube con cada cambio de la cola: asi el menu sabe cuando refrescarse
+    static final int ESPERA_LISTOS = 160;                 // 8 s desde que estan todos listos hasta que sale la carrera
+    static final Map<UUID, String> resultados = new HashMap<>();       // lo que se ensena a cada jugador en el menu al volver a la sala
     static final Map<String, Integer> DURACION_MUSICA = Map.of("circuito", 1024, "volcan", 800, "emi", 1200);
     static final Map<String, Integer> NOMBRES = new HashMap<>();
 
@@ -84,6 +92,7 @@ public final class Carrera {
     public static void init(MinecraftServer s) {
         server = s;
         cfg = Cfg.load();
+        datos = new Datos(s.getSavePath(WorldSavePath.ROOT).resolve("emi_carreras"));
         Montura.alturaBase = cfg.alturaPokemon;
         pista = Pista.cargar(cfg.pista);
         if (pista == null) EmiCarreras.LOG.error("No hay pista valida ({}): el minijuego no se podra usar", cfg.pista);
@@ -182,6 +191,9 @@ public final class Carrera {
 
     // ------------------------------------------------------------------ cola
 
+    /** La pista de la configuracion (la de siempre si no esta entre las elegibles). */
+    static String pistaPorDefecto() { return cfg != null && ids().contains(cfg.pista) ? cfg.pista : (ids().isEmpty() ? "" : ids().get(0)); }
+
     /** Ids de las pistas que se pueden elegir. */
     public static List<String> ids() {
         if (cfg == null) return List.of();
@@ -208,12 +220,21 @@ public final class Carrera {
         if (fase != Fase.LIBRE) return "Ya hay una carrera en marcha o la cola ya esta abierta.";
         corr.clear();
         fase = Fase.COLA;
+        anfitrion = null; entrenamiento = false; listosDesde = -1; cambios++;
         tickAviso = ahora();
         anunciar();
         return null;
     }
 
     static void anunciar() {
+        if (anfitrion != null) {       // abierta desde la sala: se invita a entrar a la sala (los que ya estan dentro la ven en el menu)
+            Corredor h = corr.get(anfitrion);
+            Text t = Text.empty().append(Msg.PREFIX)
+                    .append(Text.literal((h == null ? "Alguien" : h.nombre) + " ha abierto una carrera en «" + pista.nombre + "». ").formatted(Formatting.YELLOW))
+                    .append(Msg.button("ENTRAR A LA SALA", "/carrera entrar", Formatting.GREEN, "Ir a la sala de carreras y apuntarte"));
+            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) if (!Sala.enSala(p) && !corr.containsKey(p.getUuid())) p.sendMessage(t, false);
+            return;
+        }
         Text t = Text.empty().append(Msg.PREFIX)
                 .append(Text.literal("¡Carrera de Pokémon en «" + pista.nombre + "»! ").formatted(Formatting.YELLOW))
                 .append(Msg.button("UNIRSE", "/carrera unirse", Formatting.GREEN, "Apuntarte a la carrera"));
@@ -224,8 +245,10 @@ public final class Carrera {
 
     public static String cerrarCola() {
         if (fase != Fase.COLA) return "No hay cola abierta.";
-        Msg.broadcast(server, Msg.say("Se ha cerrado la cola de la carrera."));
+        if (anfitrion == null) Msg.broadcast(server, Msg.say("Se ha cerrado la cola de la carrera."));
+        else Msg.broadcastTo(jugadoresSala(), Msg.say("Se ha cancelado la carrera."));
         corr.clear();
+        anfitrion = null; entrenamiento = false; listosDesde = -1; cambios++;
         fase = Fase.LIBRE;
         return null;
     }
@@ -239,10 +262,103 @@ public final class Carrera {
         corr.put(p.getUuid(), c);
         var cand = Montura.candidatos(p);
         cand.stream().filter(Montura.Candidato::valido).findFirst().ifPresent(x -> { c.slot = x.slot(); c.pokemon = x.pokemon(); });
+        cambios++;
+        if (Sala.enSala(p)) {          // desde la sala se ve todo en el menu: nada de listas en el chat
+            for (ServerPlayerEntity o : jugadores()) if (o != p) o.sendMessage(Msg.say(c.nombre + " se ha apuntado (" + corr.size() + ")."), true);
+            return null;
+        }
         p.sendMessage(Msg.say("¡Apuntado! Corredores: " + corr.size() + "/" + cfg.maxPlayers), false);
         mostrarEquipo(p, c, cand);
         for (ServerPlayerEntity o : jugadores()) if (o != p) o.sendMessage(Msg.say(c.nombre + " se ha apuntado (" + corr.size() + ")."), false);
         return null;
+    }
+
+    // ------------------------------------------------------------------ cola desde la sala
+
+    static List<ServerPlayerEntity> jugadoresSala() {
+        List<ServerPlayerEntity> l = new ArrayList<>();
+        if (server != null) for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) if (Sala.enSala(p)) l.add(p);
+        return l;
+    }
+
+    static boolean esAnfitrion(ServerPlayerEntity p) { return anfitrion != null && anfitrion.equals(p.getUuid()); }
+
+    /** Quita a alguien de la cola; si era el anfitrion pasa a serlo el siguiente, y si no queda nadie la carrera se cierra. */
+    static void quitarDeLaCola(UUID id) {
+        if (corr.remove(id) == null) return;
+        cambios++; listosDesde = -1;
+        if (anfitrion == null) return;
+        if (corr.isEmpty()) { cerrarCola(); return; }
+        if (anfitrion.equals(id)) {
+            anfitrion = corr.keySet().iterator().next();
+            ServerPlayerEntity n = server.getPlayerManager().getPlayer(anfitrion);
+            if (n != null) n.sendMessage(Msg.say("Ahora eres el anfitrión de la carrera: tú la empiezas."), false);
+        }
+    }
+
+    /** Desde la sala: abre una carrera en esa pista (quien la abre es el anfitrion y se apunta solo) o, si {@code entrenar}, un entrenamiento en solitario que sale ya. */
+    public static String crearDesdeSala(ServerPlayerEntity p, String id, boolean entrenar) {
+        if (!Sala.enSala(p)) return "Solo se abren desde la sala de carreras (/carrera entrar).";
+        if (fase != Fase.LIBRE) return fase == Fase.COLA ? "Ya hay una carrera abierta: únete a ella." : "Hay una carrera en marcha: espera a que acabe.";
+        if (id == null || id.isBlank() || !ids().contains(id)) return "Esa pista no existe. Pistas: " + String.join(", ", ids());
+        Pista np = pista != null && pista.id.equals(id) ? pista : Pista.cargar(id);
+        if (np == null) return "No se ha podido cargar la pista '" + id + "'.";
+        if (mundo() == null) return "No existe la dimension emi_carreras:pista (¿falta el mod o el datapack?).";
+        pista = np;
+        corr.clear();
+        fase = Fase.COLA;
+        anfitrion = p.getUuid(); entrenamiento = entrenar; listosDesde = -1; cambios++;
+        tickAviso = ahora();
+        String err = unirse(p);
+        if (err == null && entrenar) err = empezar();
+        if (err != null) { corr.clear(); anfitrion = null; entrenamiento = false; fase = Fase.LIBRE; cambios++; return err; }
+        if (!entrenar) anunciar();
+        return null;
+    }
+
+    /** Marca (o desmarca) que el jugador esta listo; cuando lo estan todos (y son al menos 2) la carrera sale sola a los 8 s. */
+    public static String marcarListo(ServerPlayerEntity p, boolean listo) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null || fase != Fase.COLA) return "Solo puedes marcarte listo mientras esperas a que empiece la carrera.";
+        c.listo = listo; cambios++; listosDesde = -1;
+        return null;
+    }
+
+    /** El anfitrion (o un organizador) empieza la carrera. */
+    public static String empezarDesdeSala(ServerPlayerEntity p, boolean admin) {
+        if (fase != Fase.COLA) return "No hay ninguna carrera abierta.";
+        if (!esAnfitrion(p) && !admin) return "Solo el anfitrión puede empezar la carrera.";
+        String r = empezar();
+        if (r == null) cambios++;
+        return r;
+    }
+
+    /** El anfitrion (o un organizador) cancela la carrera abierta. */
+    public static String cancelarDesdeSala(ServerPlayerEntity p, boolean admin) {
+        if (fase != Fase.COLA) return "No hay ninguna carrera abierta.";
+        if (!esAnfitrion(p) && !admin) return "Solo el anfitrión puede cancelar la carrera.";
+        return cerrarCola();
+    }
+
+    /** Cada tick de la cola: si hay al menos 2 corredores y estan todos listos, cuenta atras y sale sola. */
+    static void colaAuto(int now) {
+        if (anfitrion == null || corr.size() < 2) { listosDesde = -1; return; }
+        boolean todos = true;
+        for (Corredor c : corr.values()) if (!c.listo) { todos = false; break; }
+        if (!todos) { listosDesde = -1; return; }
+        if (listosDesde < 0) listosDesde = now;
+        int resta = ESPERA_LISTOS - (now - listosDesde);
+        if (resta > 0) {
+            if (resta % 20 == 0) for (ServerPlayerEntity p : jugadores()) Msg.title(p, Text.literal(String.valueOf(resta / 20)).formatted(Formatting.YELLOW, Formatting.BOLD), Text.literal("¡Todos listos! Sale la carrera...").formatted(Formatting.GRAY), 0, 22, 0);
+            return;
+        }
+        listosDesde = -1;
+        String r = empezar();
+        if (r != null) {
+            Msg.broadcastTo(jugadores(), Msg.err(r));
+            for (Corredor c : corr.values()) c.listo = false;
+            cambios++;
+        } else cambios++;
     }
 
     static void mostrarEquipo(ServerPlayerEntity p, Corredor c, List<Montura.Candidato> cand) {
@@ -269,15 +385,15 @@ public final class Carrera {
         var x = cand.stream().filter(k -> k.slot() == slot).findFirst();
         if (x.isEmpty()) return "No tienes ningún Pokémon en el hueco " + slot + ".";
         if (!x.get().valido()) return "Ese Pokémon no es terrestre (vuela o no camina): elige otro.";
-        c.slot = slot; c.pokemon = x.get().pokemon(); c.prestado = false;
-        mostrarEquipo(p, c, cand);
+        c.slot = slot; c.pokemon = x.get().pokemon(); c.prestado = false; cambios++;
+        if (!Sala.enSala(p)) mostrarEquipo(p, c, cand);
         return null;
     }
 
     public static String salir(ServerPlayerEntity p) {
         Corredor c = corr.get(p.getUuid());
         if (c == null) return "No estas apuntado.";
-        if (fase == Fase.COLA) { corr.remove(p.getUuid()); p.sendMessage(Msg.say("Te has bajado de la carrera."), false); return null; }
+        if (fase == Fase.COLA) { quitarDeLaCola(p.getUuid()); p.sendMessage(Msg.say("Te has bajado de la carrera."), false); return null; }
         if (fase == Fase.FIN) return "La carrera ya ha terminado.";
         abandonar(c, p, "ha abandonado la carrera");
         return null;
@@ -302,10 +418,12 @@ public final class Carrera {
         equipo();
         for (Corredor c : orden) {
             ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
-            try { Saved.save(server, p); }
+            try { if (!(Saved.exists(server, c.id) && Saved.enLobby(server, c.id))) Saved.save(server, p); }          // desde la sala ya esta guardado lo de antes de entrar
             catch (RuntimeException e) { return "No se pudo guardar el inventario de " + c.nombre + ": la carrera no empieza (nada ha cambiado)."; }
         }
         vueltasTotal = totalVueltas();
+        jugadoresAlEmpezar = orden.size();
+        resultados.clear();
         llegada.clear();
         podioTick = null;
         for (Corredor c : orden) {
@@ -313,7 +431,7 @@ public final class Carrera {
             if (c.pokemon == null) { c.pokemon = prestar(); c.prestado = true; p.sendMessage(Msg.say("Corres con un Pokémon prestado: " + c.pokemon.getSpecies().getName() + "."), false); }
             double[] g = pista.parrilla[c.hueco];
             c.reaparicion = new Vec3d(g[0], g[1], g[2]); c.reaparicionYaw = (float) g[3];
-            c.vuelta = 0; c.siguiente = 1; c.finTick = -1; c.tiemposVuelta = new int[vueltasTotal]; c.abandono = false;
+            c.vuelta = 0; c.siguiente = 1; c.finTick = -1; c.tiemposVuelta = new int[vueltasTotal]; c.abandono = false; c.recogidas = c.golpesDados = c.golpesRecibidos = 0;
             c.poder = null; c.mejorado = false; c.estrellas = 0; c.escudoHasta = c.paradoHasta = c.lentoHasta = c.turboHasta = c.ciegoHasta = c.golpeInmuneHasta = 0; c.ultimoModificador = Double.NaN; c.previa = null;
             p.getInventory().clear();
             p.clearStatusEffects();
@@ -375,7 +493,9 @@ public final class Carrera {
         if (fase == Fase.LIBRE) { if (s.getTicks() % 200 == 0 && mundo() != null) limpiarEntidades(); return; }
         int now = ahora();
         if (fase == Fase.COLA) {
-            corr.values().removeIf(c -> server.getPlayerManager().getPlayer(c.id) == null);
+            for (UUID id : new ArrayList<>(corr.keySet())) if (server.getPlayerManager().getPlayer(id) == null) quitarDeLaCola(id);
+            if (fase != Fase.COLA) return;
+            colaAuto(now);
             if (cfg.queueReminderSeconds > 0 && now - tickAviso >= cfg.queueReminderSeconds * 20) { tickAviso = now; anunciar(); }
             return;
         }
@@ -763,7 +883,7 @@ public final class Carrera {
         c.abandono = true;
         if (c.visual != null) { c.visual.discard(); c.visual = null; }
         Msg.broadcastTo(jugadores(), Msg.say(c.nombre + " " + motivo + "."));
-        if (p != null) { soltar(p.getNameForScoreboard()); Saved.restore(server, p); }
+        if (p != null) { soltar(p.getNameForScoreboard()); p.setGlowing(false); Sala.devolver(server, p, null); }
         // si se desconecto, se le devuelve lo suyo al volver a entrar (Saved queda en disco)
     }
 
@@ -847,11 +967,37 @@ public final class Carrera {
             for (ServerPlayerEntity p : jugadores()) Msg.title(p, Text.literal("🏆 " + g.nombre).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("¡ha ganado la carrera!").formatted(Formatting.YELLOW), 5, 80, 20);
             if (pg != null && pista.podio != null) fuegos(pg);
         }
-        for (ServerPlayerEntity p : jugadores()) p.sendMessage(Msg.say("En unos segundos volverás a donde estabas."), false);
+        try { apuntarResultados(orden); } catch (Throwable t) { EmiCarreras.LOG.error("No se pudieron apuntar los resultados", t); }
+        for (ServerPlayerEntity p : jugadores()) p.sendMessage(Msg.say("En unos segundos volverás " + (Saved.exists(server, p.getUuid()) && Saved.enLobby(server, p.getUuid()) ? "a la sala." : "a donde estabas.")), false);
         // quitar proyectiles y trampas
         limpiarEntidades(false);
         // los que no han llegado van al podio tambien
         for (Corredor c : corr.values()) if (c.finTick < 0 && !c.abandono) podioPendiente.put(c.id, ahora() + 20);
+    }
+
+    /** Apunta la carrera de cada corredor (estrellas, logros y tiempos) y deja preparado lo que se le ensena en el menu al volver a la sala. */
+    static void apuntarResultados(List<Corredor> orden) {
+        if (datos == null) return;
+        int dur = Math.max(0, ahora() - tickInicio);
+        int llegados = 0;
+        for (Corredor c : orden) {
+            boolean terminada = c.finTick >= 0;
+            if (terminada) llegados++;
+            if (c.abandono) continue;
+            int puesto = terminada ? llegados : 0;                         // los que no terminan van detras de todos los que llegaron
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(c.id);
+            Datos.Jugador j = datos.jugador(c.id, c.nombre);
+            String especie = c.pokemon == null ? "" : c.pokemon.getSpecies().getResourceIdentifier().getPath();
+            boolean primera = terminada && !j.mejores.containsKey(pista.id);
+            boolean record = terminada && datos.registrarTiempo(c.id, c.nombre, pista.id, c.finTick, especie, System.currentTimeMillis());
+            var res = Logros.aplicar(j, new Logros.Carrera(pista.id, especie, puesto, jugadoresAlEmpezar, entrenamiento, c.recogidas, c.golpesDados, c.golpesRecibidos, c.finTick, dur, "gatitoalien".equals(especie)), record, primera);
+            datos.guardar(c.id);
+            resultados.put(c.id, Menu.resultado(pista.nombre, entrenamiento, puesto, jugadoresAlEmpezar, terminada ? c.finTick : -1, record, res, j.estrellas));
+            if (p != null) {
+                if (res.total() > 0) p.sendMessage(Msg.say(Text.literal("Ganas " + res.total() + " estrellas ★ (tienes " + j.estrellas + ").").formatted(Formatting.GOLD)), false);
+                for (String l : res.lineas) p.sendMessage(Text.literal("   " + l).formatted(Formatting.YELLOW), false);
+            }
+        }
     }
 
     static void fuegos(ServerPlayerEntity p) {
@@ -966,11 +1112,12 @@ public final class Carrera {
                 if (p != null) {
                     soltar(p.getNameForScoreboard());
                     p.setGlowing(false); if (p.hasVehicle() && c.asiento != null) p.stopRiding();
-                    if (!Saved.restore(server, p)) EmiCarreras.LOG.warn("{} no tenia nada guardado que devolver", c.nombre);
+                    if (!Saved.exists(server, c.id)) EmiCarreras.LOG.warn("{} no tenia nada guardado que devolver", c.nombre);
+                    else Sala.devolver(server, p, resultados.get(c.id));
                 }
             } catch (Throwable t) { EmiCarreras.LOG.error("No se pudo devolver a {} a su sitio (se le devolvera al volver a entrar)", c.nombre, t); }
         }
-        corr.clear(); llegada.clear(); podioPendiente.clear();
+        corr.clear(); llegada.clear(); podioPendiente.clear(); resultados.clear(); entrenamiento = false;
         try { limpiarEntidades(); } catch (Throwable t) { EmiCarreras.LOG.error("limpiando entidades", t); }
         try { Team t = sb().getTeam("emi_carrera"); if (t != null) sb().removeTeam(t); } catch (Throwable t) { EmiCarreras.LOG.debug("{}", t.toString()); }
         fase = Fase.LIBRE;
@@ -1002,11 +1149,19 @@ public final class Carrera {
         if (!Saved.exists(server, p.getUuid())) return;
         Corredor c = corr.get(p.getUuid());
         if (c != null && !c.abandono && (fase == Fase.CUENTA || fase == Fase.CARRERA || fase == Fase.FIN)) return;   // sigue en la carrera
-        if (Saved.restore(server, p)) p.sendMessage(Msg.say("Se te ha devuelto lo que tenías antes de la carrera."), false);
+        Sala.alEntrar(p);
+    }
+
+    /** Quita al jugador de la cola de la carrera (o lo retira si ya habia empezado): al irse de la sala. */
+    static void sacarDeLaCola(ServerPlayerEntity p) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null) return;
+        if (fase == Fase.COLA) quitarDeLaCola(p.getUuid());
+        else if (fase != Fase.FIN && !c.abandono) abandonar(c, p, "ha abandonado la carrera");
     }
 
     public static void alSalir(ServerPlayerEntity p) {
-        if (fase == Fase.COLA) corr.remove(p.getUuid());
+        if (fase == Fase.COLA) quitarDeLaCola(p.getUuid());
     }
 
     // ------------------------------------------------------------------ pista (instalacion de la plantilla)
@@ -1172,6 +1327,7 @@ public final class Carrera {
     /** Suma michiestrellitas y, si llega a la meta, mejora el poder. */
     static void ganarEstrellas(Corredor c, ServerPlayerEntity p, int n) {
         c.estrellas += n;
+        c.recogidas += n;
         float tono = 1.0f + Math.min(1.0f, c.estrellas / (float) Math.max(1, cfg.estrellasMejora)) * 0.9f;       // suena mas agudo cuanto mas cerca de la meta
         Msg.sound(p, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, tono);
         sfx(p, SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT, 0.7f, tono);
@@ -1208,6 +1364,15 @@ public final class Carrera {
         p.sendMessage(Msg.say(motivo + ": pierdes " + perdidas + " michiestrellita" + (perdidas == 1 ? "" : "s") + "."), true);
         sfx(p, SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK, 0.8f, 0.8f);
         mundo().spawnParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 1.4, p.getZ(), 12, 0.4, 0.4, 0.4, 0.15);
+    }
+
+    /** SOLO PRUEBAS (comando _meta, para el organizador): el corredor cruza la meta ahora mismo. */
+    public static String probarMeta(ServerPlayerEntity p) {
+        Corredor c = corr.get(p.getUuid());
+        if (c == null || fase != Fase.CARRERA) return "Solo durante la carrera (cuando acabe la cuenta atrás).";
+        if (c.finTick >= 0) return "Ya has llegado.";
+        terminar(p, c, Math.max(1, ahora() - tickInicio));
+        return null;
     }
 
     /** SOLO PRUEBAS (comando _estrellas, para el organizador): da michiestrellitas. */
@@ -1456,6 +1621,8 @@ public final class Carrera {
         Msg.title(pv, Text.literal("¡Golpe!").formatted(Formatting.RED, Formatting.BOLD), Text.literal(autor.nombre + " " + que).formatted(Formatting.GRAY), 0, 25, 5);
         Msg.sound(pv, SoundEvents.ENTITY_GENERIC_HURT, 1f, 0.8f);
         w.spawnParticles(ParticleTypes.CRIT, pv.getX(), pv.getY() + 1, pv.getZ(), 15, 0.4, 0.5, 0.4, 0.2);
+        v.golpesRecibidos++;
+        if (autor != PELIGRO) autor.golpesDados++;
         perderEstrellas(v, pv, "Golpe");
         ServerPlayerEntity pa = server.getPlayerManager().getPlayer(autor.id);
         if (pa != null && !tipo.equals("trueno") && !tipo.equals("ovni") && !tipo.equals("bostezo") && !tipo.equals("tinta")) pa.sendMessage(Msg.say("¡Has alcanzado a " + v.nombre + "!"), false);
