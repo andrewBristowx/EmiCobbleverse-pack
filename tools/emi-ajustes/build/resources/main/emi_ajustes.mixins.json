@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "emi.ajustes.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "emi-ajustes-refmap.json",
+  "mixins": ["AlexandriaGuardadoMixin"],
+  "injectors": { "defaultRequire": 0 }
+}
