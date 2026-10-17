@@ -297,7 +297,10 @@ public final class Carrera {
     }
 
     /** Desde la sala: abre una carrera en esa pista (quien la abre es el anfitrion y se apunta solo) o, si {@code entrenar}, un entrenamiento en solitario que sale ya. */
-    public static String crearDesdeSala(ServerPlayerEntity p, String id, boolean entrenar) {
+    public static String crearDesdeSala(ServerPlayerEntity p, String id, boolean entrenar) { return crearDesdeSala(p, id, entrenar, 0); }
+
+    /** Igual, eligiendo el hueco del equipo ({@code slot} > 0) con el que se corre. */
+    public static String crearDesdeSala(ServerPlayerEntity p, String id, boolean entrenar, int slot) {
         if (!Sala.enSala(p)) return "Solo se abren desde la sala de carreras (/carrera entrar).";
         if (fase != Fase.LIBRE) return fase == Fase.COLA ? "Ya hay una carrera abierta: únete a ella." : "Hay una carrera en marcha: espera a que acabe.";
         if (id == null || id.isBlank() || !ids().contains(id)) return "Esa pista no existe. Pistas: " + String.join(", ", ids());
@@ -310,6 +313,7 @@ public final class Carrera {
         anfitrion = p.getUuid(); entrenamiento = entrenar; listosDesde = -1; cambios++;
         tickAviso = ahora();
         String err = unirse(p);
+        if (err == null && slot > 0) err = elegir(p, slot);
         if (err == null && entrenar) err = empezar();
         if (err != null) { corr.clear(); anfitrion = null; entrenamiento = false; fase = Fase.LIBRE; cambios++; return err; }
         if (!entrenar) anunciar();
@@ -449,6 +453,7 @@ public final class Carrera {
         if (cfg.presentacion) comenzarPresentacion(w, orden);
         if (fase != Fase.PRESENTACION) { fase = Fase.CUENTA; tickCuenta = ahora() + cfg.cuentaAtras * 20; }
         EmiCarreras.LOG.info("Carrera en '{}' con {} corredores y {} vueltas", pista.id, corr.size(), vueltasTotal);
+        cambios++;
         return null;
     }
 
@@ -1117,7 +1122,7 @@ public final class Carrera {
                 }
             } catch (Throwable t) { EmiCarreras.LOG.error("No se pudo devolver a {} a su sitio (se le devolvera al volver a entrar)", c.nombre, t); }
         }
-        corr.clear(); llegada.clear(); podioPendiente.clear(); resultados.clear(); entrenamiento = false;
+        corr.clear(); llegada.clear(); podioPendiente.clear(); resultados.clear(); entrenamiento = false; anfitrion = null; listosDesde = -1; cambios++;
         try { limpiarEntidades(); } catch (Throwable t) { EmiCarreras.LOG.error("limpiando entidades", t); }
         try { Team t = sb().getTeam("emi_carrera"); if (t != null) sb().removeTeam(t); } catch (Throwable t) { EmiCarreras.LOG.debug("{}", t.toString()); }
         fase = Fase.LIBRE;

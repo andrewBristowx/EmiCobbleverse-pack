@@ -76,7 +76,19 @@ public final class Sala {
     }
 
     /** Cada segundo: a quien esta en la sala se le devuelve el objeto del menu si lo ha perdido; a quien se ha ido de la sala sin pasar por SALIR, sus cosas. */
+    private static int ultimosCambios = -1, ultimaCuenta = Integer.MIN_VALUE;
+
+    /** Cada medio segundo: si ha cambiado la carrera (alguien se apunta, elige, esta listo, empieza...), se refresca el menu de todos los que estan en la sala. */
+    private static void empujar(MinecraftServer s) {
+        if (s.getTicks() % 10 != 3) return;
+        int cuenta = Carrera.listosDesde < 0 ? -1 : (Carrera.ESPERA_LISTOS - (Carrera.ahora() - Carrera.listosDesde) + 19) / 20;
+        if (Carrera.cambios == ultimosCambios && cuenta == ultimaCuenta) return;
+        ultimosCambios = Carrera.cambios; ultimaCuenta = cuenta;
+        for (ServerPlayerEntity p : Carrera.jugadoresSala()) if (!Carrera.participa(p)) Menu.actualizar(p);
+    }
+
     static void tick(MinecraftServer s) {
+        if (Carrera.server != null) empujar(s);
         if (s.getTicks() % 20 != 7 || Carrera.server == null) return;
         ServerWorld w = sala();
         if (w != null) {

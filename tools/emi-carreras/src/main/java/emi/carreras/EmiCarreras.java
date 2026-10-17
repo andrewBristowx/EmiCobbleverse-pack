@@ -25,6 +25,9 @@ public class EmiCarreras implements ModInitializer {
     public void onInitialize() {
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.carreras.net.EstadoPayload.ID, emi.carreras.net.EstadoPayload.CODEC);
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.carreras.net.PoderPayload.ID, emi.carreras.net.PoderPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.carreras.net.TextoPayload.ID, emi.carreras.net.TextoPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S().register(emi.carreras.net.AccionPayload.ID, emi.carreras.net.AccionPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(emi.carreras.net.AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Acciones.recibir(ctx.player(), payload)));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(Carrera::init);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Carrera.shutdown());

@@ -43,10 +43,25 @@ public final class EmiCarrerasClient implements ClientModInitializer {
             poder = pl.id().isEmpty() ? null : pl;
             poderDesde = System.currentTimeMillis();
         });
+        ClientPlayNetworking.registerGlobalReceiver(emi.carreras.net.TextoPayload.ID, (pl, ctx) -> ctx.client().execute(() -> menu(pl)));
         ClientTickEvents.END_CLIENT_TICK.register(EmiCarrerasClient::tick);
         HudRenderCallback.EVENT.register(CarrerasHud::render);
         ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> { estado = null; poder = null; restaurar(); });
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(c -> restaurar());
+    }
+
+    /** Los datos del menu de la sala: abrirlo o refrescarlo (vacio = cerrarlo). */
+    private static void menu(emi.carreras.net.TextoPayload p) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        switch (p.tipo()) {
+            case "menu" -> {
+                if (p.json().isEmpty()) { if (mc.currentScreen instanceof MenuPantalla) mc.setScreen(null); }
+                else if (MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), false);
+                else mc.setScreen(new MenuPantalla(p.json()));
+            }
+            case "menu_act" -> { if (!p.json().isEmpty() && MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), true); }
+            default -> { }
+        }
     }
 
     /** La carrera esta en marcha para este cliente (el servidor manda el estado cada ~0,25 s). */
