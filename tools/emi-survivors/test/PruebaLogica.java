@@ -645,6 +645,15 @@ public final class PruebaLogica {
         ok(Mundos.indice("bosque") == 1 && Mundos.indice("nada") == -1, "indice del mundo");
         ok(Mundos.hayOtro(0) && Mundos.hayOtro(1) && !Mundos.hayOtro(2), "tras el cosmos ya no hay otro mundo");
         ok(Mundos.siguiente(0).id().equals("bosque") && Mundos.siguiente(1).id().equals("cosmos"), "el siguiente mundo");
+        // dificultad por mundo: la pradera no cambia nada y cada mundo es mas duro que el anterior
+        ok(Curvas.mundoVida(0) == 1 && Curvas.mundoDano(0) == 1 && Curvas.mundoVel(0) == 1 && Curvas.mundoTope(0) == 1 && Curvas.mundoRitmo(0) == 1 && Curvas.mundoPers(0) == 1 && Curvas.mundoFuerte(0) == 0 && Curvas.eliteCada(0) == Curvas.CADA_ELITE, "la pradera no cambia la dificultad");
+        boolean sube = true;
+        for (int m = 1; m <= 2; m++) sube &= Curvas.mundoVida(m) > Curvas.mundoVida(m - 1) && Curvas.mundoDano(m) > Curvas.mundoDano(m - 1) && Curvas.mundoVel(m) > Curvas.mundoVel(m - 1)
+                && Curvas.mundoTope(m) > Curvas.mundoTope(m - 1) && Curvas.mundoRitmo(m) > Curvas.mundoRitmo(m - 1) && Curvas.mundoPers(m) > Curvas.mundoPers(m - 1)
+                && Curvas.mundoFuerte(m) > Curvas.mundoFuerte(m - 1) && Curvas.eliteCada(m) < Curvas.eliteCada(m - 1);
+        ok(sube, "cada mundo es mas dificil que el anterior");
+        ok(Curvas.mundoVida(9) == Curvas.mundoVida(2) && Curvas.mundoVida(-3) == 1, "un mundo fuera de rango no rompe la tabla");
+        ok(Curvas.tope(1000, 1) * Curvas.mundoTope(2) <= Curvas.TOPE_EQUIPO, "el cosmos no pasa del tope de enemigos de un equipo (" + (int) (Curvas.tope(1000, 1) * Curvas.mundoTope(2)) + ")");
         ok(Jefes.tocanEnMundo(10, 0) == 0 && Jefes.tocanEnMundo(190, 0) == 1 && Jefes.tocanEnMundo(370, 0) == 2, "dos jefes en el primer mundo (3:00 y 6:00)");
         ok(Jefes.tocanEnMundo(1000, 0) == 2 && Jefes.tocanEnMundo(1000, 1) == 2 && Jefes.tocanEnMundo(1000, 2) == 1, "el cosmos solo tiene un jefe (el quinto)");
         ok(Jefes.def(Jefes.GIGANTE_N) == Jefes.GIGANTE && Jefes.ciclo(Jefes.GIGANTE_N) == 0 && Jefes.vida(Jefes.GIGANTE_N) == Jefes.GIGANTE.vida() && Jefes.esElUltimo(Jefes.GIGANTE_N), "el Michi Gigante es un jefe aparte");

@@ -205,13 +205,13 @@ final class Equipo {
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && enemigos.size() < meta; k++) if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
         } else if (!duelo) {
             double fm = marea != null && marea.enemigosPropios() ? 1.25 : 1.0;
-            int cap = tesoros.cantidad() + (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
-            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * (marea == null ? 1.0 : marea.factorRitmo()) * (sentencia.activa() ? Sentencia.RITMO : 1.0) / 20.0);
+            int cap = tesoros.cantidad() + (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n) * Curvas.mundoTope(mundo), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
+            presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * Curvas.mundoRitmo(mundo) * (marea == null ? 1.0 : marea.factorRitmo()) * (sentencia.activa() ? Sentencia.RITMO : 1.0) / 20.0);
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && presupuesto >= 1.0 && enemigos.size() < cap; k++) {
                 if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
                 presupuesto -= 1.0;
             }
-            if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
+            if (tick % (20 * Curvas.eliteCada(mundo)) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
             boolean final_ = Sentencia.toca(tm()) || duelo;                                       // desde la Sentencia ya no salen jefes ni mareas nuevos
             if (!final_ && (jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.POR_MUNDO * mundo + Jefes.tocanEnMundo(tm(), mundo)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
             if (!final_ && marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < mareasBase + Mareas.tocan(tm())) {
@@ -405,7 +405,7 @@ final class Equipo {
             if (rnd.nextDouble() < Curvas.P_MICHI && Especies.michi() != null) {             // 1 de cada 10 es un Michialien (el toque de Emi)
                 sp = Especies.michi(); tipoE = Enemigo.Tipo.MICHI; extra = Especies.FORMAS_MICHI[rnd.nextInt(Especies.FORMAS_MICHI.length)];
             } else {
-                boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Curvas.pFuerte(t));
+                boolean fuerte = rnd.nextDouble() < (fijo > 0 ? 0.3 : Math.min(0.9, Curvas.pFuerte(t) + Curvas.mundoFuerte(mundo)));
                 List<Especies.E> pool = pool(fuerte);
                 if (pool.isEmpty()) return false;
                 sp = elegirNormal(pool);
@@ -415,15 +415,15 @@ final class Equipo {
         Vec3d s = sitioDeAparicion(21, 26);
         if (s == null) return false;
         double tm = fijo > 0 ? 0 : t;
-        double hpMul = Curvas.vidaMul(tm) * Curvas.escalaVida(miembros.size()), velMul = Curvas.velMul(tm);
+        double hpMul = Curvas.vidaMul(tm) * Curvas.escalaVida(miembros.size()) * (fijo > 0 ? 1 : Curvas.mundoVida(mundo)), velMul = Curvas.velMul(tm) * (fijo > 0 ? 1 : Curvas.mundoVel(mundo));
         if (marea != null && marea.tipo == Mareas.Tipo.MICHIS && normal) { hpMul *= Mareas.VIDA_MICHIS; velMul *= Mareas.VELOCIDAD_MICHIS; }
         boolean shiny = normal && fijo == 0 && tipoE != Enemigo.Tipo.MICHI && rnd.nextDouble() < Curvas.P_SHINY;
-        Enemigo en = Enemigo.crear(w, sp, shiny ? (extra + " shiny=yes").trim() : extra, s, tipoE, hpMul, Curvas.danoMul(tm), velMul, 0f, rnd);
+        Enemigo en = Enemigo.crear(w, sp, shiny ? (extra + " shiny=yes").trim() : extra, s, tipoE, hpMul, Curvas.danoMul(tm) * (fijo > 0 ? 1 : Curvas.mundoDano(mundo)), velMul, 0f, rnd);
         if (en == null) { fallosCrear++; return false; }
         enemigos.add(en);
         especiesVistas.add(sp.id());
         if (shiny) marcarShiny(en);
-        if (normal && !shiny && fijo == 0 && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) && rnd.nextDouble() < Pers.probabilidad(t)) aplicarPers(en, Pers.sortear(rnd));
+        if (normal && !shiny && fijo == 0 && (marea == null || marea.tipo != Mareas.Tipo.MICHIS) && rnd.nextDouble() < Pers.probabilidad(t) * Curvas.mundoPers(mundo)) aplicarPers(en, Pers.sortear(rnd));
         return true;
     }
 
@@ -451,7 +451,7 @@ final class Equipo {
         List<Especies.E> pool = pool(false);
         if (pool.isEmpty()) return false;
         Especies.E sp = elegirNormal(pool);
-        Enemigo en = Enemigo.crear(w, sp, "shiny=yes", new Vec3d(x, Arena.Y0, z), Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t), Curvas.velMul(t), 0f, rnd);
+        Enemigo en = Enemigo.crear(w, sp, "shiny=yes", new Vec3d(x, Arena.Y0, z), Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()) * Curvas.mundoVida(mundo), Curvas.danoMul(t) * Curvas.mundoDano(mundo), Curvas.velMul(t) * Curvas.mundoVel(mundo), 0f, rnd);
         if (en == null) return false;
         enemigos.add(en);
         marcarShiny(en);
@@ -486,7 +486,7 @@ final class Equipo {
         List<Especies.E> pool = pool(fuerte);
         if (pool.isEmpty()) return null;
         Especies.E sp = elegirNormal(pool);
-        Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t), Curvas.velMul(t), 0f, rnd);
+        Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()) * Curvas.mundoVida(mundo), Curvas.danoMul(t) * Curvas.mundoDano(mundo), Curvas.velMul(t) * Curvas.mundoVel(mundo), 0f, rnd);
         if (en == null) { fallosCrear++; return null; }
         enemigos.add(en);
         especiesVistas.add(sp.id());
@@ -511,7 +511,7 @@ final class Equipo {
         List<Especies.E> pool = pool(fuerte);
         if (pool.isEmpty()) return;
         Especies.E sp = elegirNormal(pool);
-        Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()), Curvas.danoMul(t) * 1.3, Curvas.velMul(t), 0f, rnd);
+        Enemigo en = Enemigo.crear(w, sp, "", new Vec3d(x, Arena.Y0, z), fuerte ? Enemigo.Tipo.FUERTE : Enemigo.Tipo.DEBIL, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()) * Curvas.mundoVida(mundo), Curvas.danoMul(t) * 1.3 * Curvas.mundoDano(mundo), Curvas.velMul(t) * Curvas.mundoVel(mundo), 0f, rnd);
         if (en == null) { fallosCrear++; return; }
         en.rdx = ux; en.rdz = uz;
         en.rumboT = (int) (largo / (en.vel * 3.0)) + 15;
@@ -647,6 +647,12 @@ final class Equipo {
             }
         }
         avisar(Msg.say("★ ¡Habéis superado la Sentencia! Viajáis a: " + nuevo.nombre() + "."));
+        if (Curvas.DIFICULTAD > 0) {
+            String dif = "⚠ Aquí los enemigos son más duros: +" + Math.round((Curvas.mundoVida(mundo) - 1) * 100) + " % de vida, +" + Math.round((Curvas.mundoDano(mundo) - 1) * 100) + " % de daño, +"
+                    + Math.round((Curvas.mundoVel(mundo) - 1) * 100) + " % de velocidad, más enemigos a la vez y campeones cada " + Curvas.eliteCada(mundo) + " s.";
+            avisar(Msg.say(dif));
+            EmiSurvivors.LOG.info("[mundos] dificultad del mundo {}: {}", mundo, dif);
+        }
     }
 
     /** Se paso la Sentencia del ultimo mundo: sale el Michi Gigante. */
@@ -717,7 +723,7 @@ final class Equipo {
                 sp = pool.get(rnd.nextInt(pool.size()));
             }
             double t = tick / 20.0;
-            Enemigo en = Enemigo.crear(w, sp, extra, new Vec3d(p[0], Arena.Y0, p[1]), tipo, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()) * 0.6, Curvas.danoMul(t), Curvas.velMul(t) * 1.15, 0f, rnd);
+            Enemigo en = Enemigo.crear(w, sp, extra, new Vec3d(p[0], Arena.Y0, p[1]), tipo, Curvas.vidaMul(t) * Curvas.escalaVida(miembros.size()) * Curvas.mundoVida(mundo) * 0.6, Curvas.danoMul(t) * Curvas.mundoDano(mundo), Curvas.velMul(t) * Curvas.mundoVel(mundo) * 1.15, 0f, rnd);
             if (en == null) { fallosCrear++; continue; }
             enemigos.add(en);
             especiesVistas.add(sp.id());

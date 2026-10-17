@@ -94,4 +94,40 @@ final class Curvas {
     /** Segundos entre elites (uno cada minuto, el primero al minuto). Los jefes salen cada 3 minutos: ver {@link Jefes}. */
     static final int CADA_ELITE = 60;
 
+    // ------------------------------------------------------------ dificultad por mundo (fase)
+
+    /**
+     * Cada mundo (pradera, bosque, cosmos) es mas dificil que el anterior: se suma a lo que ya sube con el tiempo (las curvas de arriba siguen la hora global de la
+     * partida). Los numeros son primeras estimaciones, nadie los ha jugado a mano. {@code -Demi.survivors.dificultad=<0-3>} escala cuanto suben (1 = lo de la tabla,
+     * 0 = el mundo no cambia nada, 2 = el doble de subida); no afecta a los jefes.
+     */
+    static final double DIFICULTAD = leerDificultad();
+    private static final double[] M_VIDA = {1.0, 1.25, 1.6}, M_DANO = {1.0, 1.2, 1.45}, M_VEL = {1.0, 1.05, 1.10}, M_TOPE = {1.0, 1.25, 1.5},
+            M_RITMO = {1.0, 1.2, 1.4}, M_PERS = {1.0, 1.4, 1.8}, M_FUERTE = {0.0, 0.10, 0.20};
+    private static final int[] M_ELITE = {60, 45, 35};
+
+    private static double leerDificultad() {
+        try { return Math.max(0.0, Math.min(3.0, Double.parseDouble(System.getProperty("emi.survivors.dificultad", "1.0")))); }
+        catch (NumberFormatException e) { return 1.0; }
+    }
+
+    private static double paso(double[] tabla, int mundo) { return 1 + (tabla[Math.max(0, Math.min(tabla.length - 1, mundo))] - 1) * DIFICULTAD; }
+
+    /** Multiplicador de vida de los enemigos nuevos por estar en el mundo {@code mundo} (0 = pradera). */
+    static double mundoVida(int mundo) { return paso(M_VIDA, mundo); }
+    /** Idem del dano por contacto. */
+    static double mundoDano(int mundo) { return paso(M_DANO, mundo); }
+    /** Idem de la velocidad. */
+    static double mundoVel(int mundo) { return paso(M_VEL, mundo); }
+    /** Idem del tope de enemigos a la vez (sin pasar de {@link #TOPE_EQUIPO}). */
+    static double mundoTope(int mundo) { return paso(M_TOPE, mundo); }
+    /** Idem de los enemigos nuevos por segundo. */
+    static double mundoRitmo(int mundo) { return paso(M_RITMO, mundo); }
+    /** Idem de la probabilidad de que un enemigo tenga personalidad. */
+    static double mundoPers(int mundo) { return paso(M_PERS, mundo); }
+    /** Lo que se suma a la probabilidad de que un enemigo sea del tramo fuerte. */
+    static double mundoFuerte(int mundo) { return (M_FUERTE[Math.max(0, Math.min(M_FUERTE.length - 1, mundo))]) * DIFICULTAD; }
+    /** Segundos entre elites en ese mundo (con la dificultad a 0 se queda en {@link #CADA_ELITE}). */
+    static int eliteCada(int mundo) { return (int) Math.max(15, Math.round(CADA_ELITE + (M_ELITE[Math.max(0, Math.min(M_ELITE.length - 1, mundo))] - CADA_ELITE) * DIFICULTAD)); }
+
 }
