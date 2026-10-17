@@ -89,6 +89,7 @@ public final class Sala {
 
     static void tick(MinecraftServer s) {
         if (Carrera.server != null) empujar(s);
+        if (s.getTicks() % 20 == 3 && Carrera.server != null) Pausas.actualizar(s);                 // con alguien en la sala o en la pista, Emipokemon no limpia ni lanza bosses
         if (s.getTicks() % 20 != 7 || Carrera.server == null) return;
         ServerWorld w = sala();
         if (w != null) {

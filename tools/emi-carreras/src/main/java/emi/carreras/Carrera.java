@@ -1106,7 +1106,6 @@ public final class Carrera {
 
     /** Devuelve a todos lo suyo, quita Pokemon, cajas y proyectiles y deja el minijuego libre. */
     static void limpiar() {
-        try { Pausas.reanudar(); } catch (Throwable t) { EmiCarreras.LOG.warn("pausas: {}", t.toString()); }
         try { enviarEstado(ahora(), false); for (ServerPlayerEntity pj : jugadores()) enviarPoder(pj, (Poder) null, false); } catch (Throwable t) { EmiCarreras.LOG.warn("interfaz: {}", t.toString()); }
         try { pararMusica(); } catch (Throwable t) { EmiCarreras.LOG.warn("musica: {}", t.toString()); }
         try { quitarPresentacion(); } catch (Throwable t) { EmiCarreras.LOG.warn("presentacion: {}", t.toString()); }

@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Mientras hay carrera se paran, SOLO EN MEMORIA, la limpieza de objetos («clearlag») y los eventos con aviso general de Emipokemon
+ * Mientras haya alguien en las carreras (sala o pista) se paran, SOLO EN MEMORIA, la limpieza de objetos («clearlag») y los eventos con aviso general de Emipokemon
  * (bosses del mundo Mega/Gigantamax/Tera, evento shiny, entrenador legendario), para que no salgan avisos ni apariciones en plena carrera.
  * Todo por reflexion sobre la configuracion de Emipokemon: si el mod no esta, no hace nada. Al terminar se devuelve cada valor y se
  * adelantan los temporizadores del tiempo parado (el siguiente boss no sale de golpe al acabar la carrera).
@@ -17,21 +17,35 @@ import java.util.Map;
 final class Pausas {
     private Pausas() {}
 
-    private static final String[] BANDERAS = {"itemCleanupEnabled", "arrowCleanupEnabled"};
+    private static final String[] BANDERAS = {"itemCleanupEnabled", "arrowCleanupEnabled", "entityCapEnabled"};   // limpieza de objetos, de flechas y tope de entidades por mundo (este borra las que sobran)
     private static final String[] EVENTOS = {"megaBoss", "gigantamaxBoss", "teraBoss", "shinyEvent", "legendaryTrainer"};
     private static final String[][] SERVICIOS = {
             {"com.emipokemon.raid.MegaBossService"}, {"com.emipokemon.raid.GigantamaxBossService"}, {"com.emipokemon.raid.TeraBossService"},
             {"com.emipokemon.raid.ShinyEncounterService"}, {"com.emipokemon.npc.LegendaryTrainerService"}};
 
-    private static final Map<String, Boolean> guardado = new LinkedHashMap<>();
-    private static final Map<String, Long> ticksAntes = new LinkedHashMap<>();
-    private static boolean pausado;
+    private static final Map<String, Boolean> guardado = compartido("guardado");
+    private static final Map<String, Long> ticksAntes = compartido("ticks");
+    private static boolean pausado;                         // este mod ya esta contado en el contador compartido
 
-    static synchronized void pausar() {
+    /** Se llama cada segundo: con alguien en las carreras (la sala o la pista) la limpieza y los bosses de Emipokemon estan parados; cuando no queda nadie, se reanudan. */
+    static void actualizar(MinecraftServer s) {
+        boolean alguien = false;
+        for (var p : s.getPlayerManager().getPlayerList())
+            if ("emi_carreras".equals(p.getServerWorld().getRegistryKey().getValue().getNamespace())) { alguien = true; break; }
+        if (alguien) pausar(); else reanudar();
+    }
+
+    static void pausar() {
+        java.util.concurrent.atomic.AtomicInteger n = contador();
+        synchronized (n) { pausarCon(n); }
+    }
+
+    private static void pausarCon(java.util.concurrent.atomic.AtomicInteger n) {
         if (pausado || !Carrera.cfg.pausarEventos) return;
         try {
             Object cfg = config();
             if (cfg == null) return;
+            if (n.get() > 0) { n.incrementAndGet(); pausado = true; return; }          // otro minijuego ya lo tiene parado: solo se cuenta
             guardado.clear(); ticksAntes.clear();
             for (String f : BANDERAS) poner(cfg, cfg, f, false, f);
             for (String e : EVENTOS) {
@@ -42,14 +56,23 @@ final class Pausas {
                 Long t = ticks(s[0]);
                 if (t != null) ticksAntes.put(s[0], t);
             }
+            n.set(1);
             pausado = true;
             EmiCarreras.LOG.info("Carrera en marcha: limpieza de objetos y eventos de Emipokemon en pausa ({})", guardado.keySet());
         } catch (Throwable t) { EmiCarreras.LOG.debug("pausar eventos: {}", t.toString()); }
     }
 
-    static synchronized void reanudar() {
-        if (!pausado) return;
-        pausado = false;
+    static void reanudar() {
+        java.util.concurrent.atomic.AtomicInteger n = contador();
+        synchronized (n) {
+            if (!pausado) return;
+            pausado = false;
+            if (n.decrementAndGet() > 0) return;                                          // aun queda otro minijuego que lo necesita
+            reanudarYa();
+        }
+    }
+
+    private static void reanudarYa() {
         try {
             Object cfg = config();
             if (cfg != null) {
@@ -66,6 +89,29 @@ final class Pausas {
             EmiCarreras.LOG.info("Fin de la carrera: limpieza de objetos y eventos de Emipokemon reanudados");
         } catch (Throwable t) { EmiCarreras.LOG.warn("reanudar eventos: {}", t.toString()); }
         guardado.clear(); ticksAntes.clear();
+    }
+
+
+    // Varios mods nuestros (carreras, supervivientes, huida...) paran lo mismo: lo guardado y el contador se comparten por las propiedades del sistema (las clases de cada mod son distintas),
+    // asi lo de Emipokemon solo se enciende de nuevo cuando ya no queda ningun minijuego que lo necesite.
+    private static final String CLAVE = "emi.pausas.estado";
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> estado() {
+        synchronized (System.getProperties()) {
+            Object o = System.getProperties().get(CLAVE);
+            if (!(o instanceof Map)) { o = new java.util.concurrent.ConcurrentHashMap<String, Object>(); System.getProperties().put(CLAVE, o); }
+            return (Map<String, Object>) o;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Map<String, T> compartido(String nombre) {
+        return (Map<String, T>) estado().computeIfAbsent(nombre, k -> java.util.Collections.synchronizedMap(new LinkedHashMap<String, Object>()));
+    }
+
+    private static java.util.concurrent.atomic.AtomicInteger contador() {
+        return (java.util.concurrent.atomic.AtomicInteger) estado().computeIfAbsent("n", k -> new java.util.concurrent.atomic.AtomicInteger());
     }
 
     // ------------------------------------------------------------------ reflexion

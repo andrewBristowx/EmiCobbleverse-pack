@@ -437,6 +437,8 @@ public final class MenuPantalla extends Lienzo {
     private void resultadoCaja(DrawContext g, int mx, int my) {
         int x = 130, y = 90, w = 380, h = 190;
         g.draw();                                   // el texto de debajo se dibuja al final: se vacia antes para que la caja lo tape
+        g.getMatrices().push();
+        g.getMatrices().translate(0, 0, 400);       // y la caja va por delante en profundidad (si no, el texto de debajo se cuela por encima)
         g.fill(0, 0, W, H, 0xA0000010);
         caja(g, x, y, w, h, 0xFF14142A, ORO);
         boolean ent = resultado.get("entrenamiento").getAsBoolean();
@@ -450,6 +452,7 @@ public final class MenuPantalla extends Lienzo {
         JsonArray l = resultado.getAsJsonArray("lineas");
         for (int i = 0; i < l.size() && i < 5; i++) textoCentrado(g, recortar(l.get(i).getAsString(), 70), x + w / 2, y + 88 + i * 11, GRIS, 0.8f);
         boton(g, x + w / 2 - 60, y + h - 30, 120, 22, "ACEPTAR", 0xFF2E8B57, true, dentro(mx, my, x + w / 2 - 60, y + h - 30, 120, 22), 1f);
+        g.getMatrices().pop();
     }
 
     // ------------------------------------------------------------ clics
