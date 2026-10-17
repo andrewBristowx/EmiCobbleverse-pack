@@ -67,6 +67,7 @@ public final class EmiSurvivorsClient implements ClientModInitializer {
                 else if (MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), false);
                 else mc.setScreen(new MenuPantalla(p.json()));
             }
+            case "ms" -> mc.setScreen(new MsPresidentPantalla());
             case "menu_act" -> { if (!p.json().isEmpty() && MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), true); }
             default -> { }
         }

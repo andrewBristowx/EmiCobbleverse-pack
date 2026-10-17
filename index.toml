@@ -1861,16 +1861,16 @@ file = "mods/emi-huida-0.11.1.jar"
 hash = "80a475e10d5d64d00f445b3f2566248683c5ae2745318d2cca559e70912fdf82"
 
 [[files]]
-file = "mods/emi-plush-1.14.0.jar"
-hash = "c3d659c9ff69d4876f0fafacd352f7d7557a3d90bfed91572184ea6d069eb6e2"
+file = "mods/emi-plush-1.15.0.jar"
+hash = "073fcb69e4c04d3b51eee3390c93bd9be8b8725eb64c274582935c80a6413765"
 
 [[files]]
 file = "mods/emi-streamlabs-1.2.0.jar"
 hash = "194d923b6a1430bb6c4535e71046c9b0ad6a940374af5b76f4b8b5bf2680af92"
 
 [[files]]
-file = "mods/emi-survivors-0.19.0.jar"
-hash = "a9d0d838fc649cd68a2b770ed90166d998ebe420bfc9f762057bf6eeb4ebc411"
+file = "mods/emi-survivors-0.20.0.jar"
+hash = "486a6b92663be2ce78e3d1e62ae99b450b7649f568fa40ce133322b54eefecfb"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"

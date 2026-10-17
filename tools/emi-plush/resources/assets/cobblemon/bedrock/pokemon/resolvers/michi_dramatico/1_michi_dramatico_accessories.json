@@ -86,6 +86,12 @@
         "pirate-accessory"
       ],
       "model": "cobblemon:michi_dramatico_pirate.geo"
+    },
+    {
+      "aspects": [
+        "suit-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_suit.geo"
     }
   ]
 }

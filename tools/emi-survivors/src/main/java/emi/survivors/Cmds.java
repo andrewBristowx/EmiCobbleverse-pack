@@ -91,6 +91,11 @@ public final class Cmds {
             c.getSource().sendError(Msg.err("No estás en ninguna partida.")); return 0;
         }));
         // modo prueba: el jugador no pierde vida (para medir el rendimiento sin que la partida acabe)
+        // Ms. President, la michi con traje que patrocina los minijuegos: /survivor npc colocar|quitar|hablar (administradores)
+        root.then(admin("npc")
+                .then(CommandManager.literal("colocar").executes(c -> con(c, () -> MsPresident.colocar(c.getSource().getPlayerOrThrow()), "Ms. President colocada aquí.")))
+                .then(CommandManager.literal("quitar").executes(c -> con(c, () -> MsPresident.quitar(c.getSource().getServer()), "Ms. President quitada.")))
+                .then(CommandManager.literal("hablar").executes(c -> con(c, () -> { MsPresident.hablar(c.getSource().getPlayerOrThrow()); return null; }))));
         root.then(admin("inmortal").executes(c -> inmortal(c, !Partida.inmortal))
                 .then(CommandManager.literal("on").executes(c -> inmortal(c, true)))
                 .then(CommandManager.literal("off").executes(c -> inmortal(c, false))));

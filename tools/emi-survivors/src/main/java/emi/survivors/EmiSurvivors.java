@@ -39,6 +39,8 @@ public class EmiSurvivors implements ModInitializer {
         ServerPlayNetworking.registerGlobalReceiver(AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Acciones.recibir(ctx.player(), payload)));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerLifecycleEvents.SERVER_STARTED.register(Partida::init);
+        ServerLifecycleEvents.SERVER_STARTED.register(MsPresident::alIniciar);
+        ServerTickEvents.END_SERVER_TICK.register(MsPresident::tick);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Partida.shutdown());
         ServerTickEvents.END_SERVER_TICK.register(Partida::tick);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Partida.alEntrar(handler.player));

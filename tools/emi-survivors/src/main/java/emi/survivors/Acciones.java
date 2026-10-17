@@ -80,6 +80,7 @@ final class Acciones {
                     Menu.enviar(p, "tienda", null);
                 }
                 case "menu" -> { if (Mundo.enSala(p) && !Partida.participa(p)) Menu.enviar(p, a.a().isEmpty() ? "jugar" : a.a(), null); }
+                case "ms_unirse" -> MsPresident.unirse(p);
                 case "salir" -> { String err = Mundo.salir(p); if (err != null) p.sendMessage(Msg.err(err), false); }
                 default -> EmiSurvivors.LOG.debug("Accion desconocida de {}: {}", p.getGameProfile().getName(), a.accion());
             }

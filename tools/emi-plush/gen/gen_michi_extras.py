@@ -144,6 +144,35 @@ ALAS_ANGEL = [     # de plumas: seis hileras que se acortan hacia abajo (cada un
     ((-38, 26, 5.0), (18, 5, 3), pluma), ((-46, 21, 5.6), (26, 5, 3), pluma), ((-52, 16, 5.0), (32, 5, 3), pluma),
     ((-48, 11, 5.6), (28, 5, 3), pluma_punta), ((-42, 6, 5.0), (22, 5, 3), pluma_punta), ((-34, 1, 5.6), (14, 5, 3), pluma_punta)]
 
+# ---------------------------------------------------------------- traje de ejecutivo (solo aspecto `suit`: lo lleva «Ms. President», el patrocinador de los minijuegos; no es una forma Pokemon)
+SUIT = (40, 42, 54); SUIT_L = (62, 66, 82); SUIT_D = (26, 27, 36); SHIRT = (244, 246, 252); SHIRT_D = (182, 198, 224); BAG = (150, 96, 72); BAG_D = (102, 62, 48); BAG_L = (186, 128, 96)
+def traje_tela(face, i, j, w, h):
+    c = SUIT_L if face == 'up' else SUIT
+    if face == 'north' and i in (w // 2 - 1, w // 2): c = SUIT_D                         # la solapa del centro
+    if (i * 7 + j * 3) % 11 == 0: c = mix(c, SUIT_D, 0.5)
+    return c + (255,)
+def camisa(face, i, j, w, h): return (SHIRT_D if i in (0, w - 1) else SHIRT) + (255,)
+def corbata(face, i, j, w, h): return (RED_D if (i + j) % 4 == 0 else RED) + (255,)
+def maletin(face, i, j, w, h):
+    c = BAG if 1 <= i < w - 1 and 1 <= j < h - 1 else BAG_D
+    if face in ('east', 'west') and j < h // 3 and 0 < i < w - 1: c = BAG_L if j else BAG_D       # la tapa
+    if face in ('east', 'west') and abs(i - w // 2) <= 1 and abs(j - h // 3) <= 1: c = GOLD     # el cierre dorado
+    return c + (255,)
+
+def traje(g, f):
+    cube(g, f, 'acc_suit', (-21, 1, -18.6), (42, 11, 37), traje_tela)                  # la chaqueta, alrededor de la parte de abajo del cuerpo
+    cube(g, f, 'acc_suit', (-4, 2, -19.2), (8, 9, 1), camisa)                           # camisa blanca por delante
+    cube(g, f, 'acc_suit', (-1.5, 2.5, -19.9), (3, 8, 1), corbata)                      # corbata roja
+    cube(g, f, 'acc_suit', (-2, 8, -20.5), (4, 3, 1), flat(RED_D))                      # su nudo
+    for lado, x0 in (('l', -24.5), ('r', 17.5)):                                        # mangas (siguen a los brazos)
+        cube(g, f, f'acc_suit_arm_{lado}', (x0, 10, -9.2), (7, 10, 10), traje_tela)
+    cube(g, f, 'acc_suit_arm_r', (24.6, 0.5, -12), (4, 10, 14), maletin)                # el maletin, colgando de la mano derecha
+    cube(g, f, 'acc_suit_arm_r', (25.6, 10.5, -8), (2, 4, 6), flat(BLACK))              # su asa
+    for b in g['minecraft:geometry'][0]['bones']:
+        if b['name'] in ('acc_suit_arm_l', 'acc_suit_arm_r'):
+            b['parent'] = 'arm_left' if b['name'].endswith('_l') else 'arm_right'; b['pivot'] = [-20.0 if b['name'].endswith('_l') else 20.0, 14.8, -4.8]
+    return []
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -198,6 +227,7 @@ ACCESORIOS = {
         cube(g, f, 'acc_pirate', (-12, 33, -11), (24, 6, 22), flat(BLACK)),
         cube(g, f, 'acc_pirate', (-5, 33, -14.5), (10, 5, 3), flat((60, 52, 70))),
         cube(g, f, 'acc_pirate', (-3, 33.5, -15), (6, 4, 1), skull)],
+    'suit': lambda g, f: traje(g, f),
 }
 
 def main():
