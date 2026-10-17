@@ -247,10 +247,6 @@ file = "config/cobblemon_party_extras.json"
 hash = "537906525a39b808a307545c625d88ced443a268870b60774d8a948bb00d2a40"
 
 [[files]]
-file = "config/cobblemonalphas/config.json"
-hash = "da468318bb5f735a2e1d13aa2c6cb188ce9c03696ef6c73bf243d9e8321350ed"
-
-[[files]]
 file = "config/cobblemonbattlepositions.json"
 hash = "92831df993fcd6402fe818c44090419482b6c2a4011d6feb735b81e874595109"
 
@@ -1587,11 +1583,6 @@ metafile = true
 [[files]]
 file = "mods/cobblemon-additions.pw.toml"
 hash = "5ddeb6f55fc1e3ccf36bd3733768ff64337e5531b018a05668c7e9d42f3c2b19"
-metafile = true
-
-[[files]]
-file = "mods/cobblemon-alpha-project.pw.toml"
-hash = "f0a7e780d2b5d2d6d22056784afce70b7cf3dab031088384f00cbd6e72d778b4"
 metafile = true
 
 [[files]]
