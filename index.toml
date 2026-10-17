@@ -1919,7 +1919,7 @@ metafile = true
 
 [[files]]
 file = "mods/fancymenu.pw.toml"
-hash = "64ae365aeafb5c29ee501f84cd11600515fd2ca02e0aa89c0e282f45c53954af"
+hash = "6192f8ff310eecdff6d8dc481ac1bbbed89d7ae93abaf3104c519f1ba0f9f096"
 metafile = true
 
 [[files]]
@@ -2059,7 +2059,7 @@ metafile = true
 
 [[files]]
 file = "mods/konkrete.pw.toml"
-hash = "34d75daff8b8260780d97bbc2dc545739399df1d5ac304eeb2f80e23354cf3af"
+hash = "c7179ae7024b7315c6ba5d02b632d99717db1185abab41b73dda556581ff3022"
 metafile = true
 
 [[files]]
@@ -2129,7 +2129,7 @@ metafile = true
 
 [[files]]
 file = "mods/melody.pw.toml"
-hash = "114f57ad1875c16cd7d9b9cf850025f40e1b008f0865f3e5783da8cfc128b291"
+hash = "2e26dd4ebd07b97d68a9775b84fae707d8824c926e086bb3bcad11687b3fb204"
 metafile = true
 
 [[files]]
