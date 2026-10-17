@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * La tienda de recompensas: se compran con coronas ({@link Retos}) objetos de Pokemon y tickets de los banners de Emipokemon. Cada articulo tiene un maximo de
+ * La tienda de recompensas: se compran con coronas ({@link Retos}) objetos de Pokemon y tickets de los banners de Emipokemon, y con michiestrellitas el peluche de Ms. President (unico, una vez por jugador). Cada articulo tiene un maximo de
  * {@link #LIMITE_DIA} compras por jugador y por dia (decision del dueño) y se entrega al CORREO del jugador ({@code /correo}; ver {@link TiendaCorreo}). Los precios
  * son una primera estimacion del asistente: el dueño los ajusta aqui. Sin Minecraft, asi se prueba con un main.
  */
@@ -16,7 +16,12 @@ final class Tienda {
     static final int LIMITE_DIA = 10;
 
     /** {@code item} = id del objeto de Minecraft; {@code grupo}: «banner» (tickets de Emipokemon) u «objeto» (de Cobblemon). */
-    record Articulo(String id, String item, String nombre, String texto, int precio, String grupo) {}
+    record Articulo(String id, String item, String nombre, String texto, int precio, String grupo, String moneda, boolean unico) {
+        /** Un articulo normal: se paga con coronas y se puede comprar {@link #LIMITE_DIA} veces al dia. */
+        Articulo(String id, String item, String nombre, String texto, int precio, String grupo) { this(id, item, nombre, texto, precio, grupo, "coronas", false); }
+        boolean enEstrellas() { return "estrellas".equals(moneda); }
+        String unidad() { return enEstrellas() ? "michiestrellitas" : precio == 1 ? "corona" : "coronas"; }
+    }
 
     static final List<Articulo> ARTICULOS = List.of(
             new Articulo("gacha", "emipokemon:gacha_ticket", "Ticket Gacha", "Una tirada del banner normal.", 3, "banner"),
@@ -30,7 +35,9 @@ final class Tienda {
             new Articulo("caramelo", "cobblemon:rare_candy", "Caramelo Raro", "Sube un nivel a un Pokémon.", 4, "objeto"),
             new Articulo("revivir", "cobblemon:max_revive", "Revivir Máximo", "Revive a un Pokémon con toda su vida.", 4, "objeto"),
             new Articulo("capsula", "cobblemon:ability_capsule", "Cápsula Habilidad", "Cambia la habilidad de un Pokémon.", 15, "objeto"),
-            new Articulo("master", "cobblemon:master_ball", "Master Ball", "Captura cualquier Pokémon.", 40, "objeto"));
+            new Articulo("master", "cobblemon:master_ball", "Master Ball", "Captura cualquier Pokémon.", 40, "objeto"),
+            // el peluche de Ms. President (emi-plush 1.16.0): objeto UNICO, se paga con michiestrellitas (no con coronas) y solo se puede comprar una vez por jugador
+            new Articulo("peluche_ms", "emi_plush:gatitoalien_suit", "Peluche de Ms. President", "El michi con traje y maletín. Solo se compra una vez.", 1000, "unico", "estrellas", true));
 
     static Articulo articulo(String id) {
         for (Articulo a : ARTICULOS) if (a.id().equals(id)) return a;
@@ -47,6 +54,9 @@ final class Tienda {
         if (!hoy.equals(j.tiendaDia)) { j.tiendaDia = hoy; j.tiendaCompras.clear(); }
     }
 
+    /** ¿Ya compro este articulo unico? */
+    static boolean yaLoTiene(Datos.Jugador j, String id) { return j.unicos != null && j.unicos.contains(id); }
+
     static int compradosHoy(Datos.Jugador j, String id) { return j.tiendaCompras == null ? 0 : j.tiendaCompras.getOrDefault(id, 0); }
 
     /**
@@ -57,13 +67,16 @@ final class Tienda {
         Articulo a = articulo(id);
         if (a == null) return "Ese artículo no existe.";
         refrescar(j, ahoraMs, zona);
-        if (compradosHoy(j, id) >= LIMITE_DIA) return "Hoy ya has comprado " + LIMITE_DIA + " de «" + a.nombre() + "». Mañana podrás comprar más.";
-        if (j.coronas < a.precio()) return "Te faltan " + (a.precio() - j.coronas) + (a.precio() - j.coronas == 1 ? " corona." : " coronas.");
+        if (j.unicos == null) j.unicos = new java.util.ArrayList<>();
+        if (a.unico()) { if (yaLoTiene(j, id)) return "Ya tienes «" + a.nombre() + "»: solo se puede comprar una vez."; }
+        else if (compradosHoy(j, id) >= LIMITE_DIA) return "Hoy ya has comprado " + LIMITE_DIA + " de «" + a.nombre() + "». Mañana podrás comprar más.";
+        int saldo = a.enEstrellas() ? j.monedas : j.coronas;
+        if (saldo < a.precio()) return "Te faltan " + (a.precio() - saldo) + " " + (a.enEstrellas() ? "michiestrellitas." : a.precio() - saldo == 1 ? "corona." : "coronas.");
         boolean ok;
         try { ok = entrega.entregar(a); } catch (RuntimeException e) { ok = false; }
-        if (!ok) return "No se ha podido enviar al correo ahora mismo (no has gastado coronas). Inténtalo más tarde.";
-        j.coronas -= a.precio();
-        j.tiendaCompras.merge(id, 1, Integer::sum);
+        if (!ok) return "No se ha podido enviar al correo ahora mismo (no has gastado nada). Inténtalo más tarde.";
+        if (a.enEstrellas()) j.monedas -= a.precio(); else j.coronas -= a.precio();
+        if (a.unico()) j.unicos.add(id); else j.tiendaCompras.merge(id, 1, Integer::sum);
         return null;
     }
 }

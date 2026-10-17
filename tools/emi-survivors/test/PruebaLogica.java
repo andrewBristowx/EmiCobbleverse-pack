@@ -520,10 +520,12 @@ public final class PruebaLogica {
         long ahora = java.time.ZonedDateTime.of(2026, 10, 16, 15, 30, 0, 0, z).toInstant().toEpochMilli(), dia = 86_400_000L;
         Set<String> ids = new HashSet<>();
         for (Tienda.Articulo a : Tienda.ARTICULOS) {
-            ok(ids.add(a.id()) && a.precio() > 0 && a.item().contains(":") && !a.nombre().isBlank() && (a.grupo().equals("banner") || a.grupo().equals("objeto")), "articulo valido " + a.id());
+            ok(ids.add(a.id()) && a.precio() > 0 && a.item().contains(":") && !a.nombre().isBlank() && (a.grupo().equals("banner") || a.grupo().equals("objeto") || a.grupo().equals("unico")), "articulo valido " + a.id());
             ok(Tienda.articulo(a.id()) == a, "se encuentra " + a.id());
         }
-        ok(Tienda.ARTICULOS.size() <= 12, "caben en una pagina (12)");
+        ok(Tienda.ARTICULOS.stream().filter(x -> !x.unico()).count() <= 12, "los normales caben en una pagina (12)");
+        Tienda.Articulo ms = Tienda.articulo("peluche_ms");
+        ok(ms != null && ms.unico() && ms.enEstrellas() && ms.precio() == 1000 && ms.item().equals("emi_plush:gatitoalien_suit"), "el peluche de Ms. President: unico, 1000 michiestrellitas");
         ok(Tienda.LIMITE_DIA == 10, "el limite del dueño: 10 por articulo y dia");
         Path dir = Files.createTempDirectory("survivors_tienda");
         Datos d = new Datos(dir);
@@ -549,6 +551,14 @@ public final class PruebaLogica {
         ok(Tienda.comprar(j, "gacha", ahora + dia, z, bien) == null && Tienda.compradosHoy(j, "gacha") == 1 && Tienda.compradosHoy(j, "ultra") == 0, "al dia siguiente se vacian las compras");
         j.coronas = 10;
         ok(Tienda.comprar(j, "master", ahora + dia, z, bien) != null && j.coronas == 10, "la Master Ball cuesta mas de 10");
+        Datos.Jugador u = d.jugador(UUID.randomUUID(), "Comprador");
+        u.monedas = 999; u.coronas = 50;
+        ok(Tienda.comprar(u, "peluche_ms", ahora, z, bien) != null && u.monedas == 999 && !Tienda.yaLoTiene(u, "peluche_ms"), "con 999 michiestrellitas no llega");
+        u.monedas = 1500;
+        ok(Tienda.comprar(u, "peluche_ms", ahora, z, a -> false) != null && u.monedas == 1500 && !Tienda.yaLoTiene(u, "peluche_ms"), "si el correo falla no cobra");
+        ok(Tienda.comprar(u, "peluche_ms", ahora, z, bien) == null && u.monedas == 500 && u.coronas == 50 && Tienda.yaLoTiene(u, "peluche_ms"), "compra: cobra 1000 michiestrellitas (no coronas) y lo marca");
+        u.monedas = 5000;
+        ok(Tienda.comprar(u, "peluche_ms", ahora + dia * 3, z, bien) != null && u.monedas == 5000, "solo una vez por jugador, aunque pase el tiempo");
         System.out.println("  tienda: bien");
     }
 

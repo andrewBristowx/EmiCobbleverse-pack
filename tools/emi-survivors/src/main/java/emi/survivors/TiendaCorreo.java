@@ -20,9 +20,10 @@ final class TiendaCorreo {
         try {
             var item = Registries.ITEM.getOrEmpty(Identifier.of(a.item())).orElse(null);
             if (item == null) { EmiSurvivors.LOG.warn("Tienda: el objeto {} no existe en este servidor.", a.item()); return false; }
+            if (Boolean.getBoolean("emi.survivors.correo_prueba")) { EmiSurvivors.LOG.info("[tienda] (correo de prueba) {} -> {}", id, a.item()); return true; }          // solo para pruebas sin Emipokemon
             Class<?> c = Class.forName("com.emipokemon.mail.MailboxService");
             Method m = c.getMethod("sendGift", MinecraftServer.class, UUID.class, ItemStack.class, String.class, String.class);
-            m.invoke(null, server, id, new ItemStack(item, 1), "Tienda de recompensas", "Comprado con coronas");
+            m.invoke(null, server, id, new ItemStack(item, 1), "Tienda de recompensas", a.enEstrellas() ? "Comprado con michiestrellitas" : "Comprado con coronas");
             return true;
         } catch (Throwable t) {
             EmiSurvivors.LOG.warn("Tienda: no se pudo mandar {} al correo: {}", a.item(), t.toString());

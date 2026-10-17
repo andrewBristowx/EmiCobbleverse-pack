@@ -221,5 +221,7 @@
   "cobblemon.ability.floracin": "Bloom",
   "cobblemon.ability.floracin.desc": "It restores 1/16 of its HP every turn (1/8 under harsh sunlight) and is immune to powder and spore moves.",
   "cobblemon.ability.saqueo": "Plunder",
-  "cobblemon.ability.saqueo.desc": "When it knocks out a Pokémon it raises its Attack by 1 stage and restores 1/4 of its max HP."
+  "cobblemon.ability.saqueo.desc": "When it knocks out a Pokémon it raises its Attack by 1 stage and restores 1/4 of its max HP.",
+  "block.emi_plush.gatitoalien_suit": "Ms. President Plush",
+  "item.emi_plush.gatitoalien_suit": "Ms. President Plush"
 }

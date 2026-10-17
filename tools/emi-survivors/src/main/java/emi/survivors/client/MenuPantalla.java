@@ -84,7 +84,7 @@ public final class MenuPantalla extends Lienzo {
     private final Map<String, List<Marca>> tops = new HashMap<>();
     private final List<MisionC> misionesDia = new ArrayList<>(), misionesSemana = new ArrayList<>();
     private final List<LogroC> logros = new ArrayList<>();
-    private record ArticuloC(String id, String item, String nombre, String texto, int precio, String grupo, int hoy) {}
+    private record ArticuloC(String id, String item, String nombre, String texto, int precio, String grupo, int hoy, boolean estrellas, boolean unico, boolean comprado) {}
     private final List<ArticuloC> articulos = new ArrayList<>();
     private final Map<String, ItemStack> pilas = new HashMap<>();
     private int limiteTienda = 10;
@@ -206,7 +206,8 @@ public final class MenuPantalla extends Lienzo {
             limiteTienda = td.get("limite").getAsInt();
             for (JsonElement e : td.getAsJsonArray("articulos")) {
                 JsonObject a = e.getAsJsonObject();
-                articulos.add(new ArticuloC(a.get("id").getAsString(), a.get("item").getAsString(), a.get("nombre").getAsString(), a.get("texto").getAsString(), a.get("precio").getAsInt(), a.get("grupo").getAsString(), a.get("hoy").getAsInt()));
+                articulos.add(new ArticuloC(a.get("id").getAsString(), a.get("item").getAsString(), a.get("nombre").getAsString(), a.get("texto").getAsString(), a.get("precio").getAsInt(), a.get("grupo").getAsString(), a.get("hoy").getAsInt(),
+                        a.has("moneda") && a.get("moneda").getAsString().equals("estrellas"), a.has("unico") && a.get("unico").getAsBoolean(), a.has("comprado") && a.get("comprado").getAsBoolean()));
             }
         }
         misionesDia.clear(); misionesSemana.clear(); logros.clear();
@@ -609,7 +610,7 @@ public final class MenuPantalla extends Lienzo {
 
     // ------------------------------------------------------------ tienda de recompensas
 
-    private static final int TW = 296, TH = 34, TY = CY + 14;
+    private static final int TW = 296, TH = 30, TY = CY + 14, TGAP = 2;
 
     private ItemStack pila(String item) {
         return pilas.computeIfAbsent(item, k -> {
@@ -618,8 +619,17 @@ public final class MenuPantalla extends Lienzo {
         });
     }
 
-    /** Donde va el articulo numero {@code i}: dos columnas de seis filas. */
-    private static int[] posArticulo(int i) { return new int[]{LX + (i / 6) * (TW + 8), TY + (i % 6) * (TH + 3)}; }
+    /** Donde va el articulo numero {@code i}: los normales en dos columnas de seis filas; los unicos (de michiestrellitas) en filas anchas debajo. */
+    private int[] posArticulo(int i) {
+        if (articulos.get(i).unico()) {
+            int k = 0;
+            for (int q = 0; q < i; q++) if (articulos.get(q).unico()) k++;
+            return new int[]{LX, TY + 6 * (TH + TGAP) + 4 + k * 40};
+        }
+        int n = 0;
+        for (int q = 0; q < i; q++) if (!articulos.get(q).unico()) n++;
+        return new int[]{LX + (n / 6) * (TW + 8), TY + (n % 6) * (TH + TGAP)};
+    }
 
     private void tienda(DrawContext g, int mx, int my) {
         texto(g, "TIENDA DE RECOMPENSAS", LX, CY - 2, ORO, 1.2f);
@@ -628,18 +638,33 @@ public final class MenuPantalla extends Lienzo {
             ArticuloC a = articulos.get(i);
             int[] p = posArticulo(i);
             int x = p[0], y = p[1];
+            if (a.unico()) { articuloUnico(g, mx, my, a, x, y); continue; }
             boolean tope = a.hoy() >= limiteTienda, puede = !tope && coronas >= a.precio();
             caja(g, x, y, TW, TH, 0xFF1B1B30, a.grupo().equals("banner") ? 0xFF8A5AB0 : 0xFF55557A);
             ItemStack s = pila(a.item());
-            if (!s.isEmpty()) g.drawItem(s, x + 8, y + 9);
-            texto(g, a.nombre(), x + 32, y + 5, BLANCO, 0.95f);
-            texto(g, a.texto(), x + 32, y + 17, GRIS, 0.7f);
-            texto(g, "Hoy: " + a.hoy() + "/" + limiteTienda, x + 32, y + 25, tope ? ROJO : 0xFF8888AA, 0.7f);
+            if (!s.isEmpty()) g.drawItem(s, x + 8, y + 7);
+            texto(g, a.nombre(), x + 32, y + 4, BLANCO, 0.95f);
+            texto(g, a.texto(), x + 32, y + 14, GRIS, 0.7f);
+            texto(g, "Hoy: " + a.hoy() + "/" + limiteTienda, x + 32, y + 22, tope ? ROJO : 0xFF8888AA, 0.7f);
             int bx = x + TW - 92, bw = 86;
-            boton(g, bx, y + 6, bw, 22, tope ? "AGOTADO HOY" : a.precio() + (a.precio() == 1 ? " corona" : " coronas"), 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 6, bw, 22), 0.85f);
+            boton(g, bx, y + 4, bw, 22, tope ? "AGOTADO HOY" : a.precio() + (a.precio() == 1 ? " corona" : " coronas"), 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 4, bw, 22), 0.85f);
         }
         if (articulos.isEmpty()) parrafo(g, "La tienda no está disponible.", LX, CY + 30, 400, GRIS, 1f);
         texto(g, "Lo que compras llega a tu correo (/correo). Las coronas se ganan con misiones y logros.", LX, 336, 0xFF8888AA, 0.75f);
+    }
+
+    /** Un articulo unico (el peluche de Ms. President): fila ancha dorada, se paga con michiestrellitas y solo se compra una vez. */
+    private void articuloUnico(DrawContext g, int mx, int my, ArticuloC a, int x, int y) {
+        int w = 2 * TW + 8, h = 36;
+        boolean puede = !a.comprado() && monedas >= a.precio();
+        caja(g, x, y, w, h, 0xFF2A2410, ORO);
+        ItemStack s = pila(a.item());
+        if (!s.isEmpty()) g.drawItem(s, x + 10, y + 10);
+        texto(g, a.nombre() + "  ★ ÚNICO", x + 36, y + 5, ORO, 1.0f);
+        texto(g, a.texto(), x + 36, y + 17, GRIS, 0.75f);
+        texto(g, a.comprado() ? "¡Ya lo tienes! Mira /correo si aún no lo has recogido." : "Tus michiestrellitas: " + monedas, x + 36, y + 26, a.comprado() ? VERDE : 0xFF8888AA, 0.7f);
+        int bw = 150, bx = x + w - bw - 8;
+        boton(g, bx, y + 7, bw, 22, a.comprado() ? "COMPRADO ✔" : a.precio() + " michiestrellitas", 0xFFB8860B, puede, puede && dentro(mx, my, bx, y + 7, bw, 22), 0.9f);
     }
 
     // ------------------------------------------------------------ clics
@@ -678,7 +703,11 @@ public final class MenuPantalla extends Lienzo {
             for (int i = 0; i < articulos.size(); i++) {
                 ArticuloC a = articulos.get(i);
                 int[] ps = posArticulo(i);
-                if (a.hoy() < limiteTienda && coronas >= a.precio() && dentro(mx, my, ps[0] + TW - 92, ps[1] + 6, 86, 22)) { enviar("tienda_comprar", a.id(), ""); return; }
+                if (a.unico()) {
+                    if (!a.comprado() && monedas >= a.precio() && dentro(mx, my, ps[0] + 2 * TW + 8 - 158, ps[1] + 7, 150, 22)) { enviar("tienda_comprar", a.id(), ""); return; }
+                    continue;
+                }
+                if (a.hoy() < limiteTienda && coronas >= a.precio() && dentro(mx, my, ps[0] + TW - 92, ps[1] + 4, 86, 22)) { enviar("tienda_comprar", a.id(), ""); return; }
             }
         }
         if (tab == T_RETOS) {

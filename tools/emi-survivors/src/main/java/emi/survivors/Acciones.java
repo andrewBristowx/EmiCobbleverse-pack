@@ -74,7 +74,7 @@ final class Acciones {
                     else {
                         Partida.datos.guardar(p.getUuid());
                         Tienda.Articulo art = Tienda.articulo(a.a());
-                        p.sendMessage(Msg.say("Comprado: " + art.nombre() + " (" + art.precio() + (art.precio() == 1 ? " corona" : " coronas") + "). Lo tienes en /correo."), false);
+                        p.sendMessage(Msg.say("Comprado: " + art.nombre() + " (" + art.precio() + " " + art.unidad() + "). Lo tienes en /correo."), false);
                         Sonidos.sfx(p, Sonidos.MENU_COMPRAR, 0.9f, 1.0f);
                     }
                     Menu.enviar(p, "tienda", null);

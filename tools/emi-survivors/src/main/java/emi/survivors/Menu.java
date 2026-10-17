@@ -188,6 +188,7 @@ final class Menu {
             JsonObject e = new JsonObject();
             e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("texto", a.texto());
             e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("hoy", Tienda.compradosHoy(j, a.id()));
+            e.addProperty("moneda", a.moneda()); e.addProperty("unico", a.unico()); e.addProperty("comprado", a.unico() && Tienda.yaLoTiene(j, a.id()));
             arts.add(e);
         }
         tienda.add("articulos", arts);

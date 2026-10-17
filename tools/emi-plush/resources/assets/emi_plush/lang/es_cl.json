@@ -221,5 +221,7 @@
   "cobblemon.ability.floracin": "Floración",
   "cobblemon.ability.floracin.desc": "Recupera 1/16 de sus PS cada turno (1/8 con sol intenso) y es inmune a los movimientos de polvo y esporas.",
   "cobblemon.ability.saqueo": "Saqueo",
-  "cobblemon.ability.saqueo.desc": "Al derrotar a un Pokémon sube 1 nivel su Ataque y recupera 1/4 de sus PS máximos."
+  "cobblemon.ability.saqueo.desc": "Al derrotar a un Pokémon sube 1 nivel su Ataque y recupera 1/4 de sus PS máximos.",
+  "block.emi_plush.gatitoalien_suit": "Peluche Ms. President",
+  "item.emi_plush.gatitoalien_suit": "Peluche Ms. President"
 }
