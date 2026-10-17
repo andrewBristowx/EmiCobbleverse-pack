@@ -16,7 +16,7 @@ import java.util.List;
  * mientras haya jugadores en pie dentro) y LEGENDARIO (ya ha salido el Pokemon legendario; la grieta no vuelve a abrirse hasta que cae).
  */
 final class GrietaEquipo {
-    private enum Fase { NINGUNA, ABIERTA, LEGENDARIO }
+    private enum Fase { NINGUNA, ABIERTA, ENTRANDO, LEGENDARIO, VOLVER }
 
     private final Equipo eq;
     private Fase fase = Fase.NINGUNA;
@@ -26,12 +26,14 @@ final class GrietaEquipo {
     private Entity fondo, relleno;
     Enemigo legendario;
     private String nombreLeg = "";
-    private int cdBomba;
+    private int cdBomba, retorno;
+    private Especies.E especiePendiente;          // el legendario que saldra cuando el equipo ya este en el escenario del duelo
 
     GrietaEquipo(Equipo eq) { this.eq = eq; }
 
     /** El texto de la interfaz para un jugador (vacio si no hay grieta): hacia donde esta, cuanto lleva y cuanto queda. */
     String texto(Run r) {
+        if (fase == Fase.VOLVER) return "DUELO GANADO · volvéis a la arena";
         if (fase == Fase.ABIERTA) {
             int pct = Math.min(100, carga * 100 / Grietas.CARGA);
             return "GRIETA " + Grietas.direccion(x - r.pp.x, z - r.pp.z) + " · " + pct + " %";
@@ -39,7 +41,7 @@ final class GrietaEquipo {
         return "";
     }
 
-    int segundosRestantes() { return fase == Fase.ABIERTA ? Math.max(0, restante / 20) : 0; }
+    int segundosRestantes() { return fase == Fase.ABIERTA ? Math.max(0, restante / 20) : fase == Fase.VOLVER ? Math.max(0, retorno / 20) : 0; }
 
     /** Los datos de la barra de vida del legendario para la interfaz (null si no hay). */
     Enemigo legendarioVivo() { return fase == Fase.LEGENDARIO && legendario != null && legendario.hp > 0 ? legendario : null; }
@@ -53,11 +55,16 @@ final class GrietaEquipo {
                 if (!Sentencia.toca(seg) && Grietas.tocan(seg) > abiertas && (eq.jefe == null || !eq.jefe.vivo()) && Jefes.tocan(seg + 45) <= eq.jefesSalidos && eq.marea == null) abrir();
             }
             case ABIERTA -> abierta();
+            case ENTRANDO -> { if (--retorno <= 0) aparecer(); }
+            case VOLVER -> { if (--retorno <= 0) { eq.salirDuelo(); fase = Fase.NINGUNA; } }
             case LEGENDARIO -> {
-                if (legendario == null || legendario.hp <= 0 || legendario.e.isRemoved()) { fase = Fase.NINGUNA; legendario = null; return; }
-                if (--cdBomba <= 0) {                                   // cada 5 s marca una explosion bajo cada jugador en pie (la misma bomba de las personalidades)
-                    cdBomba = 100;
+                if (legendario == null || (legendario.hp > 0 && legendario.e.isRemoved())) { fase = Fase.VOLVER; legendario = null; retorno = 20; return; }          // desaparecio sin caer: se vuelve a la arena
+                if (legendario.hp <= 0) return;                         // acaba de caer: el equipo lo retira este mismo tick y llama a alDerrotar
+                if (--cdBomba <= 0) {                                   // cada 3,5 s marca una explosion bajo cada jugador en pie (la misma bomba de las personalidades) y otra al azar
+                    cdBomba = 70;
                     for (Run m : eq.vivos()) eq.ponerBomba(m.pp.x, m.pp.z);
+                    double a = eq.rnd.nextDouble() * Math.PI * 2, d = eq.rnd.nextDouble() * (eq.radio - 4);
+                    eq.ponerBomba(eq.cx + Math.cos(a) * d, eq.cz + Math.sin(a) * d);
                 }
                 if (tick % 6 == 0) eq.w.spawnParticles(ParticleTypes.PORTAL, legendario.e.getX(), legendario.e.getY() + legendario.radio * 2, legendario.e.getZ(), 10, 0.6, 1.0, 0.6, 0.3);
             }
@@ -110,10 +117,26 @@ final class GrietaEquipo {
         Especies.E sp = null;
         for (String id : ids) { sp = Especies.porId(id); if (sp != null) break; }
         double tm = eq.tick / 20.0;
-        Enemigo en = sp == null ? null : Enemigo.crear(eq.w, sp, "", new Vec3d(x, Arena.Y0, z), Enemigo.Tipo.ELITE, 1, Curvas.danoMul(tm), 1.0, 0f, eq.rnd);
-        if (en == null) {
+        if (sp == null) {
             EmiSurvivors.LOG.warn("[grieta] no hay legendario disponible para {} (probados {})", bioma, ids);
             eq.avisar(Msg.say("La grieta se ha cerrado sin nada dentro."));
+            fase = Fase.NINGUNA;
+            return;
+        }
+        eq.entrarDuelo();                                    // el equipo viaja al escenario del duelo y el legendario sale alli, solo contra ellos
+        especiePendiente = sp; retorno = 40; fase = Fase.ENTRANDO;                    // un segundo y medio despues (para que cargue el escenario) sale el legendario
+        for (Run m : eq.miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) { Msg.title(p, Text.literal("¡EL DUELO!").formatted(Formatting.DARK_PURPLE, Formatting.BOLD), Text.literal("La grieta os ha llevado a su mundo").formatted(Formatting.LIGHT_PURPLE), 5, 40, 10); Sonidos.sfx(p, Sonidos.TEMBLOR, 0.9f, 0.8f); } }
+    }
+
+    private void aparecer() {
+        Especies.E sp = especiePendiente; especiePendiente = null;
+        double tm = eq.tick / 20.0;
+        x = eq.cx + 14; z = eq.cz;
+        Enemigo en = Enemigo.crear(eq.w, sp, "", new Vec3d(x, Arena.Y0, z), Enemigo.Tipo.ELITE, 1, Curvas.danoMul(tm), 1.0, 0f, eq.rnd);
+        if (en == null) {
+            EmiSurvivors.LOG.warn("[grieta] no se pudo crear el legendario {}", sp.id());
+            eq.avisar(Msg.say("La grieta se ha cerrado sin nada dentro."));
+            eq.salirDuelo();
             fase = Fase.NINGUNA;
             return;
         }
@@ -138,24 +161,23 @@ final class GrietaEquipo {
         EmiSurvivors.LOG.info("[grieta] {}: sale {} con {} de vida", eq.nombres(), sp.id(), Math.round(en.hpMax));
     }
 
-    /** Lo llama el equipo cuando cae el legendario: tesoro para todos. */
+    /** Lo llama el equipo cuando cae el legendario: mucha experiencia, un objeto, una fusion de ataques y, a los 7 s, la vuelta a la arena. */
     void alDerrotar(Enemigo en, double ex, double ez) {
         for (int k = 0; k < 8; k++) { double a = k * Math.PI / 4; eq.gemas.add(new Gema(ex + Math.cos(a) * 2.5, ez + Math.sin(a) * 2.5, 18)); }
-        eq.soltarObjeto(Objeto.CARAMELO, ex + 1.8, ez);
-        eq.soltarObjeto(Objeto.IMAN, ex - 1.8, ez);
-        eq.soltarObjeto(Objeto.BAYA, ex, ez + 1.8);
+        eq.soltarObjeto(Objeto.sortear(eq.rnd, true), ex + 1.8, ez);
+        eq.soltarObjeto(Objeto.CARAMELO, ex - 1.8, ez);
         for (Run m : eq.miembros) {
-            m.nivel++; m.pendientes++;                      // un nivel para todos
+            m.nivel += 3; m.pendientes += 3;                // mucha experiencia: tres niveles para todos
             m.darFusion();                                  // y la posibilidad de fusionar dos ataques
             ServerPlayerEntity p = m.jugador();
             if (p != null) {
-                Msg.title(p, Text.literal("¡LEGENDARIO DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nombreLeg + " ha caído · +1 nivel, un tesoro y una fusión").formatted(Formatting.YELLOW), 5, 60, 15);
+                Msg.title(p, Text.literal("¡LEGENDARIO DERROTADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nombreLeg + " ha caído · +3 niveles, un objeto y una fusión").formatted(Formatting.YELLOW), 5, 60, 15);
                 Sonidos.sfx(p, Sonidos.JEFE_DERROTADO, 0.8f, 1.2f);
             }
         }
         if (en.ultimo != null) en.ultimo.legendarios++;
         EmiSurvivors.LOG.info("[grieta] {}: {} derrotado a los {} s", eq.nombres(), nombreLeg, eq.segundos());
-        fase = Fase.NINGUNA; legendario = null;
+        fase = Fase.VOLVER; legendario = null; retorno = 160;
     }
 
     private void quitarMarcas() { Marcas.quitar(eq, fondo); Marcas.quitar(eq, relleno); fondo = null; relleno = null; }
@@ -166,6 +188,7 @@ final class GrietaEquipo {
     /** Solo para pruebas (/survivor dev grieta): abre una grieta ya, aunque no toque. */
     boolean forzar() {
         if (fase == Fase.LEGENDARIO && legendario != null) { legendario.hp = 0; legendario.ultimo = eq.miembros.isEmpty() ? null : eq.miembros.get(0); return true; }      // segunda vez: lo derrota para probar el tesoro
+        if (fase == Fase.ABIERTA) { carga = Grietas.CARGA; return true; }          // segunda vez con la grieta abierta: se abre del todo (y empieza el duelo)
         if (fase != Fase.NINGUNA) return false;
         int antes = abiertas;
         abrir();

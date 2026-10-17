@@ -41,6 +41,9 @@ final class Equipo {
     Biomas.Bioma bioma;                          // el bioma (la arena) del mundo actual
     final int slot;
     final double ox, oz;                         // centro de la arena de esta partida
+    double cx, cz, radio = Arena.RADIO;          // el sitio por el que se mueve ahora el equipo: la arena, o el escenario del duelo con un legendario (ver entrarDuelo)
+    boolean duelo;                               // el equipo esta en el escenario del duelo con un legendario: no salen enemigos ni jefes ni cambian los horarios
+    int tickDuelo0;
     final int fijo;                              // > 0 = modo de MEDIDA de la fase 0 (ese numero de enemigos desde el principio, sin oleadas ni jefe)
     Grupos.Grupo grupo;                          // el grupo de la sala que juega esta partida (null si son jugadores sueltos)
     final boolean modoPrueba;                    // partida de prueba de un administrador (sin pasar por la sala: se le guarda y devuelve todo)
@@ -69,7 +72,7 @@ final class Equipo {
     double sumaEstable, sumaNuestroEstable; int nEstable;
 
     Equipo(ServerWorld w, int slot, double ox, double oz, int fijo, boolean modoPrueba, Biomas.Bioma bioma) {
-        this.w = w; this.slot = slot; this.ox = ox; this.oz = oz; this.fijo = fijo; this.modoPrueba = modoPrueba; this.bioma = bioma;
+        this.w = w; this.slot = slot; this.ox = ox; this.oz = oz; this.cx = ox; this.cz = oz; this.fijo = fijo; this.modoPrueba = modoPrueba; this.bioma = bioma;
         mundo = Math.max(0, Mundos.indice(bioma.id()));
         jefesSalidos = Jefes.POR_MUNDO * mundo;
         prepararEspecies();
@@ -133,7 +136,7 @@ final class Equipo {
     boolean mundoCerrado() { return Sentencia.toca(tm()); }
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
-    String zona() { String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
+    String zona() { if (duelo) return "DUELO LEGENDARIO"; String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
 
     int segundos() { return tick / 20; }
 
@@ -190,7 +193,7 @@ final class Equipo {
             ServerPlayerEntity p = m.jugador();
             m.tick = tick;
             m.pp = p.getPos();
-            if (!Arena.dentro(this, m.pp.x, m.pp.z, -2.0)) { p.teleport(w, ox + 0.5, Arena.Y0, oz + 0.5, p.getYaw(), 0f); m.pp = p.getPos(); }      // por si acaso se sale del muro
+            if (!Arena.dentro(this, m.pp.x, m.pp.z, -2.0)) { p.teleport(w, cx + 0.5, Arena.Y0, cz + 0.5, p.getYaw(), 0f); m.pp = p.getPos(); }      // por si acaso se sale del muro
         }
         double t = tick / 20.0;
         int n = miembros.size();
@@ -200,7 +203,7 @@ final class Equipo {
         if (fijo > 0) {
             int meta = Math.min(fijo, (int) ((long) fijo * tick / RAMPA));
             for (int k = 0; k < MAX_NUEVOS_POR_TICK && enemigos.size() < meta; k++) if (!crearEnemigo(Enemigo.Tipo.DEBIL)) break;
-        } else {
+        } else if (!duelo) {
             double fm = marea != null && marea.enemigosPropios() ? 1.25 : 1.0;
             int cap = tesoros.cantidad() + (int) Math.round(Math.min(Curvas.TOPE_EQUIPO, Math.min(Curvas.tope(t, n), Partida.topePorEquipo()) * fm) * Partida.factorRendimiento());
             presupuesto = Math.min(3.0, presupuesto + Curvas.ritmo(t, n) * (marea == null ? 1.0 : marea.factorRitmo()) * (sentencia.activa() ? Sentencia.RITMO : 1.0) / 20.0);
@@ -209,7 +212,7 @@ final class Equipo {
                 presupuesto -= 1.0;
             }
             if (tick % (20 * Curvas.CADA_ELITE) == 0) { if (crearEnemigo(Enemigo.Tipo.ELITE)) for (Run m : miembros) { ServerPlayerEntity p = m.jugador(); if (p != null) Msg.actionBar(p, Text.literal("¡Cuidado, se acerca un campeón!").formatted(Formatting.GOLD, Formatting.BOLD)); } }
-            boolean final_ = Sentencia.toca(tm());                                       // desde la Sentencia ya no salen jefes ni mareas nuevos
+            boolean final_ = Sentencia.toca(tm()) || duelo;                                       // desde la Sentencia ya no salen jefes ni mareas nuevos
             if (!final_ && (jefe == null || !jefe.vivo()) && jefesSalidos < Jefes.POR_MUNDO * mundo + Jefes.tocanEnMundo(tm(), mundo)) crearJefe(jefesSalidos + 1);        // uno vivo a la vez: si el anterior sigue, el siguiente espera
             if (!final_ && marea == null && (jefe == null || !jefe.vivo()) && mareasSalidas < mareasBase + Mareas.tocan(tm())) {
                 mareasSalidas = Math.max(mareasSalidas, mareasBase + Mareas.tocan(tm()) - 1);          // si una marea llega tarde (habia un jefe vivo), las que se perdieron no se acumulan
@@ -219,7 +222,7 @@ final class Equipo {
         if (marea != null && marea.tick(objetivos)) { marea.limpiar(); marea = null; }
 
         crearRefuerzos();
-        if (fijo == 0) { int tw = tick - tickMundo0; clima.tick(tw); grieta.tick(tw); sentencia.tick(tw); evento.tick(tw); tesoros.tick(tw); }
+        if (fijo == 0) { int tw = tick - tickMundo0; grieta.tick(tw); if (!duelo) { clima.tick(tw); sentencia.tick(tw); evento.tick(tw); tesoros.tick(tw); } }
 
         // 2) separar a los enemigos entre si (rejilla de 1,6 bloques), moverlos hacia el jugador en pie mas cercano y contar el dano por contacto
         separar();
@@ -565,6 +568,52 @@ final class Equipo {
 
     boolean gigantePuesto;
 
+    // ------------------------------------------------------------------------------------------------ duelo con un legendario
+
+    /**
+     * El equipo viaja al escenario del duelo (a 300 bloques de la arena, en el mismo mundo): lo que haya en la arena (enemigos, marcas, tesoros, marea, evento) se quita y el
+     * reloj del mundo se queda parado; las gemas y los objetos que hubiera se quedan donde estan. Lo vuelve a sacar {@link #salirDuelo}.
+     */
+    void entrarDuelo() {
+        for (Enemigo en : enemigos) en.quitar();
+        enemigos.clear(); refuerzos.clear(); bombas.clear();
+        if (marea != null) { marea.limpiar(); marea = null; }
+        evento.limpiar(); tesoros.limpiar();
+        Marcas.quitarTodas(this);
+        for (Run m : miembros) m.proyectiles.clear();
+        Arena.prepararDuelo(w, slot);
+        double[] o = Arena.origenDuelo(slot);
+        cx = o[0]; cz = o[1]; radio = Arena.RADIO_DUELO;
+        duelo = true; tickDuelo0 = tick;
+        int n = miembros.size(), k = 0;
+        for (Run m : miembros) {
+            m.posAntes = m.pp;
+            ServerPlayerEntity p = m.jugador();
+            double ang = Math.PI + k++ * Math.PI * 2 / n, dist = n == 1 ? 12 : 11;
+            if (p != null) { p.teleport(w, cx + 0.5 + Math.cos(ang) * dist, Arena.Y0, cz + 0.5 + Math.sin(ang) * dist, -90f, 0f); m.pp = p.getPos(); }
+            m.iframes = Math.max(m.iframes, 40);
+        }
+    }
+
+    /** El duelo ha terminado: todos vuelven a la arena, al sitio donde estaban, y el reloj del mundo sigue donde se quedo. */
+    void salirDuelo() {
+        if (!duelo) return;
+        for (Enemigo en : enemigos) en.quitar();
+        enemigos.clear(); bombas.clear();
+        Marcas.quitarTodas(this);
+        gemas.removeIf(g -> g.x > ox + 150); objetos.removeIf(o -> o.x > ox + 150);
+        tesoros.limpiar();                                   // los barriles se vuelven a poner
+        cx = ox; cz = oz; radio = Arena.RADIO;
+        duelo = false;
+        tickMundo0 += tick - tickDuelo0;
+        for (Run m : miembros) {
+            ServerPlayerEntity p = m.jugador();
+            Vec3d d = m.posAntes != null && Arena.dentro(this, m.posAntes.x, m.posAntes.z, 2.0) ? m.posAntes : new Vec3d(ox + 0.5, Arena.Y0, oz + 0.5);
+            if (p != null) { p.teleport(w, d.x, Arena.Y0, d.z, p.getYaw(), 0f); m.pp = p.getPos(); }
+            m.iframes = Math.max(m.iframes, 60);
+        }
+    }
+
     /** Pasa al siguiente mundo: lo del mundo viejo se limpia, el equipo viaja a la arena del nuevo y los horarios (jefes, mareas, climas...) vuelven a empezar. */
     private void pasarDeMundo() {
         Biomas.Bioma nuevo = Mundos.siguiente(mundo);
@@ -721,8 +770,8 @@ final class Equipo {
 
     /** Deja un objeto en el suelo (si hay demasiados, desaparece el mas viejo). Dentro de la arena. */
     void soltarObjeto(int tipo, double x, double z) {
-        double dx = x - ox, dz = z - oz, lim = Arena.RADIO - 2.5, d = Math.sqrt(dx * dx + dz * dz);
-        if (d > lim) { x = ox + dx / d * lim; z = oz + dz / d * lim; }
+        double dx = x - cx, dz = z - cz, lim = radio - 2.5, d = Math.sqrt(dx * dx + dz * dz);
+        if (d > lim) { x = cx + dx / d * lim; z = cz + dz / d * lim; }
         while (objetos.size() >= MAX_OBJETOS) objetos.remove(0);
         objetos.add(new Objeto(tipo, x, z));
     }

@@ -58,7 +58,7 @@ final class Musica {
         Run r = Partida.de(p.getUuid());
         if (r == null) return null;
         Equipo eq = r.eq;
-        if (eq.jefe != null && eq.jefe.vivo()) return "jefe";
+        if ((eq.jefe != null && eq.jefe.vivo()) || eq.grieta.legendarioVivo() != null) return "jefe";
         return eq.bioma.musica();
     }
 

@@ -43,7 +43,7 @@ final class Arena {
 
     /** ¿Esta el punto (x, z) dentro de la arena de esta partida, con un margen respecto al muro? */
     static boolean dentro(Equipo r, double x, double z, double margen) {
-        double dx = x - r.ox, dz = z - r.oz, lim = RADIO - margen;
+        double dx = x - r.cx, dz = z - r.cz, lim = r.radio - margen;
         return dx * dx + dz * dz <= lim * lim;
     }
 
@@ -57,6 +57,40 @@ final class Arena {
         java.util.List<Entity> restos = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains("emi_survivors"));
         for (Entity e : restos) e.discard();
         if (!restos.isEmpty()) EmiSurvivors.LOG.info("Se han quitado {} restos de una partida anterior de la arena {}.", restos.size(), slot);
+    }
+
+    /** Radio jugable del escenario del duelo con un legendario, y a cuantos bloques (hacia +x) del centro de la arena esta. */
+    static final int RADIO_DUELO = 26;
+    static final double DUELO_DX = 300;
+
+    /** Centro (x, z) del escenario del duelo de ese hueco. */
+    static double[] origenDuelo(int slot) { double[] o = origen(slot); return new double[]{o[0] + DUELO_DX, o[1]}; }
+
+    /** Construye (la primera vez que se usa) el escenario del duelo con un legendario en el mundo {@code w}: un circulo de obsidiana con anillos de runas y un muro de amatista. */
+    static void prepararDuelo(ServerWorld w, int slot) {
+        double[] o = origenDuelo(slot);
+        int cx = (int) o[0], cz = (int) o[1];
+        if (w.getBlockState(new BlockPos(cx, -64, cz)).isOf(Blocks.CRYING_OBSIDIAN)) return;
+        long t0 = System.nanoTime();
+        BlockState obsidiana = Obra.b("obsidian"), negro = Obra.b("blackstone"), runa = Obra.b("crying_obsidian"), pulido = Obra.b("polished_blackstone"), amatista = Obra.b("amethyst_block");
+        int R = RADIO_DUELO + 4;
+        for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) {
+            double d = Math.sqrt(dx * dx + dz * dz);
+            if (d > RADIO_DUELO + 3) continue;
+            int x = cx + dx, z = cz + dz;
+            Obra.poner(w, x, SUELO - 2, z, obsidiana);
+            Obra.poner(w, x, SUELO - 1, z, negro);
+            boolean anillo = Math.abs(d - 8) < 0.7 || Math.abs(d - 16) < 0.7 || Math.abs(d - 23) < 0.7;
+            boolean estrella = d < 3.2 || (d < 15 && (Math.abs(dx) < 1 || Math.abs(dz) < 1 || Math.abs(Math.abs(dx) - Math.abs(dz)) < 1));
+            Obra.poner(w, x, SUELO, z, anillo || estrella ? runa : ((dx + dz) % 2 == 0 ? negro : pulido));
+            if (d >= RADIO_DUELO && d < RADIO_DUELO + 2.2) {                                            // el muro
+                Obra.poner(w, x, SUELO + 1, z, amatista);
+                Obra.poner(w, x, SUELO + 2, z, amatista);
+                if (d < RADIO_DUELO + 1.1 && ((int) Math.round(Math.atan2(dz, dx) * 40)) % 6 == 0) Obra.poner(w, x, SUELO + 3, z, Obra.b("sea_lantern"));
+            }
+        }
+        Obra.poner(w, cx, -64, cz, runa);
+        EmiSurvivors.LOG.info("Escenario del duelo del hueco {} construido en {} ms", slot, (System.nanoTime() - t0) / 1_000_000);
     }
 
     /** Construye la arena de ese hueco en el mundo {@code w} (la dimension del bioma) si todavia no existe. Devuelve true si la ha construido ahora (la primera vez tarda un segundo o dos). */

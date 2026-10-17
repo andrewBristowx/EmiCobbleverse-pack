@@ -894,7 +894,7 @@ final class Armas2 {
                 Bola b = it.next();
                 if (--b.vida <= 0) { r.w.spawnParticles(ParticleTypes.POOF, b.x, pp.y + 0.8, b.z, 8, 0.2, 0.2, 0.2, 0.02); it.remove(); continue; }
                 b.x += b.dx * 0.65; b.z += b.dz * 0.65;
-                double cx = r.eq.ox, cz = r.eq.oz, lim = Arena.RADIO - 1.8, vx = b.x - cx, vz = b.z - cz, dist = Math.hypot(vx, vz);
+                double cx = r.eq.cx, cz = r.eq.cz, lim = r.eq.radio - 1.8, vx = b.x - cx, vz = b.z - cz, dist = Math.hypot(vx, vz);
                 if (dist > lim) {                                                      // rebota en el muro de la arena
                     double nx = vx / dist, nz = vz / dist, punto = b.dx * nx + b.dz * nz;
                     if (punto > 0) { b.dx -= 2 * punto * nx; b.dz -= 2 * punto * nz; }

@@ -76,6 +76,7 @@ final class Run {
     int cartaCuenta;
     List<Cartas.Carta> oferta;
     Vec3d pp = Vec3d.ZERO;
+    Vec3d posAntes;                              // donde estaba al irse al duelo con un legendario
     private boolean gemasEnviadas;
     private int sonidoGema, gemaCadena, sonidoGolpe;          // para el sonido de las gemas (sube por una escala si se cogen seguidas) y para no repetir el del golpe cada tick
 
