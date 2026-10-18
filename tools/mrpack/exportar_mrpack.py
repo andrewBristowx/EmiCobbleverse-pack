@@ -42,10 +42,10 @@ def main():
         t = tomllib.load(open(m, "rb"))
         d = t["download"]
         assert d["hash-format"] == "sha512", m
-        info.append((os.path.join(os.path.dirname(m), t["filename"]).replace("\\", "/"), t.get("side", "both"), d["url"], d["hash"]))
+        info.append((os.path.join(os.path.dirname(m), t["filename"]).replace("\\", "/"), t.get("side", "both"), d["url"], d["hash"], t.get("option", {}).get("optional", False)))
     conocidos = pedir_api([i[3] for i in info])
     files = []
-    for ruta, side, url, h512 in info:
+    for ruta, side, url, h512, opcional in info:
         v = conocidos.get(h512)
         fi = None
         if v:
@@ -63,6 +63,7 @@ def main():
         env = {"client": "required", "server": "required"}
         if side == "client": env["server"] = "unsupported"
         if side == "server": env["client"] = "unsupported"
+        if opcional and env["client"] == "required": env["client"] = "optional"      # [option] optional = true del .pw.toml
         files.append({"path": ruta, "hashes": {"sha1": sha1, "sha512": h512}, "env": env, "downloads": [url], "fileSize": size})
     indice = {"formatVersion": 1, "game": "minecraft", "versionId": pack["version"], "name": pack["name"],
               "summary": "Modpack de Emi (Cobblemon + Emipokemon)", "files": files,
