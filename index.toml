@@ -1856,8 +1856,8 @@ file = "mods/emi-huida-0.11.2.jar"
 hash = "34d790a412a94e32d381aaec74adbb5de92fd251901f19520730639c98e45bfd"
 
 [[files]]
-file = "mods/emi-plush-1.17.0.jar"
-hash = "909579d3cd948e7c8b584b53ddbedaa32c4d49025e57f7a884cc5c9156fd62bc"
+file = "mods/emi-plush-1.18.0.jar"
+hash = "667fdf7ef441cc4b077c58f623d1f45b43b116e3ffd200c76bbdc40517ac0109"
 
 [[files]]
 file = "mods/emi-streamlabs-1.2.0.jar"

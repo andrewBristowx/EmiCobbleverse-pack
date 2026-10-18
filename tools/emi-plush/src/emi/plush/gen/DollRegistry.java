@@ -98,6 +98,7 @@ public final class DollRegistry {
         reg("gatitoalien_gold_pirate", Doll_gatitoalien_gold_pirate.class, Doll_gatitoalien_gold_pirate::new);
         reg("gatitoalien_suit", Doll_gatitoalien_suit.class, Doll_gatitoalien_suit::new);
         reg("gatitoalien_carrito", Doll_gatitoalien_carrito.class, Doll_gatitoalien_carrito::new);
+        reg("gatitoalien_dino", Doll_gatitoalien_dino.class, Doll_gatitoalien_dino::new);
         regGigante("gigante_michi_dramatico", "michi_dramatico", Gigantic_michi_dramatico.class, Gigantic_michi_dramatico::new);
         regGigante("gigante_gatitoalien_gold", "gatitoalien_gold", Gigantic_gatitoalien_gold.class, Gigantic_gatitoalien_gold::new);
         regGigante("gigante_gatitoalien_sunglasses", "gatitoalien_sunglasses", Gigantic_gatitoalien_sunglasses.class, Gigantic_gatitoalien_sunglasses::new);

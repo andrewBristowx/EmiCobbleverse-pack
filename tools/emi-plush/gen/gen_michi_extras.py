@@ -3,7 +3,7 @@
 Se ejecuta despues de gen_pokemon.py. Cada accesorio es un modelo aparte (copia del modelo base + cubos nuevos en el hueso `head`)
 que usa la misma textura (los accesorios estan pintados en la zona libre de abajo) y se elige con el aspecto `<accesorio>-accessory`.
 Uso: python3 gen_michi_extras.py <carpeta resources>"""
-import json, os, sys, copy
+import json, os, sys, copy, math
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emi_lib import box_rects
@@ -206,6 +206,78 @@ def carrito(g, f):
     varios(g, f, [(xh, 3, z0 + 3) for xh in (-31, 30) for z0 in (-30, 8)], (1, 6, 6), flat(YELLOW))             # tapacubos amarillos (salen 1 por fuera)
     return []
 
+# ---------------------------------------------------------------- pijama de dinosaurio (solo aspecto `dino`: peluche de regalo; no es una forma Pokemon)
+# Lleva su PROPIA textura (michi_dramatico_dino.png: el cuerpo del michi + todo el espacio libre de abajo para el pijama), porque la zona libre de la textura compartida esta llena.
+DG = (104, 184, 92); DG_D = (68, 138, 70); DG_L = (140, 210, 118); CREMA = (250, 238, 205); CREMA_D = (228, 208, 164); ESP = (244, 150, 52); ESP_L = (252, 200, 96)
+def escamas(face, i, j, w, h):
+    c = DG_L if face == 'up' else DG
+    if (i // 3 + j // 3) % 2 == 0 and i % 3 == 1 and j % 3 == 1: c = DG_D                 # escamitas oscuras en rejilla
+    elif (i * 5 + j * 7) % 17 == 0: c = mix(c, DG_D, 0.5)
+    return c + (255,)
+def barriga(face, i, j, w, h): return (CREMA_D if j % 3 == 2 else CREMA) + (255,)
+def puno(face, i, j, w, h): return (CREMA_D if (i + j) % 4 == 0 else CREMA) + (255,)
+def espina(face, i, j, w, h): return (ESP_L if face == 'up' or j == 0 else ESP) + (255,)
+def ojo_dino(face, i, j, w, h):
+    """ojo saltón: solo la cara de delante es blanca (con pupila y brillo y el parpado verde arriba); el resto es piel de dinosaurio"""
+    if face != 'north': return escamas(face, i, j, w, h)
+    if j == 0: return escamas(face, i, j, w, h)
+    c = ojo(face, i, j, w, h)
+    if 2 <= i <= w - 3 and 1 <= j <= h - 2: c = BLACK + (255,)
+    if (i, j) == (2, 1): c = WHITE + (255,)
+    return c
+def ojo(face, i, j, w, h): return (WHITE if (i + j) % 7 else (226, 232, 240)) + (255,)
+def garra(face, i, j, w, h): return (CREMA if j < h - 1 else CREMA_D) + (255,)
+
+def dino(g, f):
+    bones = {b['name']: b for b in g['minecraft:geometry'][0]['bones']}
+    for n in ('ear_left', 'ear_right', 'antenna_left', 'antenna_right'): bones[n].pop('cubes', None)       # el pijama las lleva escondidas por dentro
+    c = lambda nombre, o, sz, p=escamas, rot=None, piv=None: cube(g, f, nombre, o, sz, p, rot, piv)
+    def lr(nombre, o, sz, p, rot=None, piv=None):
+        """el cubo de la izquierda (x negativo) y su espejo de la derecha; los huesos acaban con _l y _r"""
+        c(nombre + '_l', o, sz, p, rot, piv)
+        o2 = (-(o[0] + sz[0]), o[1], o[2])
+        c(nombre + '_r', o2, sz, p, [rot[0], -rot[1], -rot[2]] if rot else None, [-piv[0], piv[1], piv[2]] if piv else None)
+    # ---- el cuerpo: mono verde con barriga crema
+    c('acc_dino', (-21, -0.3, -18.6), (42, 13, 37))                                       # el pijama alrededor de la parte de abajo del cuerpo
+    c('acc_dino', (-12, 2, -19.4), (24, 9, 1), barriga)                                # barriga crema por delante
+    for y in (24, 18, 12, 6):                                                          # espinas por la espalda
+        c('acc_dino', (-3, y, 16.6), (6, 4, 3), espina); c('acc_dino', (-2, y + 1, 19.6), (4, 2, 2), espina)
+    # ---- la capucha: casquete verde con hocico, dientes, ojos saltones y cresta
+    c('acc_dino', (-19, 29.7, -18.2), (38, 3, 36))                                    # la parte de arriba
+    lr('acc_dino_side', (-21.8, 12, -17.8), (3, 20, 37), escamas)                       # los lados (bajan hasta las mejillas)
+    c('acc_dino', (-19, 11.5, 17.8), (38, 19, 3))                                        # la nuca de la capucha (si no, por detras se ve la cabeza blanca)
+    c('acc_dino', (-16, 32.4, -15.2), (32, 3, 30))                                     # y un segundo piso, para que la capucha sea redondeada
+    c('acc_dino', (-10, 31, -27), (20, 5, 10))                                         # el hocico sobre la frente
+    for k in range(5): c('acc_dino', (-9 + 4 * k, 28.5, -27.6), (2, 3, 1), garra)      # los dientes
+    c('acc_dino', (-6, 35.9, -26), (2, 1, 2), flat((56, 96, 60))); c('acc_dino', (4, 35.9, -26), (2, 1, 2), flat((56, 96, 60)))     # las fosas nasales
+    lr('acc_dino_eye', (-14, 35, -13), (8, 5, 6), ojo_dino)                           # ojos saltones, con la pupila pintada solo en la cara de delante
+    for z in (-14, -7, 0, 7, 14):                                                      # la cresta de la capucha
+        c('acc_dino', (-3, 35, z), (6, 4, 5), espina); c('acc_dino', (-2, 39, z + 1), (4, 3, 3), espina)
+    # ---- brazos, pies y cola: fundas que siguen a los huesos del michi
+    for lado in ('l', 'r'):
+        a = bones['arm_' + ('left' if lado == 'l' else 'right')]['cubes'][0]; o, sz = a['origin'], a['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_dino_arm_{lado}', no, ns, escamas, a['rotation'], a['pivot'])                                       # manga
+        c(f'acc_dino_arm_{lado}', (no[0] - 0.5, no[1] - 0.5, no[2] - 0.5), (ns[0] + 1, 2, ns[2] + 1), puno, a['rotation'], a['pivot'])   # puno crema
+        for k in range(3): c(f'acc_dino_arm_{lado}', (no[0] + 1.5 + 0.0, no[1] - 2.4, no[2] + 1.0 + 3.2 * k), (2, 2, 2), garra, a['rotation'], a['pivot'])   # tres garras
+        pie = bones['foot_' + ('left' if lado == 'l' else 'right')]['cubes'][0]; o, sz = pie['origin'], pie['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_dino_foot_{lado}', no, ns, escamas)                                                                 # pie
+        for k in range(3): c(f'acc_dino_foot_{lado}', (no[0] + 1.0 + 3.6 * k, no[1] + 0.8, no[2] - 2.0), (2, 2, 2), garra)         # tres garras
+    for n in ('tail1', 'tail2', 'tail3'):
+        t = bones[n]['cubes'][0]; o, sz = t['origin'], t['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        rot, piv = t.get('rotation'), t.get('pivot')
+        c(f'acc_dino_{n}', no, ns, escamas, rot, piv)                                                               # funda de la cola
+        c(f'acc_dino_{n}', (o[0] + sz[0] / 2 - 2, no[1] + ns[1] - 0.6, o[2] + sz[2] / 2 - 2), (4, 4, 4), espina, rot, piv)       # y su espina
+    # los huesos nuevos cuelgan del hueso que siguen
+    padre = {'acc_dino_arm_l': 'arm_left', 'acc_dino_arm_r': 'arm_right', 'acc_dino_foot_l': 'foot_left', 'acc_dino_foot_r': 'foot_right',
+             'acc_dino_tail1': 'tail1', 'acc_dino_tail2': 'tail2', 'acc_dino_tail3': 'tail3'}
+    for b in g['minecraft:geometry'][0]['bones']:
+        if b['name'] in padre:
+            p = bones[padre[b['name']]]; b['parent'] = p['name']; b['pivot'] = list(p['pivot'])
+    return []
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -278,6 +350,16 @@ def main():
         assert not malos, f'{nombre}: caras coplanares (z-fighting) en {malos}'
         json.dump(g, open(f'{GEO}/michi_dramatico_{nombre}.geo.json', 'w'), separators=(',', ':'))
         variantes.append({'aspects': [f'{nombre}-accessory'], 'model': f'cobblemon:michi_dramatico_{nombre}.geo'})
+    # el pijama de dinosaurio va aparte, con su propia textura (el cuerpo del michi + toda la zona libre para el pijama)
+    img_d = Image.new('RGBA', img.size, (0, 0, 0, 0)); img_d.paste(img.crop((0, 0, img.width, 112)), (0, 0))
+    g = copy.deepcopy(geo0); g['minecraft:geometry'][0]['description']['identifier'] = 'geometry.michi_dramatico_dino'
+    free_d = Free(img_d, 112); dino(g, free_d)
+    malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b.get('cubes', []) if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
+    assert not malos, f'dino: caras coplanares (z-fighting) en {malos}'
+    json.dump(g, open(f'{GEO}/michi_dramatico_dino.geo.json', 'w'), separators=(',', ':'))
+    img_d.save(f'{TEX}/michi_dramatico_dino.png')
+    variantes.append({'aspects': ['dino-accessory'], 'model': 'cobblemon:michi_dramatico_dino.geo', 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_dino.png'})
+    print('pijama de dinosaurio: textura usada hasta la fila', free_d.y + free_d.rowh, 'de', img_d.height)
     img.save(f'{TEX}/michi_dramatico.png')
     oro = gold_shiny(img)
     # accesorios que se pierden sobre el pelaje dorado (la corona es dorada): en la textura dorada pasan a plata
@@ -293,7 +375,7 @@ def main():
     json.dump({'species': 'cobblemon:gatitoalien', 'order': 1, 'variations': variantes}, open(f'{rd}/1_michi_dramatico_accessories.json', 'w'), indent=2)
     data = os.path.join(OUT, 'data/cobblemon')
     os.makedirs(f'{data}/species_features', exist_ok=True); os.makedirs(f'{data}/species_feature_assignments', exist_ok=True)
-    json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS), 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
+    json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS) + ['dino'], 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['accessory']}, open(f'{data}/species_feature_assignments/accessory.json', 'w'))
     json.dump({'keys': ['gold'], 'type': 'flag', 'isAspect': True, 'default': False}, open(f'{data}/species_features/gold.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['gold']}, open(f'{data}/species_feature_assignments/gold.json', 'w'))
