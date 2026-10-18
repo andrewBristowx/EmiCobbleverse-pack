@@ -1537,7 +1537,7 @@ metafile = true
 
 [[files]]
 file = "mods/chatanimation.pw.toml"
-hash = "92b6e91822f1fe384fd566f9d1e0af21d969d24f6d2986a6817175608a135491"
+hash = "fc678d47d24d24cc45ef3323c9ee1a4c1a9ea89d334c93977e81546c7bcee574"
 metafile = true
 
 [[files]]
