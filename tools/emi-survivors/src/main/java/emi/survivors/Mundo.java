@@ -122,6 +122,7 @@ public final class Mundo {
         if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) return "Tu juego no tiene el mod Emi Survivors (hace falta para ver el menú): actualiza el pack y vuelve a entrar.";
         if (Partida.participa(p)) return "Ya estás en una partida.";
         if ("emi_carreras".equals(p.getWorld().getRegistryKey().getValue().getNamespace())) return "Estás en las carreras: sal primero (/carrera salir).";
+        if ("emi_huida".equals(p.getWorld().getRegistryKey().getValue().getNamespace())) return "Estás en la huida: sal primero (/huida salir).";
         if (enSala(p)) { Menu.enviar(p, "jugar", null); return null; }                 // ya estaba en la sala: solo se le vuelve a abrir el menu
         if (enArena(p) && Saved.exists(s, p.getUuid())) { volverASala(p, null); return null; }   // en una arena sin partida (se quedo a medias): de vuelta a la sala
         if (!Morph.disponible()) return "Falta el mod CobbleMorph (el jugador va transformado en su Pokémon).";

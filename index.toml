@@ -1852,8 +1852,8 @@ file = "mods/emi-ftb-keys-1.0.0.jar"
 hash = "7fc60095edd201d29d429af2a890fe3d499667a2503f713dd25cc799b0372c7e"
 
 [[files]]
-file = "mods/emi-huida-0.11.2.jar"
-hash = "34d790a412a94e32d381aaec74adbb5de92fd251901f19520730639c98e45bfd"
+file = "mods/emi-huida-0.12.0.jar"
+hash = "99b057d6f896f26bdf27ab49d00d753a4ad297c181da0860c7ff657cb0cb442d"
 
 [[files]]
 file = "mods/emi-plush-1.18.0.jar"
@@ -1864,8 +1864,8 @@ file = "mods/emi-streamlabs-1.2.0.jar"
 hash = "194d923b6a1430bb6c4535e71046c9b0ad6a940374af5b76f4b8b5bf2680af92"
 
 [[files]]
-file = "mods/emi-survivors-0.25.0.jar"
-hash = "0e121812e1c1591255987b37ac3ab6d6df64dfe8602972fd251044e3bb8220f9"
+file = "mods/emi-survivors-0.26.0.jar"
+hash = "5cbc36901be93af54cd0290b14f8a23c177538143ff63807ad74b2ab21c1c447"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"

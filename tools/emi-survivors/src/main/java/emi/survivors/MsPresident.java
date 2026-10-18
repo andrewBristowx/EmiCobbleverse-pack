@@ -175,10 +175,12 @@ final class MsPresident {
         Sonidos.en(p.getServerWorld(), p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_CAT_AMBIENT, SoundCategory.NEUTRAL, 0.9f, 1.4f);
     }
 
-    /** El jugador eligio un juego en la conversacion: «survivors» lo lleva a la sala de Emi Survivors (o abre el menu si ya esta en ella); «carreras» ejecuta {@code /carrera entrar}. */
+    /** El jugador eligio un juego en la conversacion: «survivors» lo lleva a la sala de Emi Survivors (o abre el menu si ya esta en ella); «carreras» ejecuta {@code /carrera entrar} y «huida» {@code /huida entrar}. */
     static void unirse(ServerPlayerEntity p, String juego) {
-        if ("carreras".equals(juego)) { irACarreras(p); return; }
+        if ("carreras".equals(juego)) { irAOtroJuego(p, "carrera", "las carreras"); return; }
+        if ("huida".equals(juego)) { irAOtroJuego(p, "huida", "la huida"); return; }
         if ("emi_carreras".equals(p.getWorld().getRegistryKey().getValue().getNamespace())) { p.sendMessage(Msg.err("Estás en las carreras: sal primero (/carrera salir)."), false); return; }
+        if ("emi_huida".equals(p.getWorld().getRegistryKey().getValue().getNamespace())) { p.sendMessage(Msg.err("Estás en la huida: sal primero (/huida salir)."), false); return; }
         if (Partida.participa(p)) { p.sendMessage(Msg.err("Ya estás en una partida."), false); return; }
         if (Mundo.enSala(p)) { Menu.enviar(p, "jugar", null); return; }
         String err = Mundo.entrar(p);
@@ -186,14 +188,14 @@ final class MsPresident {
         else p.sendMessage(Msg.say("Ms. President: «¡Bienvenido a Emi Survivors! Tu aventura empieza aquí.»"), false);
     }
 
-    /** Las carreras son otro mod: se le pide con su propio comando (si no esta instalado en el servidor, se avisa). */
-    private static void irACarreras(ServerPlayerEntity p) {
+    /** Las carreras y la huida son otros mods: se les pide con su propio comando {@code /<comando> entrar} (si no estan instalados en el servidor, se avisa). */
+    private static void irAOtroJuego(ServerPlayerEntity p, String comando, String nombre) {
         MinecraftServer s = p.getServer();
-        if (s == null || s.getCommandManager().getDispatcher().getRoot().getChild("carrera") == null) {
-            p.sendMessage(Msg.err("Las carreras aún no están disponibles en este servidor."), false);
+        if (s == null || s.getCommandManager().getDispatcher().getRoot().getChild(comando) == null) {
+            p.sendMessage(Msg.err("Todavía no están disponibles " + nombre + " en este servidor."), false);
             return;
         }
         if (Mundo.dentro(p) || Partida.participa(p)) { p.sendMessage(Msg.err("Estás en Emi Survivors: sal primero (/survivor salir)."), false); return; }
-        s.getCommandManager().executeWithPrefix(p.getCommandSource(), "carrera entrar");
+        s.getCommandManager().executeWithPrefix(p.getCommandSource(), comando + " entrar");
     }
 }

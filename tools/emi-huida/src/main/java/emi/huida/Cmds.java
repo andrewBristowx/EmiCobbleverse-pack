@@ -16,7 +16,16 @@ public final class Cmds {
         var root = CommandManager.literal("huida");
         // --- jugadores
         root.then(CommandManager.literal("unirse").executes(c -> con(c, () -> Huida.unirse(c.getSource().getPlayerOrThrow()))));
-        root.then(CommandManager.literal("salir").executes(c -> con(c, () -> Huida.salir(c.getSource().getPlayerOrThrow()))));
+        // salir: si estas apuntado a una huida te saca de ella; si no, sales de la sala y vuelves a tu sitio
+        root.then(CommandManager.literal("salir").executes(c -> con(c, () -> {
+            var p = c.getSource().getPlayerOrThrow();
+            if (Huida.jug.containsKey(p.getUuid())) return Huida.salir(p);
+            return Sala.salir(p);
+        })));
+        root.then(CommandManager.literal("entrar").executes(c -> con(c, () -> Sala.entrar(c.getSource().getPlayerOrThrow()))));
+        root.then(CommandManager.literal("menu").executes(c -> con(c, () -> { var p = c.getSource().getPlayerOrThrow(); if (!Sala.enSala(p)) return "Solo se abre dentro de la sala de la huida (/huida entrar)."; Menu.abrir(p, "jugar"); return null; })));
+        // /huida terminar: el anfitrion de la sala (o un organizador) cierra la huida cuando han acabado todos
+        root.then(CommandManager.literal("terminar").executes(c -> con(c, () -> Huida.cerrarPor(c.getSource().getPlayerOrThrow(), Perm.admin(c.getSource())), "Huida cerrada: todos vuelven a su sitio.")));
         root.then(CommandManager.literal("listo").executes(c -> con(c, () -> Huida.listo(c.getSource().getPlayerOrThrow()))));
         root.then(CommandManager.literal("estado").executes(c -> { c.getSource().sendFeedback(() -> Msg.say(Huida.estado()), false); return 1; }));
         root.then(CommandManager.literal("ayuda").executes(Cmds::ayuda));
@@ -53,9 +62,19 @@ public final class Cmds {
                 .then(CommandManager.literal("on").executes(c -> modoPrueba(c, true)))
                 .then(CommandManager.literal("off").executes(c -> modoPrueba(c, false))));
         // al terminar, los jugadores esperan en la meta: el organizador cierra con /huida terminar (clasificacion y vuelta a su sitio)
-        root.then(admin("terminar").executes(c -> con(c, Huida::cerrar, "Huida cerrada: todos vuelven a su sitio.")));
         root.then(admin("fin").executes(c -> con(c, Huida::cerrar, "Huida cerrada: todos vuelven a su sitio.")));
         root.then(admin("parar").executes(c -> con(c, () -> Huida.parar(null))));
+        // /huida dev estrellas <n>: suma (o resta) estrellas al organizador que lo escribe (para probar la tienda)
+        root.then(admin("dev").then(CommandManager.literal("estrellas").then(CommandManager.argument("n", com.mojang.brigadier.arguments.IntegerArgumentType.integer(-100000, 100000))
+                .executes(c -> con(c, () -> {
+                    var p = c.getSource().getPlayerOrThrow();
+                    if (Huida.datos == null) return "Los datos aun no estan listos.";
+                    Datos.Jugador j = Huida.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                    j.estrellas = Math.max(0, j.estrellas + com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "n"));
+                    Huida.datos.guardar(p.getUuid());
+                    if (Sala.enSala(p)) Menu.actualizar(p);
+                    return null;
+                }, "Estrellas cambiadas.")))));
         d.register(root);
     }
 
@@ -87,7 +106,7 @@ public final class Cmds {
 
     private static int ayuda(CommandContext<ServerCommandSource> c) {
         c.getSource().sendFeedback(() -> Msg.say("La huida: corre por las ruinas (o por el cementerio de Halloween), salta, agáchate (shift) y esquiva antes de que te alcance el Tyrantrum (o el Pumpkaboo)."), false);
-        c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida unirse · /huida listo (o tecla R) · /huida salir · /huida estado"), false);
+        c.getSource().sendFeedback(() -> Msg.say("Jugadores: /huida entrar (la sala de la huida, con menú, logros, misiones y tienda) · /huida unirse · /huida listo (o tecla R) · /huida salir · /huida estado"), false);
         if (Perm.admin(c.getSource())) c.getSource().sendFeedback(() -> Msg.say("Organizador: /huida abrir [tyrantrum|calabaza|cosmos] · /huida empezar [ya] · /huida saltar (salta la confirmación) · /huida terminar (cierra al acabar todos) · /huida parar · /huida cerrar · /huida modoprueba [on|off] (el Tyrantrum no te atrapa, para probar)"), false);
         return 1;
     }

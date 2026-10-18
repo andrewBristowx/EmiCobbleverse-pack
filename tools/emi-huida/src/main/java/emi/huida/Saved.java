@@ -31,8 +31,20 @@ public final class Saved {
 
     public static boolean exists(MinecraftServer server, UUID id) { return Files.exists(file(server, id)); }
 
-    public static void save(MinecraftServer server, ServerPlayerEntity p) {
+    private static NbtCompound leer(MinecraftServer server, UUID id) {
+        try { return Files.exists(file(server, id)) ? NbtIo.readCompressed(file(server, id), net.minecraft.nbt.NbtSizeTracker.ofUnlimitedBytes()) : null; }
+        catch (IOException e) { return null; }
+    }
+
+    /** ¿Lo guardado es de alguien que esta en la sala de la huida (y no de una huida suelta con /huida unirse)? */
+    public static boolean enLobby(MinecraftServer server, UUID id) { NbtCompound t = leer(server, id); return t != null && t.getBoolean("lobby"); }
+
+    public static void save(MinecraftServer server, ServerPlayerEntity p) { save(server, p, false); }
+
+    /** {@code lobby} = lo guarda al entrar en la sala de la huida (hasta que salga de ella no se vuelve a guardar al empezar una huida). */
+    public static void save(MinecraftServer server, ServerPlayerEntity p, boolean lobby) {
         NbtCompound t = new NbtCompound();
+        t.putBoolean("lobby", lobby);
         NbtList inv = new NbtList();
         p.getInventory().writeNbt(inv);
         t.put("inv", inv);
