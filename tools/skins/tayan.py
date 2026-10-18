@@ -82,21 +82,25 @@ def cabeza_base(c):
 
 
 def cabeza_capa(c):
-    # orejas de gato (arriba): negras con interior rosa y pelusa blanca en la base
+    # orejas de gato (arriba): 3x3 por oreja, negras con borde turquesa, interior rosa y pelusa blanca en la base
+    BLANCO = (252, 246, 246)
+    OREJA = {(0, 0): TUR[2], (1, 0): NEG, (2, 0): NEG_C,
+             (0, 1): NEG, (1, 1): ROSA, (2, 1): ROSA,
+             (0, 2): BLANCO, (1, 2): ROSA_O, (2, 2): BLANCO}
+
     def arriba(u, v):
-        if v in (2, 3) and u in (0, 1, 6, 7):
-            if v == 3 and u in (1, 6): return ROSA
-            if v == 2 and u in (0, 7): return NEG
-            if v == 2 and u in (1, 6): return NEG_C
-            return (252, 244, 244) if v == 3 else None
+        if 1 <= v <= 3:
+            if u <= 2: return OREJA[(u, v - 1)]
+            if u >= 5: return OREJA[(7 - u, v - 1)]
         if v == 5 and u == 4: return NEG_C  # remolino del pelo
-        return NEG if (v <= 1 or v in (4, 5, 6, 7)) else None
+        return NEG if (v <= 0 or v in (4, 5, 6, 7)) else None
     pintar(c["arriba"], arriba)
 
     def frente(u, v):
         if v <= 2:
             if v == 2 and u in (5, 6): return TUR[3]  # pasador turquesa
-            return NEG if not (v == 0 and u in (0, 7)) else None
+            if v == 0: return {0: TUR[2], 1: ROSA, 2: NEG, 5: NEG, 6: ROSA, 7: TUR[2]}.get(u)  # orejas vistas de frente
+            return NEG
         if u in (0, 7) and v <= 6: return TUR[min(2, v - 3)] if v >= 3 else NEG
         if v == 3: return NEG if u in (1, 3, 4, 6) else None
         return None
@@ -108,8 +112,10 @@ def cabeza_capa(c):
         if k >= 3 and v >= 4: return pelo_cola(v)
         # oreja que sobresale un poco por arriba del lado
         return None
-    pintar(c["izq"], lambda u, v: costado(u, v, u) if v > 0 else (ROSA if u in (3, 4) else (NEG if u in (2, 5) else None)))
-    pintar(c["der"], lambda u, v: costado(u, v, 7 - u) if v > 0 else (ROSA if u in (3, 4) else (NEG if u in (2, 5) else None)))
+    def orejaLado(u):  # fila 0 del costado: la oreja vista de lado (k = profundidad desde la frente)
+        return {1: TUR[2], 2: NEG, 3: ROSA, 4: ROSA, 5: NEG}.get(u)
+    pintar(c["izq"], lambda u, v: costado(u, v, u) if v > 0 else orejaLado(u))
+    pintar(c["der"], lambda u, v: costado(u, v, 7 - u) if v > 0 else orejaLado(7 - u))
     pintar(c["atras"], lambda u, v: NEG if v <= 3 else pelo_cola(v))
     # trenza turquesa del lado izquierdo del personaje (la cara «izq»)
     x, y, w, h = c["izq"]
@@ -201,10 +207,21 @@ def pierna(c, ov, izquierda):
 pierna(caras(0, 16, 4, 12, 4), False, False); pierna(caras(0, 32, 4, 12, 4), True, False)
 pierna(caras(16, 48, 4, 12, 4), False, True); pierna(caras(0, 48, 4, 12, 4), True, True)
 
-# cola turquesa que asoma por detrás, justo debajo de la falda (una columna en cada pierna, junto a la unión)
-for (x, y) in ((12, 36), (15, 48)):
-    for v, col in zip(range(2, 10), [NEG, NEG, NEG, NEG, TUR[0], TUR[1], TUR[2], TUR[3]]):
-        px[x, y + v] = (*col, 255)
+# cola de gato: sale bajo la cinturilla por la espalda (2 px de ancho: una columna en cada pierna junto a la unión),
+# negra con brillo turquesa en la punta y un rizo hacia un lado. Sobre la falda lleva un borde turquesa.
+for v in (9, 10, 11):
+    for u in (2, 5):
+        px[32 + u, 36 + v] = (*TUR[0], 255)       # borde turquesa a los lados de la cola (espalda del tronco)
+    for u in (3, 4):
+        px[32 + u, 36 + v] = (*(NEG_C if u == 3 else NEG), 255)
+def pon(x, y, col): px[x, y] = (*col, 255)
+for v in (0, 1): pon(12, 36 + v, NEG_C); pon(15, 48 + v, NEG)           # sigue por la falda
+for v in (2, 3): pon(12, 36 + v, NEG_C); pon(15, 48 + v, NEG)
+pon(12, 36 + 4, TUR[0]); pon(15, 48 + 4, TUR[0])
+pon(12, 36 + 5, TUR[1]); pon(15, 48 + 5, TUR[1])
+pon(12, 36 + 6, TUR[2]); pon(13, 36 + 6, TUR[1]); pon(15, 48 + 6, TUR[2])
+pon(13, 36 + 7, TUR[2]); pon(14, 36 + 7, TUR[1])
+pon(14, 36 + 8, TUR[3]); pon(15, 36 + 8, TUR[2])
 
 
 # ---------------- brazos (4x12x4): chaqueta vaquera y manos ----------------
