@@ -105,11 +105,11 @@ public final class Cmds {
             dev.then(CommandManager.literal(k).then(CommandManager.argument("n", IntegerArgumentType.integer(0, 100000))
                     .executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", IntegerArgumentType.getInteger(c, "n"))))));
         dev.then(CommandManager.literal("jefe").executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefe", "", 0)))
-                .then(CommandManager.argument("n", IntegerArgumentType.integer(1, 20)).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefe", "", IntegerArgumentType.getInteger(c, "n"))))));
+                .then(CommandManager.argument("n", IntegerArgumentType.integer(1, 100)).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefe", "", IntegerArgumentType.getInteger(c, "n"))))));
         for (String k : new String[]{"marea", "pers", "clima", "evento", "ataque"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word()).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, StringArgumentType.getString(c, "id"), 1)))));
         dev.then(CommandManager.literal("jefehp").then(CommandManager.argument("n", IntegerArgumentType.integer(0, 100)).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), "jefehp", "", IntegerArgumentType.getInteger(c, "n"))))));
-        for (String k : new String[]{"elite", "curar", "sinxp", "dps", "shiny", "grieta", "sentencia", "cofre", "fusion"})
+        for (String k : new String[]{"elite", "curar", "sinxp", "dps", "shiny", "grieta", "sentencia", "mundo", "cofre", "fusion"})
             dev.then(CommandManager.literal(k).executes(c -> con(c, () -> Partida.dev(c.getSource().getPlayerOrThrow(), k, "", 1))));
         for (String k : new String[]{"arma", "solo", "pasiva", "objeto", "usar", "extra"})
             dev.then(CommandManager.literal(k).then(CommandManager.argument("id", StringArgumentType.word())

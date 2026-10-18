@@ -79,8 +79,19 @@ final class Curvas {
     /** Multiplicador extra de vida de los enemigos nuevos por cada jugador de mas (mas jugadores = mas dano total, asi que aguantan algo mas). */
     static double escalaVida(int jugadores) { return 1 + 0.15 * (Math.max(1, Math.min(4, jugadores)) - 1); }
 
-    /** Multiplicador del dano por contacto de los enemigos nuevos. */
-    static double danoMul(double t) { return 1 + t / 420.0; }
+    /** Multiplicador del dano por contacto de los enemigos nuevos (sube un 33 % por minuto de mundo, antes un 14 %). */
+    static double danoMul(double t) { return 1 + t / 300.0; }
+
+    /**
+     * Cuanto suben de golpe los danos BASE de los enemigos normales (debil 5, fuerte 8, michi 6, campeon 12). Un jugador tiene 100 de vida y mucha regeneracion, y con los
+     * danos de antes habia partidas enteras sin recibir un golpe; ahora un golpe de un enemigo normal ya cuenta. {@code -Demi.survivors.dano_base=<n>} lo cambia (1 = como antes).
+     */
+    static final double DANO_BASE = leerDanoBase();
+
+    private static double leerDanoBase() {
+        try { return Math.max(0.1, Math.min(5.0, Double.parseDouble(System.getProperty("emi.survivors.dano_base", "1.7")))); }
+        catch (NumberFormatException e) { return 1.7; }
+    }
 
     /** Multiplicador de la velocidad de los enemigos nuevos (sube un poco, hasta +35%). */
     static double velMul(double t) { return 1 + Math.min(0.35, t / 900.0); }
@@ -102,8 +113,8 @@ final class Curvas {
      * 0 = el mundo no cambia nada, 2 = el doble de subida); no afecta a los jefes.
      */
     static final double DIFICULTAD = leerDificultad();
-    private static final double[] M_VIDA = {1.0, 1.25, 1.6}, M_DANO = {1.0, 1.2, 1.45}, M_VEL = {1.0, 1.05, 1.10}, M_TOPE = {1.0, 1.25, 1.5},
-            M_RITMO = {1.0, 1.2, 1.4}, M_PERS = {1.0, 1.4, 1.8}, M_FUERTE = {0.0, 0.10, 0.20};
+    private static final double[] M_VIDA = {1.0, 1.4, 2.0}, M_DANO = {1.0, 1.3, 1.7}, M_VEL = {1.0, 1.06, 1.12}, M_TOPE = {1.0, 1.25, 1.5},
+            M_RITMO = {1.0, 1.25, 1.5}, M_PERS = {1.0, 1.5, 2.0}, M_FUERTE = {0.0, 0.12, 0.25};
     private static final int[] M_ELITE = {60, 45, 35};
 
     private static double leerDificultad() {
@@ -111,7 +122,15 @@ final class Curvas {
         catch (NumberFormatException e) { return 1.0; }
     }
 
-    private static double paso(double[] tabla, int mundo) { return 1 + (tabla[Math.max(0, Math.min(tabla.length - 1, mundo))] - 1) * DIFICULTAD; }
+    /**
+     * El valor de la tabla para el mundo {@code mundo}. Pasado el ultimo (el cosmos) la partida sigue en «el Mas alla» (vuelve a la pradera, el bosque...): ahi cada mundo
+     * suma otro escalon igual al que habia entre los dos ultimos, asi que sigue subiendo sin techo.
+     */
+    private static double paso(double[] tabla, int mundo) {
+        int u = tabla.length - 1;
+        double v = mundo <= u ? tabla[Math.max(0, mundo)] : tabla[u] + (tabla[u] - tabla[u - 1]) * (mundo - u);
+        return 1 + (v - 1) * DIFICULTAD;
+    }
 
     /** Multiplicador de vida de los enemigos nuevos por estar en el mundo {@code mundo} (0 = pradera). */
     static double mundoVida(int mundo) { return paso(M_VIDA, mundo); }
@@ -126,8 +145,17 @@ final class Curvas {
     /** Idem de la probabilidad de que un enemigo tenga personalidad. */
     static double mundoPers(int mundo) { return paso(M_PERS, mundo); }
     /** Lo que se suma a la probabilidad de que un enemigo sea del tramo fuerte. */
-    static double mundoFuerte(int mundo) { return (M_FUERTE[Math.max(0, Math.min(M_FUERTE.length - 1, mundo))]) * DIFICULTAD; }
+    static double mundoFuerte(int mundo) { return Math.min(0.6, (mundo < M_FUERTE.length ? M_FUERTE[Math.max(0, mundo)] : M_FUERTE[M_FUERTE.length - 1] + 0.1 * (mundo - M_FUERTE.length + 1)) * DIFICULTAD); }
     /** Segundos entre elites en ese mundo (con la dificultad a 0 se queda en {@link #CADA_ELITE}). */
-    static int eliteCada(int mundo) { return (int) Math.max(15, Math.round(CADA_ELITE + (M_ELITE[Math.max(0, Math.min(M_ELITE.length - 1, mundo))] - CADA_ELITE) * DIFICULTAD)); }
+    static int eliteCada(int mundo) {
+        int m = mundo < M_ELITE.length ? M_ELITE[Math.max(0, mundo)] : Math.max(18, M_ELITE[M_ELITE.length - 1] - 5 * (mundo - M_ELITE.length + 1));
+        return (int) Math.max(15, Math.round(CADA_ELITE + (m - CADA_ELITE) * DIFICULTAD));
+    }
+
+    /** En que vuelta del recorrido (pradera, bosque, cosmos) va el mundo {@code mundo}: 0 la primera; desde la 1 se esta en «el Mas alla», tras vencer al Michi Gigante. */
+    static int vuelta(int mundo) { return Math.max(0, mundo) / 3; }
+
+    /** Michiestrellitas extra por cada vuelta completa tras el Michi Gigante (se suman al acabar la partida, por jugador, con su suerte). */
+    static final int MONEDAS_POR_VUELTA = 60;
 
 }

@@ -22,11 +22,36 @@ final class Grietas {
     /** Cuantas grietas le tocan ya a la partida a los {@code t} segundos. */
     static int tocan(double t) { return t < PRIMERA ? 0 : 1 + (int) ((t - PRIMERA) / CADA); }
 
-    /** Vida del legendario: sube con el tiempo y con los jugadores (menos que el jefe). */
-    static double vida(double t, int jugadores) { return 700 * (1 + t / 200.0) * Curvas.escalaJefe(jugadores); }
+    /** Vida del legendario con un solo jugador en el mundo 0: sube con el tiempo y con los jugadores (igual que un jefe). Antes eran 700 y caian en dos segundos. */
+    static double vida(double t, int jugadores) { return vida(t, jugadores, 0); }
 
-    /** Lo que derrota al legendario daña de contacto: algo mas que un campeon. */
-    static final double DANO_CONTACTO = 18;
+    /** Igual, en el mundo {@code mundo} (0 pradera, 1 bosque, 2 cosmos...; cada uno suma un 35 %): ~4 300 a los 110 s, ~22 000 en el bosque a los 10 minutos. */
+    static double vida(double t, int jugadores, int mundo) { return (1500 + 25 * t) * (1 + 0.35 * Math.max(0, mundo)) * Curvas.escalaJefe(jugadores); }
+
+    /** Lo que daña de contacto el legendario (ademas de sus ataques): bastante mas que un campeon. */
+    static final double DANO_CONTACTO = 30;
+
+    /** Dano base de los ataques del legendario (cada ataque lo multiplica, como en los jefes): 26 en la pradera, +8 en cada mundo siguiente. */
+    static double danoAtaques(int mundo) { return 26 + 8 * Math.max(0, mundo); }
+
+    /** Dano de las explosiones que marca bajo cada jugador (antes 12-14, ahora 22 en la pradera y +6 por mundo). */
+    static double danoBomba(int mundo) { return 22 + 6 * Math.max(0, mundo); }
+
+    /** Los ataques del legendario segun el bioma: son los mismos de los jefes, todos avisados en el suelo (salto, carga, zarpazo, lluvia, ola con hueco y rayos giratorios). */
+    static Jefes.Ataque[] ataques(String bioma) {
+        return switch (bioma) {
+            case "bosque" -> new Jefes.Ataque[]{Jefes.Ataque.LLUVIA, Jefes.Ataque.CARGA, Jefes.Ataque.SALTO, Jefes.Ataque.CONO, Jefes.Ataque.HAZ};
+            case "cosmos" -> new Jefes.Ataque[]{Jefes.Ataque.HAZ, Jefes.Ataque.ANILLO, Jefes.Ataque.LLUVIA, Jefes.Ataque.CARGA, Jefes.Ataque.SALTO, Jefes.Ataque.CONO};
+            default -> new Jefes.Ataque[]{Jefes.Ataque.SALTO, Jefes.Ataque.CARGA, Jefes.Ataque.CONO, Jefes.Ataque.LLUVIA};
+        };
+    }
+
+    /** La «ficha de jefe» del legendario (para reutilizar los ataques de {@link Jefe}); siempre se enfurece al bajar del 50 %. */
+    static Jefes.Def def(String nombre, String especie, String bioma, float alto) {
+        int tema = switch (bioma) { case "bosque" -> 2; case "cosmos" -> 3; default -> 1; };
+        return new Jefes.Def("legendario", nombre, especie, especie, "", "", alto, switch (bioma) { case "bosque" -> 3.0; case "cosmos" -> 3.3; default -> 2.8; }, 0f, 0, 60, ataques(bioma), true,
+                "Un legendario ha salido de la grieta", "light_purple", tema);
+    }
 
     /** Legendarios que pueden salir en cada bioma (se usan los que existan en el servidor; todos caminan, o al menos andan por el suelo en este juego). */
     static List<String> legendarios(String bioma) {

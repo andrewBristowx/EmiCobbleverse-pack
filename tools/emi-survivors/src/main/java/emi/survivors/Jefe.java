@@ -40,8 +40,11 @@ final class Jefe {
     private final java.util.Random rnd;
     private final List<Entity> mias = new ArrayList<>();       // las marcas de aviso que ha puesto este jefe (se quitan al acabar cada ataque o al morir)
 
-    Jefe(Equipo eq, Enemigo en, Jefes.Def def, int numero) {
-        this.eq = eq; this.en = en; this.def = def; this.numero = numero; this.nombre = def.nombre(); this.dmg = Jefes.dano(numero); this.rnd = eq.rnd;
+    Jefe(Equipo eq, Enemigo en, Jefes.Def def, int numero) { this(eq, en, def, numero, Jefes.dano(numero)); }
+
+    /** Con el dano base de sus ataques ya calculado (por la vuelta del recorrido, o el de un legendario de grieta, que usa estos mismos ataques). */
+    Jefe(Equipo eq, Enemigo en, Jefes.Def def, int numero, float dmg) {
+        this.eq = eq; this.en = en; this.def = def; this.numero = numero; this.nombre = def.nombre(); this.dmg = dmg; this.rnd = eq.rnd;
     }
 
     boolean vivo() { return en.hp > 0 && !en.e.isRemoved(); }

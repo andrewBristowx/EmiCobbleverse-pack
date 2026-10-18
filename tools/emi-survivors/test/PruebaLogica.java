@@ -221,9 +221,12 @@ public final class PruebaLogica {
         }
         ok(Jefes.segundo(1) == 180 && Jefes.segundo(2) == 360 && Jefes.segundo(5) == 900, "los jefes salen a los 3, 6, 9, 12 y 15 minutos");
         ok(Jefes.tocan(0) == 0 && Jefes.tocan(179.9) == 0 && Jefes.tocan(180) == 1 && Jefes.tocan(359.9) == 1 && Jefes.tocan(360) == 2 && Jefes.tocan(900) == 5 && Jefes.tocan(1080) == 6, "cuantos jefes tocan segun el tiempo");
-        ok(Jefes.ciclo(1) == 0 && Jefes.ciclo(5) == 0 && Jefes.ciclo(6) == 1 && Jefes.def(6) == Jefes.def(1), "pasados los cinco, el ciclo vuelve a empezar");
-        ok(Jefes.vida(6) > Jefes.vida(1) * 1.5 && Jefes.dano(6) > Jefes.dano(1), "la segunda vuelta es mas dura");
-        ok(Jefes.esElUltimo(5) && Jefes.esElUltimo(10) && !Jefes.esElUltimo(4), "solo el quinto de cada vuelta es el ultimo");
+        ok(Jefes.ciclo(1) == 0 && Jefes.ciclo(5) == 0 && Jefes.ciclo(7) == 0 && Jefes.def(7) == Jefes.MAS_ALLA[0] && Jefes.def(12) == Jefes.MAS_ALLA[5] && Jefes.ciclo(13) == 1 && Jefes.def(13) == Jefes.def(7), "pasados los cinco, vienen los seis jefes de el Mas alla y luego se repiten");
+        ok(Jefes.vida(13) > Jefes.vida(7) * 1.5 && Jefes.dano(13) > Jefes.dano(7), "la segunda vuelta de la lista es mas dura");
+        ok(Jefes.vida(7, 2) > Jefes.vida(7, 0) * 1.7 && Jefes.dano(7, 2) > Jefes.dano(7, 0) * 1.3 && Jefes.vida(Jefes.GIGANTE_N, 1) > Jefes.GIGANTE.vida() * 1.7, "cada vuelta del Mas alla suma vida y dano a los jefes");
+        ok(Jefes.deLaVuelta(Jefes.GIGANTE, Jefes.GIGANTE_N, 0).nombre().equals("Michi Gigante") && Jefes.deLaVuelta(Jefes.GIGANTE, Jefes.GIGANTE_N, 1).nombre().equals("Michi Gigante II") && Jefes.deLaVuelta(Jefes.def(7), 7, 3) == Jefes.def(7), "el Michi Gigante lleva numero romano desde la segunda vez");
+        for (Jefes.Def d : Jefes.MAS_ALLA) ok(d.vida() >= 40000 && !d.nombre().isEmpty() && d.ataques().length >= 5 && (!java.util.Arrays.asList(d.ataques()).contains(Jefes.Ataque.INVOCAR) || !d.secuaz().isEmpty()), "jefe de el Mas alla: " + d.nombre());
+        ok(Jefes.esElUltimo(5) && Jefes.esElUltimo(12) && Jefes.esElUltimo(18) && !Jefes.esElUltimo(4) && !Jefes.esElUltimo(7), "solo el ultimo de cada lista es el ultimo");
         ok(Jefes.impactos(1, 1) >= 6 && Jefes.impactos(4, 1) > Jefes.impactos(1, 1) && Jefes.impactos(4, 10) <= 16, "la lluvia tiene entre 6 y 16 impactos");
         ok(Jefes.refuerzos(1, 1, false) >= 6 && Jefes.refuerzos(1, 1, true) > Jefes.refuerzos(1, 1, false) && Jefes.refuerzos(4, 10, true) <= 24, "los refuerzos van de 6 a 24");
         // lo que dura cada pelea con un dano por segundo de ejemplo (los jugadores reales haran mas o menos)
@@ -586,6 +589,10 @@ public final class PruebaLogica {
         System.out.println("== grietas");
         ok(Grietas.tocan(0) == 0 && Grietas.tocan(109.9) == 0 && Grietas.tocan(110) == 1 && Grietas.tocan(289) == 1 && Grietas.tocan(290) == 2, "las grietas tocan a los 110 s y cada 180 s");
         ok(Grietas.vida(100, 1) < Grietas.vida(600, 1) && Grietas.vida(100, 1) < Grietas.vida(100, 3), "la vida del legendario sube con el tiempo y con los jugadores");
+        ok(Grietas.vida(110, 1, 0) > 4000 && Grietas.vida(110, 1, 2) > Grietas.vida(110, 1, 1) && Grietas.vida(110, 1, 1) > Grietas.vida(110, 1, 0) && Grietas.vida(600, 1, 1) > 20000, "el legendario aguanta: ~4 300 de vida a los 110 s y mas en cada mundo (" + Math.round(Grietas.vida(110, 1, 0)) + ")");
+        ok(Grietas.danoAtaques(1) > Grietas.danoAtaques(0) && Grietas.danoBomba(2) > Grietas.danoBomba(0) && Grietas.danoBomba(0) >= 22 && Grietas.DANO_CONTACTO >= 30, "el legendario hace dano de verdad");
+        for (String b : new String[]{"pradera", "bosque", "cosmos"}) ok(Grietas.ataques(b).length >= 4 && !java.util.Arrays.asList(Grietas.ataques(b)).contains(Jefes.Ataque.INVOCAR), "ataques del legendario en " + b);
+        ok(Grietas.def("Entei", "entei", "bosque", 5f).vel() > 2.3 && Grietas.def("Entei", "entei", "bosque", 5f).furia(), "la ficha del legendario");
         for (String b : new String[]{"pradera", "bosque", "cosmos"}) {
             List<String> l = Grietas.legendarios(b);
             ok(l.size() >= 5 && new HashSet<>(l).size() == l.size(), "lista de legendarios de " + b);
@@ -643,7 +650,9 @@ public final class PruebaLogica {
     static void mundos() {
         ok(Mundos.ORDEN.equals(java.util.List.of("pradera", "bosque", "cosmos")), "el recorrido es pradera, bosque, cosmos");
         ok(Mundos.indice("bosque") == 1 && Mundos.indice("nada") == -1, "indice del mundo");
-        ok(Mundos.hayOtro(0) && Mundos.hayOtro(1) && !Mundos.hayOtro(2), "tras el cosmos ya no hay otro mundo");
+        ok(Mundos.hayOtro(0) && Mundos.hayOtro(1) && Mundos.hayOtro(2) && Mundos.hayOtro(8), "siempre hay otro mundo: tras el cosmos y el Michi Gigante la partida sigue en el Mas alla");
+        ok(!Mundos.ultimoDeVuelta(0) && !Mundos.ultimoDeVuelta(1) && Mundos.ultimoDeVuelta(2) && Mundos.ultimoDeVuelta(5) && Mundos.siguiente(2).id().equals("pradera") && Mundos.bioma(4).id().equals("bosque") && Mundos.bioma(-1).id().equals("cosmos"), "tras el cosmos se vuelve a la pradera");
+        ok(Curvas.vuelta(0) == 0 && Curvas.vuelta(2) == 0 && Curvas.vuelta(3) == 1 && Curvas.vuelta(8) == 2, "la vuelta del recorrido");
         ok(Mundos.siguiente(0).id().equals("bosque") && Mundos.siguiente(1).id().equals("cosmos"), "el siguiente mundo");
         // dificultad por mundo: la pradera no cambia nada y cada mundo es mas duro que el anterior
         ok(Curvas.mundoVida(0) == 1 && Curvas.mundoDano(0) == 1 && Curvas.mundoVel(0) == 1 && Curvas.mundoTope(0) == 1 && Curvas.mundoRitmo(0) == 1 && Curvas.mundoPers(0) == 1 && Curvas.mundoFuerte(0) == 0 && Curvas.eliteCada(0) == Curvas.CADA_ELITE, "la pradera no cambia la dificultad");
@@ -652,7 +661,9 @@ public final class PruebaLogica {
                 && Curvas.mundoTope(m) > Curvas.mundoTope(m - 1) && Curvas.mundoRitmo(m) > Curvas.mundoRitmo(m - 1) && Curvas.mundoPers(m) > Curvas.mundoPers(m - 1)
                 && Curvas.mundoFuerte(m) > Curvas.mundoFuerte(m - 1) && Curvas.eliteCada(m) < Curvas.eliteCada(m - 1);
         ok(sube, "cada mundo es mas dificil que el anterior");
-        ok(Curvas.mundoVida(9) == Curvas.mundoVida(2) && Curvas.mundoVida(-3) == 1, "un mundo fuera de rango no rompe la tabla");
+        ok(Curvas.mundoVida(3) > Curvas.mundoVida(2) && Curvas.mundoVida(9) > Curvas.mundoVida(3) && Curvas.mundoVida(-3) == 1 && Curvas.mundoDano(5) > Curvas.mundoDano(2) && Curvas.eliteCada(9) >= 15 && Curvas.eliteCada(9) <= Curvas.eliteCada(2) && Curvas.mundoFuerte(12) <= 0.6, "tras el cosmos la tabla sigue subiendo sin romperse (el Mas alla)");
+        ok(Math.abs(Curvas.danoMul(300) - 2.0) < 1e-9 && Curvas.DANO_BASE >= 1.5 && 5 * Curvas.DANO_BASE * Curvas.danoMul(300) >= 17, "los enemigos pegan mas fuerte: un debil a los 5 minutos de mundo ya hace " + Math.round(5 * Curvas.DANO_BASE * Curvas.danoMul(300)));
+        ok(Curvas.MONEDAS_POR_VUELTA > 0 && Jefes.DANO_JEFES > 1, "premio por vuelta del Mas alla y jefes mas fuertes");
         ok(Curvas.tope(1000, 1) * Curvas.mundoTope(2) <= Curvas.TOPE_EQUIPO, "el cosmos no pasa del tope de enemigos de un equipo (" + (int) (Curvas.tope(1000, 1) * Curvas.mundoTope(2)) + ")");
         ok(Jefes.tocanEnMundo(10, 0) == 0 && Jefes.tocanEnMundo(190, 0) == 1 && Jefes.tocanEnMundo(370, 0) == 2, "dos jefes en el primer mundo (3:00 y 6:00)");
         ok(Jefes.tocanEnMundo(1000, 0) == 2 && Jefes.tocanEnMundo(1000, 1) == 2 && Jefes.tocanEnMundo(1000, 2) == 1, "el cosmos solo tiene un jefe (el quinto)");
@@ -663,6 +674,7 @@ public final class PruebaLogica {
 
     static void fusiones() {
         ok(Catalogo.MAX_ARMAS == 4, "hay 4 ranuras de ataque");
+        ok(Catalogo.MAX_PASIVAS == 3, "hay 3 ranuras de objeto (cada fusion libera una)");
         java.util.Map<String, String> f = new java.util.LinkedHashMap<>();
         java.util.List<String> armas = new java.util.ArrayList<>(java.util.List.of("a", "b", "c", "d"));
         ok(Fusiones.ranuras(armas, f) == 4 && Fusiones.pares(armas, f).size() == 6, "4 ataques sueltos: 4 ranuras y 6 parejas");
@@ -718,16 +730,16 @@ public final class PruebaLogica {
         l = Cartas.sortear(rnd, armas, pasivas, fa, fp, extras);
         ok(l.contains(new Cartas.Carta("extra", "vida", 5)) && l.contains(new Cartas.Carta("extra", "regen", 1)) && l.contains(Cartas.CURAR), "sin nada que subir ni fusionar: vida (5.a vez), regeneracion y curar: " + l);
         extras.clear(); fp.clear();
-        // fusionar objetos libera ranuras: con 6 objetos y 6 ranuras no cabe uno nuevo; tras fusionar dos, si
+        // fusionar objetos libera ranuras: con los objetos llenando todas las ranuras no cabe uno nuevo; tras fusionar dos, si
         Map<String, Integer> seis = new HashMap<>();
-        for (int i = 0; i < 6; i++) seis.put(Catalogo.PASIVAS.get(i).id(), Catalogo.MAX_NIVEL);
+        for (int i = 0; i < Catalogo.MAX_PASIVAS; i++) seis.put(Catalogo.PASIVAS.get(i).id(), Catalogo.MAX_NIVEL);
         Map<String, Integer> pocas = new HashMap<>();
         for (int i = 0; i < 6; i++) pocas.put(Catalogo.ARMAS.get(i).id(), Catalogo.NIVEL_EVO);
         boolean nueva = false;
         for (int i = 0; i < 300; i++) for (Cartas.Carta c : Cartas.sortear(rnd, pocas, seis, fa, fp, extras)) nueva |= c.tipo().equals("pasiva") && c.nueva();
-        ok(!nueva, "con las 6 ranuras de objeto llenas no sale un objeto nuevo");
+        ok(!nueva, "con las ranuras de objeto llenas no sale un objeto nuevo");
         List<String> ids = new java.util.ArrayList<>(seis.keySet());
-        ok(Fusiones.fusionar(fp, ids, ids.get(0), ids.get(1)) && Fusiones.ranuras(ids, fp) == 5, "fusionar dos objetos deja 5 ranuras ocupadas");
+        ok(Fusiones.fusionar(fp, ids, ids.get(0), ids.get(1)) && Fusiones.ranuras(ids, fp) == Catalogo.MAX_PASIVAS - 1, "fusionar dos objetos deja una ranura libre");
         for (int i = 0; i < 300 && !nueva; i++) for (Cartas.Carta c : Cartas.sortear(rnd, pocas, seis, fa, fp, extras)) nueva |= c.tipo().equals("pasiva") && c.nueva();
         ok(nueva, "con una ranura de objeto libre vuelven a salir objetos nuevos");
         // rendimientos decrecientes
