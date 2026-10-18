@@ -8,7 +8,7 @@ from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gen'))
 from emi_lib import box_rects
 
-VISTAS = {'frente': (0, 0), '3/4': (-35, 12), 'lado': (-90, 0), 'espalda': (180, 0), 'arriba': (-20, 60), '3/4atras': (-145, 12)}
+VISTAS = {'frente': (0, 0), '3/4': (-35, 12), 'lado': (-90, 0), 'espalda': (180, 0), 'arriba': (-20, 60), '3/4atras': (-145, 12), 'abajo': (-20, -60)}
 LUZ = np.array([-0.4, 0.8, -0.5]); LUZ = LUZ / np.linalg.norm(LUZ)      # en el espacio de la camara (x derecha, y abajo, z hacia dentro): arriba a la izquierda y de frente
 
 def rot(r):

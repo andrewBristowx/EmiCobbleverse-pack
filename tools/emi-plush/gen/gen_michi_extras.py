@@ -217,11 +217,20 @@ def escamas(face, i, j, w, h):
 def barriga(face, i, j, w, h): return (CREMA_D if j % 3 == 2 else CREMA) + (255,)
 def puno(face, i, j, w, h): return (CREMA_D if (i + j) % 4 == 0 else CREMA) + (255,)
 def espina(face, i, j, w, h): return (ESP_L if face == 'up' or j == 0 else ESP) + (255,)
+def ojo_dino(face, i, j, w, h):
+    """ojo saltón: solo la cara de delante es blanca (con pupila y brillo y el parpado verde arriba); el resto es piel de dinosaurio"""
+    if face != 'north': return escamas(face, i, j, w, h)
+    if j == 0: return escamas(face, i, j, w, h)
+    c = ojo(face, i, j, w, h)
+    if 2 <= i <= w - 3 and 1 <= j <= h - 2: c = BLACK + (255,)
+    if (i, j) == (2, 1): c = WHITE + (255,)
+    return c
 def ojo(face, i, j, w, h): return (WHITE if (i + j) % 7 else (226, 232, 240)) + (255,)
 def garra(face, i, j, w, h): return (CREMA if j < h - 1 else CREMA_D) + (255,)
 
 def dino(g, f):
     bones = {b['name']: b for b in g['minecraft:geometry'][0]['bones']}
+    for n in ('ear_left', 'ear_right', 'antenna_left', 'antenna_right'): bones[n].pop('cubes', None)       # el pijama las lleva escondidas por dentro
     c = lambda nombre, o, sz, p=escamas, rot=None, piv=None: cube(g, f, nombre, o, sz, p, rot, piv)
     def lr(nombre, o, sz, p, rot=None, piv=None):
         """el cubo de la izquierda (x negativo) y su espejo de la derecha; los huesos acaban con _l y _r"""
@@ -229,20 +238,19 @@ def dino(g, f):
         o2 = (-(o[0] + sz[0]), o[1], o[2])
         c(nombre + '_r', o2, sz, p, [rot[0], -rot[1], -rot[2]] if rot else None, [-piv[0], piv[1], piv[2]] if piv else None)
     # ---- el cuerpo: mono verde con barriga crema
-    c('acc_dino', (-21, 1, -18.6), (42, 11, 37))                                       # el pijama alrededor de la parte de abajo del cuerpo
+    c('acc_dino', (-21, -0.3, -18.6), (42, 13, 37))                                       # el pijama alrededor de la parte de abajo del cuerpo
     c('acc_dino', (-12, 2, -19.4), (24, 9, 1), barriga)                                # barriga crema por delante
     for y in (24, 18, 12, 6):                                                          # espinas por la espalda
         c('acc_dino', (-3, y, 16.6), (6, 4, 3), espina); c('acc_dino', (-2, y + 1, 19.6), (4, 2, 2), espina)
     # ---- la capucha: casquete verde con hocico, dientes, ojos saltones y cresta
     c('acc_dino', (-19, 29.7, -18.2), (38, 3, 36))                                    # la parte de arriba
-    lr('acc_dino_side', (-21.8, 12, -17), (3, 20, 32), escamas)                       # los lados (bajan hasta las mejillas)
-    c('acc_dino', (-19, 14.5, 17.8), (38, 16, 3))                                        # la nuca de la capucha (si no, por detras se ve la cabeza blanca)
+    lr('acc_dino_side', (-21.8, 12, -17.8), (3, 20, 37), escamas)                       # los lados (bajan hasta las mejillas)
+    c('acc_dino', (-19, 11.5, 17.8), (38, 19, 3))                                        # la nuca de la capucha (si no, por detras se ve la cabeza blanca)
     c('acc_dino', (-16, 32.4, -15.2), (32, 3, 30))                                     # y un segundo piso, para que la capucha sea redondeada
     c('acc_dino', (-10, 31, -27), (20, 5, 10))                                         # el hocico sobre la frente
     for k in range(5): c('acc_dino', (-9 + 4 * k, 28.5, -27.6), (2, 3, 1), garra)      # los dientes
     c('acc_dino', (-6, 35.9, -26), (2, 1, 2), flat((56, 96, 60))); c('acc_dino', (4, 35.9, -26), (2, 1, 2), flat((56, 96, 60)))     # las fosas nasales
-    lr('acc_dino_eye', (-14, 35, -13), (8, 5, 6), ojo)                               # ojos saltones...
-    lr('acc_dino_pupil', (-12, 36, -13.6), (4, 3, 1), flat(BLACK))                   # ...con su pupila
+    lr('acc_dino_eye', (-14, 35, -13), (8, 5, 6), ojo_dino)                           # ojos saltones, con la pupila pintada solo en la cara de delante
     for z in (-14, -7, 0, 7, 14):                                                      # la cresta de la capucha
         c('acc_dino', (-3, 35, z), (6, 4, 5), espina); c('acc_dino', (-2, 39, z + 1), (4, 3, 3), espina)
     # ---- brazos, pies y cola: fundas que siguen a los huesos del michi
