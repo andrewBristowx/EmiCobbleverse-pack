@@ -1848,8 +1848,8 @@ file = "mods/emi-estructuras-1.3.1.jar"
 hash = "9f2326bbda10bc8565121caadc73e520d16cd56340b1ab293cab312765b7e2a6"
 
 [[files]]
-file = "mods/emi-fall-0.1.0.jar"
-hash = "c1aa8076571397a7f73b24faa76c1a404212af3aca8deacad759877a0bf6fda0"
+file = "mods/emi-fall-0.1.1.jar"
+hash = "d894300e587934f3297f12052a081732844caadb31a9505c5dd5fb71e0b312ed"
 
 [[files]]
 file = "mods/emi-ftb-keys-1.0.0.jar"

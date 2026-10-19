@@ -1,6 +1,6 @@
-# Emi Fall (`emi_fall`) — 0.1.0 (en desarrollo)
+# Emi Fall (`emi_fall`) — 0.1.1 (en desarrollo)
 
-Torneo de **minijuegos por rondas estilo Fall Guys** para el servidor de Emi. **Solo servidor**: los jugadores no necesitan instalar nada (todo sale por chat,
+Torneo de **minijuegos por rondas estilo Fall Guys** para el servidor de Emi. **Servidor y partida de un jugador** (`environment: "*"`; con `server` no cargaba en la instancia de Prism): no hay código de cliente, los jugadores no necesitan nada especial (todo sale por chat,
 títulos, barra de jefe y entidades «display» de Minecraft). Los jugadores van transformados en **michi** (el GatitoAlien de emi-plush) con CobbleMorph, así que se
 ven todos iguales. Pedido del dueño (2026-10-19): cuatro minijuegos —carrera de obstáculos, camino correcto, guerra de bombas por equipos y «busca el símbolo»—.
 
@@ -39,3 +39,4 @@ bloques y lanza al rival unos 6 bloques); **plataformas** (arena con las 8 Poké
 **No probado**: jugarlo a mano con más de 2 personas (dificultad, ritmo, lag con 12-16 jugadores y el pack entero), esquivar de verdad las barras y las bolas, las puertas,
 el choque entre varios jugadores, que se vean bien las Poké Ball de la pantalla desde todas partes, sonidos (la máquina de pruebas no tiene audio), el servidor real, y qué pasa si alguien
 se desconecta en pleno minijuego. El mensaje «Display entity: Not a string» del registro sale con **cualquier** `summon text_display` en el banco de pruebas: es ajeno al mod.
+**0.1.1:** probado en el banco de pruebas con un **cliente en partida de un solo jugador** (como la instancia de Prism): `/fall entrar`, `/fall unirse` y `/fall empezar camino` salen bien (sala, barra «Ronda 1/1 · Camino correcto», interfaz de filas y caídas). Con 0.1.0 (`environment: "server"`) en ese mismo caso el mod no cargaba («Missing data pack emi_fall»). En un solo jugador hay que ser operador (partida con trucos) o arrancar con `-Demi.fall.prueba=true`.

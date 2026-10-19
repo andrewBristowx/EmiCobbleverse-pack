@@ -3,10 +3,10 @@
   "id": "emi_fall",
   "version": "${version}",
   "name": "Emi Fall",
-  "description": "Torneo de minijuegos por rondas (estilo Fall Guys) para el servidor de Emi. Solo servidor.",
+  "description": "Torneo de minijuegos por rondas (estilo Fall Guys) para el servidor de Emi. Funciona en servidor y en partida de un jugador.",
   "authors": ["SomitadePony"],
   "license": "All-Rights-Reserved",
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": ["emi.fall.EmiFall"]
   },
