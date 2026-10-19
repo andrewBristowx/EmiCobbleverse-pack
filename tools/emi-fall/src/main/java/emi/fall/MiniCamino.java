@@ -91,7 +91,7 @@ final class MiniCamino implements Mini {
 
     @Override public void liberar(Ctx c) { }
 
-    private int limite(Ctx c) { return primero < 0 ? LIMITE_S * 20 : Math.min(LIMITE_S * 20, primero + EXTRA_S * 20); }
+    private int limite(Ctx c) { return primero < 0 ? Torneo.tt(LIMITE_S * 20) : Math.min(Torneo.tt(LIMITE_S * 20), primero + Torneo.tt(EXTRA_S * 20)); }
 
     @Override
     public boolean tick(Ctx c) {

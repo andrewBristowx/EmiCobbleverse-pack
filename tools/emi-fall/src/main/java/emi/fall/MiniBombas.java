@@ -121,6 +121,7 @@ final class MiniBombas implements Mini {
         b.e = Disp.bloque(c.w, "minecraft:tnt", b.p.x, b.p.y, b.p.z, 0.8f, 0.8f, 0.8f, 0, 0);
         bombas.add(b);
         p.playSoundToPlayer(SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.MASTER, 1f, 0.7f);
+        EmiFall.LOG.info("[bombas] {} lanza una bomba hacia ({}, {})", j.nombre, Math.round(mira.x * 100) / 100.0, Math.round(mira.z * 100) / 100.0);
         return true;
     }
 
@@ -132,16 +133,17 @@ final class MiniBombas implements Mini {
     private void explotar(Ctx c, Vec3d en, Jug lanza) {
         ServerWorld w = c.w;
         int S = Minijuegos.SUELO;
-        int ex = (int) Math.floor(en.x), ez = (int) Math.floor(en.z), r = (int) Math.ceil(RADIO_EXPLOSION);
+        int quitados = 0, ex = (int) Math.floor(en.x), ez = (int) Math.floor(en.z), r = (int) Math.ceil(RADIO_EXPLOSION);
         for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             double d = Math.sqrt(dx * dx + dz * dz);
             if (d > RADIO_EXPLOSION - 0.3 + c.rnd.nextDouble() * 0.6) continue;
             BlockPos bp = new BlockPos(ex + dx, S, ez + dz);
-            if (!w.getBlockState(bp).isAir()) Obra.poner(w, bp.getX(), S, bp.getZ(), "air");
+            if (!w.getBlockState(bp).isAir()) { Obra.poner(w, bp.getX(), S, bp.getZ(), "air"); quitados++; }
         }
         w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, en.x, S + 1.2, en.z, 1, 0, 0, 0, 0);
         w.spawnParticles(ParticleTypes.CLOUD, en.x, S + 1.2, en.z, 30, 1.6, 0.4, 1.6, 0.1);
         w.playSound(null, en.x, S + 1, en.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS, 3.0f, 0.9f);
+        EmiFall.LOG.info("[bombas] explosion en ({}, {}): {} bloques menos", Math.round(en.x * 10) / 10.0, Math.round(en.z * 10) / 10.0, quitados);
         for (Jug j : c.jugs()) {
             ServerPlayerEntity p = c.pl(j);
             if (p == null || j.fuera) continue;
@@ -190,6 +192,7 @@ final class MiniBombas implements Mini {
                 if (Math.abs(p.getX() - pt.x) < 1.5 && Math.abs(p.getZ() - pt.z) < 1.5 && p.getY() < S + 3) {
                     pt.hay = false; Disp.quitar(pt.e); pt.listoEn = c.tick + 140;
                     j.bomba = true;
+                    EmiFall.LOG.info("[bombas] {} coge una bomba", j.nombre);
                     p.getInventory().setStack(0, objetoBomba());
                     p.getInventory().selectedSlot = 0;
                     p.playSoundToPlayer(SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.MASTER, 1f, 0.8f);
@@ -199,7 +202,7 @@ final class MiniBombas implements Mini {
             }
         }
         // el borde se va comiendo cuando pasa mucho tiempo
-        if (c.tick >= ENCOGER_DESDE_S * 20 && c.tick % 20 == 0) {
+        if (c.tick >= Torneo.tt(ENCOGER_DESDE_S * 20) && c.tick % 20 == 0) {
             radioActual = Math.max(3.5, radioActual - 0.55);
             int n = (int) Math.ceil(R) + 1;
             for (int dx = -n; dx <= n; dx++) for (int dz = -n; dz <= n; dz++) {
@@ -222,10 +225,10 @@ final class MiniBombas implements Mini {
             }
             if (!j.fuera) vivos[j.equipo < 0 ? 0 : j.equipo]++;
         }
-        c.t.barra(1f - (float) c.tick / (LIMITE_S * 20));
+        c.t.barra(1f - (float) c.tick / Torneo.tt(LIMITE_S * 20));
         int conectados0 = 0, conectados1 = 0;
         for (Jug j : c.jugs()) { if (j.equipo == 1) conectados1++; else conectados0++; }
-        boolean fin = c.tick >= LIMITE_S * 20 || (vivos[0] == 0 && conectados0 > 0) || (vivos[1] == 0 && conectados1 > 0) || (vivos[0] == 0 && vivos[1] == 0);
+        boolean fin = c.tick >= Torneo.tt(LIMITE_S * 20) || (vivos[0] == 0 && conectados0 > 0) || (vivos[1] == 0 && conectados1 > 0) || (vivos[0] == 0 && vivos[1] == 0);
         if (fin) ganador = vivos[0] > vivos[1] ? 0 : vivos[1] > vivos[0] ? 1 : -1;
         return fin;
     }
@@ -258,7 +261,7 @@ final class MiniBombas implements Mini {
     public String hud(Ctx c, Jug j) {
         int a = 0, b = 0;
         for (Jug o : c.jugs()) if (!o.fuera) { if (o.equipo == 1) b++; else a++; }
-        int resta = Math.max(0, LIMITE_S - c.tick / 20);
+        int resta = Math.max(0, Torneo.tt(LIMITE_S * 20) / 20 - c.tick / 20);
         return (j.equipo == 0 ? "ROJOS " : "AZULES ") + "· vivos: rojos " + a + " / azules " + b + (j.bomba ? " · ¡BOMBA! clic derecho" : "") + " · " + resta + " s";
     }
 

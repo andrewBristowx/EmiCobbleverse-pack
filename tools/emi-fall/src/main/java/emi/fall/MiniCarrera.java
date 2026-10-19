@@ -23,7 +23,7 @@ import java.util.Random;
  */
 final class MiniCarrera implements Mini {
     static final int ZC = 0;
-    static final int[] CP_X = {-9, 25, 53, 80, 91, 153};          // x de cada punto de control (donde se reaparece)
+    static final int[] CP_X = {-9, 25, 53, 80, 93, 153};          // x de cada punto de control (donde se reaparece)
     static final int META_X = 178;
     static final int LIMITE_S = 150, EXTRA_S = 45;
     static final double Y = Minijuegos.SUELO + 1;                 // altura de los pies sobre el suelo
@@ -31,7 +31,7 @@ final class MiniCarrera implements Mini {
     // tramo 1: piedras (x, z central)
     private static final int[][] PIEDRAS = {{1, 0}, {6, 3}, {11, -3}, {16, 3}, {21, 0}};
     // tramo 4: el abismo (entre el trampolin y la otra orilla)
-    static final int PAD_X = 83, ABISMO_A = 84, ABISMO_B = 89, ORILLA = 90;
+    static final int PAD_X = 83, ABISMO_A = 84, ABISMO_B = 91, ORILLA = 92;
     // las dos paredes de puertas
     static final int[] PARED_X = {58, 66};
     private static final String[] COLORES = {"red_concrete", "blue_concrete", "lime_concrete", "yellow_concrete"};
@@ -130,7 +130,7 @@ final class MiniCarrera implements Mini {
 
     @Override public void liberar(Ctx c) { }
 
-    private int limite() { return primero < 0 ? LIMITE_S * 20 : Math.min(LIMITE_S * 20, primero + EXTRA_S * 20); }
+    private int limite() { return primero < 0 ? Torneo.tt(LIMITE_S * 20) : Math.min(Torneo.tt(LIMITE_S * 20), primero + Torneo.tt(EXTRA_S * 20)); }
 
     @Override
     public boolean tick(Ctx c) {
@@ -187,7 +187,7 @@ final class MiniCarrera implements Mini {
                     double px = u * dx, pz = u * dz;                                    // el punto de la barra mas cercano (relativo al eje)
                     double vx = b.omega * pz, vz = -b.omega * px;                      // hacia donde se mueve ese punto de la barra
                     double n = Math.max(0.2, Math.hypot(vx, vz));
-                    c.empujar(p, new Vec3d(vx / n * 1.0, 0.45, vz / n * 1.0));
+                    c.empujar(p, new Vec3d(vx / n * 0.85, 0.45, vz / n * 0.85));
                     p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, SoundCategory.MASTER, 1f, 0.9f);
                 }
             }

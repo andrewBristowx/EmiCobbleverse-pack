@@ -28,7 +28,12 @@ final class Torneo {
 
     static Torneo actual;
 
-    static final int T_INTRO = 140, T_CUENTA = 70, T_RESULTADO = 160, T_FINAL = 260;
+    /** Para las pruebas: {@code -Demi.fall.tiempo=0.2} acorta todos los tiempos (cuenta atras, limites, resultados) a la quinta parte. */
+    static final double TF = leerTf();
+    private static double leerTf() { try { return Math.max(0.05, Math.min(3.0, Double.parseDouble(System.getProperty("emi.fall.tiempo", "1.0")))); } catch (NumberFormatException e) { return 1.0; } }
+    static int tt(int ticks) { return (int) Math.max(20, Math.round(ticks * TF)); }
+
+    static final int T_INTRO = tt(140), T_CUENTA = 70, T_RESULTADO = tt(160), T_FINAL = tt(260);
     static final String[] ORDEN = {"carrera", "camino", "bombas", "plataformas"};
 
     final MinecraftServer server;

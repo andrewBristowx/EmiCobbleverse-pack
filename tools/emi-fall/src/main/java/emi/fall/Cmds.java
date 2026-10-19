@@ -26,6 +26,9 @@ final class Cmds {
                     return null;
                 })))
                 .then(CommandManager.literal("estado").executes(c -> estado(c.getSource())))
+                .then(CommandManager.literal("dev").requires(Perm::admin)
+                        .then(CommandManager.literal("usar").executes(c -> con(c, p -> { Torneo.alUsar(p); return null; })))
+                        .then(CommandManager.literal("tiempos").executes(c -> { c.getSource().sendFeedback(() -> Msg.say("Factor de tiempo: " + Torneo.TF), false); return 1; })))
                 .then(CommandManager.literal("parar").requires(Perm::admin).executes(c -> { Torneo.parar(); c.getSource().sendFeedback(() -> Msg.say("Torneo cancelado."), false); return 1; }))
         );
     }
