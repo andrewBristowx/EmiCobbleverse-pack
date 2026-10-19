@@ -15,6 +15,7 @@ final class Cmds {
     static void register(CommandDispatcher<ServerCommandSource> d) {
         d.register(CommandManager.literal("fall")
                 .then(CommandManager.literal("entrar").executes(c -> con(c, p -> Sala.entrar(p))))
+                .then(CommandManager.literal("menu").executes(c -> con(c, p -> { if (!Sala.enSala(p)) return "Entra primero a la sala con /fall entrar."; Menu.abrir(p, "jugar"); return null; })))
                 .then(CommandManager.literal("unirse").executes(c -> con(c, p -> Torneo.unirse(p))))
                 .then(CommandManager.literal("empezar")
                         .executes(c -> con(c, p -> Torneo.empezar(p, Perm.admin(c.getSource()), "")))
@@ -28,6 +29,14 @@ final class Cmds {
                 .then(CommandManager.literal("estado").executes(c -> estado(c.getSource())))
                 .then(CommandManager.literal("dev").requires(Perm::admin)
                         .then(CommandManager.literal("usar").executes(c -> con(c, p -> { Torneo.alUsar(p); return null; })))
+                        .then(CommandManager.literal("estrellas").then(CommandManager.argument("n", com.mojang.brigadier.arguments.IntegerArgumentType.integer(-100000, 100000)).executes(c -> con(c, p -> {
+                            if (EmiFall.datos == null) return "Aun no esta lista la tienda.";
+                            Datos.Jugador j = EmiFall.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            j.estrellas = Math.max(0, j.estrellas + com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "n"));
+                            EmiFall.datos.guardar(p.getUuid());
+                            p.sendMessage(Msg.say("Ahora tienes " + j.estrellas + " estrellas."), false);
+                            return null;
+                        }))))
                         .then(CommandManager.literal("tiempo").then(CommandManager.argument("factor", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.05, 3.0)).executes(c -> { Torneo.TF = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(c, "factor"); c.getSource().sendFeedback(() -> Msg.say("Factor de tiempo: " + Torneo.TF), false); return 1; })))
                         .then(CommandManager.literal("tiempos").executes(c -> { c.getSource().sendFeedback(() -> Msg.say("Factor de tiempo: " + Torneo.TF), false); return 1; })))
                 .then(CommandManager.literal("parar").requires(Perm::admin).executes(c -> { Torneo.parar(); c.getSource().sendFeedback(() -> Msg.say("Torneo cancelado."), false); return 1; }))

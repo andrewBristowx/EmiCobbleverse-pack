@@ -47,6 +47,11 @@ final class Torneo {
     UUID anfitrion;
     /** Modo «sin eliminaciones»: nadie se queda de espectador; caer solo cuesta puntos o tiempo y se vuelve al juego. */
     boolean sinElim;
+    /** Que juegos se eligieron al abrirlo desde el menu: {@code todos}, {@code clasicos} o {@code nuevos}. */
+    String preset = "todos";
+    private boolean terminado;
+    private long inicioMs;
+    private boolean solo;
     Fase fase = Fase.COLA;
     final List<Mini> rondas = new ArrayList<>();
     int idx = -1;
@@ -127,12 +132,14 @@ final class Torneo {
      * Empieza el torneo. {@code args} = palabras separadas por espacios o comas: ids de minijuegos, o {@code clasicos} / {@code nuevos} / {@code todos}, y {@code sinelim} para el modo
      * sin eliminaciones (vacio = los ocho, con eliminaciones).
      */
-    static String empezar(ServerPlayerEntity quien, boolean admin, String args) {
+    static String empezar(ServerPlayerEntity quien, boolean admin, String args) { return empezar(quien, admin, args, false); }
+
+    static String empezar(ServerPlayerEntity quien, boolean admin, String args, boolean permitirSolo) {
         Torneo q = actual;
         if (q == null) return "No hay ningun torneo: apuntate primero con /fall unirse.";
         if (q.fase != Fase.COLA) return "El torneo ya esta en marcha.";
         if (!admin && !quien.getUuid().equals(q.anfitrion)) return "Solo el anfitrion (o un administrador) puede empezarlo.";
-        if (q.jugs.size() < 2 && !admin && !Boolean.getBoolean("emi.fall.prueba")) return "Hacen falta al menos 2 jugadores.";
+        if (q.jugs.size() < 2 && !admin && !permitirSolo && !Boolean.getBoolean("emi.fall.prueba")) return "Hacen falta al menos 2 jugadores.";
         q.rondas.clear();
         boolean sin = false;
         List<String> ids = new ArrayList<>();
@@ -151,10 +158,62 @@ final class Torneo {
         ServerWorld w = Minijuegos.arena(q.server);
         if (w == null) return "No existe la dimension de las arenas (emi_fall:arena).";
         for (Mini m : q.rondas) { m.construir(w); m.ponerDeco(w); }
-        for (Jug j : q.jugs.values()) { j.puntos = 0; j.puntosRonda = 0; ServerPlayerEntity p = q.server.getPlayerManager().getPlayer(j.id); if (p != null) q.barra.addPlayer(p); }
+        q.inicioMs = System.currentTimeMillis(); q.terminado = false;
+        for (Jug j : q.jugs.values()) { j.estrTorneo = 0; j.puestoFinal = 0; j.lineasTorneo.clear(); j.puntos = 0; j.puntosRonda = 0; ServerPlayerEntity p = q.server.getPlayerManager().getPlayer(j.id); if (p != null) q.barra.addPlayer(p); }
         q.idx = -1;
         q.avisarTodos(Msg.say(Text.literal("¡Empieza el torneo con " + q.jugs.size() + " jugadores y " + q.rondas.size() + " rondas" + (sin ? ", SIN eliminaciones" : "") + "!").formatted(Formatting.GOLD, Formatting.BOLD)));
         q.siguiente();
+        return null;
+    }
+
+    // ------------------------------------------------------------------------------------------------ desde el menu de la sala
+
+    private static String ids(String preset) { return preset.equals("clasicos") ? "clasicos" : preset.equals("nuevos") ? "nuevos" : "todos"; }
+
+    /** Abre un torneo desde el menu (el que lo abre es el anfitrion) con ese juego/modo. null = bien; si no, el motivo. */
+    static String abrirDesdeMenu(ServerPlayerEntity p, String preset, boolean sin) {
+        Torneo q = actual;
+        if (q != null && q.fase != Fase.COLA) return "Hay un torneo en marcha: espera a que termine.";
+        if (q != null) return q.jugs.containsKey(p.getUuid()) ? "Ya estás en la cola del torneo." : "Ya hay un torneo abierto: únete desde la pestaña JUGAR.";
+        String e = unirse(p);
+        if (e != null) return e;
+        q = actual;
+        if (q != null) { q.preset = ids(preset); q.sinElim = sin; }
+        return null;
+    }
+
+    /** El anfitrion cambia el juego y el modo de la cola. */
+    static String configurar(ServerPlayerEntity p, String preset, boolean sin) {
+        Torneo q = actual;
+        if (q == null || q.fase != Fase.COLA) return "No hay ningún torneo abierto.";
+        if (!p.getUuid().equals(q.anfitrion) && !Perm.admin(p.getCommandSource())) return "Solo el anfitrión cambia el modo.";
+        q.preset = ids(preset); q.sinElim = sin;
+        return null;
+    }
+
+    /** Empieza el que se acaba de abrir (anfitrion o administrador). */
+    static String empezarDesdeMenu(ServerPlayerEntity p, boolean admin) {
+        Torneo q = actual;
+        if (q == null) return "No hay ningún torneo abierto.";
+        return empezar(p, admin, q.preset + (q.sinElim ? " sinelim" : ""), q.solo);
+    }
+
+    /** Practica en solitario: abre un torneo solo para ti y lo empieza. */
+    static String soloDesdeMenu(ServerPlayerEntity p, String preset, boolean sin) {
+        String e = abrirDesdeMenu(p, preset, sin);
+        if (e != null) return e;
+        actual.solo = true;
+        e = empezar(p, Perm.admin(p.getCommandSource()), actual.preset + (actual.sinElim ? " sinelim" : ""), true);
+        if (e != null) { Torneo q = actual; if (q != null) q.cerrar(); }
+        return e;
+    }
+
+    /** Cancela la cola (solo el anfitrion o un administrador). */
+    static String cancelarDesdeMenu(ServerPlayerEntity p, boolean admin) {
+        Torneo q = actual;
+        if (q == null || q.fase != Fase.COLA) return "No hay ningún torneo abierto.";
+        if (!p.getUuid().equals(q.anfitrion) && !admin) return "Solo el anfitrión puede cancelarlo.";
+        parar();
         return null;
     }
 
@@ -197,6 +256,7 @@ final class Torneo {
             ServerPlayerEntity p = pl(j);
             if (p == null) continue;
             p.getInventory().clear();
+            if (idx == 0) Menu.cerrar(p);
             quitarEfectos(p);
             Morph.michi(server, p, mini.equipos() ? (j.equipo == 0 ? "devil_horns-accessory" : "halo-accessory") : "");
             p.setGlowing(mini.equipos());
@@ -256,6 +316,18 @@ final class Torneo {
             j.puntosRonda = puntosPuesto(i, n) + extra.getOrDefault(j, 0);
             j.puntos += j.puntosRonda;
         }
+        long ahora = System.currentTimeMillis();
+        for (Jug j : jugs.values()) {                                    // estrellas de la ronda, misiones de ronda y estadisticas (se guardan al momento)
+            ServerPlayerEntity p = pl(j);
+            if (EmiFall.datos == null) break;
+            Datos.Jugador d = EmiFall.datos.jugador(j.id, j.nombre);
+            Retos.Novedades nv = Retos.aplicarRonda(d, new Retos.Ronda(mini.id(), j.puestoRonda, n, sinElim, j.cuenta), ahora, java.time.ZoneId.systemDefault());
+            j.estrTorneo += nv.total();
+            j.lineasTorneo.add(mini.nombre() + ": puesto " + j.puestoRonda + "º → +" + nv.porRondas + " ★");
+            j.lineasTorneo.addAll(nv.lineas);
+            EmiFall.datos.guardar(j.id);
+            if (p != null) for (String l : nv.lineas) p.sendMessage(Msg.say(Text.literal(l).formatted(Formatting.GREEN)), false);
+        }
         fase = Fase.RESULTADO; t = 0;
         // todos vuelven a ser aventureros (los eliminados dejan de ser espectadores) para mirar los resultados
         Text cab = Text.literal("Resultados de " + mini.nombre()).formatted(Formatting.GOLD, Formatting.BOLD);
@@ -264,7 +336,7 @@ final class Torneo {
         for (Jug j : jugs.values()) {
             ServerPlayerEntity p = pl(j);
             if (p == null) continue;
-            Msg.title(p, Text.literal("Puesto " + j.puestoRonda + "º").formatted(j.puestoRonda == 1 ? Formatting.GOLD : Formatting.AQUA, Formatting.BOLD), Text.literal("+" + j.puntosRonda + " puntos · total " + j.puntos).formatted(Formatting.YELLOW), 5, 60, 10);
+            Msg.title(p, Text.literal("Puesto " + j.puestoRonda + "º").formatted(j.puestoRonda == 1 ? Formatting.GOLD : Formatting.AQUA, Formatting.BOLD), Text.literal("+" + j.puntosRonda + " puntos · total " + j.puntos + " · ★ " + EmiFall.estrellas(j.id)).formatted(Formatting.YELLOW), 5, 60, 10);
             Sonido.sfx(p, j.puestoRonda <= 3 ? "ronda_fin" : "puntos", 0.9f, 1.0f);
             Sonido.silencio(p, 2500);
         }
@@ -306,6 +378,26 @@ final class Torneo {
             EmiFall.LOG.info("[torneo] GANADOR: {} con {} puntos; clasificacion: {}", g.nombre, g.puntos, resumen(l));
         }
         enviarClasificacion();
+        terminado = true;
+        long seg = Math.max(0, (System.currentTimeMillis() - inicioMs) / 1000);
+        if (EmiFall.datos != null) {
+            int pos = 0;
+            for (Jug j : l) {
+                j.puestoFinal = ++pos;
+                Datos.Jugador d = EmiFall.datos.jugador(j.id, j.nombre);
+                Retos.Novedades nv = Retos.aplicarTorneo(d, new Retos.Torneo(pos, l.size(), sinElim, j.puntos, rondas.size(), seg), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+                j.estrTorneo += nv.total();
+                j.lineasTorneo.add("Torneo terminado: puesto " + pos + "º → +" + nv.porTorneo + " ★");
+                j.lineasTorneo.addAll(nv.lineas);
+                EmiFall.datos.guardar(j.id);
+                ServerPlayerEntity p = pl(j);
+                if (p != null) {
+                    p.sendMessage(Msg.say(Text.literal("Ganas +" + j.estrTorneo + " ★ en este torneo (ahora tienes " + d.estrellas + ")").formatted(Formatting.GOLD)), false);
+                    for (String s : nv.lineas) p.sendMessage(Msg.say(Text.literal(s).formatted(Formatting.GREEN)), false);
+                }
+            }
+            EmiFall.datos.invalidarTop();
+        }
         // los jugadores esperan en la sala de la ultima ronda (ya no hay nada que hacer): se les lleva a la sala del torneo
         ServerWorld w = Sala.mundo(server);
         if (w != null) for (Jug j : jugs.values()) {
@@ -333,6 +425,7 @@ final class Torneo {
             p.getInventory().clear();
             p.changeGameMode(GameMode.ADVENTURE);
             if (w != null && !Sala.enSala(p)) p.teleport(w, Sala.SX, Sala.SY, Sala.SZ, 180f, 0f);
+            if (Sala.enSala(p)) { Sala.darItemMenu(p); Menu.abrir(p, "jugar", terminado ? Menu.resultado(this, j) : null); }
         }
         if (actual == this) actual = null;
     }

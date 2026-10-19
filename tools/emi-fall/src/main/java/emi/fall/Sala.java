@@ -1,6 +1,12 @@
 package emi.fall;
 
 import net.minecraft.block.Blocks;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LoreComponent;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
@@ -24,7 +30,10 @@ final class Sala {
     static final int Y = 63;                         // el suelo; los pies estan en Y + 1
     static final double SX = 0.5, SY = Y + 1, SZ = 9.5;
     static final int R = 15;
-    static final int VERSION = 3;
+    static final int VERSION = 4;
+    /** El terminal (una mesa de encantamientos en el podio): tocarla abre el menu. */
+    static final BlockPos TERMINAL = new BlockPos(0, Y + 2, 2);
+    static final String ETIQUETA_MENU = "emi_fall_menu";
 
     static ServerWorld mundo(MinecraftServer s) { return s.getWorld(DIM); }
 
@@ -74,11 +83,31 @@ final class Sala {
         Deco.michi(w, -13, Y - 4, -(R + 14), 'x', 2);
         Deco.luna(w, 22, Y + 26, -(R + 10), 8, 'z');
         Deco.luna(w, -24, Y + 20, R + 10, 6, 'z');
-        Obra.poner(w, 1, -64, 0, "crying_obsidian");           // la version se apunta en un bloque: 1 = bedrock, 2 = obsidiana, 3 = obsidiana llorona
+        Obra.poner(w, TERMINAL.getX(), TERMINAL.getY(), TERMINAL.getZ(), "enchanting_table");
+        Disp.texto(w, "{\"text\":\"MENÚ\",\"color\":\"gold\",\"bold\":true}", TERMINAL.getX() + 0.5, TERMINAL.getY() + 1.6, TERMINAL.getZ() + 0.5, 1.4f, false);
+        Obra.poner(w, 1, -64, 0, "gold_block");           // la version se apunta en un bloque: 1 = bedrock, 2 = obsidiana, 3 = obsidiana llorona, 4 = oro
         EmiFall.LOG.info("Sala del torneo construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
     }
 
-    private static int versionActual(ServerWorld w) { BlockPos m = new BlockPos(1, -64, 0); return w.getBlockState(m).isOf(Blocks.CRYING_OBSIDIAN) ? 3 : w.getBlockState(m).isOf(Blocks.OBSIDIAN) ? 2 : w.getBlockState(m).isOf(Blocks.BEDROCK) ? 1 : 0; }
+    private static int versionActual(ServerWorld w) { BlockPos m = new BlockPos(1, -64, 0); return w.getBlockState(m).isOf(Blocks.GOLD_BLOCK) ? 4 : w.getBlockState(m).isOf(Blocks.CRYING_OBSIDIAN) ? 3 : w.getBlockState(m).isOf(Blocks.OBSIDIAN) ? 2 : w.getBlockState(m).isOf(Blocks.BEDROCK) ? 1 : 0; }
+
+    static ItemStack itemMenu() {
+        ItemStack st = new ItemStack(Items.NETHER_STAR);
+        st.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Menú de Emi Fall").styled(x -> x.withColor(Formatting.GOLD).withBold(true).withItalic(false)));
+        st.set(DataComponentTypes.LORE, new LoreComponent(java.util.List.of(Text.literal("Clic derecho: torneo, misiones y tienda").styled(x -> x.withColor(Formatting.GRAY).withItalic(false)))));
+        NbtCompound tag = new NbtCompound();
+        tag.putBoolean(ETIQUETA_MENU, true);
+        st.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+        return st;
+    }
+
+    static boolean esItemMenu(ItemStack st) {
+        if (st == null || st.isEmpty()) return false;
+        NbtComponent c = st.get(DataComponentTypes.CUSTOM_DATA);
+        return c != null && c.copyNbt().getBoolean(ETIQUETA_MENU);
+    }
+
+    static void darItemMenu(ServerPlayerEntity p) { p.getInventory().setStack(4, itemMenu()); }
 
     /** Mete al jugador en la sala (guardando antes lo suyo si es la primera vez). */
     static String entrar(ServerPlayerEntity p) {
@@ -86,6 +115,9 @@ final class Sala {
         ServerWorld w = mundo(s);
         if (w == null) return "No existe la dimension de la sala (¿falta el mod emi-fall en el servidor?).";
         if (Torneo.participa(p)) return "Ya estas en un torneo en marcha: usa /fall salir para irte.";
+        String ns = p.getServerWorld().getRegistryKey().getValue().getNamespace();
+        if (ns.equals("emi_survivors") || ns.equals("emi_carreras") || ns.equals("emi_huida")) return "Estás en otro minijuego: sal primero (/survivor salir, /carrera salir o /huida salir).";
+        if (enSala(p)) { Menu.abrir(p, "jugar"); return null; }
         construir(w);
         if (!Saved.exists(s, p.getUuid())) Saved.save(s, p, true);
         p.getInventory().clear();
@@ -93,6 +125,8 @@ final class Sala {
         p.changeGameMode(GameMode.ADVENTURE);
         p.getAbilities().flying = false; p.sendAbilitiesUpdate();
         p.teleport(w, SX, SY, SZ, 180f, 0f);
+        darItemMenu(p);
+        Menu.abrir(p, "jugar");
         p.sendMessage(Msg.say(Text.literal("Bienvenido a Emi Fall. Escribe ").append(Text.literal("/fall unirse").formatted(Formatting.GOLD)).append(" para apuntarte al torneo; ")
                 .append(Text.literal("/fall salir").formatted(Formatting.GOLD)).append(" para irte.")), false);
         return null;

@@ -278,6 +278,82 @@ def dino(g, f):
             p = bones[padre[b['name']]]; b['parent'] = p['name']; b['pivot'] = list(p['pivot'])
     return []
 
+# ---------------------------------------------------------------- disfraz de calabaza (solo aspecto `pumpkin`: peluche exclusivo de la tienda de Emi Fall; no es una forma Pokemon)
+# Lleva su PROPIA textura (michi_dramatico_pumpkin.png): el cuerpo del michi + la zona libre para el disfraz. Las orejas y las antenas del michi asoman por arriba, junto al tallo.
+CAL = (238, 126, 28); CAL_D = (194, 86, 14); CAL_L = (255, 166, 58); TALLO = (110, 124, 54); TALLO_D = (78, 92, 40); LUZ = (255, 226, 118); LUZ_D = (240, 158, 38)
+def tallado(x, y):
+    """¿Esta el pixel (x, y) de la placa de delante (36x22) dentro de lo tallado? Dos ojos triangulares, nariz triangular y una boca con dientes."""
+    for cx in (10, 25):                                           # ojos: triangulos con la punta hacia arriba
+        if 2 <= y <= 9 and abs(x - cx) <= (y - 2) * 4.6 / 7 + 0.5: return True
+    if 11 <= y <= 13 and abs(x - 17.5) <= (y - 11) * 1.4 + 0.5: return True    # nariz
+    if 14 <= y <= 20 and 5 <= x <= 30:                            # boca con dientes (arriba y abajo, alternados)
+        k = ((x - 5) // 3) % 2
+        if k == 0 and y <= 16: return False
+        if k == 1 and y >= 18: return False
+        return True
+    return False
+def piel_cal(face, i, j, w, h):
+    k = i % 8
+    c = CAL_D if k in (0, 7) else CAL_L if k == 3 else CAL
+    if face == 'up': c = CAL_L if (i + j) % 5 else CAL
+    if face == 'down': c = CAL_D
+    return c + (255,)
+def cara_cal(face, i, j, w, h):
+    if face != 'north': return piel_cal(face, i, j, w, h)
+    if tallado(i, j):
+        borde = not (tallado(i - 1, j) and tallado(i + 1, j) and tallado(i, j - 1) and tallado(i, j + 1))
+        return (LUZ_D if borde else LUZ) + (255,)
+    return piel_cal(face, i, j, w, h)
+def tallo(face, i, j, w, h): return (TALLO_D if (i + j) % 3 == 0 else TALLO) + (255,)
+def hoja(face, i, j, w, h): return (GREEN_D if (i + 2 * j) % 5 == 0 else GREEN) + (255,)
+
+def calabaza(g, f):
+    bones = {b['name']: b for b in g['minecraft:geometry'][0]['bones']}
+    c = lambda nombre, o, sz, p=piel_cal, rot=None, piv=None: cube(g, f, nombre, o, sz, p, rot, piv)
+    # ---- la calabaza: cuerpo con costillas pintadas, la cara tallada por delante, cupula, tallo y hojas
+    c('acc_calabaza', (-22.5, 8, -20.5), (45, 18, 42))                                     # el cuerpo ancho...
+    c('acc_calabaza', (-21, 1, -19), (42, 7, 39))                                      # ...que se estrecha por abajo
+    c('acc_calabaza', (-21, 26, -19), (42, 7, 39))                                     # ...y por arriba (asi se ve redonda)
+    c('acc_calabaza', (-18, 6, -21.5), (36, 22, 1), cara_cal)                            # la placa de delante con la cara tallada
+    c('acc_calabaza', (-15, 33, -13), (30, 3, 26))                                     # la cupula de arriba
+    c('acc_calabaza', (-3, 36, -3), (6, 7, 6), tallo)                                  # el tallo
+    c('acc_calabaza', (1, 43, -3), (5, 3, 5), tallo, [0, 0, -25], [3, 43, 0])          # la punta del tallo, doblada
+    for sgn in (-1, 1):
+        o = (-15, 36, -13) if sgn < 0 else (6, 36, -13)
+        c('acc_calabaza', o, (9, 1, 7), hoja)                                          # una hoja a cada lado, delante del tallo
+        c('acc_calabaza', (o[0] + (1 if sgn < 0 else 2), 37, o[2] + 1), (6, 1, 5), hoja)
+    # ---- brazos, pies y cola: mangas naranjas con puño de hojas, botitas y cola de enredadera
+    for lado in ('l', 'r'):
+        a = bones['arm_' + ('left' if lado == 'l' else 'right')]['cubes'][0]; o, sz = a['origin'], a['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_calabaza_arm_{lado}', no, ns, piel_cal, a['rotation'], a['pivot'])
+        c(f'acc_calabaza_arm_{lado}', (no[0] - 0.5, no[1] - 0.5, no[2] - 0.5), (ns[0] + 1, 2, ns[2] + 1), hoja, a['rotation'], a['pivot'])
+        pie = bones['foot_' + ('left' if lado == 'l' else 'right')]['cubes'][0]; o, sz = pie['origin'], pie['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_calabaza_foot_{lado}', no, ns, piel_cal)
+    for n in ('tail1', 'tail2', 'tail3'):
+        t = bones[n]['cubes'][0]; o, sz = t['origin'], t['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_calabaza_{n}', no, ns, tallo, t.get('rotation'), t.get('pivot'))
+    # ---- orejas y antenas tambien de calabaza (pedido del dueño): se quitan las originales y se ponen otras del mismo sitio y giro
+    #      orejas = dos trozos de calabaza con costillas; antenas = rabito verde (como el tallo) con una calabacita en la punta y su tallito
+    for n in ('ear_left', 'ear_right', 'antenna_left', 'antenna_right'):
+        cubos = bones[n].pop('cubes'); lado = 'l' if n.endswith('left') else 'r'; nombre = f"acc_calabaza_{n.split('_')[0]}_{lado}"
+        for k, cb in enumerate(cubos):
+            o, sz, rot, piv = cb['origin'], cb['size'], cb['rotation'], cb['pivot']
+            ns = [int(round(v)) for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+            esTallo = n.startswith('antenna') and k == 0
+            c(nombre, no, ns, tallo if esTallo else piel_cal, rot, piv)
+            if n.startswith('antenna') and k == 1:                                     # el tallito de la calabacita de la punta
+                c(nombre, (no[0] + ns[0] / 2 - 1, no[1] + ns[1], no[2] + ns[2] / 2 - 1), (2, 2, 2), tallo, rot, piv)
+    padre = {'acc_calabaza_ear_l': 'ear_left', 'acc_calabaza_ear_r': 'ear_right', 'acc_calabaza_antenna_l': 'antenna_left', 'acc_calabaza_antenna_r': 'antenna_right',
+'acc_calabaza_arm_l': 'arm_left', 'acc_calabaza_arm_r': 'arm_right', 'acc_calabaza_foot_l': 'foot_left', 'acc_calabaza_foot_r': 'foot_right',
+             'acc_calabaza_tail1': 'tail1', 'acc_calabaza_tail2': 'tail2', 'acc_calabaza_tail3': 'tail3'}
+    for b in g['minecraft:geometry'][0]['bones']:
+        if b['name'] in padre:
+            p = bones[padre[b['name']]]; b['parent'] = p['name']; b['pivot'] = list(p['pivot'])
+    return []
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -360,6 +436,16 @@ def main():
     img_d.save(f'{TEX}/michi_dramatico_dino.png')
     variantes.append({'aspects': ['dino-accessory'], 'model': 'cobblemon:michi_dramatico_dino.geo', 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_dino.png'})
     print('pijama de dinosaurio: textura usada hasta la fila', free_d.y + free_d.rowh, 'de', img_d.height)
+    # el disfraz de calabaza va aparte, igual que el pijama de dinosaurio (su propia textura)
+    img_c = Image.new('RGBA', img.size, (0, 0, 0, 0)); img_c.paste(img.crop((0, 0, img.width, 112)), (0, 0))
+    g = copy.deepcopy(geo0); g['minecraft:geometry'][0]['description']['identifier'] = 'geometry.michi_dramatico_pumpkin'
+    free_c = Free(img_c, 112); calabaza(g, free_c)
+    malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b.get('cubes', []) if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
+    assert not malos, f'calabaza: caras coplanares (z-fighting) en {malos}'
+    json.dump(g, open(f'{GEO}/michi_dramatico_pumpkin.geo.json', 'w'), separators=(',', ':'))
+    img_c.save(f'{TEX}/michi_dramatico_pumpkin.png')
+    variantes.append({'aspects': ['pumpkin-accessory'], 'model': 'cobblemon:michi_dramatico_pumpkin.geo', 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_pumpkin.png'})
+    print('disfraz de calabaza: textura usada hasta la fila', free_c.y + free_c.rowh, 'de', img_c.height)
     img.save(f'{TEX}/michi_dramatico.png')
     oro = gold_shiny(img)
     # accesorios que se pierden sobre el pelaje dorado (la corona es dorada): en la textura dorada pasan a plata
@@ -375,7 +461,7 @@ def main():
     json.dump({'species': 'cobblemon:gatitoalien', 'order': 1, 'variations': variantes}, open(f'{rd}/1_michi_dramatico_accessories.json', 'w'), indent=2)
     data = os.path.join(OUT, 'data/cobblemon')
     os.makedirs(f'{data}/species_features', exist_ok=True); os.makedirs(f'{data}/species_feature_assignments', exist_ok=True)
-    json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS) + ['dino'], 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
+    json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS) + ['dino', 'pumpkin'], 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['accessory']}, open(f'{data}/species_feature_assignments/accessory.json', 'w'))
     json.dump({'keys': ['gold'], 'type': 'flag', 'isAspect': True, 'default': False}, open(f'{data}/species_features/gold.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['gold']}, open(f'{data}/species_feature_assignments/gold.json', 'w'))

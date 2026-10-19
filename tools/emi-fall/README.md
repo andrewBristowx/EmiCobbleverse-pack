@@ -1,8 +1,19 @@
-# Emi Fall (`emi_fall`) — 0.5.0 (en desarrollo)
+# Emi Fall (`emi_fall`) — 0.6.0 (en desarrollo)
 
 Torneo de **minijuegos por rondas estilo Fall Guys** para el servidor de Emi. **Servidor y partida de un jugador** (`environment: "*"`; con `server` no cargaba en la instancia de Prism): no hay código de cliente, los jugadores no necesitan nada especial (todo sale por chat,
 títulos, barra de jefe y entidades «display» de Minecraft). Los jugadores van transformados en **michi** (el GatitoAlien de emi-plush) con CobbleMorph, así que se
 ven todos iguales. Pedido del dueño (2026-10-19): cuatro minijuegos —carrera de obstáculos, camino correcto, guerra de bombas por equipos y «busca el símbolo»—.
+
+## 0.6.0 — sala con menú, estrellas, misiones, tienda y el peluche de la calabaza (pedido del dueño)
+Pedido: «un espacio en el NPC michi de Emi Survivors, misiones, tienda, elegir jugar los dos modos, y un michi alien calabaza» (el peluche, **recompensa única del minijuego**). Hecho igual que en las carreras y la huida.
+- **Sala con menú** (`Menu`, `Acciones`, cliente `MenuPantalla`/`Lienzo`, paquetes `emi_fall:texto` S2C y `emi_fall:accion` C2S): `/fall entrar` abre el menú (también con la estrella de la ranura 5, tocando la mesa de encantamientos del podio o con `/fall menu`). Pestañas **TORNEO / MISIONES / TIENDA / TOP**. En TORNEO se elige **modo** (con o sin eliminaciones) y **juegos** (los 8, los 4 clásicos o los 4 de Halloween), y se juega «solo (práctica)» o se abre un torneo para todos (anfitrión: puede cambiar modo y juegos mientras espera; el resto se une desde su menú). `Sala.VERSION` = 4 (la sala se reconstruye sola).
+- **Estrellas** (moneda de Emi Fall; `Datos`, `world/emi_fall/jugadores/<uuid>.json`, escritura atómica): 3 por ronda + 10/6/4/2 según el puesto de la ronda, y al acabar el torneo +10 + 30/18/10/5 según el puesto final. **Los bonus por puesto solo cuentan con 2 o más jugadores** (si no, se farmearía en solitario). Al acabar sale una **caja de resultado** con el desglose.
+- **Misiones** (`Retos`): 3 del día y 3 de la semana (las mismas para todos, elegidas por la fecha) y estadísticas (rondas, torneos, dulces, muros esquivados, torneos con/sin eliminaciones, podios, torneos en grupo). El premio de cada una son estrellas.
+- **Tienda** (`Tienda`, `TiendaCorreo`): los mismos artículos que carreras/huida (7 tickets de Emipokemon y 5 objetos Pokémon, máx. 10 de cada uno al día, entrega al correo `/correo` por reflexión a `MailboxService.sendGift`) y el **peluche `emi_plush:gatitoalien_calabaza` (1000 estrellas, una vez por jugador)**. `-Demi.fall.correo_prueba=true` simula el correo para pruebas.
+- **Comandos nuevos:** `/fall menu`, `/fall salir`, admin `/fall dev estrellas <n>`.
+- **Ms. President** (emi-survivors 0.28.0) tiene un quinto botón «Emi Fall» (`/fall entrar`); no deja entrar si ya estás en otra sala.
+- **Michialien Calabaza** (emi-plush 1.19.0, aspecto `accessory=pumpkin`): disfraz de calabaza tallada con tallo, hojas y mangas/botas/cola de enredadera; ver el README de emi-plush.
+- **Probado** en el juego (servidor ligero + cliente real, un solo jugador): sala y menú con sus 4 pestañas, comprar el peluche (saldo, «COMPRADO ✔», aviso de correo de prueba, quedó guardado en `unicos`), un torneo de los 4 clásicos sin eliminaciones desde el menú hasta el final (estrellas 200→222, caja de resultado, estadísticas y avance de misiones guardados), los datos tras reiniciar el servidor, el botón de Ms. President, y el peluche como bloque y como Pokémon. **No probado**: varios jugadores (unirse, traspaso de anfitrión, cambio de modo en la cola, bonus por puesto, TOP con datos), la entrega real por `/correo` con Emipokemon, el servidor real, ni que el equilibrio de las cifras de estrellas sea razonable (son estimaciones).
 
 ## 0.5.0 — ocho juegos, modo sin eliminaciones, Halloween, música y marcador (pedido del dueño)
 Pedido: «4 juegos más, un modo sin eliminaciones, decorar con Halloween y el Michialien, música y sonidos como los otros juegos, el conteo de puntos con el top a un lado y una explicación breve de lo que hay que hacer».

@@ -20,14 +20,14 @@ public final class MsPresidentPantalla extends Lienzo {
     private static final String[] PAGINAS = {
             "¡Muy buenas! Soy Ms. President, presidenta de Michialien S.A., la empresa más adorable de todo el universo.",
             "Este mundo va a estar lleno de minijuegos: carreras de Pokémon, huidas de monstruos enormes, hordas que sobrevivir... ¡y yo los patrocino todos!",
-            "¿Te animas a probar uno? Elige: «Emi Survivors» (sobrevive a la horda con tus Pokémon, pasa de mundo en mundo y vence al Michi Gigante), las «Carreras» (corre con tu Pokémon y gana estrellas) o «La Huida» (corre de un monstruo enorme y gana el peluche del dinosaurio)."
+            "¿Te animas a probar uno? Elige: «Emi Survivors» (sobrevive a la horda con tus Pokémon, pasa de mundo en mundo y vence al Michi Gigante), las «Carreras» (corre con tu Pokémon y gana estrellas), «La Huida» (corre de un monstruo enorme y gana el peluche del dinosaurio) o «Emi Fall» (un torneo de minijuegos de Halloween con el michi: gana el peluche de la calabaza)."
     };
     /** Duracion (ms) de cada fotograma del retrato: ojos abiertos, cerrados, abiertos, cerrados (el parpadeo doble del GIF original). */
     private static final int[] DURACION = {1400, 200, 160, 200};
 
-    private static final String[] BOTONES = {"Emi Survivors", "Carreras", "La Huida", "Ahora no"};
-    private static final int BOTON_W = 76, BOTON_H = 26;
-    private static final int[] BOTON_X = {14, 94, 174, 254};
+    private static final String[] BOTONES = {"Emi Survivors", "Carreras", "La Huida", "Emi Fall", "Ahora no"};
+    private static final int BOTON_W = 62, BOTON_H = 26;
+    private static final int[] BOTON_X = {10, 75, 140, 205, 270};
 
     /** Aclara un color (el boton bajo el raton). */
     private static int mezclar(int c) {
@@ -89,14 +89,14 @@ public final class MsPresidentPantalla extends Lienzo {
             if (fin && (System.currentTimeMillis() / 400) % 2 == 0) texto(g, "Siguiente ▶", bx + bw - 76, by + bh - 16, ORO, 0.9f);
             texto(g, "(clic o espacio)", bx + 14, by + bh - 16, GRIS, 0.8f);
         } else if (fin) {
-            // las cuatro opciones (survivors, carreras, huida y «ahora no»)
+            // las cinco opciones (survivors, carreras, huida, emi fall y «ahora no»)
             int y = by + bh - 40;
-            int[] fondo = {0xFF2E9B4E, 0xFFD2693C, 0xFF3C7FD2, 0xFF33334F}, borde = {0xFF6FE08A, 0xFFFFB27A, 0xFF8EC3FF, 0xFF6A6A8A};
-            for (int i = 0; i < 4; i++) {
+            int[] fondo = {0xFF2E9B4E, 0xFFD2693C, 0xFF3C7FD2, 0xFF9B4EC8, 0xFF33334F}, borde = {0xFF6FE08A, 0xFFFFB27A, 0xFF8EC3FF, 0xFFD6A0FF, 0xFF6A6A8A};
+            for (int i = 0; i < 5; i++) {
                 int x = BOTON_X[i] + bx, c = fondo[i];
                 boolean sobre = dentro(mx, my, x, y, BOTON_W, BOTON_H);
                 caja(g, x, y, BOTON_W, BOTON_H, sobre ? mezclar(c) : c, sobre ? BLANCO : borde[i]);
-                textoCentrado(g, BOTONES[i], x + BOTON_W / 2, y + 9, i == 3 ? GRIS : BLANCO, i == 0 ? 0.85f : 0.95f);
+                textoCentrado(g, BOTONES[i], x + BOTON_W / 2, y + 9, i == 4 ? GRIS : BLANCO, i == 0 ? 0.75f : 0.85f);
             }
         }
         textoCentrado(g, "Michialien S.A. · patrocinador oficial de los minijuegos", W / 2, H - 22, 0xFF8F78D8, 0.8f);
@@ -109,7 +109,8 @@ public final class MsPresidentPantalla extends Lienzo {
             if (dentro(mx, my, bx + BOTON_X[0], y, BOTON_W, BOTON_H)) { unirse("survivors"); return; }
             if (dentro(mx, my, bx + BOTON_X[1], y, BOTON_W, BOTON_H)) { unirse("carreras"); return; }
             if (dentro(mx, my, bx + BOTON_X[2], y, BOTON_W, BOTON_H)) { unirse("huida"); return; }
-            if (dentro(mx, my, bx + BOTON_X[3], y, BOTON_W, BOTON_H)) { close(); return; }
+            if (dentro(mx, my, bx + BOTON_X[3], y, BOTON_W, BOTON_H)) { unirse("fall"); return; }
+            if (dentro(mx, my, bx + BOTON_X[4], y, BOTON_W, BOTON_H)) { close(); return; }
             return;
         }
         avanzar();

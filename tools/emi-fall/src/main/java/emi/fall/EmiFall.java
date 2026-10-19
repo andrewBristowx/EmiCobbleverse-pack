@@ -21,6 +21,11 @@ import org.slf4j.LoggerFactory;
 public class EmiFall implements ModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("emi_fall");
 
+    /** Lo guardado de cada jugador (estrellas, misiones, compras); se abre al arrancar el servidor, dentro de la carpeta del mundo ({@code emi_fall/}). */
+    static Datos datos;
+
+    static int estrellas(java.util.UUID id) { return datos == null ? 0 : datos.jugador(id, null).estrellas; }
+
     /** ¿Esta en la sala o en un torneo en marcha (no toca nada del mundo)? */
     static boolean encerrado(net.minecraft.entity.player.PlayerEntity p) {
         return p instanceof ServerPlayerEntity sp && (Sala.enSala(sp) || Torneo.participa(sp));
@@ -29,6 +34,11 @@ public class EmiFall implements ModInitializer {
     @Override
     public void onInitialize() {
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.fall.net.CamaraPayload.ID, emi.fall.net.CamaraPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.fall.net.TextoPayload.ID, emi.fall.net.TextoPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S().register(emi.fall.net.AccionPayload.ID, emi.fall.net.AccionPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(emi.fall.net.AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Acciones.recibir(ctx.player(), payload)));
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(s -> { datos = new Datos(s.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("emi_fall")); });
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPING.register(s -> datos = null);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(Minijuegos::soltarTodoForzado);          // por si el servidor se paro a medias
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(Torneo::tick);
@@ -44,11 +54,13 @@ public class EmiFall implements ModInitializer {
         // en la sala y en el torneo no se toca nada (el boton derecho con un objeto lo atiende el minijuego: las bombas)
         UseItemCallback.EVENT.register((p, w, hand) -> {
             if (w.isClient || !(p instanceof ServerPlayerEntity sp) || !encerrado(sp)) return TypedActionResult.pass(p.getStackInHand(hand));
+            if (Sala.enSala(sp) && Sala.esItemMenu(p.getStackInHand(hand))) { Menu.abrir(sp, "jugar"); return TypedActionResult.fail(p.getStackInHand(hand)); }
             Torneo.alUsar(sp);
             return TypedActionResult.fail(p.getStackInHand(hand));
         });
         UseBlockCallback.EVENT.register((p, w, hand, hit) -> {
             if (w.isClient || !encerrado(p)) return ActionResult.PASS;
+            if (p instanceof ServerPlayerEntity sp && Sala.enSala(sp) && hit.getBlockPos().equals(Sala.TERMINAL)) { Menu.abrir(sp, "jugar"); return ActionResult.SUCCESS; }
             if (p instanceof ServerPlayerEntity sp) Torneo.alUsar(sp);                 // tirar la bomba tambien al hacer clic derecho sobre un bloque
             return ActionResult.FAIL;
         });

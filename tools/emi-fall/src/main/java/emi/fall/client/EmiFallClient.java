@@ -18,7 +18,26 @@ public class EmiFallClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(CamaraPayload.ID, (p, ctx) -> ctx.client().execute(() -> poner(p.tercera())));
+        ClientPlayNetworking.registerGlobalReceiver(emi.fall.net.TextoPayload.ID, (p, ctx) -> ctx.client().execute(() -> menu(p)));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> forzada = false);
+    }
+
+    /** Los datos del menu de la sala: abre la pantalla, la refresca o la cierra (texto vacio). */
+    private static void menu(emi.fall.net.TextoPayload p) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        try {
+            switch (p.tipo()) {
+                case "menu" -> {
+                    if (p.json().isEmpty()) { if (mc.currentScreen instanceof MenuPantalla) mc.setScreen(null); }
+                    else if (MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), false);
+                    else mc.setScreen(new MenuPantalla(p.json()));
+                }
+                case "menu_act" -> { if (!p.json().isEmpty() && MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), true); }
+                default -> { }
+            }
+        } catch (RuntimeException e) {
+            emi.fall.EmiFall.LOG.warn("No se pudo abrir el menu de Emi Fall: {}", e.toString());
+        }
     }
 
     private static void poner(boolean tercera) {
