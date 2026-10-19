@@ -89,6 +89,8 @@ final class MiniBombas implements Mini {
     public void empezar(Ctx c) {
         ganador = -2; radioActual = R;
         original.clear();
+        c.forzar(-18, ZC - 18, 18, ZC + 18);
+        Disp.barrerMoviles(c.w, 0, ZC, 40);
         quitarEntidades();
         ponerSuelo(c.w);
         int S = Minijuegos.SUELO;
@@ -132,8 +134,7 @@ final class MiniBombas implements Mini {
         quitarPortada(j);
         Entity r = Disp.bloqueMontable(c.w, "minecraft:tnt", p.getX(), p.getY() + 1.8, p.getZ(), 0.9f, 0.75f);
         if (r != null) { r.startRiding(p, true); portadas.put(j, r); }
-        p.getInventory().setStack(0, objetoBomba());
-        p.getInventory().selectedSlot = 0;
+        for (int i = 0; i < 9; i++) p.getInventory().setStack(i, objetoBomba());          // en toda la barra: asi el clic derecho funciona sea cual sea la ranura elegida
         p.playSoundToPlayer(SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.MASTER, 1f, 0.8f);
         c.w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.PLAYERS, 0.6f, 1.4f);
         p.sendMessage(Text.literal("¡Tienes una bomba encima! Clic derecho para lanzarla.").formatted(Formatting.RED), true);
@@ -142,7 +143,7 @@ final class MiniBombas implements Mini {
     @Override public void liberar(Ctx c) { }
 
     private ItemStack objetoBomba() {
-        ItemStack st = new ItemStack(Items.STICK);                                         // se ve como TNT en la barra y en la mano no se ve (resource pack del mod)
+        ItemStack st = new ItemStack(Items.GUNPOWDER);                                      // se ve como TNT en la barra y en la mano no se ve (resource pack del mod)
         st.set(DataComponentTypes.CUSTOM_MODEL_DATA, new CustomModelDataComponent(MODELO_BOMBA));
         st.set(DataComponentTypes.CUSTOM_NAME, Text.literal("BOMBA · clic derecho para lanzarla").formatted(Formatting.RED, Formatting.BOLD));
         return st;
@@ -216,7 +217,7 @@ final class MiniBombas implements Mini {
         int S = Minijuegos.SUELO;
         // las bombas en el suelo giran y vuelven a salir
         for (Punto pt : puntos) {
-            if (pt.hay) { if (c.tick % 2 == 0) Disp.moverBloque(pt.e, pt.x, S + 2.0 + 0.15 * Math.sin(c.tick / 6.0), pt.z, 0.8f, 0.8f, 0.8f, c.tick / 12.0, 2); }
+            if (pt.hay) { Disp.moverBloque(pt.e, pt.x, S + 2.0 + 0.15 * Math.sin(c.tick / 6.0), pt.z, 0.8f, 0.8f, 0.8f, c.tick / 12.0, 2); }
             else if (c.tick >= pt.listoEn && hayBloque(c.w, pt.x, pt.z)) {
                 pt.hay = true; pt.e = Disp.bloque(c.w, "minecraft:tnt", pt.x, S + 2.0, pt.z, 0.8f, 0.8f, 0.8f, 0, 0);
             }

@@ -134,6 +134,9 @@ final class MiniCarrera implements Mini {
     @Override
     public void empezar(Ctx c) {
         primero = -1; java.util.Arrays.fill(proxBola, 0);
+        c.forzar(-14, -8, META_X + 14, 8);                                  // toda la pista cargada mientras dure la carrera (si no, las barras lejanas se quedan congeladas)
+        int viejos = Disp.barrerMoviles(c.w, META_X / 2.0, ZC, 260);        // barras y frutas congeladas de una partida anterior
+        if (viejos > 0) EmiFall.LOG.info("[carrera] {} entidades viejas barridas", viejos);
         ponerPuertas(c.w, c.rnd);
         quitarEntidades();
         int S = Minijuegos.SUELO;
@@ -161,7 +164,10 @@ final class MiniCarrera implements Mini {
     public boolean tick(Ctx c) {
         int S = Minijuegos.SUELO;
         // las barras giran: una actualizacion en cada tick y sin interpolacion del cliente (asi no dependen de como la anime cada cliente)
-        for (Barra b : barras) Disp.moverBloque(b.e, b.cx, S + 1.4, b.cz, (float) b.largo, 0.5f, 0.5f, b.giro(c.tick), 0);
+        for (Barra b : barras) {
+            if (b.e == null || b.e.isRemoved()) b.e = Disp.bloque(c.w, "minecraft:red_concrete", b.cx, S + 1.4, b.cz, (float) b.largo, 0.5f, 0.5f, b.giro(c.tick), 0);     // por si se descargo
+            else Disp.moverBloque(b.e, b.cx, S + 1.4, b.cz, (float) b.largo, 0.5f, 0.5f, b.giro(c.tick), 0);
+        }
         // frutas gigantes: salen por un carril al azar al fondo de cada zona y ruedan hacia la salida
         for (int zi = 0; zi < ZONAS.length; zi++) {
             if (c.tick < proxBola[zi]) continue;
@@ -173,7 +179,7 @@ final class MiniCarrera implements Mini {
         for (int i = bolas.size() - 1; i >= 0; i--) {
             Bola b = bolas.get(i);
             b.x -= b.vel; b.rodado += b.vel;
-            if (b.x < ZONAS[b.zona][1]) { Disp.quitar(b.e); bolas.remove(i); continue; }
+            if (b.x < ZONAS[b.zona][1] || b.e == null || b.e.isRemoved()) { Disp.quitar(b.e); bolas.remove(i); continue; }
             Disp.moverFruta(b.e, b.x, S + 1 + TAM_FRUTA / 2, b.z, TAM_FRUTA, b.rodado / (TAM_FRUTA / 2));
         }
         int llegados = 0, jugando = 0;

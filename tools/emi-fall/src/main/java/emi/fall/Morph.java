@@ -35,12 +35,20 @@ final class Morph {
 
     /** Lo deja como un michi; {@code aspectos} = por ejemplo «suit-accessory» o «devil_horns-accessory gold» (vacio = el michi normal). */
     static void michi(MinecraftServer s, ServerPlayerEntity p, String aspectos) {
+        camara(p, true);
         if (!disponible()) return;
         if (transformado(p.getUuid())) ejecutar(s, "untransform " + p.getGameProfile().getName());
         ejecutar(s, "transform " + p.getGameProfile().getName() + " gatitoalien" + (aspectos == null || aspectos.isBlank() ? "" : " " + aspectos));
     }
 
+    /** Tercera persona (como en Fall Guys) mientras dura el torneo: lo hace el cliente con el mod; si no lo tiene, no pasa nada. */
+    static void camara(ServerPlayerEntity p, boolean tercera) {
+        try { if (net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.canSend(p, emi.fall.net.CamaraPayload.ID)) net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(p, new emi.fall.net.CamaraPayload(tercera)); }
+        catch (Throwable t) { EmiFall.LOG.debug("camara: {}", t.toString()); }
+    }
+
     static void quitar(MinecraftServer s, ServerPlayerEntity p) {
+        camara(p, false);
         if (!disponible() || !transformado(p.getUuid())) return;
         ejecutar(s, "untransform " + p.getGameProfile().getName());
     }

@@ -23,6 +23,25 @@ final class Ctx {
     boolean retener = true;      // durante la cuenta atras los jugadores no se mueven del sitio
     int eliminados;              // cuantos se han eliminado en esta ronda
 
+    private final List<long[]> forzados = new ArrayList<>();
+
+    /**
+     * Mantiene cargados los chunks de un rectangulo (en bloques) hasta que acabe la ronda: si no, los chunks lejanos de los jugadores se descargan y las entidades que alli
+     * se mueven (barras, frutas, bombas) se quedan como una copia congelada que el mod ya no controla.
+     */
+    void forzar(int x0, int z0, int x1, int z1) {
+        for (int cx = Math.floorDiv(x0, 16); cx <= Math.floorDiv(x1, 16); cx++) for (int cz = Math.floorDiv(z0, 16); cz <= Math.floorDiv(z1, 16); cz++) {
+            w.setChunkForced(cx, cz, true);
+            w.getChunk(cx, cz);                          // lo carga ya (si hay entidades guardadas de una partida anterior, asi se pueden barrer)
+            forzados.add(new long[]{cx, cz});
+        }
+    }
+
+    void soltarForzados() {
+        for (long[] c : forzados) w.setChunkForced((int) c[0], (int) c[1], false);
+        forzados.clear();
+    }
+
     Ctx(Torneo t, ServerWorld w) { this.t = t; this.server = t.server; this.w = w; }
 
     List<Jug> jugs() { return new ArrayList<>(t.jugs.values()); }

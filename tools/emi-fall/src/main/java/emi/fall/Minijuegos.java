@@ -27,4 +27,11 @@ final class Minijuegos {
     static Mini porId(String id) { return TODOS.get(id.toLowerCase()); }
     static List<String> ids() { return List.copyOf(TODOS.keySet()); }
     static ServerWorld arena(MinecraftServer s) { return s.getWorld(DIM); }
+
+    /** Quita todos los chunks forzados de la dimension de las arenas (nadie mas los usa): se llama al arrancar el servidor por si se cerro en plena ronda. */
+    static void soltarTodoForzado(MinecraftServer s) {
+        ServerWorld w = arena(s);
+        if (w == null) return;
+        for (long l : new java.util.ArrayList<>(w.getForcedChunks())) w.setChunkForced(net.minecraft.util.math.ChunkPos.getPackedX(l), net.minecraft.util.math.ChunkPos.getPackedZ(l), false);
+    }
 }

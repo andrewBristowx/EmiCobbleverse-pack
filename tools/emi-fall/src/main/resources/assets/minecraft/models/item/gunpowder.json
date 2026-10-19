@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:item/handheld",
-  "textures": { "layer0": "minecraft:item/stick" },
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "minecraft:item/gunpowder" },
   "overrides": [
     { "predicate": { "custom_model_data": 7771 }, "model": "emi_fall:item/bomba" }
   ]

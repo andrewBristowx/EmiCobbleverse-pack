@@ -16,14 +16,14 @@ import java.util.Random;
 
 /**
  * «Camino correcto» (estilo puente de cristal del Juego del Calamar): un puente de baldosas de cristal, en cada fila tres baldosas y solo UNA aguanta (el camino cambia
- * en cada partida). Si pisas una falsa se rompe a los 0,45 s de aterrizar en ella: si saltas a la siguiente antes de que se rompa, pasas sin caer (corriendo y saltando
+ * en cada partida). Si pisas una falsa se rompe a los 0,6 s de aterrizar en ella: si saltas a la siguiente antes de que se rompa, pasas sin caer (corriendo y saltando
  * de baldosa en baldosa se cruza). Las baldosas rotas se quedan rotas, asi que los que van detras aprenden de los que caen. Gana quien llega antes al otro lado.
  */
 final class MiniCamino implements Mini {
     static final int ZC = 300;                  // centro de la arena (z)
     static final int FILAS = 14, ANCHO = 3;     // 14 filas de baldosas de 3x3, 3 baldosas por fila
     static final int LIMITE_S = 120, EXTRA_S = 40;
-    static final int RETRASO = 9;               // ticks desde que aterrizas en una baldosa falsa hasta que se rompe (se puede cruzar saltando)
+    static final int RETRASO = 12;              // ticks desde que aterrizas en una baldosa falsa hasta que se rompe (se puede cruzar saltando)
     static final int Z0 = ZC - 4;               // la primera columna de baldosas empieza en este z (9 de ancho: 296..304)
 
     private final int[] bueno = new int[FILAS];                 // la columna que aguanta en cada fila
@@ -60,9 +60,13 @@ final class MiniCamino implements Mini {
     private void ponerBaldosas(ServerWorld w, Random rnd) {
         int S = Minijuegos.SUELO;
         int c = rnd.nextInt(3);
+        boolean espejo = rnd.nextBoolean();
         for (int f = 0; f < FILAS; f++) {
-            if (f > 0) c = Math.max(0, Math.min(2, c + rnd.nextInt(3) - 1));
-            bueno[f] = c;
+            if (f > 0) {                                          // la siguiente columna buena esta a una columna como mucho (si no, no se podria saltar de una a otra)
+                int[] cand = c == 0 ? new int[]{0, 1} : c == 2 ? new int[]{1, 2} : new int[]{0, 1, 2};
+                c = cand[rnd.nextInt(cand.length)];
+            }
+            bueno[f] = espejo ? 2 - c : c;
             for (int k = 0; k < 3; k++) { roto[f][k] = false; romper[f][k] = 0; }
             for (int k = 0; k < 3; k++) rellenar(w, f, k, S);
         }

@@ -28,6 +28,8 @@ public class EmiFall implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.fall.net.CamaraPayload.ID, emi.fall.net.CamaraPayload.CODEC);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(Minijuegos::soltarTodoForzado);          // por si el servidor se paro a medias
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(Torneo::tick);
         ServerTickEvents.END_SERVER_TICK.register(Sala::tick);

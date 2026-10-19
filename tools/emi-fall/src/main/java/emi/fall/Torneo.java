@@ -150,7 +150,7 @@ final class Torneo {
     // ------------------------------------------------------------------------------------------------ las rondas
 
     private void siguiente() {
-        if (mini != null && ctx != null) { try { mini.limpiar(ctx); } catch (Throwable e) { EmiFall.LOG.error("Error al limpiar {}", mini.id(), e); } }
+        if (mini != null && ctx != null) { try { mini.limpiar(ctx); } catch (Throwable e) { EmiFall.LOG.error("Error al limpiar {}", mini.id(), e); } ctx.soltarForzados(); }
         idx++;
         if (idx >= rondas.size()) { final_(); return; }
         mini = rondas.get(idx);
@@ -282,7 +282,7 @@ final class Torneo {
     /** Cierra el torneo: todos a la sala (o a donde estaban si ya no estan en ella). */
     void cerrar() {
         barra.clearPlayers();
-        if (mini != null && ctx != null) { try { mini.limpiar(ctx); } catch (Throwable e) { EmiFall.LOG.error("Error al limpiar {}", mini.id(), e); } }
+        if (mini != null && ctx != null) { try { mini.limpiar(ctx); } catch (Throwable e) { EmiFall.LOG.error("Error al limpiar {}", mini.id(), e); } ctx.soltarForzados(); }
         quitarColores();
         ServerWorld w = Sala.mundo(server);
         for (Jug j : jugs.values()) {

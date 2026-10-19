@@ -8,7 +8,8 @@
   "license": "All-Rights-Reserved",
   "environment": "*",
   "entrypoints": {
-    "main": ["emi.fall.EmiFall"]
+    "main": ["emi.fall.EmiFall"],
+    "client": ["emi.fall.client.EmiFallClient"]
   },
   "depends": {
     "fabricloader": ">=0.16.0",

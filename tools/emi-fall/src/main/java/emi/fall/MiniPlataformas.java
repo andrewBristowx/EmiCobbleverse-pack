@@ -102,6 +102,8 @@ final class MiniPlataformas implements Mini {
 
     @Override
     public void empezar(Ctx c) {
+        c.forzar(-25, ZC - 25, 25, ZC + 25);
+        Disp.barrerMoviles(c.w, 0, ZC, 45);
         quitarEntidades();
         ronda = 0; objetivo = -1; previo = -1; paso = Paso.PAUSA; tPaso = 0; tDuracion = 60; proxGolpe = 0;
         ponerSuelo(c.w);

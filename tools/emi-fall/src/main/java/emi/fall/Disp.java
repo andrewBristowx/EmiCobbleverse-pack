@@ -100,7 +100,7 @@ final class Disp {
         n.put("brightness", br);
         n.put("Pos", lista(x, y, z));
         n.put("transformation", transf(0, 0, 0, sx, sy, sz, giro, true));
-        if (interp > 0) { n.putInt("start_interpolation", 0); n.putInt("interpolation_duration", interp); }
+        // sin interpolacion del cliente (el parametro interp se ignora): cada cambio se ve tal cual y no depende de como anime cada cliente las entidades
         return n;
     }
 
@@ -214,6 +214,14 @@ final class Disp {
     }
 
     static void quitar(Entity e) { if (e != null && !e.isRemoved()) e.discard(); }
+
+    /** Borra los displays de bloques y de objetos (lo que se mueve: barras, frutas, bombas, yunques...) de este mod en un cuadrado; deja los carteles de texto. */
+    static int barrerMoviles(ServerWorld w, double cx, double cz, double radio) {
+        net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(cx - radio, w.getBottomY(), cz - radio, cx + radio, w.getTopY(), cz + radio);
+        java.util.List<Entity> l = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains(TAG) && !(e.getType() == EntityType.TEXT_DISPLAY));
+        for (Entity e : l) e.discard();
+        return l.size();
+    }
 
     /** Borra todos los displays de este mod que haya en un cuadrado de la dimension (por si un servidor se paro a medias). */
     static int barrer(ServerWorld w, double cx, double cz, double radio) {
