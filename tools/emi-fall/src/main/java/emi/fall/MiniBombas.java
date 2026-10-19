@@ -56,6 +56,7 @@ final class MiniBombas implements Mini {
     private int ganador = -2;                                              // equipo ganador (-1 = empate)
     private double radioActual = R;
 
+    @Override public double[] zona() { return new double[]{0, ZC, 40}; }
     @Override public String id() { return "bombas"; }
     @Override public String nombre() { return "Guerra de bombas"; }
     @Override public boolean equipos() { return true; }
@@ -117,13 +118,13 @@ final class MiniBombas implements Mini {
         vuelos.clear();
         for (Escombro e : escombros) Disp.quitar(e.e);
         escombros.clear();
-        for (Entity r : portadas.values()) { if (r != null && !r.isRemoved()) { r.stopRiding(); Disp.quitar(r); } }
+        for (Entity r : portadas.values()) Disp.quitar(r);
         portadas.clear();
     }
 
     private void quitarPortada(Jug j) {
         Entity r = portadas.remove(j);
-        if (r != null && !r.isRemoved()) { r.stopRiding(); Disp.quitar(r); }
+        Disp.quitar(r);
     }
 
     private boolean enVuelo(Jug j) { for (Vuelo v : vuelos) if (v.j == j) return true; return false; }
@@ -132,8 +133,8 @@ final class MiniBombas implements Mini {
     private void darBomba(Ctx c, Jug j, ServerPlayerEntity p) {
         j.bomba = true;
         quitarPortada(j);
-        Entity r = Disp.bloqueMontable(c.w, "minecraft:tnt", p.getX(), p.getY() + 1.8, p.getZ(), 0.9f, 0.75f);
-        if (r != null) { r.startRiding(p, true); portadas.put(j, r); }
+        Entity r = Disp.bloque(c.w, "minecraft:tnt", p.getX(), p.getY() + 1.9, p.getZ(), 0.9f, 0.9f, 0.9f, 0, 0);
+        if (r != null) portadas.put(j, r);                                  // te sigue cada tick (se mueve en tick())
         for (int i = 0; i < 9; i++) p.getInventory().setStack(i, objetoBomba());          // en toda la barra: asi el clic derecho funciona sea cual sea la ranura elegida
         p.playSoundToPlayer(SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.MASTER, 1f, 0.8f);
         c.w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.PLAYERS, 0.6f, 1.4f);
@@ -261,6 +262,13 @@ final class MiniBombas implements Mini {
             e.p = e.p.add(e.v);
             if (e.edad > 24 || e.p.y < S - 6) { Disp.quitar(e.e); escombros.remove(i); continue; }
             Disp.moverBloque(e.e, e.p.x, e.p.y, e.p.z, 0.55f, 0.55f, 0.55f, e.edad * 0.4, 0);
+        }
+        // la bomba que llevas encima de la cabeza: te sigue
+        for (java.util.Iterator<Map.Entry<Jug, Entity>> it = portadas.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Jug, Entity> en = it.next();
+            ServerPlayerEntity p = c.pl(en.getKey());
+            if (p == null || en.getKey().fuera || en.getValue() == null || en.getValue().isRemoved()) { Disp.quitar(en.getValue()); it.remove(); continue; }
+            Disp.moverBloque(en.getValue(), p.getX(), p.getY() + 1.9 + 0.08 * Math.sin(c.tick / 5.0), p.getZ(), 0.9f, 0.9f, 0.9f, c.tick * 0.1, 0);
         }
         // las bombas que vuelan desde el suelo hasta encima de la cabeza de quien las coge
         for (int i = vuelos.size() - 1; i >= 0; i--) {

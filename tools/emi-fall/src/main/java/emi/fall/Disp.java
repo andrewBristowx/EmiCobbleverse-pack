@@ -19,6 +19,9 @@ final class Disp {
 
     static final String TAG = "emi_fall";
 
+    /** Los displays que el mod controla ahora mismo: cualquier otro display del mod (de partidas anteriores o de una version vieja) es una copia congelada y se barre. */
+    private static final java.util.Set<java.util.UUID> VIVOS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     private static NbtList lista(double... v) { NbtList l = new NbtList(); for (double d : v) l.add(NbtDouble.of(d)); return l; }
     private static NbtList listaF(float... v) { NbtList l = new NbtList(); for (float d : v) l.add(NbtFloat.of(d)); return l; }
 
@@ -59,6 +62,7 @@ final class Disp {
             e.readNbt(nbtBloque(bloque, x, y, z, sx, sy, sz, giro, interp));
             e.refreshPositionAndAngles(x, y, z, 0f, 0f);
             w.spawnEntity(e);
+            VIVOS.add(e.getUuid());
             return e;
         } catch (Throwable t) { EmiFall.LOG.error("No se pudo crear el bloque {}", bloque, t); return null; }
     }
@@ -76,21 +80,6 @@ final class Disp {
         for (String tag : new java.util.ArrayList<>(e.getCommandTags())) if (tag.startsWith(TAG + "_bloque:")) e.removeCommandTag(tag);
         e.addCommandTag(TAG + "_bloque:" + bloque);
         e.readNbt(nbtBloque(bloque, x, y, z, sx, sy, sz, giro, interp));
-    }
-
-    /** Un bloque para llevar montado encima de un jugador ({@code dy} = lo que sube sobre el punto donde se monta). */
-    static Entity bloqueMontable(ServerWorld w, String bloque, double x, double y, double z, float s, float dy) {
-        try {
-            Entity e = EntityType.BLOCK_DISPLAY.create(w);
-            e.addCommandTag(TAG);
-            e.addCommandTag(TAG + "_bloque:" + bloque);
-            NbtCompound n = nbtBloque(bloque, x, y, z, s, s, s, 0, 0);
-            n.put("transformation", transf(0, 0, 0, s, s, s, 0, true, dy, 0f));
-            e.readNbt(n);
-            e.refreshPositionAndAngles(x, y, z, 0f, 0f);
-            w.spawnEntity(e);
-            return e;
-        } catch (Throwable t) { EmiFall.LOG.error("No se pudo crear el bloque montable {}", bloque, t); return null; }
     }
 
     private static NbtCompound nbtBloque(String bloque, double x, double y, double z, float sx, float sy, float sz, double giro, int interp) {
@@ -121,6 +110,7 @@ final class Disp {
             e.readNbt(n);
             e.refreshPositionAndAngles(x, y, z, 0f, 0f);
             w.spawnEntity(e);
+            VIVOS.add(e.getUuid());
             return e;
         } catch (Throwable t) { EmiFall.LOG.error("No se pudo crear el objeto {}", item, t); return null; }
     }
@@ -134,6 +124,7 @@ final class Disp {
             e.readNbt(nbtFruta(item, x, y, z, escala, roll));
             e.refreshPositionAndAngles(x, y, z, 0f, 0f);
             w.spawnEntity(e);
+            VIVOS.add(e.getUuid());
             return e;
         } catch (Throwable t) { EmiFall.LOG.error("No se pudo crear la fruta {}", item, t); return null; }
     }
@@ -213,7 +204,15 @@ final class Disp {
         return n;
     }
 
-    static void quitar(Entity e) { if (e != null && !e.isRemoved()) e.discard(); }
+    static void quitar(Entity e) { if (e != null) { VIVOS.remove(e.getUuid()); if (!e.isRemoved()) e.discard(); } }
+
+    /** Borra los displays de bloque y de objeto del mod que ya no controla nadie (copias congeladas); deja los carteles de texto. Devuelve cuantos borro. */
+    static int barrerHuerfanos(ServerWorld w, double cx, double cz, double radio) {
+        net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(cx - radio, w.getBottomY(), cz - radio, cx + radio, w.getTopY(), cz + radio);
+        java.util.List<Entity> l = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains(TAG) && e.getType() != EntityType.TEXT_DISPLAY && !VIVOS.contains(e.getUuid()));
+        for (Entity e : l) e.discard();
+        return l.size();
+    }
 
     /** Borra los displays de bloques y de objetos (lo que se mueve: barras, frutas, bombas, yunques...) de este mod en un cuadrado; deja los carteles de texto. */
     static int barrerMoviles(ServerWorld w, double cx, double cz, double radio) {

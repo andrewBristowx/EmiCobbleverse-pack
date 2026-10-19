@@ -33,6 +33,8 @@ interface Mini {
     default String hud(Ctx c, Jug j) { return ""; }
     /** El jugador ha pulsado el boton derecho con un objeto en la mano. true = ya lo has atendido (se anula el uso normal). */
     default boolean alUsar(Ctx c, Jug j, ServerPlayerEntity p) { return false; }
+    /** Donde estan sus entidades moviles ({centro x, centro z, radio}) para barrer las copias congeladas; null = no tiene. */
+    default double[] zona() { return null; }
     /** Alguien se ha ido a media ronda. */
     default void alIrse(Ctx c, Jug j) {}
 }

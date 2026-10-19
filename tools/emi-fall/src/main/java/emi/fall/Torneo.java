@@ -307,6 +307,10 @@ final class Torneo {
 
     private void tick() {
         t++;
+        if (ctx != null && mini != null && t % 20 == 3 && (fase == Fase.INTRO || fase == Fase.CUENTA || fase == Fase.JUEGO)) {
+            double[] z = mini.zona();
+            if (z != null) { int n = Disp.barrerHuerfanos(ctx.w, z[0], z[1], z[2]); if (n > 0) EmiFall.LOG.info("[{}] {} entidades congeladas barridas", mini.id(), n); }
+        }
         switch (fase) {
             case COLA -> { if (++aviso % 600 == 0 && jugs.size() > 0) avisarTodos(Msg.say("Hay " + jugs.size() + " apuntados. El anfitrión puede empezar con /fall empezar.")); }
             case INTRO -> {

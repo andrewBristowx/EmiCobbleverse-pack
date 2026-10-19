@@ -63,6 +63,7 @@ final class MiniCarrera implements Mini {
     private int primero = -1;
     private final int[] proxBola = new int[ZONAS.length];
 
+    @Override public double[] zona() { return new double[]{META_X / 2.0, ZC, 260}; }
     @Override public String id() { return "carrera"; }
     @Override public String nombre() { return "Carrera de obstáculos"; }
     @Override public String regla() { return "Llega a la meta saltando piedras, barras giratorias, puertas falsas, un abismo, islas y frutas rodantes. Si caes, vuelves al último punto de control."; }

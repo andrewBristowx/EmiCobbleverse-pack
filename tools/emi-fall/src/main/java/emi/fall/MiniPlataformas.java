@@ -235,6 +235,7 @@ final class MiniPlataformas implements Mini {
     }
 
     @Override public void limpiar(Ctx c) { quitarEntidades(); }
+    @Override public double[] zona() { return new double[]{0, ZC, 45}; }
 
     @Override
     public String hud(Ctx c, Jug j) {

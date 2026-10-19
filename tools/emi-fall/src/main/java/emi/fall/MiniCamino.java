@@ -10,84 +10,87 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 /**
- * «Camino correcto» (estilo puente de cristal del Juego del Calamar): un puente de baldosas de cristal, en cada fila tres baldosas y solo UNA aguanta (el camino cambia
- * en cada partida). Si pisas una falsa se rompe a los 0,6 s de aterrizar en ella: si saltas a la siguiente antes de que se rompa, pasas sin caer (corriendo y saltando
- * de baldosa en baldosa se cruza). Las baldosas rotas se quedan rotas, asi que los que van detras aprenden de los que caen. Gana quien llega antes al otro lado.
+ * «Camino correcto» (puente de cristal del Juego del Calamar): 14 filas de DOS cristales (izquierda y derecha) separadas por 3 bloques de vacio; hay que saltar de una fila
+ * a la siguiente. En cada fila solo UNO aguanta (al azar, distinto en cada partida): el otro se rompe nada mas pisarlo y caes (reapareces en la salida). Los cristales rotos
+ * se quedan rotos, asi que los que van detras aprenden de los que caen. Gana quien llega antes al otro lado.
  */
 final class MiniCamino implements Mini {
     static final int ZC = 300;                  // centro de la arena (z)
-    static final int FILAS = 14, ANCHO = 3;     // 14 filas de baldosas de 3x3, 3 baldosas por fila
-    static final int LIMITE_S = 120, EXTRA_S = 40;
-    static final int RETRASO = 12;              // ticks desde que aterrizas en una baldosa falsa hasta que se rompe (se puede cruzar saltando)
-    static final int Z0 = ZC - 4;               // la primera columna de baldosas empieza en este z (9 de ancho: 296..304)
+    static final int FILAS = 14;
+    static final int X0 = 3;                    // la primera fila empieza en este x (la plataforma de salida acaba en x = -1: 3 bloques de vacio)
+    static final int PROF = 3;                  // cada cristal mide 3 de fondo (en x) y 3 de ancho (en z)
+    static final int PASO = 6;                  // de una fila a la siguiente: 3 de cristal + 3 de vacio
+    static final int Z0 = ZC - 4;               // el cristal izquierdo ocupa z = Z0..Z0+2, el derecho Z0+4..Z0+6 (un bloque de vacio entre los dos)
+    static final int FIN_X = X0 + (FILAS - 1) * PASO + PROF + 3;     // la plataforma de llegada (3 bloques de vacio despues de la ultima fila)
+    static final int LIMITE_S = 150, EXTRA_S = 40;
+    static final int RETRASO = 2;               // ticks desde que pisas el cristal falso hasta que se rompe (casi en el acto: se oye y se ve el crujido)
 
-    private final int[] bueno = new int[FILAS];                 // la columna que aguanta en cada fila
-    private final boolean[][] roto = new boolean[FILAS][3];
-    private final long[][] romper = new long[FILAS][3];         // tick en que se rompe (0 = no se rompe)
+    private final int[] bueno = new int[FILAS];                 // la columna (0 o 1) que aguanta en cada fila
+    private final boolean[][] roto = new boolean[FILAS][2];
+    private final long[][] romper = new long[FILAS][2];         // tick en que se rompe (0 = no se rompe)
     private int primero = -1;                                   // tick en que llego el primero (-1 = nadie)
 
     @Override public String id() { return "camino"; }
     @Override public String nombre() { return "Camino correcto"; }
-    @Override public String regla() { return "En cada fila solo una baldosa aguanta. La falsa se rompe nada más pisarla: ¡corre y salta de baldosa en baldosa para no caer! Llega primero al otro lado."; }
+    @Override public String regla() { return "Salta de cristal en cristal: en cada fila solo uno aguanta y el falso se rompe nada más pisarlo. ¡Llega primero al otro lado!"; }
 
-    private static int baldosaX(int fila) { return fila * ANCHO; }
+    private static int filaX(int fila) { return X0 + fila * PASO; }
+    private static int colZ(int col) { return Z0 + col * 4; }
 
     @Override
     public void construir(ServerWorld w) {
-        BlockPos marca = new BlockPos(0, -64, ZC);
+        BlockPos marca = new BlockPos(1, -64, ZC);                       // la marca de la version 2 (puente con separaciones)
         if (w.getBlockState(marca).isOf(Blocks.CRYING_OBSIDIAN)) return;
         long t0 = System.nanoTime();
         int S = Minijuegos.SUELO;
-        // la plataforma de salida (11 de ancho) y la de llegada
+        for (int x = -14; x <= FIN_X + 20; x++) for (int z = ZC - 8; z <= ZC + 8; z++) for (int y = S - 1; y <= S + 10; y++) Obra.poner(w, x, y, z, "air");   // borra la version vieja
+        Disp.barrer(w, 40, ZC, 90);                                      // carteles de la version vieja
         for (int x = -12; x <= -1; x++) for (int z = ZC - 5; z <= ZC + 5; z++) { Obra.poner(w, x, S, z, ((x + z) & 1) == 0 ? "light_blue_concrete" : "white_concrete"); Obra.poner(w, x, S - 1, z, "white_concrete"); }
-        int fx = FILAS * ANCHO;
-        for (int x = fx; x <= fx + 11; x++) for (int z = ZC - 5; z <= ZC + 5; z++) { Obra.poner(w, x, S, z, ((x + z) & 1) == 0 ? "lime_concrete" : "yellow_concrete"); Obra.poner(w, x, S - 1, z, "white_concrete"); }
-        // arco de meta
-        for (int y = 1; y <= 5; y++) { Obra.poner(w, fx + 1, S + y, ZC - 5, "gold_block"); Obra.poner(w, fx + 1, S + y, ZC + 5, "gold_block"); }
-        for (int z = ZC - 5; z <= ZC + 5; z++) Obra.poner(w, fx + 1, S + 6, z, ((z & 1) == 0) ? "gold_block" : "yellow_concrete");
-        Disp.texto(w, "{\"text\":\"META\",\"color\":\"gold\",\"bold\":true}", fx + 1.5, S + 8.2, ZC + 0.5, 6f, false);
+        for (int x = FIN_X; x <= FIN_X + 11; x++) for (int z = ZC - 5; z <= ZC + 5; z++) { Obra.poner(w, x, S, z, ((x + z) & 1) == 0 ? "lime_concrete" : "yellow_concrete"); Obra.poner(w, x, S - 1, z, "white_concrete"); }
+        for (int y = 1; y <= 5; y++) { Obra.poner(w, FIN_X + 1, S + y, ZC - 5, "gold_block"); Obra.poner(w, FIN_X + 1, S + y, ZC + 5, "gold_block"); }
+        for (int z = ZC - 5; z <= ZC + 5; z++) Obra.poner(w, FIN_X + 1, S + 6, z, ((z & 1) == 0) ? "gold_block" : "yellow_concrete");
+        Disp.texto(w, "{\"text\":\"META\",\"color\":\"gold\",\"bold\":true}", FIN_X + 1.5, S + 8.2, ZC + 0.5, 6f, false);
         Disp.texto(w, "{\"text\":\"SALIDA\",\"color\":\"aqua\",\"bold\":true}", -6.5, S + 4.5, ZC + 0.5, 4f, false);
+        Disp.texto(w, "{\"text\":\"¡Salta de cristal en cristal!\",\"color\":\"light_purple\",\"bold\":true}", 1.5, S + 4.5, ZC + 0.5, 3f, false);
         Obra.poner(w, 0, -64, ZC, "crying_obsidian");
-        EmiFall.LOG.info("Arena «camino correcto» construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
+        Obra.poner(w, 1, -64, ZC, "crying_obsidian");
+        EmiFall.LOG.info("Arena «camino correcto» (version 2) construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
     }
 
-    /** Pone las baldosas (todas) y elige el camino de esta partida. */
-    private void ponerBaldosas(ServerWorld w, Random rnd) {
+    @Override public double[] zona() { return null; }
+
+    /** Quita lo que haya del puente, pone los cristales (todos) y elige el camino de esta partida (al azar en cada fila). */
+    private void ponerCristales(ServerWorld w, Random rnd) {
         int S = Minijuegos.SUELO;
-        int c = rnd.nextInt(3);
-        boolean espejo = rnd.nextBoolean();
+        for (int x = 0; x < FIN_X; x++) for (int z = ZC - 6; z <= ZC + 6; z++) Obra.poner(w, x, S, z, "air");
         for (int f = 0; f < FILAS; f++) {
-            if (f > 0) {                                          // la siguiente columna buena esta a una columna como mucho (si no, no se podria saltar de una a otra)
-                int[] cand = c == 0 ? new int[]{0, 1} : c == 2 ? new int[]{1, 2} : new int[]{0, 1, 2};
-                c = cand[rnd.nextInt(cand.length)];
-            }
-            bueno[f] = espejo ? 2 - c : c;
-            for (int k = 0; k < 3; k++) { roto[f][k] = false; romper[f][k] = 0; }
-            for (int k = 0; k < 3; k++) rellenar(w, f, k, S);
+            bueno[f] = rnd.nextInt(2);
+            for (int k = 0; k < 2; k++) { roto[f][k] = false; romper[f][k] = 0; rellenar(w, f, k, S); }
         }
-        EmiFall.LOG.info("[camino] camino de esta partida (columna buena de cada fila): {}", java.util.Arrays.toString(bueno));
+        EmiFall.LOG.info("[camino] camino de esta partida (cristal bueno de cada fila, 0 = izquierda): {}", java.util.Arrays.toString(bueno));
     }
 
     private static void rellenar(ServerWorld w, int fila, int col, int S) {
         String bloque = ((fila + col) & 1) == 0 ? "light_blue_stained_glass" : "cyan_stained_glass";
-        for (int dx = 0; dx < 3; dx++) for (int dz = 0; dz < 3; dz++) Obra.poner(w, baldosaX(fila) + dx, S, Z0 + col * 3 + dz, bloque);
+        for (int dx = 0; dx < PROF; dx++) for (int dz = 0; dz < 3; dz++) Obra.poner(w, filaX(fila) + dx, S, colZ(col) + dz, bloque);
     }
 
-    private static void quitarBaldosa(ServerWorld w, int fila, int col, int S) {
-        for (int dx = 0; dx < 3; dx++) for (int dz = 0; dz < 3; dz++) Obra.poner(w, baldosaX(fila) + dx, S, Z0 + col * 3 + dz, "air");
-        w.spawnParticles(ParticleTypes.CLOUD, baldosaX(fila) + 1.5, S + 1, Z0 + col * 3 + 1.5, 14, 1.0, 0.2, 1.0, 0.05);
-        w.playSound(null, baldosaX(fila) + 1.5, S, Z0 + col * 3 + 1.5, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 1.4f, 0.9f);
+    private static void quitarCristal(ServerWorld w, int fila, int col, int S) {
+        for (int dx = 0; dx < PROF; dx++) for (int dz = 0; dz < 3; dz++) Obra.poner(w, filaX(fila) + dx, S, colZ(col) + dz, "air");
+        w.spawnParticles(ParticleTypes.CLOUD, filaX(fila) + 1.5, S + 1, colZ(col) + 1.5, 14, 1.0, 0.2, 1.0, 0.05);
+        w.spawnParticles(ParticleTypes.CRIT, filaX(fila) + 1.5, S + 1, colZ(col) + 1.5, 20, 1.2, 0.3, 1.2, 0.2);
+        w.playSound(null, filaX(fila) + 1.5, S, colZ(col) + 1.5, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 1.6f, 0.9f);
     }
 
     @Override
     public void empezar(Ctx c) {
         primero = -1;
-        ponerBaldosas(c.w, c.rnd);
+        c.forzar(-14, ZC - 8, FIN_X + 14, ZC + 8);
+        ponerCristales(c.w, c.rnd);
         int i = 0;
         for (Jug j : c.jugs()) {
             int n = i++;
@@ -102,8 +105,8 @@ final class MiniCamino implements Mini {
     @Override
     public boolean tick(Ctx c) {
         int S = Minijuegos.SUELO;
-        // las baldosas que tocaba romper
-        for (int f = 0; f < FILAS; f++) for (int k = 0; k < 3; k++) if (romper[f][k] > 0 && c.tick >= romper[f][k]) { romper[f][k] = 0; roto[f][k] = true; quitarBaldosa(c.w, f, k, S); }
+        // los cristales que tocaba romper
+        for (int f = 0; f < FILAS; f++) for (int k = 0; k < 2; k++) if (romper[f][k] > 0 && c.tick >= romper[f][k]) { romper[f][k] = 0; roto[f][k] = true; quitarCristal(c.w, f, k, S); }
         int llegados = 0, jugando = 0;
         for (Jug j : c.jugs()) {
             ServerPlayerEntity p = c.pl(j);
@@ -111,18 +114,16 @@ final class MiniCamino implements Mini {
             jugando++;
             if (j.llego) { llegados++; continue; }
             double x = p.getX(), y = p.getY(), z = p.getZ();
-            if (y < S - 8) {                                                       // cayo al vacio: otra vez al principio
+            if (y < S - 8) {                                                       // cayo al vacio: otra vez a la salida
                 j.caidas++;
                 int n = Math.floorMod(j.id.hashCode(), 6);
-                c.reaparecer(j, -10 + (n % 3) * 2 + 0.5, S + 1, ZC - 4 + n * 1.5 / 1 + 0.5, -90f);
+                c.reaparecer(j, -10 + (n % 3) * 2 + 0.5, S + 1, ZC - 4 + n * 1.5 + 0.5, -90f);
                 p.sendMessage(Text.literal("¡Has caído! Vuelves a la salida.").formatted(Formatting.RED), true);
-                c.sonido(SoundEvents.ENTITY_PLAYER_HURT, 0f, 1f);
                 p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.MASTER, 0.4f, 1.6f);
                 continue;
             }
             int bx = (int) Math.floor(x), bz = (int) Math.floor(z);
-            if (y > S + 2.2 || y < S + 0.5 || !p.isOnGround()) continue;           // en el aire (saltando) no cuenta el suelo de debajo
-            if (bx >= FILAS * ANCHO) {                                             // la meta
+            if (bx >= FIN_X && y > S + 0.5 && y < S + 3) {                         // la meta
                 j.llego = true; j.tLlegada = c.tick; j.fila = FILAS;
                 if (primero < 0) { primero = c.tick; c.avisar(Msg.say(Text.literal(j.nombre + " ha llegado primero. Los demás tenéis " + EXTRA_S + " segundos.").formatted(Formatting.GOLD))); }
                 int puesto = 1; for (Jug o : c.jugs()) if (o != j && o.llego) puesto++;
@@ -130,14 +131,20 @@ final class MiniCamino implements Mini {
                 p.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1f, 1.2f);
                 continue;
             }
-            if (bx < 0 || bz < Z0 || bz >= Z0 + 9) continue;
-            int fila = bx / ANCHO, col = (bz - Z0) / 3;
-            if (fila >= FILAS) continue;
-            if (col != bueno[fila] && !roto[fila][col] && romper[fila][col] == 0) {        // baldosa falsa: se va a romper
-                romper[fila][col] = c.tick + RETRASO;
-                c.w.spawnParticles(ParticleTypes.CRIT, baldosaX(fila) + 1.5, S + 1.1, Z0 + col * 3 + 1.5, 8, 1.0, 0.1, 1.0, 0.1);
-                c.w.playSound(null, x, S, z, SoundEvents.BLOCK_GLASS_HIT, SoundCategory.BLOCKS, 1.2f, 0.7f);
-            } else if (col == bueno[fila] && fila + 1 > j.fila) j.fila = fila + 1;
+            if (y > S + 2.2 || y < S + 0.5 || !p.isOnGround()) continue;           // solo cuenta estar de pie sobre un cristal
+            int rel = bx - X0;
+            if (rel < 0) continue;
+            int fila = rel / PASO;
+            if (fila >= FILAS || rel % PASO >= PROF) continue;
+            int col = bz >= Z0 && bz <= Z0 + 2 ? 0 : bz >= Z0 + 4 && bz <= Z0 + 6 ? 1 : -1;
+            if (col < 0) continue;
+            if (col != bueno[fila]) {                                              // cristal falso: se rompe en cuanto lo pisas
+                if (!roto[fila][col] && romper[fila][col] == 0) {
+                    romper[fila][col] = c.tick + RETRASO;
+                    c.w.spawnParticles(ParticleTypes.CRIT, filaX(fila) + 1.5, S + 1.1, colZ(col) + 1.5, 10, 1.0, 0.1, 1.0, 0.1);
+                    c.w.playSound(null, x, S, z, SoundEvents.BLOCK_GLASS_HIT, SoundCategory.BLOCKS, 1.4f, 0.6f);
+                }
+            } else if (fila + 1 > j.fila) j.fila = fila + 1;
         }
         c.t.barra(1f - (float) c.tick / limite(c));
         return (jugando > 0 && llegados >= jugando) || c.tick >= limite(c) || jugando == 0;
