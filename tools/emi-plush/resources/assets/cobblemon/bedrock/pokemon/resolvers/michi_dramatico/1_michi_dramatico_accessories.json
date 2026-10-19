@@ -105,6 +105,13 @@
       ],
       "model": "cobblemon:michi_dramatico_dino.geo",
       "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_dino.png"
+    },
+    {
+      "aspects": [
+        "pumpkin-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_pumpkin.geo",
+      "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_pumpkin.png"
     }
   ]
 }

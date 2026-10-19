@@ -25,6 +25,7 @@ final class GrietaEquipo {
     private int carga, restante, t;
     private Entity fondo, relleno;
     Enemigo legendario;
+    private Jefe ataques;                      // los ataques del legendario (los mismos de los jefes): el tambien lo mueve
     private String nombreLeg = "";
     private int cdBomba, retorno;
     private Especies.E especiePendiente;          // el legendario que saldra cuando el equipo ya este en el escenario del duelo
@@ -48,6 +49,9 @@ final class GrietaEquipo {
 
     String nombreLegendario() { return nombreLeg; }
 
+    /** ¿Este enemigo es el legendario, que se mueve con sus propios ataques (y no con el bucle normal del equipo)? */
+    boolean controla(Enemigo en) { return ataques != null && ataques.en == en && fase == Fase.LEGENDARIO; }
+
     void tick(int tick) {
         double seg = tick / 20.0;
         switch (fase) {
@@ -58,13 +62,13 @@ final class GrietaEquipo {
             case ENTRANDO -> { if (--retorno <= 0) aparecer(); }
             case VOLVER -> { if (--retorno <= 0) { eq.salirDuelo(); fase = Fase.NINGUNA; } }
             case LEGENDARIO -> {
-                if (legendario == null || (legendario.hp > 0 && legendario.e.isRemoved())) { fase = Fase.VOLVER; legendario = null; retorno = 20; return; }          // desaparecio sin caer: se vuelve a la arena
+                if (legendario == null || (legendario.hp > 0 && legendario.e.isRemoved())) { fase = Fase.VOLVER; legendario = null; soltarAtaques(); retorno = 20; return; }          // desaparecio sin caer: se vuelve a la arena
                 if (legendario.hp <= 0) return;                         // acaba de caer: el equipo lo retira este mismo tick y llama a alDerrotar
-                if (--cdBomba <= 0) {                                   // cada 3,5 s marca una explosion bajo cada jugador en pie (la misma bomba de las personalidades) y otra al azar
-                    cdBomba = 70;
-                    for (Run m : eq.vivos()) eq.ponerBomba(m.pp.x, m.pp.z);
-                    double a = eq.rnd.nextDouble() * Math.PI * 2, d = eq.rnd.nextDouble() * (eq.radio - 4);
-                    eq.ponerBomba(eq.cx + Math.cos(a) * d, eq.cz + Math.sin(a) * d);
+                if (ataques != null) ataques.tick(eq.objetivos());      // persigue y ataca como un jefe (todo avisado en el suelo)
+                if (--cdBomba <= 0) {                                   // cada 4 s marca una explosion fuerte bajo cada jugador en pie
+                    cdBomba = 80;
+                    float dano = (float) (Grietas.danoBomba(eq.mundo) * Curvas.danoMul(eq.tick / 20.0));
+                    for (Run m : eq.vivos()) eq.ponerBombaPequena(m.pp.x, m.pp.z, 6.0, dano);
                 }
                 if (tick % 6 == 0) eq.w.spawnParticles(ParticleTypes.PORTAL, legendario.e.getX(), legendario.e.getY() + legendario.radio * 2, legendario.e.getZ(), 10, 0.6, 1.0, 0.6, 0.3);
             }
@@ -142,14 +146,16 @@ final class GrietaEquipo {
         }
         en.legendario = true;
         Colores.marcar(en, "light_purple");                 // contorno morado para encontrarlo entre la horda
-        en.hp = en.hpMax = (float) Grietas.vida(tm, eq.miembros.size());
-        en.dmg = (float) (Grietas.DANO_CONTACTO * Curvas.danoMul(tm));
-        en.vel = 2.3 / 20.0;
+        en.hp = en.hpMax = (float) Grietas.vida(tm, eq.miembros.size(), eq.mundo);
+        en.dmg = (float) ((Grietas.DANO_CONTACTO + 6 * eq.mundo) * Curvas.danoMul(tm));
+        nombreLeg = nombreBonito(sp.id());
+        Jefes.Def def = Grietas.def(nombreLeg, sp.id(), eq.bioma.id(), 5f);
+        en.vel = def.vel() / 20.0;
+        ataques = new Jefe(eq, en, def, 1, (float) (Grietas.danoAtaques(eq.mundo) * Curvas.danoMul(tm)));
         en.xp = 30;
         try { en.e.getPokemon().setScaleModifier(en.e.getPokemon().getScaleModifier() * 1.5f); en.radio *= 1.5; } catch (Throwable ex) { /* se queda del tamaño normal */ }
         eq.enemigos.add(en);
         legendario = en;
-        nombreLeg = nombreBonito(sp.id());
         fase = Fase.LEGENDARIO;
         cdBomba = 60;
         eq.w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, x, Arena.Y0 + 1, z, 1, 0, 0, 0, 0);
@@ -177,13 +183,16 @@ final class GrietaEquipo {
         }
         if (en.ultimo != null) en.ultimo.legendarios++;
         EmiSurvivors.LOG.info("[grieta] {}: {} derrotado a los {} s", eq.nombres(), nombreLeg, eq.segundos());
-        fase = Fase.VOLVER; legendario = null; retorno = 160;
+        fase = Fase.VOLVER; legendario = null; soltarAtaques(); retorno = 160;
     }
+
+    /** Quita las marcas de aviso que dejo el legendario y lo olvida. */
+    private void soltarAtaques() { if (ataques != null) { ataques.limpiar(); ataques = null; } }
 
     private void quitarMarcas() { Marcas.quitar(eq, fondo); Marcas.quitar(eq, relleno); fondo = null; relleno = null; }
 
     /** Al acabar la partida. */
-    void limpiar() { quitarMarcas(); fase = Fase.NINGUNA; legendario = null; }
+    void limpiar() { quitarMarcas(); soltarAtaques(); fase = Fase.NINGUNA; legendario = null; }
 
     /** Solo para pruebas (/survivor dev grieta): abre una grieta ya, aunque no toque. */
     boolean forzar() {

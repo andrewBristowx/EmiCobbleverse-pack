@@ -64,8 +64,8 @@ final class SentenciaEquipo {
             ServerPlayerEntity p = m.jugador();
             if (p == null) continue;
             Sonidos.sfx(p, Sonidos.JEFE_DERROTADO, 1.0f, 1.0f);
-            // si hay otro mundo, el titulo lo pone el viaje («¡MUNDO SUPERADO!»); tras la del ultimo mundo solo queda el Michi Gigante
-            if (!Mundos.hayOtro(eq.mundo)) Msg.title(p, Text.literal("¡SENTENCIA SUPERADA!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Pero algo enorme se acerca...").formatted(Formatting.YELLOW), 5, 80, 20);
+            // si hay otro mundo, el titulo lo pone el viaje («¡MUNDO SUPERADO!»); tras la del cosmos solo queda el Michi Gigante
+            if (Mundos.ultimoDeVuelta(eq.mundo)) Msg.title(p, Text.literal("¡SENTENCIA SUPERADA!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Pero algo enorme se acerca...").formatted(Formatting.YELLOW), 5, 80, 20);
         }
         EmiSurvivors.LOG.info("[sentencia] {} la supera a los {} s", eq.nombres(), eq.segundos());
         // la partida la cierra el equipo al final de su tick (no a mitad de el)

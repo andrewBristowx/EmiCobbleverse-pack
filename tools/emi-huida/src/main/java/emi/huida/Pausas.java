@@ -27,6 +27,14 @@ final class Pausas {
     private static final Map<String, Long> ticksAntes = compartido("ticks");
     private static boolean pausado;                         // este mod ya esta contado en el contador compartido
 
+    /** Se llama cada segundo: con alguien en la huida (la sala o un nivel) la limpieza y los bosses de Emipokemon estan parados; cuando no queda nadie, se reanudan. */
+    static void actualizar(MinecraftServer s) {
+        boolean alguien = false;
+        for (var p : s.getPlayerManager().getPlayerList())
+            if ("emi_huida".equals(p.getServerWorld().getRegistryKey().getValue().getNamespace())) { alguien = true; break; }
+        if (alguien) pausar(); else reanudar();
+    }
+
     static void pausar() {
         java.util.concurrent.atomic.AtomicInteger n = contador();
         synchronized (n) { pausarCon(n); }

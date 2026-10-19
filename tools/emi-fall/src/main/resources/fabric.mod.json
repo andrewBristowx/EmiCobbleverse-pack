@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_fall",
+  "version": "${version}",
+  "name": "Emi Fall",
+  "description": "Torneo de minijuegos por rondas (estilo Fall Guys) para el servidor de Emi. Funciona en servidor y en partida de un jugador.",
+  "authors": [
+    "SomitadePony"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "emi.fall.EmiFall"
+    ],
+    "client": [
+      "emi.fall.client.EmiFallClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "fabric-api": "*",
+    "cobblemon": "*"
+  },
+  "mixins": [
+    "emi_fall.mixins.json"
+  ]
+}

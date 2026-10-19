@@ -111,6 +111,11 @@ public final class Huida {
     }
 
     private static MinecraftServer server;
+    static Datos datos;                          // estrellas, logros, misiones y tablas de los jugadores (en disco, carpeta emi_huida del mundo)
+    static UUID anfitrion;                       // quien abrio la huida desde la sala (puede empezarla y cerrarla); null = la abrio un organizador con /huida abrir
+    private static boolean desdeSala;            // la huida se abrio desde la sala: al acabar todos se cierra sola
+    private static long cierreAuto;              // tick en el que se cierra sola (0 = no)
+    private static final Map<UUID, String> menuResultados = new java.util.HashMap<>();      // lo que ha ganado cada uno, para ensenarselo en el menu al volver a la sala
     private static boolean clasifAnunciada;      // ya se ha dicho la clasificacion (cuando acabaron todos)
     private static Fase fase = Fase.LIBRE;
     static final Map<UUID, J> jug = new LinkedHashMap<>();
@@ -128,6 +133,10 @@ public final class Huida {
     private static final List<Long> pendientesTick = new ArrayList<>();
 
     public static Fase fase() { return fase; }
+    static MinecraftServer srv() { return server; }
+    static boolean esAnfitrion(net.minecraft.entity.player.PlayerEntity p) { return anfitrion != null && anfitrion.equals(p.getUuid()); }
+    /** Cambia cuando cambia algo que se ve en el menu de la sala (la fase, quien esta apuntado, el anfitrion, el nivel): la sala refresca los menus abiertos. */
+    static int firma() { return java.util.Objects.hash(fase, new ArrayList<>(jug.keySet()), anfitrion, Nivel.DEF.id()); }
     static ServerWorld mundo() { return server.getWorld(mundoKey()); }
     private static void modsOrdenados() { MODS_ORD = java.util.Arrays.stream(Nivel.MODS).sorted(Comparator.comparingDouble(Nivel.Mod::s0)).toArray(Nivel.Mod[]::new); }
 
@@ -135,6 +144,8 @@ public final class Huida {
         server = s;
         fase = Fase.LIBRE;
         jug.clear();
+        datos = new Datos(s.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("emi_huida"));
+        anfitrion = null; desdeSala = false; cierreAuto = 0;
         // se prepara cada nivel una vez para que cualquier error de la ruta salga en el registro al arrancar, y se deja cargado el primero
         for (int i = Niveles.TODOS.length - 1; i >= 0; i--) {
             Niveles.Def d = Niveles.TODOS[i];
@@ -167,13 +178,56 @@ public final class Huida {
 
     public static String abrir() { return abrir(Niveles.TYRANTRUM); }
 
-    public static String abrir(Niveles.Def nivel) {
+    public static String abrir(Niveles.Def nivel) { return abrir(nivel, true); }
+
+    /** @param aviso true = se avisa a todo el servidor con un boton para unirse (en solitario no hace falta). */
+    static String abrir(Niveles.Def nivel, boolean aviso) {
         if (fase != Fase.LIBRE) return "Ya hay una huida en marcha o una cola abierta.";
         Nivel.cargar(nivel); modsOrdenados();
         if (mundo() == null) return "No existe la dimension emi_huida:" + nivel.dimension() + " (¿esta instalado el mod en el servidor?).";
         fase = Fase.COLA; jug.clear(); ultimoAviso = server.getTicks();
-        avisoCola();
+        anfitrion = null; desdeSala = false; cierreAuto = 0;
+        if (aviso) avisoCola();
         return null;
+    }
+
+    /** Desde el menu de la sala: abre la huida de un nivel y te apunta como anfitrion (con {@code solo} corres tu solo: empieza la preparacion enseguida). */
+    public static String crearDesdeSala(ServerPlayerEntity p, String nivelId, boolean solo) {
+        Niveles.Def nivel = Niveles.porNombre(nivelId);
+        if (nivel == null) return "Ese nivel no existe.";
+        if (fase != Fase.LIBRE) return "Ya hay una huida abierta o en marcha: únete a ella o espera a que termine.";
+        String err = abrir(nivel, !solo);
+        if (err != null) return err;
+        anfitrion = p.getUuid(); desdeSala = true;
+        err = unirse(p);
+        if (err != null) { fase = Fase.LIBRE; jug.clear(); anfitrion = null; desdeSala = false; return err; }
+        if (solo) {
+            err = empezar(false);
+            if (err != null) { fase = Fase.LIBRE; jug.clear(); anfitrion = null; desdeSala = false; return err; }
+        }
+        return null;
+    }
+
+    /** Desde el menu: el anfitrion (o un organizador) empieza la huida. */
+    public static String empezarDesdeSala(ServerPlayerEntity p, boolean admin) {
+        if (!admin && !esAnfitrion(p)) return "Solo el anfitrión (★) puede empezar la huida.";
+        return empezar(false);
+    }
+
+    /** Desde el menu: el anfitrion (o un organizador) cancela la cola. */
+    public static String cancelarDesdeSala(ServerPlayerEntity p, boolean admin) {
+        if (!admin && !esAnfitrion(p)) return "Solo el anfitrión (★) puede cancelar la huida.";
+        return cerrarCola();
+    }
+
+    /** Saca a alguien de la cola (se salio, se desconecto o se fue de la sala). Si era el anfitrion, lo es el siguiente; si no queda nadie y se abrio desde la sala, la cola se cierra. */
+    static void sacarDeLaCola(ServerPlayerEntity p) {
+        if (fase != Fase.COLA || jug.remove(p.getUuid()) == null) return;
+        if (p.getUuid().equals(anfitrion)) {
+            anfitrion = jug.isEmpty() ? null : jug.keySet().iterator().next();
+            if (anfitrion != null) { ServerPlayerEntity n = server.getPlayerManager().getPlayer(anfitrion); if (n != null) Msg.broadcastTo(onlineJugadores(), Msg.say(n.getGameProfile().getName() + " es ahora el anfitrión (★).")); }
+        }
+        if (jug.isEmpty() && desdeSala) { fase = Fase.LIBRE; anfitrion = null; desdeSala = false; }
     }
 
     private static void avisoCola() {
@@ -184,7 +238,7 @@ public final class Huida {
 
     public static String cerrarCola() {
         if (fase != Fase.COLA) return "No hay ninguna cola abierta.";
-        fase = Fase.LIBRE; jug.clear();
+        fase = Fase.LIBRE; jug.clear(); anfitrion = null; desdeSala = false;
         Msg.broadcast(server, Msg.say("Se ha cerrado la cola de la huida."));
         return null;
     }
@@ -193,10 +247,11 @@ public final class Huida {
         if (fase != Fase.COLA) return "No hay ninguna huida abierta ahora mismo.";
         if (jug.containsKey(p.getUuid())) return "Ya estas apuntado.";
         if (jug.size() >= Nivel.MAX_HUECOS) return "La huida esta llena (" + Nivel.MAX_HUECOS + " jugadores).";
-        if (esMundoHuida(p.getServerWorld().getRegistryKey())) return "Ya estas en la dimension de la huida.";
+        if (esMundoHuida(p.getServerWorld().getRegistryKey()) && !Sala.enSala(p)) return "Ya estas en la dimension de la huida.";
         if (Morph.transformado(p.getUuid())) return "Destransformate antes (/untransform) para jugar la huida.";
         if (p.hasVehicle()) return "Bajate de lo que montas.";
         jug.put(p.getUuid(), new J(p));
+        if (anfitrion == null && desdeSala) anfitrion = p.getUuid();
         Msg.broadcastTo(onlineJugadores(), Msg.say(p.getGameProfile().getName() + " se ha apuntado (" + jug.size() + ")."));
         p.sendMessage(Msg.say("Estas apuntado. Espera a que el organizador empiece."), false);
         return null;
@@ -205,7 +260,7 @@ public final class Huida {
     public static String salir(ServerPlayerEntity p) {
         J j = jug.get(p.getUuid());
         if (j == null) return "No estas en la huida.";
-        if (fase == Fase.COLA) { jug.remove(p.getUuid()); p.sendMessage(Msg.say("Te has salido de la cola."), false); return null; }
+        if (fase == Fase.COLA) { sacarDeLaCola(p); p.sendMessage(Msg.say("Te has salido de la cola."), false); return null; }
         terminar(j, p, "has abandonado");
         comprobarFin();
         comprobarListos();
@@ -238,7 +293,9 @@ public final class Huida {
         }
         for (J j : new ArrayList<>(lista)) {
             ServerPlayerEntity p = server.getPlayerManager().getPlayer(j.id);
-            try { Saved.save(server, p); } catch (RuntimeException e) { jug.remove(j.id); p.sendMessage(Msg.err("No se pudo guardar tu inventario: no entras."), false); continue; }
+            boolean deSala = Saved.exists(server, j.id) && Saved.enLobby(server, j.id);       // viene de la sala: sus cosas ya estan guardadas (y volvera a la sala)
+            if (!deSala) { try { Saved.save(server, p); } catch (RuntimeException e) { jug.remove(j.id); p.sendMessage(Msg.err("No se pudo guardar tu inventario: no entras."), false); continue; } }
+            if (deSala) Menu.cerrar(p);
             j.tablas.clear(); for (Nivel.Bloque b : j.nivel.puente()) j.tablas.add(b.pos());
             j.colapsos.clear(); j.sigObst = 0; j.sigPuente = 0; j.malezaRota.clear(); j.sigMaleza = 0; j.idx = Nivel.idxDe(Nivel.S_SALIDA);
             j.s = Nivel.S_SALIDA; j.sPerseguidor = Nivel.sInicioPerseguidor(); j.vPerseguidor = VEL_BASE;
@@ -350,7 +407,7 @@ public final class Huida {
         if (!pendientes.isEmpty()) {
             for (int i = pendientes.size() - 1; i >= 0; i--) if (now >= pendientesTick.get(i)) {
                 ServerPlayerEntity p = s.getPlayerManager().getPlayer(pendientes.get(i));
-                if (p != null && !participa(p) && Saved.exists(s, p.getUuid())) { Saved.restore(s, p); p.sendMessage(Msg.say("Te hemos devuelto tus cosas de la huida."), false); }
+                if (p != null && !participa(p) && Saved.exists(s, p.getUuid())) Sala.alEntrar(p);
                 pendientes.remove(i); pendientesTick.remove(i);
             }
         }
@@ -359,7 +416,10 @@ public final class Huida {
             case COLA -> { if (now - ultimoAviso >= 1200) { ultimoAviso = now; avisoCola(); } }
             case LISTOS -> tickListos(s, now);
             case CUENTA -> tickCuenta(s, now);
-            case CORRIENDO -> tickCorriendo(s, now);
+            case CORRIENDO -> {
+                tickCorriendo(s, now);
+                if (cierreAuto > 0 && now >= cierreAuto && fase == Fase.CORRIENDO) { cierreAuto = 0; cerrar(); }          // la huida abierta desde la sala se cierra sola cuando han acabado todos
+            }
         }
     }
 
@@ -680,6 +740,12 @@ public final class Huida {
         }
     }
 
+    /** El anfitrion de la sala o un organizador cierra la huida. */
+    public static String cerrarPor(ServerPlayerEntity p, boolean admin) {
+        if (!admin && !esAnfitrion(p)) return "Solo el anfitrión (★) o un organizador puede cerrar la huida.";
+        return cerrar();
+    }
+
     /** El organizador cierra la huida: se dice la clasificacion (si no se ha dicho) y se devuelve a todos a su sitio. */
     public static String cerrar() {
         if (fase != Fase.CORRIENDO) return "No hay ninguna huida en marcha (usa /huida parar para cancelar la cola o la cuenta atras).";
@@ -990,7 +1056,9 @@ public final class Huida {
         ServerPlayNetworking.send(p, EstrellasPayload.borrar());
         Sonidos.pararTodo(p);
         congelar(p, false);
-        if (!Saved.restore(server, p)) quitarEfectos(p);
+        String resultado = menuResultados.remove(j.id);
+        if (Saved.exists(server, p.getUuid()) && Saved.enLobby(server, p.getUuid())) { quitarEfectos(p); Sala.volverASala(p, resultado); }      // venia de la sala: vuelve a ella (con lo que ha ganado en el menu)
+        else if (!Saved.restore(server, p)) quitarEfectos(p);
     }
 
     private static void comprobarFin() {
@@ -1000,7 +1068,10 @@ public final class Huida {
         if (fase == Fase.CORRIENDO && !clasifAnunciada && jug.values().stream().allMatch(x -> x.enMeta)) {
             clasifAnunciada = true;
             anunciarClasificacion();
-            for (ServerPlayerEntity p : online()) p.sendMessage(Msg.say("¡Han terminado todos! Esperad a que el organizador cierre la huida (/huida terminar); quien quiera irse antes: /huida salir."), false);
+            if (desdeSala) {
+                cierreAuto = server.getTicks() + 400;
+                for (ServerPlayerEntity p : online()) p.sendMessage(Msg.say("¡Han terminado todos! Volvéis a la sala en 20 segundos (el anfitrión puede cerrar antes con /huida terminar; quien quiera irse ya: /huida salir)."), false);
+            } else for (ServerPlayerEntity p : online()) p.sendMessage(Msg.say("¡Han terminado todos! Esperad a que el organizador cierre la huida (/huida terminar); quien quiera irse antes: /huida salir."), false);
         }
     }
 
@@ -1021,12 +1092,37 @@ public final class Huida {
                     + String.format(java.util.Locale.ROOT, "%.1f s", r.tiempo()) + (r.escapo() ? " · escapó" : " · atrapado")).formatted(c));
         }
         for (ServerPlayerEntity p : todos) for (Text t : lineas) p.sendMessage(t, false);
+        if (pruebaEscena == null) premiar(orden);
         if (orden.size() > 1) {
             Resultado g = orden.get(0);
             for (ServerPlayerEntity p : todos) Msg.title(p, Text.literal("¡Gana " + g.nombre() + "!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("★ " + g.puntos() + " michiestrellas").formatted(Formatting.YELLOW), 5, 80, 20);
         }
         EmiHuida.LOG.info("Huida: clasificacion: {}", orden.stream().map(r -> r.nombre() + "=" + r.puntos()).toList());
         resultados.clear();
+    }
+
+    /** Apunta la huida de cada jugador (estadisticas, misiones, logros, su tabla) y le da sus estrellas; lo que ha ganado se le ensena en el menu al volver a la sala. */
+    private static void premiar(List<Resultado> orden) {
+        if (datos == null) return;
+        long ahora = System.currentTimeMillis();
+        java.time.ZoneId zona = java.time.ZoneId.systemDefault();
+        String nivel = Nivel.DEF.id();
+        for (int i = 0; i < orden.size(); i++) {
+            Resultado r = orden.get(i);
+            try {
+                int veredicto = r.escapo() ? datos.registrar(r.id(), r.nombre(), nivel, r.puntos(), r.errores(), r.tiempo(), ahora) : 0;
+                Retos.Partida pa = new Retos.Partida(nivel, r.escapo(), r.puntos(), r.estrellas(), r.errores(), r.tiempo(), i + 1, orden.size(), veredicto);
+                Datos.Jugador dj = datos.jugador(r.id(), r.nombre());
+                Retos.Novedades n = Retos.aplicar(dj, pa, ahora, zona);
+                datos.guardar(r.id());
+                menuResultados.put(r.id(), Menu.resultado(pa, n, dj.estrellas));
+                ServerPlayerEntity p = server.getPlayerManager().getPlayer(r.id());
+                if (p != null) {
+                    p.sendMessage(Msg.say(Text.literal("Has ganado +" + n.total() + " ★ estrellas (ahora tienes " + dj.estrellas + "). Míralo en el menú de la sala.").formatted(Formatting.YELLOW)), false);
+                    for (String l : n.lineas) if (l.startsWith("★") || l.startsWith("¡Misión")) p.sendMessage(Text.literal("  " + l).formatted(Formatting.GOLD), false);
+                }
+            } catch (Throwable t) { EmiHuida.LOG.error("No se pudo apuntar la huida de {}", r.nombre(), t); }
+        }
     }
 
     private static void limpiar() {
@@ -1036,7 +1132,8 @@ public final class Huida {
             limpiarEntidades(w);
         }
         jug.clear(); fase = Fase.LIBRE; pruebaEscena = null; pruebaCongelar = 0; clasifAnunciada = false;
-        try { Pausas.reanudar(); } catch (Throwable t) { EmiHuida.LOG.warn("pausas: {}", t.toString()); }
+        anfitrion = null; desdeSala = false; cierreAuto = 0;
+        try { Pausas.actualizar(server); } catch (Throwable t) { EmiHuida.LOG.warn("pausas: {}", t.toString()); }          // se reanudan salvo que queden jugadores en la sala
     }
 
     private static void limpiarEntidades(ServerWorld w) {
@@ -1055,7 +1152,7 @@ public final class Huida {
     static void alSalir(ServerPlayerEntity p) {
         J j = jug.get(p.getUuid());
         if (j == null) return;
-        if (fase == Fase.COLA) { jug.remove(p.getUuid()); return; }
+        if (fase == Fase.COLA) { sacarDeLaCola(p); return; }
         quitarHorda(j);
         if (j.perseguidor != null) { j.perseguidor.discard(); j.perseguidor = null; }
         Escenas.quitar(j.michi); j.michi = null;

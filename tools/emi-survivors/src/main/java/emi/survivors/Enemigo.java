@@ -102,6 +102,7 @@ final class Enemigo {
             }
             if (tipo != Tipo.JEFE) hp *= (float) hpMul;
             dmg *= (float) dmgMul;
+            if (tipo != Tipo.JEFE) dmg *= (float) Curvas.DANO_BASE;           // los danos base de arriba suben todos juntos (ver Curvas.DANO_BASE)
             vel *= velMul;
             return new Enemigo(e, sp, tipo, xp, hp, dmg, vel, 0.35 + alto * (tipo == Tipo.JEFE ? 0.33 : 0.25));
         } catch (Throwable t) {

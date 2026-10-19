@@ -55,6 +55,8 @@ public final class EmiHuidaClient implements ClientModInitializer {
                 net.minecraft.client.option.KeyBinding.updatePressedStates();      // devuelve la tecla de correr a lo que el jugador tenga pulsado de verdad
             }
         });
+        // el menu de la sala: los datos del servidor (JSON) abren o refrescan la pantalla (vacio = cerrarla)
+        ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.TextoPayload.ID, (p, ctx) -> ctx.client().execute(() -> menu(p)));
         ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.CamaraPayload.ID, (p, ctx) -> CineCamara.recibir(p));
         ClientPlayNetworking.registerGlobalReceiver(emi.huida.net.EfectoPayload.ID, (p, ctx) -> Efectos.recibir(p));
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(emi.huida.EmiEntity.TIPO, EmiRenderer::new);
@@ -65,6 +67,20 @@ public final class EmiHuidaClient implements ClientModInitializer {
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_TRANSLUCENT.register(EstrellasCliente::dibujar);
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_ENTITIES.register(EstrellasCliente::dibujarConProveedor);
         ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> { CineCamara.reiniciar(); Efectos.reiniciar(); estado = null; hud = null; mapa = null; Ocultar.restaurar(); poner(false); EstrellasCliente.recibir(emi.huida.net.EstrellasPayload.borrar()); });
+    }
+
+    /** Los datos del menu de la sala: abrirlo o refrescarlo (vacio = cerrarlo). */
+    private static void menu(emi.huida.net.TextoPayload p) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        switch (p.tipo()) {
+            case "menu" -> {
+                if (p.json().isEmpty()) { if (mc.currentScreen instanceof MenuPantalla) mc.setScreen(null); }
+                else if (MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), false);
+                else mc.setScreen(new MenuPantalla(p.json()));
+            }
+            case "menu_act" -> { if (!p.json().isEmpty() && MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), true); }
+            default -> { }
+        }
     }
 
     private static void poner(boolean on) {

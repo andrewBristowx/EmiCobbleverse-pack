@@ -169,12 +169,14 @@ MICHI.append(('gatitoalien_suit', 'suit', False, 'Ms. President', 'Ms. President
 MICHI.append(('gatitoalien_carrito', 'cart', False, 'Michialien en Carrito', 'Michialien in a Toy Car'))
 # el peluche del Michialien con pijama de dinosaurio (textura propia michi_dramatico_dino.png); tampoco es forma Pokemon ni sale en el gasha
 MICHI.append(('gatitoalien_dino', 'dino', False, 'Michialien con Pijama de Dinosaurio', 'Michialien in a Dino Onesie'))
+# el peluche del Michialien con disfraz de calabaza (textura propia michi_dramatico_pumpkin.png): recompensa exclusiva de la tienda de Emi Fall; tampoco es forma Pokemon ni sale en el gasha
+MICHI.append(('gatitoalien_calabaza', 'pumpkin', False, 'Michialien Calabaza', 'Michialien Pumpkin'))
 MICHI_NOMBRES = [(i, es, en) for i, _, _, es, en in MICHI]
 IDS = [f'{sp}_emi' for sp, *_ in ESPECIES] + [i for i, *_ in MICHI]
 KU = 4
 # Peluches GIGANTES (solo la familia del GatitoAlien): mismo modelo y textura que el peluche normal, dibujados al doble (como los gigantes de Pokeblocks).
 # id gigante_<id> -> modelo base. La clase de su entidad de bloque lleva «Gigantic» en el nombre: Pokeblocks usa eso para darles su forma grande.
-GIGANTES = [('gigante_michi_dramatico', 'michi_dramatico')] + [(f'gigante_{i}', i) for i, *_ in MICHI if i not in ('gatitoalien_suit', 'gatitoalien_carrito', 'gatitoalien_dino')]
+GIGANTES = [('gigante_michi_dramatico', 'michi_dramatico')] + [(f'gigante_{i}', i) for i, *_ in MICHI if i not in ('gatitoalien_suit', 'gatitoalien_carrito', 'gatitoalien_dino', 'gatitoalien_calabaza')]
 ESCALA_GIGANTE = 2.0
 
 def build_michi(ident, acc, dorado):
@@ -202,7 +204,7 @@ def build_michi(ident, acc, dorado):
     ng = {'format_version': '1.12.0', 'minecraft:geometry': [{'description': {'identifier': f'geometry.{ident}_doll', 'texture_width': d['texture_width'], 'texture_height': d['texture_height'], 'visible_bounds_width': 4, 'visible_bounds_height': 4, 'visible_bounds_offset': [0, 1, 0]}, 'bones': out}]}
     os.makedirs(f'{A}/geo', exist_ok=True); os.makedirs(f'{A}/textures/entity', exist_ok=True); os.makedirs(f'{A}/textures/block', exist_ok=True)
     json.dump(ng, open(f'{A}/geo/{ident}.geo.json', 'w'), separators=(',', ':'))
-    tex = 'michi_dramatico_dino' if acc == 'dino' else 'michi_dramatico' + ('_shiny' if dorado else '')
+    tex = 'michi_dramatico_' + acc if acc in ('dino', 'pumpkin') else 'michi_dramatico' + ('_shiny' if dorado else '')
     shutil.copy(f'{B}/textures/pokemon/michi_dramatico/{tex}.png', f'{A}/textures/entity/{ident}.png')
     Image.new('RGBA', (16, 16), (236, 220, 240, 255)).save(f'{A}/textures/block/{ident}_particle.png')
 

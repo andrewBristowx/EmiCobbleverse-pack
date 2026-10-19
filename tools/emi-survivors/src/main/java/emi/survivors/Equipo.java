@@ -93,7 +93,13 @@ final class Equipo {
     int tickMundo0;                              // el tick del equipo en que se entro al mundo actual (los horarios de jefes, mareas, grietas... cuentan desde ahi)
     int mareasBase;                              // marcas ya salidas al entrar al mundo actual
     boolean faseFinal;                           // ya se paso la Sentencia del ultimo mundo: toca el Michi Gigante
-    boolean victoria;                            // el Michi Gigante ha caido
+    boolean victoria;                            // el Michi Gigante acaba de caer (se atiende en el mismo tick: ver alVencerGigante)
+    boolean ganado;                              // alguna vez se venció a un Michi Gigante: la partida cuenta como GANADA (premio, marca «✔» en el top, logro) aunque siga en el Mas alla
+    int vueltasHechas;                           // cuantos Michi Gigante se han vencido (cada uno abre una vuelta mas dificil: «el Mas alla»)
+    private boolean acabarGanando;               // no se pudo seguir (falta una dimension): la partida acaba con victoria
+
+    /** En que vuelta del recorrido va el equipo (0 = la primera; desde la 1 estan en «el Mas alla»). */
+    int vuelta() { return Curvas.vuelta(mundo); }
 
     /** Segundos desde que el equipo entro al mundo actual. */
     double tm() { return (tick - tickMundo0) / 20.0; }
@@ -138,7 +144,11 @@ final class Equipo {
     boolean mundoCerrado() { return Sentencia.toca(tm()); }
 
     /** Lo que se escribe en la interfaz como zona: el bioma y, si no esta despejado, el clima. */
-    String zona() { if (duelo) return "DUELO LEGENDARIO"; String c = clima.etiqueta(); return c.isEmpty() ? bioma.nombre() : bioma.nombre() + " · " + c; }
+    String zona() {
+        if (duelo) return "DUELO LEGENDARIO";
+        String c = clima.etiqueta(), n = vuelta() > 0 ? bioma.nombre() + " · Más allá " + (vuelta() + 1) : bioma.nombre();
+        return c.isEmpty() ? n : n + " · " + c;
+    }
 
     int segundos() { return tick / 20; }
 
@@ -231,6 +241,7 @@ final class Equipo {
         for (Run m : miembros) if (m.iframes > 0) m.iframes--;
         for (Enemigo en : enemigos) {
             if (jefe != null && en == jefe.en) continue;
+            if (grieta.controla(en)) continue;                                            // el legendario de una grieta se mueve con su propio «jefe» (ver GrietaEquipo)
             if (en.tesoro) continue;                                                       // un tesoro pequeño: no se mueve
             if (en.shiny && tick % 5 == 0) w.spawnParticles(ParticleTypes.END_ROD, en.e.getX(), en.e.getY() + en.radio * 2.2, en.e.getZ(), 2, 0.35, 0.45, 0.35, 0.02);          // el brillo de los shinies
             if (en.rumboT > 0) { en.correr(); continue; }                                  // estampida: sigue su carril
@@ -296,8 +307,9 @@ final class Equipo {
             Partida.terminarEquipo(this, miembros.size() == 1 ? "Te han derrotado." : "Han caído todos los jugadores.");
             return;
         }
-        if (victoria) { Partida.terminarEquipo(this, "¡Habéis derrotado al Michi Gigante!"); return; }
-        if (sentencia.superada() && !faseFinal) { if (Mundos.hayOtro(mundo)) pasarDeMundo(); else empezarFinal(); }
+        if (acabarGanando) { Partida.terminarEquipo(this, "¡Habéis derrotado al Michi Gigante!"); return; }
+        if (victoria) { victoria = false; alVencerGigante(); }
+        if (sentencia.superada() && !faseFinal) { if (Mundos.ultimoDeVuelta(mundo)) empezarFinal(); else pasarDeMundo(false); }
         if (faseFinal && !gigantePuesto) gigantePuesto = crearJefe(Jefes.GIGANTE_N);
         for (Run m : miembros) {
             if (m.estado != Run.VIVO || m.esperandoCarta) continue;
@@ -656,13 +668,14 @@ final class Equipo {
     }
 
     /** Pasa al siguiente mundo: lo del mundo viejo se limpia, el equipo viaja a la arena del nuevo y los horarios (jefes, mareas, climas...) vuelven a empezar. */
-    private void pasarDeMundo() {
+    private void pasarDeMundo(boolean masAlla) {
         Biomas.Bioma nuevo = Mundos.siguiente(mundo);
         ServerWorld w2 = Partida.mundo(nuevo);
-        if (w2 == null) { EmiSurvivors.LOG.warn("[mundos] no existe la dimension de {}: se acaba la partida con victoria", nuevo.id()); victoria = true; return; }
+        if (w2 == null) { EmiSurvivors.LOG.warn("[mundos] no existe la dimension de {}: se acaba la partida con victoria", nuevo.id()); ganado = true; acabarGanando = true; return; }
         EmiSurvivors.LOG.info("[mundos] {} pasa de {} a {} a los {} s", nombres(), bioma.id(), nuevo.id(), segundos());
         limpiar();
         jefe = null;
+        if (duelo) { duelo = false; cx = ox; cz = oz; radio = Arena.RADIO; }          // por si se viaja en pleno duelo (solo con comandos de prueba): el nuevo mundo no tiene escenario de duelo
         Arena.preparar(w2, slot, nuevo);
         Arena.limpiarRestos(w2, slot);
         ServerWorld viejo = w;
@@ -681,12 +694,13 @@ final class Equipo {
             if (p != null) {
                 p.teleport(w2, ox + 0.5 + Math.cos(ang) * dist, Arena.Y0, oz + 0.5 + Math.sin(ang) * dist, 180f, 0f);
                 m.pp = p.getPos();
-                Msg.title(p, Text.literal("¡MUNDO SUPERADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nuevo.nombre() + " · +2 niveles y vida completa").formatted(Formatting.YELLOW), 5, 70, 15);
+                if (masAlla) Msg.title(p, Text.literal(vueltasHechas == 1 ? "¡VICTORIA!" : "¡OTRO MICHI GIGANTE VENCIDO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Pero esto no ha terminado: EL MÁS ALLÁ · vuelta " + (vuelta() + 1)).formatted(Formatting.LIGHT_PURPLE), 5, 90, 20);
+                else Msg.title(p, Text.literal("¡MUNDO SUPERADO!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(nuevo.nombre() + (vuelta() > 0 ? " · Más allá " + (vuelta() + 1) : "") + " · +2 niveles y vida completa").formatted(Formatting.YELLOW), 5, 70, 15);
                 Sonidos.sfx(p, Sonidos.JEFE_DERROTADO, 1.0f, 1.0f);
                 Musica.silencio(p, 2500);
             }
         }
-        avisar(Msg.say("★ ¡Habéis superado la Sentencia! Viajáis a: " + nuevo.nombre() + "."));
+        if (!masAlla) avisar(Msg.say("★ ¡Habéis superado la Sentencia! Viajáis a: " + nuevo.nombre() + (vuelta() > 0 ? " (Más allá, vuelta " + (vuelta() + 1) + ")" : "") + "."));
         if (Curvas.DIFICULTAD > 0) {
             String dif = "⚠ Aquí los enemigos son más duros: +" + Math.round((Curvas.mundoVida(mundo) - 1) * 100) + " % de vida, +" + Math.round((Curvas.mundoDano(mundo) - 1) * 100) + " % de daño, +"
                     + Math.round((Curvas.mundoVel(mundo) - 1) * 100) + " % de velocidad, más enemigos a la vez y campeones cada " + Curvas.eliteCada(mundo) + " s.";
@@ -695,7 +709,29 @@ final class Equipo {
         }
     }
 
-    /** Se paso la Sentencia del ultimo mundo: sale el Michi Gigante. */
+    /**
+     * El Michi Gigante ha caido. La primera vez es la VICTORIA (la partida queda como ganada: premio, marca en el top, logro), pero ya no se acaba: el equipo sigue en
+     * «el Mas alla», otra vuelta por la pradera, el bosque y el cosmos con todo mas duro, jefes nuevos mas fuertes y otro Michi Gigante al final de cada vuelta. La
+     * partida acaba cuando caen todos o el equipo se va (el tiempo que aguanten sigue contando para el top).
+     */
+    private void alVencerGigante() {
+        boolean primera = !ganado;
+        ganado = true; vueltasHechas++;
+        faseFinal = false; gigantePuesto = false;
+        EmiSurvivors.LOG.info("[mundos] {} vence al Michi Gigante a los {} s (vuelta {} del Mas alla)", nombres(), segundos(), vueltasHechas);
+        avisar(Msg.say(primera
+                ? "★★ ¡VICTORIA! Habéis derrotado al Michi Gigante. Pero la grieta del cosmos no se ha cerrado: seguís hacia EL MÁS ALLÁ, donde todo es más duro (jefes nuevos, otro Michi Gigante al final de cada vuelta y " + Curvas.MONEDAS_POR_VUELTA + " michiestrellitas más por cada uno). Podéis salir cuando queráis con /survivor salir."
+                : "★ ¡Otro Michi Gigante vencido! Seguís hacia la vuelta " + (vueltasHechas + 1) + " del Más allá."));
+        pasarDeMundo(true);
+    }
+
+    /** Solo para pruebas (/survivor dev mundo): salta lo que falte del mundo actual (pasa al siguiente, o llama al Michi Gigante si es el cosmos). */
+    void devSaltarMundo() {
+        if (faseFinal) return;
+        if (Mundos.ultimoDeVuelta(mundo)) empezarFinal(); else pasarDeMundo(false);
+    }
+
+    /** Se paso la Sentencia del ultimo mundo de la vuelta (el cosmos): sale el Michi Gigante. */
     private void empezarFinal() {
         faseFinal = true;
         EmiSurvivors.LOG.info("[mundos] {} empieza el combate final a los {} s", nombres(), segundos());
@@ -715,12 +751,14 @@ final class Equipo {
         if (sp == null) { EmiSurvivors.LOG.warn("No hay especie para el jefe {} ({} ni {}): se salta", d.nombre(), d.especie(), d.alternativa()); jefesSalidos = n; return false; }
         Vec3d s = sitioDeAparicion(17, 22);
         if (s == null) return false;
-        float hp = (float) (Jefes.vida(n) * Curvas.escalaJefe(miembros.size()));
-        Enemigo en = Enemigo.crear(w, sp, d.extra(), s, Enemigo.Tipo.JEFE, 1, 1.0, 1, hp, rnd, d.alto(), Jefes.dano(n), d.vel());
+        d = Jefes.deLaVuelta(d, n, vuelta());
+        float hp = (float) (Jefes.vida(n, vuelta()) * Curvas.escalaJefe(miembros.size()));
+        float dmgJefe = Jefes.dano(n, vuelta());
+        Enemigo en = Enemigo.crear(w, sp, d.extra(), s, Enemigo.Tipo.JEFE, 1, 1.0, 1, hp, rnd, d.alto(), dmgJefe, d.vel());
         if (en == null) { fallosCrear++; return false; }
         jefesSalidos = n;
         enemigos.add(en);
-        jefe = new Jefe(this, en, d, n);
+        jefe = new Jefe(this, en, d, n, dmgJefe);
         Formatting color = Formatting.byName(d.color());
         if (color == null) color = Formatting.LIGHT_PURPLE;
         for (Run m : miembros) {
@@ -789,7 +827,7 @@ final class Equipo {
                 if (j != null) j.limpiar();
                 int n = j != null ? j.numero : jefesDerrotados + 1;
                 jefesDerrotados++; jefe = null;
-                if (n == Jefes.GIGANTE_N) victoria = true;
+                if (n == Jefes.GIGANTE_N) victoria = true;                  // lo atiende el tick del equipo (alVencerGigante)
                 for (int k = 0; k < 6; k++) { double a = k * Math.PI / 3; gemas.add(new Gema(x + Math.cos(a) * 2.5, z + Math.sin(a) * 2.5, 25 + 10 * (n - 1))); }
                 for (Run m : miembros) m.premioJefe(n, j == null ? "El jefe" : j.nombre, Jefes.esElUltimo(n));
                 soltarObjeto(Objeto.BAYA, x + 1.8, z); soltarObjeto(Objeto.BAYA, x - 1.8, z); soltarObjeto(Objeto.IMAN, x, z + 1.8);

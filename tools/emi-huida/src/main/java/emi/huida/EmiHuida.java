@@ -29,6 +29,10 @@ public class EmiHuida implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(emi.huida.net.HudPayload.ID, emi.huida.net.HudPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(emi.huida.net.CamaraPayload.ID, emi.huida.net.CamaraPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(emi.huida.net.EfectoPayload.ID, emi.huida.net.EfectoPayload.CODEC);
+        // el menu de la sala: los datos van del servidor al cliente (texto JSON) y las acciones del cliente al servidor
+        PayloadTypeRegistry.playS2C().register(emi.huida.net.TextoPayload.ID, emi.huida.net.TextoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(emi.huida.net.AccionPayload.ID, emi.huida.net.AccionPayload.CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(emi.huida.net.AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Acciones.recibir(ctx.player(), payload)));
         // Emi (nivel 3): una entidad con forma de jugador que solo hace gestos (ver EmiEntity)
         EmiEntity.TIPO = net.minecraft.registry.Registry.register(net.minecraft.registry.Registries.ENTITY_TYPE, net.minecraft.util.Identifier.of("emi_huida", "emi"),
                 net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder.<EmiEntity>create(net.minecraft.entity.SpawnGroup.MISC, EmiEntity::new)
@@ -38,6 +42,7 @@ public class EmiHuida implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(Huida::init);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> Huida.shutdown());
         ServerTickEvents.END_SERVER_TICK.register(Huida::tick);
+        ServerTickEvents.END_SERVER_TICK.register(Sala::tick);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Huida.alEntrar(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Huida.alSalir(handler.player));
 
@@ -47,6 +52,21 @@ public class EmiHuida implements ModInitializer {
         UseEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Huida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
         AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Huida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
         AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && Huida.participa(p) ? ActionResult.FAIL : ActionResult.PASS);
-        PlayerBlockBreakEvents.BEFORE.register((w, p, pos, st, be) -> !Huida.participa(p));
+        PlayerBlockBreakEvents.BEFORE.register((w, p, pos, st, be) -> !Huida.participa(p) && !Sala.bloqueado(p));
+
+        // en la sala no se toca nada (ni bloques, ni objetos, ni entidades), salvo el terminal y el objeto del menu
+        UseItemCallback.EVENT.register((p, w, hand) -> {
+            if (w.isClient || !Sala.bloqueado(p)) return TypedActionResult.pass(p.getStackInHand(hand));
+            if (Sala.esItemMenu(p.getStackInHand(hand)) && p instanceof net.minecraft.server.network.ServerPlayerEntity sp) Menu.abrir(sp, "jugar");
+            return TypedActionResult.fail(p.getStackInHand(hand));
+        });
+        UseBlockCallback.EVENT.register((p, w, hand, hit) -> {
+            if (w.isClient || !Sala.bloqueado(p)) return ActionResult.PASS;
+            if (hit.getBlockPos().equals(Sala.TERMINAL) && p instanceof net.minecraft.server.network.ServerPlayerEntity sp) { Menu.abrir(sp, "jugar"); return ActionResult.SUCCESS; }
+            return ActionResult.FAIL;
+        });
+        UseEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Sala.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && Sala.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && Sala.bloqueado(p) ? ActionResult.FAIL : ActionResult.PASS);
     }
 }
