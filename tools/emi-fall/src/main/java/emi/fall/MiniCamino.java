@@ -75,7 +75,7 @@ final class MiniCamino implements Mini {
     }
 
     private static void rellenar(ServerWorld w, int fila, int col, int S) {
-        String bloque = ((fila + col) & 1) == 0 ? "light_blue_stained_glass" : "cyan_stained_glass";
+        String bloque = "light_blue_stained_glass";                  // todos iguales: nada debe delatar cual es el bueno
         for (int dx = 0; dx < PROF; dx++) for (int dz = 0; dz < 3; dz++) Obra.poner(w, filaX(fila) + dx, S, colZ(col) + dz, bloque);
     }
 

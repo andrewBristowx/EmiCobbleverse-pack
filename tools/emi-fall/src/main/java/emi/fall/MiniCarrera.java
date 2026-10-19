@@ -24,20 +24,20 @@ import java.util.Random;
  */
 final class MiniCarrera implements Mini {
     static final int ZC = 0;
-    static final int[] CP_X = {-9, 25, 53, 80, 93, 153, 178, 217, 263, 291, 351};          // x de cada punto de control (donde se reaparece)
+    static final int[] CP_X = {-9, 25, 53, 80, 93, 153, 178, 213, 263, 291, 351};          // x de cada punto de control (donde se reaparece)
     static final int META_X = 384;
     static final int LIMITE_S = 240, EXTRA_S = 60;
     static final double Y = Minijuegos.SUELO + 1;                 // altura de los pies sobre el suelo
 
     // tramo 1: piedras (x, z central)
-    private static final int[][] PIEDRAS = {{1, 0}, {6, 3}, {11, -3}, {16, 3}, {21, 0}};
+    private static final int[][] PIEDRAS = {{1, 0}, {7, 2}, {13, -2}, {19, 2}};          // plataformas de 4×4 (x del borde, z del centro): huecos de 2 bloques y desvios de 2
     // tramo 4: el abismo (entre el trampolin y la otra orilla)
     static final int PAD_X = 83, ABISMO_A = 84, ABISMO_B = 91, ORILLA = 92;
     // las dos paredes de puertas
     static final int[] PARED_X = {58, 66, 270, 278};
     private static final String[] COLORES = {"red_concrete", "blue_concrete", "lime_concrete", "yellow_concrete"};
     // las islas del tramo 7 (x del borde izquierdo, z central)
-    private static final int[][] ISLAS = {{184, 0}, {189, 2}, {194, -2}, {199, 2}, {204, -2}, {209, 2}, {214, 0}};
+    private static final int[][] ISLAS = {{184, 0}, {190, 1}, {196, -1}, {202, 1}, {208, 0}};      // islas de 4×4: huecos de 2 bloques y desvios de 1
     // las dos zonas por donde ruedan las frutas: {x donde empiezan a rodar hacia la salida, x donde dejan de verse, intervalo (ticks), velocidad (bloques/tick)}
     private static final double[][] ZONAS = {{149, ORILLA + 1, 42, 0.42}, {349, 292, 34, 0.50}};
     private static final String[] FRUTAS = {"minecraft:apple", "minecraft:golden_apple", "minecraft:melon_slice", "minecraft:sweet_berries", "minecraft:glow_berries",
@@ -75,7 +75,7 @@ final class MiniCarrera implements Mini {
 
     @Override
     public void construir(ServerWorld w) {
-        BlockPos marca = new BlockPos(1, -64, ZC);                        // la marca de la version 2 (carrera larga)
+        BlockPos marca = new BlockPos(2, -64, ZC);                        // la marca de la version 3 (saltos mas faciles)
         if (w.getBlockState(marca).isOf(Blocks.CRYING_OBSIDIAN)) return;
         long t0 = System.nanoTime();
         int S = Minijuegos.SUELO;
@@ -83,8 +83,9 @@ final class MiniCarrera implements Mini {
             for (int x = 177; x <= 195; x++) for (int z = -8; z <= 8; z++) for (int y = S - 1; y <= S + 10; y++) Obra.poner(w, x, y, z, "air");
         }
         Disp.barrer(w, 200, ZC, 250);                                                                // carteles de la version vieja
+        for (int x = 0; x <= 23; x++) for (int z = -8; z <= 8; z++) for (int y = S - 1; y <= S; y++) Obra.poner(w, x, y, z, "air");   // las piedras viejas
         suelo(w, -14, -1, -6, 6, "light_blue_concrete", "white_concrete");                            // salida
-        for (int[] p : PIEDRAS) suelo(w, p[0], p[0] + 2, p[1] - 1, p[1] + 1, "pink_concrete", "magenta_concrete");   // piedras sueltas
+        for (int[] p : PIEDRAS) suelo(w, p[0], p[0] + 3, p[1] - 2, p[1] + 1, "pink_concrete", "magenta_concrete");   // plataformas sueltas
         suelo(w, 24, 50, -6, 6, "light_blue_concrete", "white_concrete");                              // barra 1
         suelo(w, 51, 76, -6, 6, "yellow_concrete", "white_concrete");                                  // puertas
         suelo(w, 77, 83, -6, 6, "orange_concrete", "white_concrete");                                  // antes del abismo
@@ -93,8 +94,8 @@ final class MiniCarrera implements Mini {
         suelo(w, 151, 176, -4, 4, "purple_concrete", "white_concrete");                                // dos barras
         suelo(w, 177, 183, -6, 6, "light_blue_concrete", "white_concrete");                            // salida de las islas
         for (int x = 184; x <= 216; x++) for (int z = -8; z <= 8; z++) for (int y = S - 1; y <= S; y++) Obra.poner(w, x, y, z, "air");   // el vacio entre islas
-        for (int[] p : ISLAS) suelo(w, p[0], p[0] + 2, p[1] - 1, p[1] + 1, "pink_concrete", "magenta_concrete");
-        suelo(w, 217, 262, -6, 6, "orange_concrete", "white_concrete");                                // cuatro barras
+        for (int[] p : ISLAS) suelo(w, p[0], p[0] + 3, p[1] - 2, p[1] + 1, "pink_concrete", "magenta_concrete");
+        suelo(w, 213, 262, -6, 6, "orange_concrete", "white_concrete");                                // cuatro barras
         suelo(w, 263, 290, -6, 6, "yellow_concrete", "white_concrete");                                // otras dos paredes de puertas
         suelo(w, 291, 350, -6, 6, "lime_concrete", "white_concrete");                                  // mas frutas, mas rapidas
         suelo(w, 351, META_X - 1, -4, 4, "purple_concrete", "white_concrete");                         // tres barras finales
@@ -111,7 +112,8 @@ final class MiniCarrera implements Mini {
         Disp.texto(w, "{\"text\":\"¡Frutas más rápidas!\",\"color\":\"red\",\"bold\":true}", 295.5, S + 4.5, ZC + 0.5, 3f, false);
         Obra.poner(w, 0, -64, ZC, "crying_obsidian");
         Obra.poner(w, 1, -64, ZC, "crying_obsidian");
-        EmiFall.LOG.info("Arena «carrera» (version 2) construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
+        Obra.poner(w, 2, -64, ZC, "crying_obsidian");
+        EmiFall.LOG.info("Arena «carrera» (version 3) construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
     }
 
     /** Pone las paredes de puertas (cuatro puertas cada una; la mitad se abre). */
