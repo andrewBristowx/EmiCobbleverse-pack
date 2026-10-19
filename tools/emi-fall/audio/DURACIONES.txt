@@ -1,0 +1,5 @@
+# duracion de cada bucle de musica en ticks (Sonido.TICKS de Sonido.java tiene que coincidir)
+carrera=512
+espera=768
+fiesta=600
+tension=640

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * «Guerra de bombas»: dos equipos (rojo y azul) en una plataforma redonda. Se cogen bombas de los puntos del suelo y se lanzan al rival con el boton derecho: al caer
@@ -55,12 +56,39 @@ final class MiniBombas implements Mini {
     private final Map<Long, String> original = new HashMap<>();           // el bloque del suelo de cada casilla (para saber si sigue en pie)
     private int ganador = -2;                                              // equipo ganador (-1 = empate)
     private double radioActual = R;
+    private final int[] caidasEq = new int[2];                            // modo sin eliminaciones: cuantas veces ha caido cada equipo
+    private int limiteS = LIMITE_S;
+
+
+    @Override public void ponerDeco(ServerWorld w) { decorar(w); }
+
+    static void decorar(ServerWorld w) {
+        if (!Deco.pendiente(w, ZC)) return;
+        int S = Minijuegos.SUELO;
+        Random r = new Random(6);
+        Deco.anilloFarolas(w, 0, ZC, 19, 16, S + 1, S - 12);
+        for (int i = 0; i < 6; i++) { double a = 2 * Math.PI * i / 6 + 0.3; Deco.arbolSeco(w, (int) Math.round(Math.cos(a) * 25), S - 14, ZC + (int) Math.round(Math.sin(a) * 25), 16, r); }
+        Deco.michi(w, -13, S - 4, ZC - 36, 'x', 2);
+        Deco.luna(w, 26, S + 30, ZC + 24, 9, 'z');
+        Deco.pedestal(w, 0, S + 8, ZC - 24, "gigante_gatitoalien_devil_horns", "s");
+        Deco.pedestal(w, 0, S + 8, ZC + 24, "gigante_gatitoalien_halo", "n");
+        Deco.marcar(w, ZC);
+    }
 
     @Override public double[] zona() { return new double[]{0, ZC, 40}; }
     @Override public String id() { return "bombas"; }
     @Override public String nombre() { return "Guerra de bombas"; }
     @Override public boolean equipos() { return true; }
     @Override public String regla() { return "Rojos contra azules. Pasa por una bomba para cogerla (la llevas encima), lánzala con clic derecho y deja sin suelo al rival. El que cae queda eliminado."; }
+    @Override public String[] pasos() {
+        return new String[]{"Pasa por encima de un TNT del suelo para cogerlo: lo llevas sobre la cabeza.",
+                "Clic derecho para lanzarlo: al caer explota, rompe el suelo y manda por los aires a quien esté cerca.",
+                "Gana el equipo (rojo o azul) que tira más rivales al vacío. ¡No te caigas tú!"};
+    }
+    @Override public String objetivo() { return "Tira a los rivales al vacío"; }
+    @Override public String musica() { return "tension"; }
+    @Override public int vivo(Ctx c, Jug j) { return j.cuenta; }
+    @Override public String unidad() { return "derribos"; }
 
     private static long clave(int x, int z) { return ((long) x << 32) ^ (z & 0xffffffffL); }
 
@@ -89,6 +117,9 @@ final class MiniBombas implements Mini {
     @Override
     public void empezar(Ctx c) {
         ganador = -2; radioActual = R;
+        caidasEq[0] = caidasEq[1] = 0;
+        limiteS = c.sinElim() ? 100 : LIMITE_S;
+        for (Jug j : c.jugs()) { j.caidas = 0; j.cuenta = 0; }
         original.clear();
         c.forzar(-18, ZC - 18, 18, ZC + 18);
         Disp.barrerMoviles(c.w, 0, ZC, 40);
@@ -313,21 +344,34 @@ final class MiniBombas implements Mini {
             ServerPlayerEntity p = c.pl(j);
             if (p == null) continue;
             if (!j.fuera && p.getY() < S - 3) {
-                c.eliminar(j);
                 j.bomba = false;
                 quitarPortada(j);
                 p.getInventory().clear();
-                c.avisar(Text.literal("☠ " + j.nombre + " ha caído").formatted(j.equipo == 0 ? Formatting.RED : Formatting.AQUA));
-                Msg.title(p, Text.literal("¡ELIMINADO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Mira cómo acaban los demás").formatted(Formatting.GRAY), 3, 40, 10);
-                p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.MASTER, 0.5f, 1.8f);
+                Sonido.sfx(p, "caida", 0.9f, 1.0f);
+                if (c.sinElim()) {                                          // sin eliminaciones: cuenta como derribo del otro equipo y vuelves a tu lado
+                    j.caidas++;
+                    caidasEq[j.equipo < 0 ? 0 : j.equipo]++;
+                    for (Jug o : c.jugs()) if ((o.equipo < 0 ? 0 : o.equipo) != (j.equipo < 0 ? 0 : j.equipo)) o.cuenta++;
+                    c.recuperar(j, j.sx, j.sy + 0.5, j.sz, j.syaw);
+                    c.avisar(Text.literal("↓ " + j.nombre + " ha caído (vuelve al juego)").formatted(j.equipo == 0 ? Formatting.RED : Formatting.AQUA));
+                    Msg.title(p, Text.literal("¡CAÍSTE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Vuelves a tu lado: sigue jugando").formatted(Formatting.GRAY), 3, 30, 10);
+                } else {
+                    c.eliminar(j);
+                    for (Jug o : c.jugs()) if ((o.equipo < 0 ? 0 : o.equipo) != (j.equipo < 0 ? 0 : j.equipo)) o.cuenta++;
+                    c.avisar(Text.literal("☠ " + j.nombre + " ha caído").formatted(j.equipo == 0 ? Formatting.RED : Formatting.AQUA));
+                    Msg.title(p, Text.literal("¡ELIMINADO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Mira cómo acaban los demás").formatted(Formatting.GRAY), 3, 40, 10);
+                }
             }
             if (!j.fuera) vivos[j.equipo < 0 ? 0 : j.equipo]++;
         }
-        c.t.barra(1f - (float) c.tick / Torneo.tt(LIMITE_S * 20));
+        c.t.barra(1f - (float) c.tick / Torneo.tt(limiteS * 20));
         int conectados0 = 0, conectados1 = 0;
         for (Jug j : c.jugs()) { if (j.equipo == 1) conectados1++; else conectados0++; }
-        boolean fin = c.tick >= Torneo.tt(LIMITE_S * 20) || (vivos[0] == 0 && conectados0 > 0) || (vivos[1] == 0 && conectados1 > 0) || (vivos[0] == 0 && vivos[1] == 0);
-        if (fin) ganador = vivos[0] > vivos[1] ? 0 : vivos[1] > vivos[0] ? 1 : -1;
+        boolean fin = c.tick >= Torneo.tt(limiteS * 20) || (!c.sinElim() && ((vivos[0] == 0 && conectados0 > 0) || (vivos[1] == 0 && conectados1 > 0) || (vivos[0] == 0 && vivos[1] == 0)));
+        if (fin) {
+            if (c.sinElim()) ganador = caidasEq[0] < caidasEq[1] ? 0 : caidasEq[1] < caidasEq[0] ? 1 : -1;      // gana el que menos ha caido
+            else ganador = vivos[0] > vivos[1] ? 0 : vivos[1] > vivos[0] ? 1 : -1;
+        }
         return fin;
     }
 
@@ -335,8 +379,8 @@ final class MiniBombas implements Mini {
     public List<Jug> clasificacion(Ctx c) {
         List<Jug> l = c.jugs();
         l.sort((a, b) -> {
-            int pa = (a.equipo == ganador ? 100000 : 0) + (a.fuera ? a.ordenFuera : 50000);
-            int pb = (b.equipo == ganador ? 100000 : 0) + (b.fuera ? b.ordenFuera : 50000);
+            int pa = (a.equipo == ganador ? 100000 : 0) + (a.fuera ? a.ordenFuera : 50000) - a.caidas * 100;
+            int pb = (b.equipo == ganador ? 100000 : 0) + (b.fuera ? b.ordenFuera : 50000) - b.caidas * 100;
             return Integer.compare(pb, pa);
         });
         return l;
@@ -359,8 +403,8 @@ final class MiniBombas implements Mini {
     public String hud(Ctx c, Jug j) {
         int a = 0, b = 0;
         for (Jug o : c.jugs()) if (!o.fuera) { if (o.equipo == 1) b++; else a++; }
-        int resta = Math.max(0, Torneo.tt(LIMITE_S * 20) / 20 - c.tick / 20);
-        return (j.equipo == 0 ? "ROJOS " : "AZULES ") + "· vivos: rojos " + a + " / azules " + b + (j.bomba ? " · ¡BOMBA! clic derecho" : "") + " · " + resta + " s";
+        int resta = Math.max(0, Torneo.tt(limiteS * 20) / 20 - c.tick / 20);
+        return (j.equipo == 0 ? "ROJOS " : "AZULES ") + (c.sinElim() ? "· caídas: rojos " + caidasEq[0] + " / azules " + caidasEq[1] : "· vivos: rojos " + a + " / azules " + b) + (j.bomba ? " · ¡BOMBA! clic derecho" : "") + " · " + resta + " s";
     }
 
     @Override

@@ -21,5 +21,8 @@ final class Jug {
     boolean bomba;               // lleva una bomba en la mano (minijuego de las bombas)
     long tPad;                   // cuando uso por ultima vez un trampolin
     int ultimoTocado = -1;       // quien le dio el ultimo golpe (por indice), para los minijuegos de empujones
+    int cuenta;                  // contador en vivo del minijuego (caramelos cogidos, segundos a salvo…)
+    long hasta;                  // hasta que tick vale algo temporal (cooldown, reaparicion…)
+    boolean tiene;               // pilla-pilla: lleva la calabaza
     Jug(UUID id, String nombre) { this.id = id; this.nombre = nombre; }
 }

@@ -14,6 +14,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * «Busca el símbolo»: una pantalla gigante en el centro enseña una Pokeball al azar; hay ocho plataformas de colores, cada una con su Pokeball encima. Cuando acaba el
@@ -47,6 +48,31 @@ final class MiniPlataformas implements Mini {
     @Override public String id() { return "plataformas"; }
     @Override public String nombre() { return "Busca el símbolo"; }
     @Override public String regla() { return "La pantalla enseña una Poké Ball: corre a la plataforma que la tiene. ¡El resto del suelo desaparece! Cuidado con lo que cae."; }
+
+    @Override public String[] pasos() {
+        return new String[]{"La pantalla del centro enseña una Poké Ball: corre a la plataforma que tiene esa bola.",
+                "Cuando acaba la cuenta, ¡todo el suelo desaparece menos esa plataforma! Cada ronda hay menos tiempo.",
+                "Cuidado: caen yunques que te lanzan. Gana quien aguante más rondas."};
+    }
+    @Override public String objetivo() { return "Ponte en la plataforma correcta"; }
+    @Override public String musica() { return "tension"; }
+    @Override public int vivo(Ctx c, Jug j) { return j.cuenta; }
+    @Override public String unidad() { return "rondas superadas"; }
+    private int maxRondas;
+
+
+    @Override public void ponerDeco(ServerWorld w) { decorar(w); }
+
+    static void decorar(ServerWorld w) {
+        if (!Deco.pendiente(w, ZC)) return;
+        int S = Minijuegos.SUELO;
+        Random r = new Random(9);
+        Deco.anilloFarolas(w, 0, ZC, 26, 20, S + 1, S - 12);
+        for (int i = 0; i < 6; i++) { double a = 2 * Math.PI * i / 6 + 0.3; Deco.arbolSeco(w, (int) Math.round(Math.cos(a) * 33), S - 14, ZC + (int) Math.round(Math.sin(a) * 33), 16, r); }
+        Deco.michi(w, -13, S - 4, ZC - 46, 'x', 2);
+        Deco.luna(w, 30, S + 34, ZC + 34, 10, 'z');
+        Deco.marcar(w, ZC);
+    }
 
     private static double cx(int k) { return Math.cos(k * Math.PI / 4) * R_ANILLO; }
     private static double cz(int k) { return Math.sin(k * Math.PI / 4) * R_ANILLO; }
@@ -106,6 +132,8 @@ final class MiniPlataformas implements Mini {
         Disp.barrerMoviles(c.w, 0, ZC, 45);
         quitarEntidades();
         ronda = 0; objetivo = -1; previo = -1; paso = Paso.PAUSA; tPaso = 0; tDuracion = 60; proxGolpe = 0;
+        maxRondas = c.sinElim() ? 10 : MAX_RONDAS;
+        for (Jug j : c.jugs()) { j.cuenta = 0; j.caidas = 0; }
         ponerSuelo(c.w);
         int S = Minijuegos.SUELO;
         for (int k = 0; k < 8; k++) {
@@ -127,6 +155,10 @@ final class MiniPlataformas implements Mini {
 
     private void nuevaRonda(Ctx c) {
         ronda++;
+        if (c.sinElim()) {                                      // sin eliminaciones: los que cayeron vuelven al centro
+            int i = 0;
+            for (Jug j : c.jugs()) if (j.fuera) { double a = i++ * 1.3; c.recuperar(j, Math.cos(a) * 2.5 + 0.5, Minijuegos.SUELO + 1, ZC + Math.sin(a) * 2.5 + 0.5, 0f); }
+        }
         int k;
         do { k = c.rnd.nextInt(8); } while (k == previo);
         previo = objetivo = k;
@@ -170,11 +202,11 @@ final class MiniPlataformas implements Mini {
                     paso = Paso.CAER; tPaso = 0; tDuracion = 50;
                 }
             }
-            case CAER -> { if (tPaso >= tDuracion) { paso = Paso.PAUSA; tPaso = 0; tDuracion = 36; reponerSuelo(c.w); } }
+            case CAER -> { if (tPaso >= tDuracion) { paso = Paso.PAUSA; tPaso = 0; tDuracion = 36; reponerSuelo(c.w); for (Jug j : c.jugs()) if (!j.fuera) j.cuenta++; } }
             case PAUSA -> {
                 if (tPaso >= tDuracion) {
                     int quedan = c.vivos().size();
-                    if (ronda >= MAX_RONDAS || (c.jugs().size() > 1 && quedan <= 1) || quedan == 0) return true;
+                    if (ronda >= maxRondas || (!c.sinElim() && ((c.jugs().size() > 1 && quedan <= 1) || quedan == 0))) return true;
                     nuevaRonda(c);
                 }
             }
@@ -212,14 +244,20 @@ final class MiniPlataformas implements Mini {
             if (p.getY() < S - 4) {
                 c.eliminar(j);
                 j.fila = ronda;
-                c.avisar(Text.literal("☠ " + j.nombre + " ha caído").formatted(Formatting.RED));
-                Msg.title(p, Text.literal("¡ELIMINADO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Has llegado a la ronda " + ronda).formatted(Formatting.GRAY), 3, 40, 10);
-                p.playSoundToPlayer(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.MASTER, 0.5f, 1.8f);
+                j.caidas++;
+                Sonido.sfx(p, "caida", 0.9f, 1.0f);
+                if (c.sinElim()) {
+                    c.avisar(Text.literal("↓ " + j.nombre + " ha caído (vuelve en la siguiente ronda)").formatted(Formatting.RED));
+                    Msg.title(p, Text.literal("¡CAÍSTE!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Vuelves en la siguiente ronda").formatted(Formatting.GRAY), 3, 40, 10);
+                } else {
+                    c.avisar(Text.literal("☠ " + j.nombre + " ha caído").formatted(Formatting.RED));
+                    Msg.title(p, Text.literal("¡ELIMINADO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Has llegado a la ronda " + ronda).formatted(Formatting.GRAY), 3, 40, 10);
+                }
                 // los espectadores miran desde arriba
                 p.teleport(c.w, p.getX(), S + 10, p.getZ(), p.getYaw(), 0f);
             }
         }
-        c.t.barra(1f - (float) ronda / MAX_RONDAS);
+        c.t.barra(1f - (float) ronda / maxRondas);
         return false;
     }
 
@@ -227,6 +265,7 @@ final class MiniPlataformas implements Mini {
     public List<Jug> clasificacion(Ctx c) {
         List<Jug> l = c.jugs();
         l.sort((a, b) -> {
+            if (c.sinElim()) return a.cuenta != b.cuenta ? Integer.compare(b.cuenta, a.cuenta) : Integer.compare(a.caidas, b.caidas);
             if (a.fuera != b.fuera) return a.fuera ? 1 : -1;
             if (a.fila != b.fila) return Integer.compare(b.fila, a.fila);
             return Integer.compare(b.ordenFuera, a.ordenFuera);
@@ -239,6 +278,6 @@ final class MiniPlataformas implements Mini {
 
     @Override
     public String hud(Ctx c, Jug j) {
-        return "Ronda " + ronda + "/" + MAX_RONDAS + " · quedan " + c.vivos().size() + (j.fuera ? " · eliminado" : "");
+        return "Ronda " + ronda + "/" + maxRondas + (c.sinElim() ? " · caídas " + j.caidas : " · quedan " + c.vivos().size()) + (j.fuera ? (c.sinElim() ? " · vuelves en la siguiente" : " · eliminado") : "");
     }
 }

@@ -1,0 +1,129 @@
+{
+  "musica.espera": {
+    "sounds": [
+      {
+        "name": "emi_fall:musica_espera",
+        "stream": true
+      }
+    ]
+  },
+  "musica.carrera": {
+    "sounds": [
+      {
+        "name": "emi_fall:musica_carrera",
+        "stream": true
+      }
+    ]
+  },
+  "musica.tension": {
+    "sounds": [
+      {
+        "name": "emi_fall:musica_tension",
+        "stream": true
+      }
+    ]
+  },
+  "musica.fiesta": {
+    "sounds": [
+      {
+        "name": "emi_fall:musica_fiesta",
+        "stream": true
+      }
+    ]
+  },
+  "sfx.cuenta": {
+    "sounds": [
+      "emi_fall:sfx_cuenta"
+    ]
+  },
+  "sfx.ya": {
+    "sounds": [
+      "emi_fall:sfx_ya"
+    ]
+  },
+  "sfx.recoger": {
+    "sounds": [
+      "emi_fall:sfx_recoger"
+    ]
+  },
+  "sfx.oro": {
+    "sounds": [
+      "emi_fall:sfx_oro"
+    ]
+  },
+  "sfx.trampa": {
+    "sounds": [
+      "emi_fall:sfx_trampa"
+    ]
+  },
+  "sfx.caida": {
+    "sounds": [
+      "emi_fall:sfx_caida"
+    ]
+  },
+  "sfx.golpe": {
+    "sounds": [
+      "emi_fall:sfx_golpe"
+    ]
+  },
+  "sfx.boo": {
+    "sounds": [
+      "emi_fall:sfx_boo"
+    ]
+  },
+  "sfx.cristal": {
+    "sounds": [
+      "emi_fall:sfx_cristal"
+    ]
+  },
+  "sfx.baldosa": {
+    "sounds": [
+      "emi_fall:sfx_baldosa"
+    ]
+  },
+  "sfx.maullido": {
+    "sounds": [
+      "emi_fall:sfx_maullido"
+    ]
+  },
+  "sfx.pop": {
+    "sounds": [
+      "emi_fall:sfx_pop"
+    ]
+  },
+  "sfx.muro": {
+    "sounds": [
+      "emi_fall:sfx_muro"
+    ]
+  },
+  "sfx.puntos": {
+    "sounds": [
+      "emi_fall:sfx_puntos"
+    ]
+  },
+  "sfx.tic": {
+    "sounds": [
+      "emi_fall:sfx_tic"
+    ]
+  },
+  "sfx.reaparece": {
+    "sounds": [
+      "emi_fall:sfx_reaparece"
+    ]
+  },
+  "sfx.ronda_fin": {
+    "sounds": [
+      "emi_fall:sfx_ronda_fin"
+    ]
+  },
+  "sfx.victoria": {
+    "sounds": [
+      "emi_fall:sfx_victoria"
+    ]
+  },
+  "sfx.intro": {
+    "sounds": [
+      "emi_fall:sfx_intro"
+    ]
+  }
+}

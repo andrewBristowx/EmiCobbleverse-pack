@@ -81,6 +81,22 @@ final class Ctx {
         p.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(p));
     }
 
+    boolean sinElim() { return t.sinElim; }
+
+    /** Efecto de sonido propio (de sounds.json, sin «sfx.») para todos los jugadores del torneo. */
+    void sfx(String nombre, float vol, float tono) { for (Jug j : t.jugs.values()) Sonido.sfx(pl(j), nombre, vol, tono); }
+
+    /** Devuelve a la ronda a un jugador que estaba fuera (modo sin eliminaciones): aventurero otra vez, en ese sitio y con unos instantes de calma. */
+    void recuperar(Jug j, double x, double y, double z, float yaw) {
+        j.fuera = false;
+        ServerPlayerEntity p = pl(j);
+        if (p == null) return;
+        p.changeGameMode(GameMode.ADVENTURE);
+        p.getAbilities().flying = false; p.sendAbilitiesUpdate();
+        reaparecer(j, x, y, z, yaw);
+        j.inmune = tick + 40;
+    }
+
     /** Elimina al jugador de la ronda: se queda mirando como espectador. */
     void eliminar(Jug j) {
         if (j.fuera) return;

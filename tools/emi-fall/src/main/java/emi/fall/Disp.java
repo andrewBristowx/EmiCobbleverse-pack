@@ -192,7 +192,7 @@ final class Disp {
 
     private static NbtCompound nbtTexto(String json, double x, double y, double z, float escala, boolean fondo) {
         NbtCompound n = new NbtCompound();
-        n.put("text", componente(json));
+        n.putString("text", json);                                    // en 1.21.1 el texto del display es una cadena JSON (la forma compuesta de NBT es de versiones posteriores)
         n.putString("billboard", "center");
         n.putInt("line_width", 400);
         n.putByte("see_through", (byte) 0);

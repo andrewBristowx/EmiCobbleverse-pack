@@ -24,7 +24,7 @@ final class Sala {
     static final int Y = 63;                         // el suelo; los pies estan en Y + 1
     static final double SX = 0.5, SY = Y + 1, SZ = 9.5;
     static final int R = 15;
-    static final int VERSION = 1;
+    static final int VERSION = 3;
 
     static ServerWorld mundo(MinecraftServer s) { return s.getWorld(DIM); }
 
@@ -57,15 +57,28 @@ final class Sala {
         for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) Obra.poner(w, dx, Y + 1, dz, "quartz_block");
         for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) Obra.poner(w, dx, Y + 2, dz, "gold_block");
         Disp.texto(w, "{\"text\":\"EMI FALL\",\"color\":\"light_purple\",\"bold\":true}", 0.5, Y + 6.5, 0.5, 6f, false);
-        Disp.texto(w, "{\"text\":\"El torneo de minijuegos\",\"color\":\"yellow\"}", 0.5, Y + 4.8, 0.5, 2.2f, false);
-        Disp.texto(w, "{\"text\":\"Escribe /fall unirse para apuntarte\",\"color\":\"white\"}", SX, Y + 3.2, SZ - 3, 1.6f, false);
+        Disp.texto(w, "{\"text\":\"El torneo de minijuegos\",\"color\":\"yellow\"}", 0.5, Y + 5.0, 0.5, 2.2f, false);
+        Disp.texto(w, "{\"text\":\"Escribe /fall unirse para apuntarte\",\"color\":\"white\"}", SX, Y + 3.0, SZ - 3, 0.8f, false);
         Obra.poner(w, 0, -64, 0, "crying_obsidian");
         Obra.poner(w, 0, -63, 0, "white_concrete");
-        Obra.poner(w, 1, -64, 0, "bedrock");           // la version se apunta en un bloque: 1 = bedrock, 2 = obsidiana...
+        // Halloween y Michialien: farolas de calabaza en el borde, un peluche gigante en el podio, la cara del Michialien y una luna creciente al fondo
+        for (int k = 0; k < 14; k++) {
+            double a = 2 * Math.PI * k / 14;
+            int px = (int) Math.round(Math.cos(a) * (R - 0.5)), pz = (int) Math.round(Math.sin(a) * (R - 0.5));
+            Deco.calabaza(w, px, Y + 2, pz, "s");
+            Deco.p(w, px, Y + 3, pz, "cobweb");
+        }
+        java.util.Random rr = new java.util.Random(2);
+        for (int k = 0; k < 5; k++) { double a = Math.PI * (0.15 + 0.7 * k / 4.0); Deco.arbolSeco(w, (int) Math.round(Math.cos(a) * (R + 6)), Y - 10, -(int) Math.round(Math.sin(a) * (R + 6)), 14, rr); }
+        Deco.peluche(w, 0, Y + 3, 0, "gigante_gatitoalien_witch_hat", "s");
+        Deco.michi(w, -13, Y - 4, -(R + 14), 'x', 2);
+        Deco.luna(w, 22, Y + 26, -(R + 10), 8, 'z');
+        Deco.luna(w, -24, Y + 20, R + 10, 6, 'z');
+        Obra.poner(w, 1, -64, 0, "crying_obsidian");           // la version se apunta en un bloque: 1 = bedrock, 2 = obsidiana, 3 = obsidiana llorona
         EmiFall.LOG.info("Sala del torneo construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
     }
 
-    private static int versionActual(ServerWorld w) { return w.getBlockState(new BlockPos(1, -64, 0)).isOf(Blocks.BEDROCK) ? 1 : 0; }
+    private static int versionActual(ServerWorld w) { BlockPos m = new BlockPos(1, -64, 0); return w.getBlockState(m).isOf(Blocks.CRYING_OBSIDIAN) ? 3 : w.getBlockState(m).isOf(Blocks.OBSIDIAN) ? 2 : w.getBlockState(m).isOf(Blocks.BEDROCK) ? 1 : 0; }
 
     /** Mete al jugador en la sala (guardando antes lo suyo si es la primera vez). */
     static String entrar(ServerPlayerEntity p) {

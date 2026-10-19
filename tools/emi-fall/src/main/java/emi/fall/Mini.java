@@ -12,11 +12,23 @@ interface Mini {
     String nombre();
     /** Dos frases que se leen antes de empezar: que hay que hacer. */
     String regla();
+    /** La explicacion breve que se lee antes de empezar: 2-3 lineas cortas (que hay que hacer, como se puntua, que hay que evitar). */
+    default String[] pasos() { return new String[]{regla()}; }
+    /** Una frase muy corta para el marcador de la derecha mientras se juega. */
+    default String objetivo() { return ""; }
+    /** La cancion de fondo ({@code espera}, {@code carrera}, {@code tension} o {@code fiesta}). */
+    default String musica() { return "carrera"; }
+    /** Lo que lleva el jugador en esta ronda para el marcador (caramelos, segundos…); -1 = este minijuego no tiene cuenta en vivo. */
+    default int vivo(Ctx c, Jug j) { return -1; }
+    /** Lo que cuenta {@link #vivo} («caramelos», «segundos»…). */
+    default String unidad() { return ""; }
     /** ¿Se juega por equipos (rojo y azul)? */
     default boolean equipos() { return false; }
 
     /** Construye la arena si todavia no existe (idempotente). */
     void construir(ServerWorld w);
+    /** Pone la decoracion de Halloween y del Michialien de la arena (una vez; ver {@link Deco}). Se llama despues de {@link #construir}. */
+    default void ponerDeco(ServerWorld w) {}
     /** Prepara la ronda: coloca a los jugadores en su sitio de salida (con {@link Ctx#colocar}) y deja todo listo. Los jugadores esperan quietos hasta {@link #liberar}. */
     void empezar(Ctx c);
     /** Se acabo la cuenta atras: ¡ya! */

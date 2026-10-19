@@ -29,16 +29,24 @@ final class Torneo {
     static Torneo actual;
 
     /** Para las pruebas: {@code -Demi.fall.tiempo=0.2} acorta todos los tiempos (cuenta atras, limites, resultados) a la quinta parte. */
-    static final double TF = leerTf();
+    static double TF = leerTf();
     private static double leerTf() { try { return Math.max(0.05, Math.min(3.0, Double.parseDouble(System.getProperty("emi.fall.tiempo", "1.0")))); } catch (NumberFormatException e) { return 1.0; } }
     static int tt(int ticks) { return (int) Math.max(20, Math.round(ticks * TF)); }
 
-    static final int T_INTRO = tt(140), T_CUENTA = 70, T_RESULTADO = tt(160), T_FINAL = tt(260);
-    static final String[] ORDEN = {"carrera", "camino", "bombas", "plataformas"};
+    static final int T_CUENTA = 70;
+    static int tIntro() { return tt(240); }
+    static int tResultado() { return tt(160); }
+    static int tFinal() { return tt(260); }
+    /** Los ocho minijuegos en el orden de un torneo normal (alternando correr, recoger, aguantar…). */
+    static final String[] ORDEN = {"carrera", "caramelos", "camino", "suelo", "bombas", "muro", "plataformas", "pilla"};
+    static final String[] CLASICOS = {"carrera", "camino", "bombas", "plataformas"};
+    static final String[] NUEVOS = {"caramelos", "suelo", "muro", "pilla"};
 
     final MinecraftServer server;
     final Map<UUID, Jug> jugs = new LinkedHashMap<>();
     UUID anfitrion;
+    /** Modo «sin eliminaciones»: nadie se queda de espectador; caer solo cuesta puntos o tiempo y se vuelve al juego. */
+    boolean sinElim;
     Fase fase = Fase.COLA;
     final List<Mini> rondas = new ArrayList<>();
     int idx = -1;
@@ -78,7 +86,9 @@ final class Torneo {
         if (q.jugs.size() >= 16) return "El torneo esta lleno (16 jugadores).";
         q.jugs.put(p.getUuid(), new Jug(p.getUuid(), p.getGameProfile().getName()));
         q.avisarTodos(Msg.say(Text.literal(p.getGameProfile().getName() + " se ha apuntado al torneo (" + q.jugs.size() + " jugadores)" + (q.anfitrion.equals(p.getUuid()) ? " y es el anfitrión. Cuando estéis todos: " : ". ")).formatted(Formatting.WHITE))
-                .append(q.anfitrion.equals(p.getUuid()) ? Msg.button("EMPEZAR", "/fall empezar", Formatting.GREEN, "Empieza el torneo con los que hay") : Text.empty()));
+                .append(q.anfitrion.equals(p.getUuid()) ? Msg.button("EMPEZAR", "/fall empezar", Formatting.GREEN, "Los 8 juegos; si caes, quedas eliminado en los que eliminan") : Text.empty())
+                .append(q.anfitrion.equals(p.getUuid()) ? Text.literal(" ") : Text.empty())
+                .append(q.anfitrion.equals(p.getUuid()) ? Msg.button("SIN ELIMINACIONES", "/fall empezar sinelim", Formatting.AQUA, "Los 8 juegos, pero nadie queda fuera: si caes, vuelves a jugar") : Text.empty()));
         return null;
     }
 
@@ -89,6 +99,7 @@ final class Torneo {
         Jug j = q.jugs.remove(p.getUuid());
         if (q.ctx != null && q.mini != null) q.mini.alIrse(q.ctx, j);
         q.barra.removePlayer(p);
+        Panel.quitar(p);
         if (q.fase != Fase.COLA) {
             Morph.quitar(q.server, p);
             quitarEfectos(p);
@@ -107,26 +118,42 @@ final class Torneo {
         Jug j = q.jugs.remove(p.getUuid());
         if (q.ctx != null && q.mini != null) q.mini.alIrse(q.ctx, j);
         q.barra.removePlayer(p);
+        Panel.quitar(p);
         if (q.jugs.isEmpty()) q.cerrar();
         else if (q.anfitrion.equals(j.id)) q.anfitrion = q.jugs.keySet().iterator().next();
     }
 
-    /** Empieza el torneo. {@code juegos} = los ids separados por comas (vacio = los cuatro, en su orden). */
-    static String empezar(ServerPlayerEntity quien, boolean admin, String juegos) {
+    /**
+     * Empieza el torneo. {@code args} = palabras separadas por espacios o comas: ids de minijuegos, o {@code clasicos} / {@code nuevos} / {@code todos}, y {@code sinelim} para el modo
+     * sin eliminaciones (vacio = los ocho, con eliminaciones).
+     */
+    static String empezar(ServerPlayerEntity quien, boolean admin, String args) {
         Torneo q = actual;
         if (q == null) return "No hay ningun torneo: apuntate primero con /fall unirse.";
         if (q.fase != Fase.COLA) return "El torneo ya esta en marcha.";
         if (!admin && !quien.getUuid().equals(q.anfitrion)) return "Solo el anfitrion (o un administrador) puede empezarlo.";
         if (q.jugs.size() < 2 && !admin && !Boolean.getBoolean("emi.fall.prueba")) return "Hacen falta al menos 2 jugadores.";
         q.rondas.clear();
-        String[] ids = juegos == null || juegos.isBlank() ? ORDEN : juegos.trim().split("[ ,]+");
-        for (String id : ids) { Mini m = Minijuegos.porId(id); if (m == null) return "Minijuego desconocido: " + id + " (hay: " + String.join(", ", Minijuegos.ids()) + ")."; q.rondas.add(m); }
+        boolean sin = false;
+        List<String> ids = new ArrayList<>();
+        for (String w : (args == null ? "" : args.trim()).split("[ ,]+")) {
+            if (w.isBlank()) continue;
+            String k = w.toLowerCase();
+            if (k.equals("sinelim") || k.equals("sin") || k.equals("sineliminaciones")) sin = true;
+            else if (k.equals("todos")) ids.addAll(java.util.Arrays.asList(ORDEN));
+            else if (k.equals("clasicos") || k.equals("clasico")) ids.addAll(java.util.Arrays.asList(CLASICOS));
+            else if (k.equals("nuevos")) ids.addAll(java.util.Arrays.asList(NUEVOS));
+            else ids.add(k);
+        }
+        if (ids.isEmpty()) ids.addAll(java.util.Arrays.asList(ORDEN));
+        for (String id : ids) { Mini m = Minijuegos.porId(id); if (m == null) return "Minijuego desconocido: " + id + " (hay: " + String.join(", ", Minijuegos.ids()) + "; tambien todos, clasicos, nuevos y sinelim)."; q.rondas.add(m); }
+        q.sinElim = sin;
         ServerWorld w = Minijuegos.arena(q.server);
         if (w == null) return "No existe la dimension de las arenas (emi_fall:arena).";
-        for (Mini m : q.rondas) m.construir(w);
+        for (Mini m : q.rondas) { m.construir(w); m.ponerDeco(w); }
         for (Jug j : q.jugs.values()) { j.puntos = 0; j.puntosRonda = 0; ServerPlayerEntity p = q.server.getPlayerManager().getPlayer(j.id); if (p != null) q.barra.addPlayer(p); }
         q.idx = -1;
-        q.avisarTodos(Msg.say(Text.literal("¡Empieza el torneo con " + q.jugs.size() + " jugadores y " + q.rondas.size() + " rondas!").formatted(Formatting.GOLD, Formatting.BOLD)));
+        q.avisarTodos(Msg.say(Text.literal("¡Empieza el torneo con " + q.jugs.size() + " jugadores y " + q.rondas.size() + " rondas" + (sin ? ", SIN eliminaciones" : "") + "!").formatted(Formatting.GOLD, Formatting.BOLD)));
         q.siguiente();
         return null;
     }
@@ -175,9 +202,19 @@ final class Torneo {
             p.setGlowing(mini.equipos());
         }
         if (mini.equipos()) colorear();
-        ctx.titulo(Text.literal(mini.nombre().toUpperCase()).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(corta(mini.regla())).formatted(Formatting.YELLOW), 8, 100, 10);
-        avisarTodos(Msg.say(Text.literal("Ronda " + (idx + 1) + ": " + mini.nombre() + ". ").formatted(Formatting.GOLD).append(Text.literal(mini.regla()).formatted(Formatting.WHITE))));
-        ctx.sonido(SoundEvents.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
+        ctx.titulo(Text.literal(mini.nombre().toUpperCase()).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(mini.objetivo().isEmpty() ? corta(mini.regla()) : mini.objetivo()).formatted(Formatting.YELLOW), 8, tIntro() - 30, 10);
+        explicar();
+        ctx.sfx("intro", 0.9f, 1.0f);
+    }
+
+    /** La explicacion de la ronda en el chat: el nombre, 2-3 pasos y el modo (con o sin eliminaciones). */
+    private void explicar() {
+        Text linea = Text.literal("══════════════════════════").formatted(Formatting.DARK_PURPLE);
+        avisarTodos(linea);
+        avisarTodos(Text.literal(" RONDA " + (idx + 1) + "/" + rondas.size() + " · " + mini.nombre().toUpperCase()).formatted(Formatting.GOLD, Formatting.BOLD));
+        for (String p : mini.pasos()) avisarTodos(Text.literal(" ▸ " + p).formatted(Formatting.WHITE));
+        avisarTodos(Text.literal(sinElim ? " ♥ Sin eliminaciones: si caes, vuelves a jugar." : " ☠ Con eliminaciones: si caes en un juego que elimina, miras como espectador.").formatted(sinElim ? Formatting.AQUA : Formatting.RED));
+        avisarTodos(linea);
     }
 
     /** Pone a cada jugador en el color de su equipo (el contorno que brilla y el nombre). */
@@ -228,7 +265,8 @@ final class Torneo {
             ServerPlayerEntity p = pl(j);
             if (p == null) continue;
             Msg.title(p, Text.literal("Puesto " + j.puestoRonda + "º").formatted(j.puestoRonda == 1 ? Formatting.GOLD : Formatting.AQUA, Formatting.BOLD), Text.literal("+" + j.puntosRonda + " puntos · total " + j.puntos).formatted(Formatting.YELLOW), 5, 60, 10);
-            Msg.sound(p, j.puestoRonda <= 3 ? SoundEvents.UI_TOAST_CHALLENGE_COMPLETE : SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.9f, 1.0f);
+            Sonido.sfx(p, j.puestoRonda <= 3 ? "ronda_fin" : "puntos", 0.9f, 1.0f);
+            Sonido.silencio(p, 2500);
         }
         enviarClasificacion();
         EmiFall.LOG.info("[torneo] ronda {} ({}) terminada: {}", idx + 1, mini.id(), resumen(orden));
@@ -236,7 +274,7 @@ final class Torneo {
 
     private String resumen(List<Jug> orden) { StringBuilder sb = new StringBuilder(); for (Jug j : orden) sb.append(j.nombre).append('=').append(j.puntosRonda).append('(').append(j.puntos).append(") "); return sb.toString(); }
 
-    private List<Jug> clasificacionTotal() {
+    List<Jug> clasificacionTotal() {
         List<Jug> l = new ArrayList<>(jugs.values());
         l.sort((a, b) -> a.puntos != b.puntos ? Integer.compare(b.puntos, a.puntos) : Integer.compare(b.puntosRonda, a.puntosRonda));
         return l;
@@ -261,7 +299,8 @@ final class Torneo {
                 ServerPlayerEntity p = pl(j);
                 if (p == null) continue;
                 Msg.title(p, Text.literal(g.nombre).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("¡ES EL CAMPEÓN!").formatted(Formatting.YELLOW), 10, 120, 20);
-                Msg.sound(p, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+                Sonido.sfx(p, "victoria", 1f, 1f);
+                Sonido.silencio(p, 4500);
                 p.changeGameMode(GameMode.ADVENTURE);
             }
             EmiFall.LOG.info("[torneo] GANADOR: {} con {} puntos; clasificacion: {}", g.nombre, g.puntos, resumen(l));
@@ -282,6 +321,7 @@ final class Torneo {
     /** Cierra el torneo: todos a la sala (o a donde estaban si ya no estan en ella). */
     void cerrar() {
         barra.clearPlayers();
+        for (Jug j : jugs.values()) Panel.quitar(pl(j));
         if (mini != null && ctx != null) { try { mini.limpiar(ctx); } catch (Throwable e) { EmiFall.LOG.error("Error al limpiar {}", mini.id(), e); } ctx.soltarForzados(); }
         quitarColores();
         ServerWorld w = Sala.mundo(server);
@@ -307,6 +347,7 @@ final class Torneo {
 
     private void tick() {
         t++;
+        if (t % 10 == 5) for (Jug j : jugs.values()) { ServerPlayerEntity p = pl(j); if (p != null) Panel.actualizar(this, p, j); }
         if (ctx != null && mini != null && t % 20 == 3 && (fase == Fase.INTRO || fase == Fase.CUENTA || fase == Fase.JUEGO)) {
             double[] z = mini.zona();
             if (z != null) { int n = Disp.barrerHuerfanos(ctx.w, z[0], z[1], z[2]); if (n > 0) EmiFall.LOG.info("[{}] {} entidades congeladas barridas", mini.id(), n); }
@@ -315,19 +356,20 @@ final class Torneo {
             case COLA -> { if (++aviso % 600 == 0 && jugs.size() > 0) avisarTodos(Msg.say("Hay " + jugs.size() + " apuntados. El anfitrión puede empezar con /fall empezar.")); }
             case INTRO -> {
                 retener();
-                if (t >= T_INTRO) { fase = Fase.CUENTA; t = 0; }
+                if (t % 20 == 0 && mini != null) for (Jug j : jugs.values()) { ServerPlayerEntity p = pl(j); if (p != null) Msg.actionBar(p, Text.literal("Objetivo: " + (mini.objetivo().isEmpty() ? corta(mini.regla()) : mini.objetivo())).formatted(Formatting.YELLOW, Formatting.BOLD)); }
+                if (t >= tIntro()) { fase = Fase.CUENTA; t = 0; }
             }
             case CUENTA -> {
                 retener();
                 if (t % 20 == 1 && t < 61) {
                     int n = 3 - t / 20;
                     ctx.titulo(Text.literal(String.valueOf(n)).formatted(n == 1 ? Formatting.GREEN : n == 2 ? Formatting.YELLOW : Formatting.RED, Formatting.BOLD), Text.empty(), 0, 18, 2);
-                    ctx.sonido(SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), 1f, 1.0f);
+                    ctx.sfx("cuenta", 0.9f, n == 1 ? 1.2f : 1.0f);
                 }
                 if (t >= T_CUENTA) {
                     ctx.retener = false; fase = Fase.JUEGO; t = 0;
                     ctx.titulo(Text.literal("¡YA!").formatted(Formatting.GREEN, Formatting.BOLD), Text.empty(), 0, 16, 6);
-                    ctx.sonido(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1f, 1.6f);
+                    ctx.sfx("ya", 1f, 1.0f);
                     mini.liberar(ctx);
                 }
             }
@@ -342,8 +384,8 @@ final class Torneo {
                 }
                 if (mini.tick(ctx)) { resultado(); }
             }
-            case RESULTADO -> { if (t >= T_RESULTADO) siguiente(); }
-            case FINAL -> { if (t >= T_FINAL) cerrar(); }
+            case RESULTADO -> { if (t >= tResultado()) siguiente(); }
+            case FINAL -> { if (t >= tFinal()) cerrar(); }
         }
     }
 

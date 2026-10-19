@@ -37,6 +37,15 @@ final class MiniCamino implements Mini {
     @Override public String id() { return "camino"; }
     @Override public String nombre() { return "Camino correcto"; }
     @Override public String regla() { return "Salta de cristal en cristal: en cada fila solo uno aguanta y el falso se rompe nada más pisarlo. ¡Llega primero al otro lado!"; }
+    @Override public String[] pasos() {
+        return new String[]{"Cruza el puente de cristal saltando de fila en fila: en cada fila hay dos cristales, solo uno aguanta.",
+                "El falso se rompe en cuanto lo pisas y vuelves a la salida. Los rotos se quedan rotos para todos: mira dónde caen los demás.",
+                "Gana quien llegue antes al final."};
+    }
+    @Override public String objetivo() { return "Elige el cristal que aguanta"; }
+    @Override public String musica() { return "tension"; }
+    @Override public int vivo(Ctx c, Jug j) { return j.fila; }
+    @Override public String unidad() { return "fila"; }
 
     private static int filaX(int fila) { return X0 + fila * PASO; }
     private static int colZ(int col) { return Z0 + col * 4; }
@@ -59,6 +68,24 @@ final class MiniCamino implements Mini {
         Obra.poner(w, 0, -64, ZC, "crying_obsidian");
         Obra.poner(w, 1, -64, ZC, "crying_obsidian");
         EmiFall.LOG.info("Arena «camino correcto» (version 2) construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
+    }
+
+
+    @Override public void ponerDeco(ServerWorld w) { decorar(w); }
+
+    static void decorar(ServerWorld w) {
+        if (!Deco.pendiente(w, ZC)) return;
+        int S = Minijuegos.SUELO;
+        Random r = new Random(4);
+        for (int x = -8; x <= FIN_X + 8; x += 12) for (int s = -1; s <= 1; s += 2) Deco.farola(w, x, S + 1, ZC + s * 9, S - 12, s < 0 ? "s" : "n");
+        for (int x = 10; x <= FIN_X; x += 30) for (int s = -1; s <= 1; s += 2) Deco.arbolSeco(w, x, S - 12, ZC + s * 14, 14, r);
+        Deco.michi(w, -22, S - 3, ZC - 13, 'z', 2);
+        Deco.michi(w, FIN_X + 22, S - 3, ZC - 13, 'z', 2);
+        Deco.luna(w, FIN_X / 2, S + 32, ZC - 34, 9, 'x');
+        Deco.pedestal(w, FIN_X + 6, S, ZC - 9, "gigante_gatitoalien_witch_hat", "w");
+        Deco.pedestal(w, FIN_X + 6, S, ZC + 9, "gigante_gatitoalien_devil_horns", "w");
+        Deco.pedestal(w, -10, S, ZC + 9, "gigante_gatitoalien_gold_witch_hat", "e");
+        Deco.marcar(w, ZC);
     }
 
     @Override public double[] zona() { return null; }

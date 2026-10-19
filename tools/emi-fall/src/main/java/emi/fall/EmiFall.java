@@ -33,6 +33,7 @@ public class EmiFall implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(Torneo::tick);
         ServerTickEvents.END_SERVER_TICK.register(Sala::tick);
+        ServerTickEvents.END_SERVER_TICK.register(Sonido::tick);
         ServerTickEvents.END_SERVER_TICK.register(Retornos::tick);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Retornos.alEntrar(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Torneo.alDesconectar(handler.player));

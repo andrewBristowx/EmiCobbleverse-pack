@@ -67,6 +67,13 @@ final class MiniCarrera implements Mini {
     @Override public String id() { return "carrera"; }
     @Override public String nombre() { return "Carrera de obstáculos"; }
     @Override public String regla() { return "Llega a la meta saltando piedras, barras giratorias, puertas falsas, un abismo, islas y frutas rodantes. Si caes, vuelves al último punto de control."; }
+    @Override public String[] pasos() {
+        return new String[]{"Corre y salta por la pista: piedras, barras que giran, puertas, un abismo y frutas gigantes que ruedan.",
+                "Si caes, vuelves al último punto de control: no te eliminan.",
+                "Gana quien llegue antes a la meta. ¡Esquiva las frutas!"};
+    }
+    @Override public String objetivo() { return "Llega el primero a la meta"; }
+    @Override public String musica() { return "carrera"; }
 
     private static void suelo(ServerWorld w, int x0, int x1, int z0, int z1, String a, String b) {
         int S = Minijuegos.SUELO;
@@ -114,6 +121,25 @@ final class MiniCarrera implements Mini {
         Obra.poner(w, 1, -64, ZC, "crying_obsidian");
         Obra.poner(w, 2, -64, ZC, "crying_obsidian");
         EmiFall.LOG.info("Arena «carrera» (version 3) construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
+    }
+
+
+    @Override public void ponerDeco(ServerWorld w) { decorar(w); }
+
+    static void decorar(ServerWorld w) {
+        if (!Deco.pendiente(w, ZC)) return;
+        int S = Minijuegos.SUELO;
+        Random r = new Random(3);
+        for (int x = -10; x <= META_X + 8; x += 20) for (int s = -1; s <= 1; s += 2) Deco.farola(w, x, S + 1, s * 10, S - 12, s < 0 ? "s" : "n");
+        for (int x = 30; x <= META_X; x += 60) for (int s = -1; s <= 1; s += 2) Deco.arbolSeco(w, x, S - 14, s * 14, 16, r);
+        Deco.michi(w, -22, S - 3, -13, 'z', 2);
+        Deco.michi(w, META_X + 20, S - 3, -13, 'z', 2);
+        Deco.luna(w, META_X / 2, S + 36, -36, 10, 'x');
+        Deco.luna(w, 40, S + 30, 34, 8, 'x');
+        Deco.pedestal(w, META_X + 6, S, -10, "gigante_gatitoalien_witch_hat", "w");
+        Deco.pedestal(w, META_X + 6, S, 10, "gigante_gatitoalien_devil_horns", "w");
+        Deco.pedestal(w, -10, S, -10, "gigante_gatitoalien_halo", "e");
+        Deco.marcar(w, ZC);
     }
 
     /** Pone las paredes de puertas (cuatro puertas cada una; la mitad se abre). */
