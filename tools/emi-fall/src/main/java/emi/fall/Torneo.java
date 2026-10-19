@@ -170,7 +170,7 @@ final class Torneo {
             p.setGlowing(mini.equipos());
         }
         if (mini.equipos()) colorear();
-        ctx.titulo(Text.literal(mini.nombre().toUpperCase()).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(mini.regla()).formatted(Formatting.YELLOW), 8, 100, 10);
+        ctx.titulo(Text.literal(mini.nombre().toUpperCase()).formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(corta(mini.regla())).formatted(Formatting.YELLOW), 8, 100, 10);
         avisarTodos(Msg.say(Text.literal("Ronda " + (idx + 1) + ": " + mini.nombre() + ". ").formatted(Formatting.GOLD).append(Text.literal(mini.regla()).formatted(Formatting.WHITE))));
         ctx.sonido(SoundEvents.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
     }
@@ -192,6 +192,9 @@ final class Torneo {
         net.minecraft.scoreboard.Scoreboard sb = server.getScoreboard();
         for (Jug j : jugs.values()) { net.minecraft.scoreboard.Team tm = sb.getScoreHolderTeam(j.nombre); if (tm != null && tm.getName().startsWith("emi_fall_")) sb.removeScoreHolderFromTeam(j.nombre, tm); }
     }
+
+    /** La primera frase de la regla (cabe en el subtitulo). */
+    private static String corta(String r) { int i = r.indexOf('.'); return i > 8 && i < 70 ? r.substring(0, i) : r.length() > 60 ? r.substring(0, 57) + "..." : r; }
 
     ServerPlayerEntity pl(Jug j) { return server.getPlayerManager().getPlayer(j.id); }
 

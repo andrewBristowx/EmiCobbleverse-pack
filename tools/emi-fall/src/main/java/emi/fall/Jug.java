@@ -18,6 +18,8 @@ final class Jug {
     long tLlegada = -1;
     boolean llego;
     long inmune;                 // hasta que tick no le afectan los golpes
+    boolean bomba;               // lleva una bomba en la mano (minijuego de las bombas)
+    long tPad;                   // cuando uso por ultima vez un trampolin
     int ultimoTocado = -1;       // quien le dio el ultimo golpe (por indice), para los minijuegos de empujones
     Jug(UUID id, String nombre) { this.id = id; this.nombre = nombre; }
 }

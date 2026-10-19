@@ -21,7 +21,7 @@ final class Minijuegos {
 
     private static final Map<String, Mini> TODOS = new LinkedHashMap<>();
     static {
-        for (Mini m : new Mini[]{new MiniCamino()}) TODOS.put(m.id(), m);
+        for (Mini m : new Mini[]{new MiniCarrera(), new MiniCamino(), new MiniBombas(), new MiniPlataformas()}) TODOS.put(m.id(), m);
     }
 
     static Mini porId(String id) { return TODOS.get(id.toLowerCase()); }

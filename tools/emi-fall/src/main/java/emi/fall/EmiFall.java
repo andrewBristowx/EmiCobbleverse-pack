@@ -44,7 +44,11 @@ public class EmiFall implements ModInitializer {
             Torneo.alUsar(sp);
             return TypedActionResult.fail(p.getStackInHand(hand));
         });
-        UseBlockCallback.EVENT.register((p, w, hand, hit) -> !w.isClient && encerrado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        UseBlockCallback.EVENT.register((p, w, hand, hit) -> {
+            if (w.isClient || !encerrado(p)) return ActionResult.PASS;
+            if (p instanceof ServerPlayerEntity sp) Torneo.alUsar(sp);                 // tirar la bomba tambien al hacer clic derecho sobre un bloque
+            return ActionResult.FAIL;
+        });
         UseEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && encerrado(p) ? ActionResult.FAIL : ActionResult.PASS);
         AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && encerrado(p) ? ActionResult.FAIL : ActionResult.PASS);
         AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && encerrado(p) ? ActionResult.FAIL : ActionResult.PASS);

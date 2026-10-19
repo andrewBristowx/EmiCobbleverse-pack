@@ -64,6 +64,7 @@ final class MiniCamino implements Mini {
             for (int k = 0; k < 3; k++) { roto[f][k] = false; romper[f][k] = 0; }
             for (int k = 0; k < 3; k++) rellenar(w, f, k, S);
         }
+        EmiFall.LOG.info("[camino] camino de esta partida (columna buena de cada fila): {}", java.util.Arrays.toString(bueno));
     }
 
     private static void rellenar(ServerWorld w, int fila, int col, int S) {

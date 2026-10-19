@@ -112,7 +112,7 @@ final class Disp {
         e.readNbt(n);
     }
 
-    /** Un cartel de texto en el aire (el texto en JSON de Minecraft: {@code {"text":"hola","color":"gold"}}). */
+    /** Un cartel de texto en el aire: {@code texto} y su {@code color} (nombre de color de Minecraft, por ejemplo «gold»); en negrita si {@code negrita}. */
     static Entity texto(ServerWorld w, String json, double x, double y, double z, float escala, boolean fondo) {
         try {
             Entity e = EntityType.TEXT_DISPLAY.create(w);
@@ -129,9 +129,18 @@ final class Disp {
         e.readNbt(nbtTexto(json, x, y, z, escala, fondo));
     }
 
+    /** El texto en el formato antiguo «{"text":"hola","color":"gold","bold":true}» (solo estas tres claves) pasado al NBT que lee el juego. */
+    private static NbtCompound componente(String json) {
+        NbtCompound c = new NbtCompound();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"(text|color)\":\"([^\"]*)\"").matcher(json);
+        while (m.find()) c.putString(m.group(1), m.group(2));
+        if (json.contains("\"bold\":true")) c.putBoolean("bold", true);
+        return c;
+    }
+
     private static NbtCompound nbtTexto(String json, double x, double y, double z, float escala, boolean fondo) {
         NbtCompound n = new NbtCompound();
-        n.putString("text", json);
+        n.put("text", componente(json));
         n.putString("billboard", "center");
         n.putInt("line_width", 400);
         n.putByte("see_through", (byte) 0);
