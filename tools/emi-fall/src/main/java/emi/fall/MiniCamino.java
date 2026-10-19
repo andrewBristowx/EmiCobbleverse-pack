@@ -15,13 +15,15 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * «Camino correcto»: un puente de baldosas de cristal, en cada fila tres baldosas y solo UNA aguanta (el camino cambia en cada partida). Si pisas una falsa se rompe y
- * caes: reapareces al principio. Las baldosas rotas se quedan rotas, asi que los que van detras aprenden de los que caen. Gana quien llega antes al otro lado.
+ * «Camino correcto» (estilo puente de cristal del Juego del Calamar): un puente de baldosas de cristal, en cada fila tres baldosas y solo UNA aguanta (el camino cambia
+ * en cada partida). Si pisas una falsa se rompe a los 0,45 s de aterrizar en ella: si saltas a la siguiente antes de que se rompa, pasas sin caer (corriendo y saltando
+ * de baldosa en baldosa se cruza). Las baldosas rotas se quedan rotas, asi que los que van detras aprenden de los que caen. Gana quien llega antes al otro lado.
  */
 final class MiniCamino implements Mini {
     static final int ZC = 300;                  // centro de la arena (z)
     static final int FILAS = 14, ANCHO = 3;     // 14 filas de baldosas de 3x3, 3 baldosas por fila
     static final int LIMITE_S = 120, EXTRA_S = 40;
+    static final int RETRASO = 9;               // ticks desde que aterrizas en una baldosa falsa hasta que se rompe (se puede cruzar saltando)
     static final int Z0 = ZC - 4;               // la primera columna de baldosas empieza en este z (9 de ancho: 296..304)
 
     private final int[] bueno = new int[FILAS];                 // la columna que aguanta en cada fila
@@ -31,7 +33,7 @@ final class MiniCamino implements Mini {
 
     @Override public String id() { return "camino"; }
     @Override public String nombre() { return "Camino correcto"; }
-    @Override public String regla() { return "En cada fila solo una baldosa aguanta. Si pisas una falsa caes y vuelves a empezar. ¡Llega primero al otro lado!"; }
+    @Override public String regla() { return "En cada fila solo una baldosa aguanta. La falsa se rompe nada más pisarla: ¡corre y salta de baldosa en baldosa para no caer! Llega primero al otro lado."; }
 
     private static int baldosaX(int fila) { return fila * ANCHO; }
 
@@ -115,7 +117,7 @@ final class MiniCamino implements Mini {
                 continue;
             }
             int bx = (int) Math.floor(x), bz = (int) Math.floor(z);
-            if (y > S + 2.2 || y < S + 0.5) continue;                              // en el aire: no cuenta el suelo de debajo
+            if (y > S + 2.2 || y < S + 0.5 || !p.isOnGround()) continue;           // en el aire (saltando) no cuenta el suelo de debajo
             if (bx >= FILAS * ANCHO) {                                             // la meta
                 j.llego = true; j.tLlegada = c.tick; j.fila = FILAS;
                 if (primero < 0) { primero = c.tick; c.avisar(Msg.say(Text.literal(j.nombre + " ha llegado primero. Los demás tenéis " + EXTRA_S + " segundos.").formatted(Formatting.GOLD))); }
@@ -128,7 +130,7 @@ final class MiniCamino implements Mini {
             int fila = bx / ANCHO, col = (bz - Z0) / 3;
             if (fila >= FILAS) continue;
             if (col != bueno[fila] && !roto[fila][col] && romper[fila][col] == 0) {        // baldosa falsa: se va a romper
-                romper[fila][col] = c.tick + 7;
+                romper[fila][col] = c.tick + RETRASO;
                 c.w.spawnParticles(ParticleTypes.CRIT, baldosaX(fila) + 1.5, S + 1.1, Z0 + col * 3 + 1.5, 8, 1.0, 0.1, 1.0, 0.1);
                 c.w.playSound(null, x, S, z, SoundEvents.BLOCK_GLASS_HIT, SoundCategory.BLOCKS, 1.2f, 0.7f);
             } else if (col == bueno[fila] && fila + 1 > j.fila) j.fila = fila + 1;

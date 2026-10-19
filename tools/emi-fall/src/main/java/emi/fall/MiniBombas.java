@@ -2,9 +2,12 @@ package emi.fall;
 
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Hand;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -35,10 +38,20 @@ final class MiniBombas implements Mini {
     private static final double[][] PUNTOS = {{0, -9}, {0, 0}, {0, 9}, {-8, -4}, {-8, 4}, {8, -4}, {8, 4}};
 
     private static final class Punto { double x, z; Entity e; long listoEn; boolean hay; }
-    private static final class Bomba { Entity e; Vec3d p, v; int edad; Jug lanza; }
+    private static final class Bomba { Entity e; Vec3d p, v; int edad, aterrizo = -1; Jug lanza; }
+    /** La bomba que vuela desde el suelo hasta encima de la cabeza del jugador que la coge. */
+    private static final class Vuelo { Entity e; Vec3d desde; Jug j; int t; }
+    /** Un trozo de suelo que salta por los aires al explotar (solo se ve). */
+    private static final class Escombro { Entity e; Vec3d p, v; int edad; }
+
+    /** El numero de modelo del objeto de la bomba: el resource pack del mod lo dibuja como un TNT en la barra pero no en la mano. */
+    static final int MODELO_BOMBA = 7771;
 
     private final List<Punto> puntos = new ArrayList<>();
     private final List<Bomba> bombas = new ArrayList<>();
+    private final List<Vuelo> vuelos = new ArrayList<>();
+    private final List<Escombro> escombros = new ArrayList<>();
+    private final Map<Jug, Entity> portadas = new HashMap<>();             // la bomba que cada jugador lleva encima de la cabeza
     private final Map<Long, String> original = new HashMap<>();           // el bloque del suelo de cada casilla (para saber si sigue en pie)
     private int ganador = -2;                                              // equipo ganador (-1 = empate)
     private double radioActual = R;
@@ -46,7 +59,7 @@ final class MiniBombas implements Mini {
     @Override public String id() { return "bombas"; }
     @Override public String nombre() { return "Guerra de bombas"; }
     @Override public boolean equipos() { return true; }
-    @Override public String regla() { return "Rojos contra azules. Coge una bomba, lánzala con clic derecho y deja sin suelo al rival. El que cae queda eliminado."; }
+    @Override public String regla() { return "Rojos contra azules. Pasa por una bomba para cogerla (la llevas encima), lánzala con clic derecho y deja sin suelo al rival. El que cae queda eliminado."; }
 
     private static long clave(int x, int z) { return ((long) x << 32) ^ (z & 0xffffffffL); }
 
@@ -98,12 +111,39 @@ final class MiniBombas implements Mini {
         puntos.clear();
         for (Bomba b : bombas) Disp.quitar(b.e);
         bombas.clear();
+        for (Vuelo v : vuelos) Disp.quitar(v.e);
+        vuelos.clear();
+        for (Escombro e : escombros) Disp.quitar(e.e);
+        escombros.clear();
+        for (Entity r : portadas.values()) { if (r != null && !r.isRemoved()) { r.stopRiding(); Disp.quitar(r); } }
+        portadas.clear();
+    }
+
+    private void quitarPortada(Jug j) {
+        Entity r = portadas.remove(j);
+        if (r != null && !r.isRemoved()) { r.stopRiding(); Disp.quitar(r); }
+    }
+
+    private boolean enVuelo(Jug j) { for (Vuelo v : vuelos) if (v.j == j) return true; return false; }
+
+    /** Termina de coger la bomba: queda montada encima de la cabeza (la ven todos) y el jugador tiene en la mano un objeto invisible para poder hacer clic derecho. */
+    private void darBomba(Ctx c, Jug j, ServerPlayerEntity p) {
+        j.bomba = true;
+        quitarPortada(j);
+        Entity r = Disp.bloqueMontable(c.w, "minecraft:tnt", p.getX(), p.getY() + 1.8, p.getZ(), 0.9f, 0.75f);
+        if (r != null) { r.startRiding(p, true); portadas.put(j, r); }
+        p.getInventory().setStack(0, objetoBomba());
+        p.getInventory().selectedSlot = 0;
+        p.playSoundToPlayer(SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.MASTER, 1f, 0.8f);
+        c.w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.PLAYERS, 0.6f, 1.4f);
+        p.sendMessage(Text.literal("¡Tienes una bomba encima! Clic derecho para lanzarla.").formatted(Formatting.RED), true);
     }
 
     @Override public void liberar(Ctx c) { }
 
     private ItemStack objetoBomba() {
-        ItemStack st = new ItemStack(Items.TNT);
+        ItemStack st = new ItemStack(Items.STICK);                                         // se ve como TNT en la barra y en la mano no se ve (resource pack del mod)
+        st.set(DataComponentTypes.CUSTOM_MODEL_DATA, new CustomModelDataComponent(MODELO_BOMBA));
         st.set(DataComponentTypes.CUSTOM_NAME, Text.literal("BOMBA · clic derecho para lanzarla").formatted(Formatting.RED, Formatting.BOLD));
         return st;
     }
@@ -112,6 +152,7 @@ final class MiniBombas implements Mini {
     public boolean alUsar(Ctx c, Jug j, ServerPlayerEntity p) {
         if (!j.bomba || j.fuera) return false;
         j.bomba = false;
+        quitarPortada(j);
         p.getInventory().clear();
         Vec3d mira = p.getRotationVector();
         Bomba b = new Bomba();
@@ -120,7 +161,9 @@ final class MiniBombas implements Mini {
         b.lanza = j;
         b.e = Disp.bloque(c.w, "minecraft:tnt", b.p.x, b.p.y, b.p.z, 0.8f, 0.8f, 0.8f, 0, 0);
         bombas.add(b);
-        p.playSoundToPlayer(SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.MASTER, 1f, 0.7f);
+        p.swingHand(Hand.MAIN_HAND, true);                                                     // se ve el brazo lanzando
+        c.w.playSound(null, b.p.x, b.p.y, b.p.z, SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.PLAYERS, 1f, 0.7f);
+        c.w.playSound(null, b.p.x, b.p.y, b.p.z, SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.PLAYERS, 1f, 1f);
         EmiFall.LOG.info("[bombas] {} lanza una bomba hacia ({}, {})", j.nombre, Math.round(mira.x * 100) / 100.0, Math.round(mira.z * 100) / 100.0);
         return true;
     }
@@ -138,10 +181,23 @@ final class MiniBombas implements Mini {
             double d = Math.sqrt(dx * dx + dz * dz);
             if (d > RADIO_EXPLOSION - 0.3 + c.rnd.nextDouble() * 0.6) continue;
             BlockPos bp = new BlockPos(ex + dx, S, ez + dz);
-            if (!w.getBlockState(bp).isAir()) { Obra.poner(w, bp.getX(), S, bp.getZ(), "air"); quitados++; }
+            if (!w.getBlockState(bp).isAir()) {
+                if (escombros.size() < 40 && c.rnd.nextInt(3) == 0) {                          // un trozo de suelo que salta
+                    Escombro es = new Escombro();
+                    es.p = new Vec3d(bp.getX() + 0.5, S + 0.8, bp.getZ() + 0.5);
+                    double d2 = Math.max(0.5, d);
+                    es.v = new Vec3d(dx / d2 * (0.2 + c.rnd.nextDouble() * 0.35), 0.45 + c.rnd.nextDouble() * 0.4, dz / d2 * (0.2 + c.rnd.nextDouble() * 0.35));
+                    es.e = Disp.bloque(w, "minecraft:" + Registries.BLOCK.getId(w.getBlockState(bp).getBlock()).getPath(), es.p.x, es.p.y, es.p.z, 0.55f, 0.55f, 0.55f, 0, 0);
+                    escombros.add(es);
+                }
+                Obra.poner(w, bp.getX(), S, bp.getZ(), "air"); quitados++;
+            }
         }
         w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, en.x, S + 1.2, en.z, 1, 0, 0, 0, 0);
         w.spawnParticles(ParticleTypes.CLOUD, en.x, S + 1.2, en.z, 30, 1.6, 0.4, 1.6, 0.1);
+        w.spawnParticles(ParticleTypes.EXPLOSION, en.x, S + 1.3, en.z, 14, 1.8, 0.5, 1.8, 0.0);
+        w.spawnParticles(ParticleTypes.FLAME, en.x, S + 1.3, en.z, 40, 1.2, 0.5, 1.2, 0.12);
+        w.spawnParticles(ParticleTypes.LARGE_SMOKE, en.x, S + 1.5, en.z, 24, 1.4, 0.7, 1.4, 0.05);
         w.playSound(null, en.x, S + 1, en.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS, 3.0f, 0.9f);
         EmiFall.LOG.info("[bombas] explosion en ({}, {}): {} bloques menos", Math.round(en.x * 10) / 10.0, Math.round(en.z * 10) / 10.0, quitados);
         for (Jug j : c.jugs()) {
@@ -165,38 +221,70 @@ final class MiniBombas implements Mini {
                 pt.hay = true; pt.e = Disp.bloque(c.w, "minecraft:tnt", pt.x, S + 2.0, pt.z, 0.8f, 0.8f, 0.8f, 0, 0);
             }
         }
-        // las bombas lanzadas
+        // las bombas lanzadas: vuelan echando humo; al caer al suelo parpadean 7 ticks y explotan (si tocan a alguien explotan en el acto)
         for (int i = bombas.size() - 1; i >= 0; i--) {
             Bomba b = bombas.get(i);
             b.edad++;
-            b.v = b.v.add(0, -0.03, 0);
-            Vec3d nuevo = b.p.add(b.v);
+            Vec3d nuevo = b.p;
             boolean boom = false;
-            if (nuevo.y <= S + 1.0 && b.v.y < 0 && hayBloque(c.w, nuevo.x, nuevo.z)) { boom = true; nuevo = new Vec3d(nuevo.x, S + 1.0, nuevo.z); }
-            else for (Jug j : c.jugs()) {
+            if (b.aterrizo < 0) {
+                b.v = b.v.add(0, -0.03, 0);
+                nuevo = b.p.add(b.v);
+                if (nuevo.y <= S + 1.0 && b.v.y < 0 && hayBloque(c.w, nuevo.x, nuevo.z)) {
+                    b.aterrizo = b.edad; b.v = Vec3d.ZERO; nuevo = new Vec3d(nuevo.x, S + 1.0, nuevo.z);
+                    c.w.playSound(null, nuevo.x, nuevo.y, nuevo.z, SoundEvents.BLOCK_STONE_PLACE, SoundCategory.BLOCKS, 1.2f, 0.6f);
+                }
+            }
+            if (b.aterrizo >= 0 && b.edad - b.aterrizo >= 7) boom = true;
+            if (!boom) for (Jug j : c.jugs()) {
                 ServerPlayerEntity p = c.pl(j);
                 if (p == null || j.fuera || j == b.lanza && b.edad < 8) continue;
                 if (Math.abs(p.getX() - nuevo.x) < 1.1 && Math.abs(p.getZ() - nuevo.z) < 1.1 && nuevo.y > p.getY() - 0.5 && nuevo.y < p.getY() + 2.3) { boom = true; break; }
             }
-            if (boom) { explotar(c, nuevo, b.lanza); Disp.quitar(b.e); bombas.remove(i); continue; }
+            if (boom) { explotar(c, new Vec3d(nuevo.x, Math.min(nuevo.y, S + 1.0), nuevo.z), b.lanza); Disp.quitar(b.e); bombas.remove(i); continue; }
             if (nuevo.y < S - 12 || b.edad > 100) { Disp.quitar(b.e); bombas.remove(i); continue; }
             b.p = nuevo;
-            Disp.moverBloque(b.e, nuevo.x, nuevo.y, nuevo.z, 0.8f, 0.8f, 0.8f, b.edad * 0.5, 1);
+            boolean aterrizada = b.aterrizo >= 0;
+            boolean blanco = aterrizada ? ((b.edad - b.aterrizo) / 2) % 2 == 1 : (b.edad / 5) % 2 == 1 && b.edad > 8;
+            float tam = aterrizada ? 0.8f + 0.05f * (b.edad - b.aterrizo) : 0.8f;
+            double cy = aterrizada ? S + 1.0 + tam / 2 : nuevo.y;
+            Disp.cambiarBloque(b.e, blanco ? "minecraft:white_concrete" : "minecraft:tnt", nuevo.x, cy, nuevo.z, tam, tam, tam, aterrizada ? 0 : b.edad * 0.5, 0);
+            if (!aterrizada) c.w.spawnParticles(ParticleTypes.SMOKE, nuevo.x, nuevo.y + 0.5, nuevo.z, 2, 0.06, 0.06, 0.06, 0.0);
+            if (b.edad % 2 == 0) c.w.spawnParticles(ParticleTypes.FLAME, nuevo.x, cy + tam / 2 + 0.1, nuevo.z, 1, 0.03, 0.03, 0.03, 0.0);
+        }
+        // los trozos de suelo que saltan
+        for (int i = escombros.size() - 1; i >= 0; i--) {
+            Escombro e = escombros.get(i);
+            e.edad++;
+            e.v = e.v.add(0, -0.06, 0);
+            e.p = e.p.add(e.v);
+            if (e.edad > 24 || e.p.y < S - 6) { Disp.quitar(e.e); escombros.remove(i); continue; }
+            Disp.moverBloque(e.e, e.p.x, e.p.y, e.p.z, 0.55f, 0.55f, 0.55f, e.edad * 0.4, 0);
+        }
+        // las bombas que vuelan desde el suelo hasta encima de la cabeza de quien las coge
+        for (int i = vuelos.size() - 1; i >= 0; i--) {
+            Vuelo v = vuelos.get(i);
+            v.t++;
+            ServerPlayerEntity p = c.pl(v.j);
+            if (p == null || v.j.fuera) { Disp.quitar(v.e); vuelos.remove(i); continue; }
+            double k = Math.min(1.0, v.t / 8.0), suave = k * k * (3 - 2 * k);
+            Vec3d meta = new Vec3d(p.getX(), p.getY() + 2.3, p.getZ());
+            Vec3d pos = v.desde.lerp(meta, suave).add(0, Math.sin(k * Math.PI) * 0.9, 0);
+            Disp.moverBloque(v.e, pos.x, pos.y, pos.z, 0.8f, 0.8f, 0.8f, v.t * 0.7, 0);
+            if (v.t >= 8) { Disp.quitar(v.e); vuelos.remove(i); darBomba(c, v.j, p); }
         }
         // recoger bombas
         for (Jug j : c.jugs()) {
             ServerPlayerEntity p = c.pl(j);
-            if (p == null || j.fuera || j.bomba) continue;
+            if (p == null || j.fuera || j.bomba || enVuelo(j)) continue;
             for (Punto pt : puntos) {
                 if (!pt.hay) continue;
                 if (Math.abs(p.getX() - pt.x) < 1.5 && Math.abs(p.getZ() - pt.z) < 1.5 && p.getY() < S + 3) {
-                    pt.hay = false; Disp.quitar(pt.e); pt.listoEn = c.tick + 140;
-                    j.bomba = true;
+                    pt.hay = false; pt.listoEn = c.tick + 140;
+                    Vuelo v = new Vuelo(); v.e = pt.e; v.desde = new Vec3d(pt.x, S + 2.0, pt.z); v.j = j; pt.e = null;     // la bomba del suelo sube hasta tu cabeza
+                    vuelos.add(v);
                     EmiFall.LOG.info("[bombas] {} coge una bomba", j.nombre);
-                    p.getInventory().setStack(0, objetoBomba());
-                    p.getInventory().selectedSlot = 0;
-                    p.playSoundToPlayer(SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.MASTER, 1f, 0.8f);
-                    p.sendMessage(Text.literal("¡Tienes una bomba! Clic derecho para lanzarla.").formatted(Formatting.RED), true);
+                    c.w.spawnParticles(ParticleTypes.POOF, pt.x, S + 1.6, pt.z, 8, 0.3, 0.3, 0.3, 0.03);
                     break;
                 }
             }
@@ -218,6 +306,7 @@ final class MiniBombas implements Mini {
             if (!j.fuera && p.getY() < S - 3) {
                 c.eliminar(j);
                 j.bomba = false;
+                quitarPortada(j);
                 p.getInventory().clear();
                 c.avisar(Text.literal("☠ " + j.nombre + " ha caído").formatted(j.equipo == 0 ? Formatting.RED : Formatting.AQUA));
                 Msg.title(p, Text.literal("¡ELIMINADO!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Mira cómo acaban los demás").formatted(Formatting.GRAY), 3, 40, 10);
@@ -266,5 +355,5 @@ final class MiniBombas implements Mini {
     }
 
     @Override
-    public void alIrse(Ctx c, Jug j) { j.bomba = false; }
+    public void alIrse(Ctx c, Jug j) { j.bomba = false; quitarPortada(j); }
 }
