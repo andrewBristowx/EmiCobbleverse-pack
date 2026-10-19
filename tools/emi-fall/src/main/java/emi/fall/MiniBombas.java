@@ -116,7 +116,7 @@ final class MiniBombas implements Mini {
         Vec3d mira = p.getRotationVector();
         Bomba b = new Bomba();
         b.p = p.getEyePos().add(mira.multiply(0.9));
-        b.v = mira.multiply(1.25).add(0, 0.12, 0);
+        b.v = mira.multiply(1.4).add(0, 0.08, 0);
         b.lanza = j;
         b.e = Disp.bloque(c.w, "minecraft:tnt", b.p.x, b.p.y, b.p.z, 0.8f, 0.8f, 0.8f, 0, 0);
         bombas.add(b);
@@ -169,14 +169,14 @@ final class MiniBombas implements Mini {
         for (int i = bombas.size() - 1; i >= 0; i--) {
             Bomba b = bombas.get(i);
             b.edad++;
-            b.v = b.v.add(0, -0.045, 0);
+            b.v = b.v.add(0, -0.03, 0);
             Vec3d nuevo = b.p.add(b.v);
             boolean boom = false;
             if (nuevo.y <= S + 1.0 && b.v.y < 0 && hayBloque(c.w, nuevo.x, nuevo.z)) { boom = true; nuevo = new Vec3d(nuevo.x, S + 1.0, nuevo.z); }
             else for (Jug j : c.jugs()) {
                 ServerPlayerEntity p = c.pl(j);
                 if (p == null || j.fuera || j == b.lanza && b.edad < 8) continue;
-                if (Math.abs(p.getX() - nuevo.x) < 0.9 && Math.abs(p.getZ() - nuevo.z) < 0.9 && nuevo.y > p.getY() - 0.3 && nuevo.y < p.getY() + 2.1) { boom = true; break; }
+                if (Math.abs(p.getX() - nuevo.x) < 1.1 && Math.abs(p.getZ() - nuevo.z) < 1.1 && nuevo.y > p.getY() - 0.5 && nuevo.y < p.getY() + 2.3) { boom = true; break; }
             }
             if (boom) { explotar(c, nuevo, b.lanza); Disp.quitar(b.e); bombas.remove(i); continue; }
             if (nuevo.y < S - 12 || b.edad > 100) { Disp.quitar(b.e); bombas.remove(i); continue; }
