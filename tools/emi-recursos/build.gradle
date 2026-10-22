@@ -1,0 +1,39 @@
+plugins {
+    id 'fabric-loom' version '1.10.5'
+}
+
+version = project.mod_version
+group = 'emi.recursos'
+base { archivesName = 'emi-recursos' }
+
+repositories {
+    maven { url = 'https://maven.nucleoid.xyz' }
+}
+
+// Universal Graves solo se usa para compilar (en el servidor ya esta instalado). Ruta: variable de entorno GRAVES_JAR (ver build.sh).
+def gravesJar = System.getenv('GRAVES_JAR')
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    // Fantasy (Nucleoid) crea y borra mundos en caliente; va dentro del jar del mod (jar-in-jar)
+    modImplementation include("xyz.nucleoid:fantasy:${project.fantasy_version}")
+    if (gravesJar) modCompileOnly files(gravesJar)
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}

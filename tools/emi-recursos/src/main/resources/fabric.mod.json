@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_recursos",
+  "version": "${version}",
+  "name": "Emi Recursos",
+  "description": "Mundos de recursos (overworld, nether y end propios) que se reinician cada pocos dias con una semilla nueva.",
+  "authors": ["SomitadePony"],
+  "license": "All-Rights-Reserved",
+  "environment": "server",
+  "entrypoints": { "main": ["emi.recursos.EmiRecursos"] },
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.1", "fabric-api": "*" },
+  "mixins": ["emi_recursos.mixins.json"]
+}

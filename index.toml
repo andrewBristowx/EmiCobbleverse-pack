@@ -1864,6 +1864,10 @@ file = "mods/emi-plush-1.19.0.jar"
 hash = "cf4dcd7a67d6601f6f2d67e95a6ec82948343dd3e62d24cbf5761e2b49709f24"
 
 [[files]]
+file = "mods/emi-recursos-1.0.0.jar"
+hash = "410dfbc33e53b8a7b8e58435f6ac8e7fb28f25fd238e4d14a0e07d0f52c27976"
+
+[[files]]
 file = "mods/emi-streamlabs-1.2.0.jar"
 hash = "194d923b6a1430bb6c4535e71046c9b0ad6a940374af5b76f4b8b5bf2680af92"
 
