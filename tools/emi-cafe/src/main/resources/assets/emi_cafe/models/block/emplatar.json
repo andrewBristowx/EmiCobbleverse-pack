@@ -1,0 +1,161 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/mueble",
+    "mueble": "emi_cafe:block/mueble",
+    "encimera": "emi_cafe:block/encimera",
+    "bandeja": "emi_cafe:block/bandeja",
+    "metal": "emi_cafe:block/metal"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mueble"
+        },
+        "south": {
+          "texture": "#mueble"
+        },
+        "east": {
+          "texture": "#mueble"
+        },
+        "west": {
+          "texture": "#mueble"
+        },
+        "up": {
+          "texture": "#encimera"
+        },
+        "down": {
+          "texture": "#mueble"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        10,
+        1
+      ],
+      "to": [
+        15,
+        11,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bandeja"
+        },
+        "south": {
+          "texture": "#bandeja"
+        },
+        "east": {
+          "texture": "#bandeja"
+        },
+        "west": {
+          "texture": "#bandeja"
+        },
+        "up": {
+          "texture": "#bandeja"
+        },
+        "down": {
+          "texture": "#bandeja"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        11,
+        1
+      ],
+      "to": [
+        15,
+        12,
+        2
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        11,
+        14
+      ],
+      "to": [
+        15,
+        12,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

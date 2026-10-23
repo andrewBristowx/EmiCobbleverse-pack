@@ -17,15 +17,22 @@ final class Cmds {
         d.register(CommandManager.literal("cafe")
                 .then(CommandManager.literal("entrar").executes(c -> con(c, Cafes::entrar)))
                 .then(CommandManager.literal("salir").executes(c -> con(c, p -> {
-                    if (!Cafes.tiene(p.getUuid()) && !Cafes.enCafe(p) && !Saved.exists(p.getServer(), p.getUuid())) return "No estás en tu café.";
+                    if (!Cafes.tiene(p.getUuid()) && !Cafes.enCafe(p) && !Saved.exists(p.getServer(), p.getUuid())) return "No estás en un café.";
                     if (!Cafes.salir(p)) return "No encuentro lo que guardé de ti.";
                     return null;
                 })))
+                .then(CommandManager.literal("invitar").then(CommandManager.argument("jugador", net.minecraft.command.argument.EntityArgumentType.player()).executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null) return "Entra primero a tu café con /cafe entrar.";
+                    return Cafes.invitar(cf, p, net.minecraft.command.argument.EntityArgumentType.getPlayer(c, "jugador"));
+                }))))
+                .then(CommandManager.literal("aceptar").executes(c -> con(c, p -> Cafes.aceptar(p, null)))
+                        .then(CommandManager.argument("duenio", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.aceptar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "duenio"))))))
                 .then(CommandManager.literal("info").executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null) return "No estás en tu café: entra con /cafe entrar.";
                     Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
-                    p.sendMessage(Msg.say("Monedas: " + j.monedas + " · clientes servidos: " + j.clientes + " · ganado esta visita: " + cf.ganado), false);
+                    p.sendMessage(Msg.say("Monedas: " + j.monedas + " · clientes servidos: " + j.clientes + " · turnos: " + j.turnos + " · mejor turno: " + j.mejorTurno), false);
                     return null;
                 })))
                 .then(CommandManager.literal("dev").requires(Perm::admin)
@@ -49,6 +56,31 @@ final class Cmds {
                             cf.usarBloque(p, pos);
                             return null;
                         }))))
+                        .then(CommandManager.literal("turno").executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            if (cf.estado == Cafe.Estado.ABIERTO) cf.restante = 40;                 // acaba el turno en 2 s
+                            else return cf.abrirTurno();
+                            return null;
+                        })))
+                        .then(CommandManager.literal("inicial").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            Recetas.Inicial ini = Recetas.Inicial.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
+                            if (ini == null) return "charmander, squirtle o bulbasaur";
+                            Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            j.inicial = ini.id; j.platos.clear(); j.platos.add(ini.plato.id);
+                            EmiCafe.datos.guardar(p.getUuid());
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null) cf.reconstruir();
+                            return null;
+                        }))))
+                        .then(CommandManager.literal("reiniciar").executes(c -> con(c, p -> {
+                            Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            j.inicial = null; j.platos.clear(); j.mejoras.clear(); j.monedas = 0;
+                            EmiCafe.datos.guardar(p.getUuid());
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null) cf.reconstruir();
+                            return null;
+                        })))
                         .then(CommandManager.literal("local").executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf == null) return "Entra primero con /cafe entrar.";
@@ -58,13 +90,13 @@ final class Cmds {
         );
     }
 
-    private interface Accion { String hacer(ServerPlayerEntity p); }
+    private interface Accion { String hacer(ServerPlayerEntity p) throws Exception; }
 
     private static int con(com.mojang.brigadier.context.CommandContext<ServerCommandSource> c, Accion a) {
         ServerPlayerEntity p = c.getSource().getPlayer();
         if (p == null) { c.getSource().sendError(Text.literal("Solo para jugadores.")); return 0; }
         String err;
-        try { err = a.hacer(p); } catch (Throwable t) { EmiCafe.LOG.error("Error en un comando", t); err = "Error interno (mira el registro del servidor)."; }
+        try { err = a.hacer(p); } catch (com.mojang.brigadier.exceptions.CommandSyntaxException x) { err = "No encuentro a ese jugador (tiene que estar conectado)."; } catch (Throwable t) { EmiCafe.LOG.error("Error en un comando", t); err = "Error interno (mira el registro del servidor)."; }
         if (err != null) { p.sendMessage(Msg.err(err), false); return 0; }
         return 1;
     }

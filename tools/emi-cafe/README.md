@@ -1,11 +1,51 @@
-# Café Michialien (`emi-cafe`) — PLAN (todavía no hay código)
+# Café Michialien (`emi-cafe`) — 0.2.0
 
 Pedido del dueño (2026-10-23): «un juego como **Pokémon Café** en Minecraft: un restaurante donde cada cierto tiempo entran Pokémon y te piden comida; los platos se
 preparan **llevando los ingredientes en las manos (no en el inventario) a la estación que toca** (una papa a la freidora, etc.); al empezar eliges **1 de 3 Pokémon**
 y ese te enseña **1 plato**; con el dinero de las ventas **mejoras las instalaciones, compras más platos, desbloqueas ingredientes y estaciones de trabajo**;
 y **todos los objetos y estaciones con textura propia**».
 
-Este documento es el plan. Nada de esto está construido ni probado todavía.
+**Decisiones del dueño (2026-10-23):** turno de **4 minutos** que **cierra el local y enseña el resumen de ganancias** con «comprar» o «parar por ahora»; **un café por jugador**, que
+**puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
+nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
+
+## 0. Qué hay hecho en la 0.2.0 (y qué se probó)
+Mod **servidor + cliente** (el cliente lo necesita por las texturas de objetos y bloques; los menús son cofres de Minecraft con objetos propios, sin pantallas de cliente). Dimensión `emi_cafe:cafe`.
+- **Entrar:** `/cafe entrar` (o el botón «Café Michialien» de Ms. President, emi-survivors 0.29.0). Se guarda lo tuyo (inventario, sitio, modo…) y se devuelve al salir (`/cafe salir`, el botón «Parar por ahora» o al desconectarte; si se cae el servidor, al volver a entrar).
+  Cada dueño tiene **su local** (se construye por código, 64 bloques de separación entre locales).
+- **Primera vez:** menú «¿Quién será tu cocinero?» con **Charmander** (papas fritas), **Squirtle** (limonada de bayas) o **Bulbasaur** (ensalada de bayas).
+- **Caja registradora** (bloque al final de la barra): menú con **ABRIR EL CAFÉ**, **Recetario**, **Tienda: platos y mejoras**, **Invitar a un amigo** y **Parar por ahora**.
+- **Turno de 4 minutos:** llegan clientes (Pokémon reales de Cobblemon sin IA que caminan por una ruta fija), se quedan en su mesa con un **globo con el dibujo del plato** y una **barra de paciencia**.
+  Cocinas **llevando el objeto en la mano** (el objeto de verdad en el hueco 1 de la barra, que no se puede cambiar; el resto del inventario está vacío): **clic derecho** en una caja = coger; en una estación = dejarlo / recoger lo terminado;
+  en el cliente o su mesa = servir; en la basura = tirar. Al acabar el reloj **se cierra el local** (los que esperan se van sin pagar y sin enfadarse) y sale el **resumen de ganancias** con **Comprar**, **Otro turno** y **Parar por ahora**.
+- **Estaciones (todas con modelo y textura propios):** caja de papas, caja de bayas, caja de lechugas, **tabla de cortar** (papa→tiras, lechuga→picada), **freidora** (tiras→papas fritas; **se queman** si no las recoges en 10 s: avisa con humo a los 6 s),
+  **exprimidor** (baya→limonada), **mesa de emplatar** (lechuga picada + baya→ensalada; se puede recoger lo que pusiste por error), **fregadero**, **basura**, mesas y la caja registradora.
+- **Platos sucios:** al irse un cliente satisfecho deja un **plato sucio** en la mesa (la mesa no se puede usar hasta recogerlo); se lava en el fregadero y vuelve a la **pila de platos limpios** (empiezas con 4); **sin platos limpios no puedes servir**.
+- **Dinero:** cada plato paga su precio (papas 12, limonada 10, ensalada 16) **+ propina de hasta el 60 %** según la paciencia que le quedara. Va a **quien sirve**.
+- **Tienda** (entre turnos): **platos nuevos** (papas 60, limonada 80, ensalada 120; cada plato desbloquea sus cajas y estaciones en la cocina) y **5 mejoras de 2 niveles**: más mesas (de 2 a 4), estaciones más rápidas (−20 % por nivel), clientes más pacientes (+25 %), más vajilla (+2 platos), publicidad (clientes más seguido).
+- **Invitar:** el dueño elige a un jugador conectado (menú con cabezas o `/cafe invitar <jugador>`); le llega un mensaje con **[ACEPTAR]** (o `/cafe aceptar <dueño>`, vale 1 minuto). Entra como invitado (hasta 4 personas en total), cocina y sirve, **lo que gana es suyo**;
+  si el dueño sale o se desconecta, el café se cierra y los invitados vuelven a donde estaban. Con más gente llegan clientes más seguido.
+- **Datos** en `world/emi_cafe/jugadores/<uuid>.json` (monedas, cocinero, platos, mejoras, turnos, mejor turno) y `world/emi_cafe/saved/<uuid>.nbt` (lo que tenías antes de entrar).
+- **Comandos:** `/cafe entrar|salir|info|invitar <jugador>|aceptar [dueño]`; admin (`op` 2 o permiso `emi_cafe.admin`): `/cafe dev cliente|monedas <n>|turno|inicial <charmander|squirtle|bulbasaur>|reiniciar|usar <x y z>|local`.
+- **Texturas:** 26 objetos (ingredientes, platos, platos quemados y sucios, cocineros con gorro, iconos del menú) y 12 bloques con 19 texturas de superficie, **dibujadas por código** (`assets/generar.py`, Python con Pillow; **ejecútalo para regenerar** y `--hoja X.png` para ver todas juntas).
+  Para cambiar una a mano basta reemplazar el PNG (los nombres son fijos) y no volver a ejecutar el script.
+- **Compilar:** `COBBLEMON_JAR=… KOTLIN_JAR=… tools/emi-cafe/build.sh` (como `emi-fall`). **En el servidor real hay que copiar a mano el jar a `mods/`**; y `emi-survivors` 0.29.0 para el botón de Ms. President.
+
+**Probado en el juego** (banco ligero: servidor Fabric + cliente real con Xvfb, sin Emipokemon ni el pack entero): entrar, elegir cocinero con clic, abrir el menú de la caja con **clic derecho real**, abrir turno con clic, los **3 platos completos** (papas, limonada, ensalada),
+la **quema** de las papas y tirarlas, plato sucio → fregadero → pila de platos, cliente que paga y se va (monedas y propina), cierre del turno y resumen, comprar un plato y una mejora (el local se reconstruye con las estaciones/mesas nuevas),
+**dos clientes reales**: invitar, aceptar con el mensaje, el invitado sirve y cobra él, el menú del invitado, salir el dueño y que el invitado vuelva, desconectarse dentro y recuperar lo guardado al volver; el botón de **Ms. President** (clic real) que lleva al café.
+**No probado:** un turno de 4 minutos jugado a mano de principio a fin (se acortó con `dev turno`), **3-4 jugadores a la vez**, varios cafés a la vez en el servidor, el servidor real y el pack entero (otros mods metidos), sonidos (no hay audio en la máquina de pruebas),
+el **equilibrio** (precios, tiempos, paciencia y llegada de clientes son **estimaciones**), clientes con especies de tamaños raros (todos se escalan a ~1,15 bloques de alto) y el comportamiento si **otro mod** teletransporta al jugador dentro del café.
+**Limitación conocida:** si un jugador dentro del café escribe a mano el comando de otro minijuego (`/fall entrar`…) sin salir antes, el café lo da de baja sin devolverle lo suyo hasta que vuelva a la dimensión del café (entonces `Retornos` se lo devuelve); `Ms. President` y survivors ya lo avisan.
+
+## Lo que falta (ver las fases de abajo)
+**F3 contenido:** ~20 platos (hoy 3), más ingredientes y estaciones (plancha, olla, horno, batidora…), más especies de clientes y sus gustos, ayudantes Pokémon, decoración.
+**F4 conexión con el servidor:** música y sonidos propios, **estrellas + tienda con tickets de Emipokemon y el peluche «Michialien chef»** (accesorio nuevo de `emi-plush`, 1000 estrellas, una vez), misiones y logros, reputación del café.
+**F5:** equilibrio con gente real y servidor real.
+
+---
+
+# Plan original (2026-10-23, lo que se propuso antes de construir; la 0.2.0 sigue este plan)
 
 ## 1. Qué es el juego (resumen)
 Un **turno** dura ~4 minutos. Llegan Pokémon clientes, se sientan, piden un plato (aparece su icono en un globo y en tu lista de pedidos) y tienen una **barra de paciencia**.

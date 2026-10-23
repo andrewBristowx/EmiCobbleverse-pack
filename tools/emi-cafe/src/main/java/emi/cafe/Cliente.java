@@ -32,6 +32,7 @@ final class Cliente {
     int paciencia, pacienciaMax;
     int comiendo;
     boolean enfadado;
+    boolean sirvio;                          // se le sirvio el plato (deja plato sucio al irse)
     private final List<double[]> ruta;
     private int paso;
     private double alto = ALTURA;
@@ -53,6 +54,7 @@ final class Cliente {
             e.noClip = true;                      // la ruta es fija: ni las mesas ni los otros clientes lo frenan (un Slowpoke no cabria entre las mesas)
             e.setPersistent();
             e.setCustomNameVisible(false);
+            try { e.hideNameRendering(); } catch (Throwable t) { /* version de Cobblemon sin esta funcion */ }
             e.addCommandTag(Disp.TAG);
             double x0 = ox + Local.PUERTA_X, z0 = Local.CALLE_Z;
             e.refreshPositionAndAngles(x0, Local.Y + 1, z0, 180f, 0f);
@@ -84,7 +86,7 @@ final class Cliente {
                     fase = Fase.ESPERANDO;
                     mirarAlNorte();
                     pedido = cafe.elegirPedido(rnd);
-                    pacienciaMax = paciencia = 20 * 90;
+                    pacienciaMax = paciencia = cafe.pacienciaTicks();
                     ponerPose(PoseType.STAND);
                     crearGlobo(w);
                     cafe.sonido(e.getX(), e.getY(), e.getZ(), net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.4f);
@@ -108,10 +110,14 @@ final class Cliente {
     /** Se le ha servido el plato correcto: empieza a comer. */
     void comer() {
         fase = Fase.COMIENDO;
+        sirvio = true;
         comiendo = 70;
         quitarGlobo();
         ponerPose(PoseType.STAND);
     }
+
+    /** Se acaba el turno: se va sin pagar y sin enfadarse. */
+    void despedir() { if (fase == Fase.ESPERANDO) irse((ServerWorld) e.getWorld()); }
 
     private void irse(ServerWorld w) {
         quitarGlobo();

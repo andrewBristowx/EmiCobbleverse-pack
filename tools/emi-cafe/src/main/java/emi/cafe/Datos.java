@@ -18,8 +18,15 @@ final class Datos {
 
     static final class Jugador {
         String nombre = "";
-        int monedas;                 // el dinero del cafe: se gana sirviendo y se gasta en mejoras (mas adelante)
+        int monedas;                 // el dinero del cafe: se gana sirviendo y se gasta en platos y mejoras
         int clientes;                // clientes servidos en total
+        int turnos;                  // turnos completos
+        int mejorTurno;              // lo mas que se ha ganado en un turno
+        String inicial;              // el Pokemon cocinero elegido (null = aun no ha elegido)
+        java.util.List<String> platos = new java.util.ArrayList<>();                 // platos que sabe hacer
+        java.util.Map<String, Integer> mejoras = new java.util.HashMap<>();          // nivel de cada mejora
+
+        int nivel(String mejora) { return mejoras == null ? 0 : mejoras.getOrDefault(mejora, 0); }
     }
 
     private final Path raiz;

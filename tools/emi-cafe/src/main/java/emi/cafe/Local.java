@@ -15,17 +15,17 @@ final class Local {
     static final int Y = 63;                                  // el suelo; los pies estan en Y + 1
     static final int SEPARACION = 64;
     static final double SX = 7.5, SZ = 4.5;                   // donde aparece el jugador
-    /** Los puestos de la cocina (x en el local; z = 1). */
-    static final int[] X_CAJA = {3}, X_TABLA = {6}, X_FREIDORA = {9}, X_BASURA = {12};
-    /** Las mesas (x, z del bloque) y donde se pone el cliente (justo al sur). */
-    static final int[][] MESAS = {{4, 9}, {10, 9}};
+    /** Las mesas (x, z del bloque) en el orden en que se van abriendo; el cliente se pone justo al sur. */
+    static final int[][] MESAS = {{5, 9}, {9, 9}, {2, 9}, {12, 9}};
+    static final int X_REGISTRADORA = 13, Z_REGISTRADORA = 6;
     static final double PUERTA_X = 8.0, CALLE_Z = 16.5, PASILLO_Z = 11.5;
 
     static BlockPos pos(int ox, int x, int dy, int z) { return new BlockPos(ox + x, Y + dy, z); }
 
     private static void ponerBloque(ServerWorld w, int ox, int x, int dy, int z, Block b) { w.setBlockState(pos(ox, x, dy, z), b.getDefaultState(), Obra.BANDERAS); }
 
-    static void construir(ServerWorld w, int ox) {
+    /** Construye el local con solo las estaciones {@code activas} (las demas casillas de la fila quedan de encimera) y las primeras {@code mesas} mesas. */
+    static void construir(ServerWorld w, int ox, java.util.Set<Estacion> activas, int mesas) {
         long t0 = System.nanoTime();
         Disp.barrer(w, ox + 7, 9, 30);
         for (int x = -3; x <= 17; x++) for (int z = -3; z <= 20; z++) for (int y = Y - 1; y <= Y + 8; y++) Obra.poner(w, ox + x, y, z, "air");
@@ -52,14 +52,12 @@ final class Local {
         for (int z = 0; z <= 13; z++) { Obra.poner(w, ox, Y + 5, z, "white_concrete"); Obra.poner(w, ox + 14, Y + 5, z, "white_concrete"); }
         // la fila de encimeras y estaciones al fondo (z = 1)
         for (int x = 1; x <= 13; x++) ponerBloque(w, ox, x, 1, 1, CafeBlocks.ENCIMERA);
-        for (int x : X_CAJA) ponerBloque(w, ox, x, 1, 1, CafeBlocks.CAJA_PAPAS);
-        for (int x : X_TABLA) ponerBloque(w, ox, x, 1, 1, CafeBlocks.TABLA);
-        for (int x : X_FREIDORA) ponerBloque(w, ox, x, 1, 1, CafeBlocks.FREIDORA);
-        for (int x : X_BASURA) ponerBloque(w, ox, x, 1, 1, CafeBlocks.BASURA);
-        // la barra que separa la cocina del comedor (con un hueco para pasar)
+        for (Estacion e : Estacion.values()) if (e.x >= 0 && (e.siempre || activas.contains(e))) ponerBloque(w, ox, e.x, 1, 1, e.bloque);
+        // la barra que separa la cocina del comedor (con un hueco para pasar) y la caja registradora en su extremo
         for (int x = 1; x <= 13; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 6, CafeBlocks.ENCIMERA);
+        ponerBloque(w, ox, X_REGISTRADORA, 1, Z_REGISTRADORA, CafeBlocks.REGISTRADORA);
         // las mesas
-        for (int[] m : MESAS) ponerBloque(w, ox, m[0], 1, m[1], CafeBlocks.MESA);
+        for (int i = 0; i < Math.min(mesas, MESAS.length); i++) ponerBloque(w, ox, MESAS[i][0], 1, MESAS[i][1], CafeBlocks.MESA);
         // el letrero sobre la puerta y farolas en la calle
         Disp.texto(w, "{\"text\":\"CAFÉ MICHIALIEN\",\"color\":\"light_purple\",\"bold\":true}", ox + 8.0, Y + 6.6, 13.6, 3.0f, false);
         Disp.texto(w, "{\"text\":\"Sirve lo que piden los Pokémon\",\"color\":\"yellow\"}", ox + 8.0, Y + 5.9, 13.6, 0.9f, false);

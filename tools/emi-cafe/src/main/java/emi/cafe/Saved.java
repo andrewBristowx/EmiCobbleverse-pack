@@ -92,7 +92,7 @@ public final class Saved {
         ServerWorld w = server.getWorld(dimKey);
         double x = t.getDouble("x"), y = t.getDouble("y"), z = t.getDouble("z");
         float yaw = t.getFloat("yaw"), pitch = t.getFloat("pitch");
-        if (w == null) {
+        if (w == null || dimKey.equals(Cafes.DIM)) {          // la dimension ya no existe, o se guardo estando varado dentro del cafe: al spawn del mundo normal
             w = server.getOverworld();
             BlockPos s = w.getSpawnPos();
             x = s.getX() + 0.5; y = s.getY(); z = s.getZ() + 0.5;

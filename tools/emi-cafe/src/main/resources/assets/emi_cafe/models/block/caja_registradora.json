@@ -1,0 +1,129 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/mueble",
+    "mueble": "emi_cafe:block/mueble",
+    "encimera": "emi_cafe:block/encimera",
+    "registradora": "emi_cafe:block/registradora",
+    "registradora_top": "emi_cafe:block/registradora_top"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mueble"
+        },
+        "south": {
+          "texture": "#mueble"
+        },
+        "east": {
+          "texture": "#mueble"
+        },
+        "west": {
+          "texture": "#mueble"
+        },
+        "up": {
+          "texture": "#encimera"
+        },
+        "down": {
+          "texture": "#mueble"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        10,
+        3
+      ],
+      "to": [
+        14,
+        15,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#registradora"
+        },
+        "south": {
+          "texture": "#registradora"
+        },
+        "east": {
+          "texture": "#registradora"
+        },
+        "west": {
+          "texture": "#registradora"
+        },
+        "up": {
+          "texture": "#registradora_top"
+        },
+        "down": {
+          "texture": "#registradora"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        15,
+        5
+      ],
+      "to": [
+        13,
+        18,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#registradora_top"
+        },
+        "south": {
+          "texture": "#registradora_top"
+        },
+        "east": {
+          "texture": "#registradora_top"
+        },
+        "west": {
+          "texture": "#registradora_top"
+        },
+        "up": {
+          "texture": "#registradora_top"
+        },
+        "down": {
+          "texture": "#registradora_top"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

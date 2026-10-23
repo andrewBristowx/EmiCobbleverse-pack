@@ -19,6 +19,12 @@ public final class CafeBlocks {
     public static final Block BASURA = reg("basura");
     public static final Block MESA = reg("mesa");
     public static final Block ENCIMERA = reg("encimera");
+    public static final Block CAJA_BAYAS = reg("caja_bayas");
+    public static final Block CAJA_LECHUGA = reg("caja_lechuga");
+    public static final Block EXPRIMIDOR = reg("exprimidor");
+    public static final Block EMPLATAR = reg("emplatar");
+    public static final Block FREGADERO = reg("fregadero");
+    public static final Block REGISTRADORA = reg("caja_registradora");
 
     private static Block reg(String id) {
         Block b = new Block(AbstractBlock.Settings.create().strength(1.5f, 6.0f).nonOpaque().sounds(BlockSoundGroup.WOOD));

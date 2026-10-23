@@ -1,0 +1,260 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/mueble",
+    "mueble": "emi_cafe:block/mueble",
+    "encimera": "emi_cafe:block/encimera",
+    "metal": "emi_cafe:block/metal",
+    "metal_oscuro": "emi_cafe:block/metal_oscuro",
+    "cristal": "emi_cafe:block/cristal",
+    "limonada_t": "emi_cafe:block/limonada_t",
+    "madera_oscura": "emi_cafe:block/madera_oscura"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mueble"
+        },
+        "south": {
+          "texture": "#mueble"
+        },
+        "east": {
+          "texture": "#mueble"
+        },
+        "west": {
+          "texture": "#mueble"
+        },
+        "up": {
+          "texture": "#encimera"
+        },
+        "down": {
+          "texture": "#mueble"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        10,
+        4
+      ],
+      "to": [
+        12,
+        11,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal_oscuro"
+        },
+        "south": {
+          "texture": "#metal_oscuro"
+        },
+        "east": {
+          "texture": "#metal_oscuro"
+        },
+        "west": {
+          "texture": "#metal_oscuro"
+        },
+        "up": {
+          "texture": "#metal_oscuro"
+        },
+        "down": {
+          "texture": "#metal_oscuro"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        11,
+        5
+      ],
+      "to": [
+        11,
+        16,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#cristal"
+        },
+        "south": {
+          "texture": "#cristal"
+        },
+        "east": {
+          "texture": "#cristal"
+        },
+        "west": {
+          "texture": "#cristal"
+        },
+        "up": {
+          "texture": "#cristal"
+        },
+        "down": {
+          "texture": "#cristal"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        11,
+        6
+      ],
+      "to": [
+        10,
+        14,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#limonada_t"
+        },
+        "south": {
+          "texture": "#limonada_t"
+        },
+        "east": {
+          "texture": "#limonada_t"
+        },
+        "west": {
+          "texture": "#limonada_t"
+        },
+        "up": {
+          "texture": "#limonada_t"
+        },
+        "down": {
+          "texture": "#limonada_t"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        16,
+        5
+      ],
+      "to": [
+        11,
+        17,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        17,
+        7
+      ],
+      "to": [
+        9,
+        19,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#madera_oscura"
+        },
+        "south": {
+          "texture": "#madera_oscura"
+        },
+        "east": {
+          "texture": "#madera_oscura"
+        },
+        "west": {
+          "texture": "#madera_oscura"
+        },
+        "up": {
+          "texture": "#madera_oscura"
+        },
+        "down": {
+          "texture": "#madera_oscura"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        12,
+        7
+      ],
+      "to": [
+        13,
+        14,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}
