@@ -11,7 +11,7 @@ final class Mesa {
     Entity plato;                         // el dibujo del plato sobre la mesa mientras come
     Entity sucio;                         // el plato sucio que deja el cliente al irse: hasta que alguien lo recoja la mesa no se puede usar
 
-    Mesa(BlockPos bloque) { this.bloque = bloque; this.sx = bloque.getX() + 0.5; this.sz = bloque.getZ() + 1.5; }
+    Mesa(BlockPos bloque) { this.bloque = bloque; this.sx = bloque.getX() + 0.5; this.sz = bloque.getZ() + 1.8; }
 
     boolean libre() { return cliente == null && sucio == null; }
 }

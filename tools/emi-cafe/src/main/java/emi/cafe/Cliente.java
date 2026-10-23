@@ -21,6 +21,9 @@ final class Cliente {
     enum Fase { ENTRANDO, ESPERANDO, COMIENDO, SALIENDO }
 
     static final String[] ESPECIES = {"rattata", "pidgey", "eevee", "pikachu", "slowpoke", "meowth", "psyduck", "jigglypuff", "snubbull", "growlithe"};
+    /** Especies cuyo modelo se ve mucho mas grande que su caja de colision (medido en el juego): se encogen para no pasar por encima de la mesa. */
+    static final java.util.Map<String, Float> AJUSTE = java.util.Map.of("rattata", 0.58f, "slowpoke", 0.65f);
+    static String forzar;                           // solo pruebas: /cafe dev especie <id> hace que todos sean de esa especie
     static final double VELOCIDAD = 0.14;           // bloques por tick al andar
     static final double ALTURA = 1.15;              // todos se ven del mismo tamaño aproximado
 
@@ -43,7 +46,7 @@ final class Cliente {
 
     /** Crea el cliente en la calle, delante de la puerta, y lo manda a su mesa; null si Cobblemon no pudo crearlo. */
     static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd) {
-        String especie = ESPECIES[rnd.nextInt(ESPECIES.length)];
+        String especie = forzar != null ? forzar : ESPECIES[rnd.nextInt(ESPECIES.length)];
         try {
             PokemonEntity e = PokemonProperties.Companion.parse(especie + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
             e.setAiDisabled(true);
@@ -65,7 +68,7 @@ final class Cliente {
             ruta.add(new double[]{mesa.sx, Local.PASILLO_Z});
             ruta.add(new double[]{mesa.sx, mesa.sz});
             Cliente c = new Cliente(e, mesa, especie, ruta);
-            float escala = (float) Math.max(0.35, Math.min(3.0, ALTURA / Math.max(0.3, e.getHeight())));
+            float escala = (float) Math.max(0.35, Math.min(3.0, ALTURA / Math.max(0.3, e.getHeight()))) * AJUSTE.getOrDefault(especie, 1f);
             e.getPokemon().setScaleModifier(escala);
             c.alto = ALTURA;
             return c;

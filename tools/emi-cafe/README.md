@@ -1,4 +1,4 @@
-# Café Michialien (`emi-cafe`) — 0.5.0 (8 platos y 10 estaciones nuevos y cocineros con la cara de los Pokémon reales; antes 0.4.0: menú propio como el de los otros juegos; 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
+# Café Michialien (`emi-cafe`) — 0.5.1 (arreglos: ojos de Bulbasaur y tamaño de clientes; 0.5.0: 8 platos y 10 estaciones nuevos y cocineros con la cara de los Pokémon reales; antes 0.4.0: menú propio como el de los otros juegos; 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
 
 Pedido del dueño (2026-10-23): «un juego como **Pokémon Café** en Minecraft: un restaurante donde cada cierto tiempo entran Pokémon y te piden comida; los platos se
 preparan **llevando los ingredientes en las manos (no en el inventario) a la estación que toca** (una papa a la freidora, etc.); al empezar eliges **1 de 3 Pokémon**
@@ -8,6 +8,11 @@ y **todos los objetos y estaciones con textura propia**».
 **Decisiones del dueño (2026-10-23):** turno de **4 minutos** que **cierra el local y enseña el resumen de ganancias** con «comprar» o «parar por ahora»; **un café por jugador**, que
 **puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
 nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
+
+## 0e. Arreglos de la 0.5.1 (el dueño vio dos fallos en capturas)
+- **Ojos de Bulbasaur mal** en el icono: eran cubos pegados a la cara de la cabeza (z-fighting); `assets/cocineros.py` los adelanta 0,15 y salen rojos y limpios.
+- **Rattata y Slowpoke pasaban por encima de la mesa**: la escala de los clientes se calcula con la caja de colisión (`getHeight`), y el modelo de esos dos se ve ~1,6 veces más grande que su caja. `Cliente.AJUSTE` los encoge (rattata ×0,58, slowpoke ×0,65, medido a ojo en el juego) y el cliente se sienta algo más lejos de la mesa (`Mesa.sz` = z+1,8).
+  Se miraron en el juego las 10 especies (pidgey, eevee, pikachu, meowth, psyduck, jigglypuff, snubbull y growlithe estaban bien). Comando de pruebas nuevo: `/cafe dev especie <id|azar>` fuerza la especie de los clientes.
 
 ## 0d. Novedades de la 0.5.0: más comidas, más estaciones y cocineros «de verdad»
 Pedido del dueño: «quiero más comidas y estaciones de trabajo, y el icono hecho como los Pokémon reales pero con sombreros de cocineros».

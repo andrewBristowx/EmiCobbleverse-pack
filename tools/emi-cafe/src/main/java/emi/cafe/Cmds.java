@@ -47,6 +47,11 @@ final class Cmds {
                             if (cf == null) return "Entra primero con /cafe entrar.";
                             return cf.forzarCliente() ? null : "No hay mesa libre.";
                         })))
+                        .then(CommandManager.literal("especie").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
+                            Cliente.forzar = id.equals("azar") ? null : id;
+                            return null;
+                        }))))
                         .then(CommandManager.literal("monedas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000)).executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.monedas = Math.max(0, j.monedas + IntegerArgumentType.getInteger(c, "n"));

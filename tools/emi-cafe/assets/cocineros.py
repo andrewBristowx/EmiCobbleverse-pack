@@ -106,7 +106,10 @@ def main():
     geo, tex = cargar(zf, '0001_bulbasaur', 'bulbasaur')
     g, t = hacer(geo, tex, quitar=('vine', 'ear_', 'eyelid_', 'pattern'), brazos={},
                  cubos_nuevos=[((-4.8, 11, -9.05), (9.6, 2, 7.6), banda), ((-5.8, 13, -10.05), (11.6, 4, 9.6), bola), ((-4.9, 17, -9.15), (9.8, 3, 7.8), bola)], huesos_sombrero='head')
-    hojas.append(('cocinero_bulbasaur', dibujar(g, t, yaw=-20, pitch=8)))
+    for b in g['bones']:                                          # los ojos pegados a la cara parpadeaban (z-fighting): se adelantan 0,15
+        if b['name'].startswith(('eye_', 'pupil')):
+            for cu in b.get('cubes', []): cu['origin'][2] -= 0.15
+    hojas.append(('cocinero_bulbasaur', dibujar(g, t, yaw=-12, pitch=4)))
     os.makedirs(SALIDA, exist_ok=True)
     for n, im in hojas:
         im.save(os.path.join(SALIDA, n + '.png')); print('escrito', n)
