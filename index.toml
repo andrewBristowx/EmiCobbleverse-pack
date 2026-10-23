@@ -1840,8 +1840,8 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-cafe-0.2.0.jar"
-hash = "b05f7cd4c1b948493c044b762607fea8006e4f9fe58b80c54ded304da1f05684"
+file = "mods/emi-cafe-0.3.0.jar"
+hash = "160e592f6f489485136da807499e6f7e19de9553c3aed10e18730d5fdbac5e11"
 
 [[files]]
 file = "mods/emi-carreras-0.8.0.jar"
@@ -1864,8 +1864,8 @@ file = "mods/emi-huida-0.12.0.jar"
 hash = "99b057d6f896f26bdf27ab49d00d753a4ad297c181da0860c7ff657cb0cb442d"
 
 [[files]]
-file = "mods/emi-plush-1.19.0.jar"
-hash = "cf4dcd7a67d6601f6f2d67e95a6ec82948343dd3e62d24cbf5761e2b49709f24"
+file = "mods/emi-plush-1.20.0.jar"
+hash = "1563f84d0dc3d3020eee95a1148a6ba440b99efaa488a4803adeb04888024af5"
 
 [[files]]
 file = "mods/emi-recursos-1.0.0.jar"

@@ -271,12 +271,38 @@ def cerrado():
     d.line([8, 0, 8, 3], fill=C('8a5a34'))
     return im
 
+def estrella():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    pts = []
+    for k in range(10):
+        a = -math.pi / 2 + k * math.pi / 5; r = 7.0 if k % 2 == 0 else 3.0
+        pts.append((7.5 + r * math.cos(a), 8.3 + r * math.sin(a)))
+    d.polygon(pts, fill=C('ffd23f'), outline=C('8b5a0b'))
+    for (x, y) in ((7, 5), (8, 5), (7, 6), (8, 6), (6, 7), (7, 7), (8, 7), (9, 7)): px[x, y] = C('fff0a8')
+    for (x, y) in ((9, 10), (10, 11), (5, 11)): px[x, y] = C('d19a1c')
+    return im
+
+def trofeo():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    d.rectangle([4, 2, 11, 8], fill=C('ffd23f'), outline=C('8b5a0b'))
+    d.rectangle([5, 3, 6, 6], fill=C('fff0a8'))
+    d.arc([1, 3, 5, 8], 90, 270, fill=C('d19a1c')); d.arc([10, 3, 14, 8], -90, 90, fill=C('d19a1c'))
+    d.rectangle([7, 9, 8, 11], fill=C('d19a1c')); d.rectangle([5, 12, 10, 14], fill=C('8a5a34'), outline=C('5e3a20'))
+    return im
+
+def mision():
+    im = lienzo(); d = ImageDraw.Draw(im); px = im.load()
+    d.rectangle([3, 2, 12, 14], fill=C('fff6e0'), outline=C('8a5a34')); d.rectangle([5, 1, 10, 3], fill=C('b0b6c8'), outline=C('5a6078'))
+    for y in (6, 9, 12): d.line([5, y, 10, y], fill=C('b08a5a'))
+    px[5, 6] = C('3ca05a'); px[6, 6] = C('3ca05a'); px[5, 9] = C('3ca05a'); px[6, 9] = C('3ca05a')
+    return im
+
 OBJETOS = {'papa': papa, 'papa_tiras': papa_tiras, 'papas_fritas': papas_fritas, 'burbuja': burbuja, 'moneda': moneda,
             'papas_quemadas': papas_quemadas, 'baya': baya, 'limonada': limonada, 'lechuga': lechuga, 'lechuga_picada': lechuga_picada, 'ensalada': ensalada,
             'plato_sucio': plato_sucio, 'plato_limpio': plato_limpio,
             'cocinero_charmander': cocinero_charmander, 'cocinero_squirtle': cocinero_squirtle, 'cocinero_bulbasaur': cocinero_bulbasaur,
             'campana': campana, 'puerta': puerta, 'reloj': reloj, 'corazon': corazon, 'mesas_icono': mesas_icono, 'pila_platos': pila_platos, 'megafono': megafono,
-            'libro': libro, 'invitar': invitar, 'cerrado': cerrado}
+            'libro': libro, 'invitar': invitar, 'cerrado': cerrado, 'estrella': estrella, 'trofeo': trofeo, 'mision': mision}
 
 # ---------------------------------------------------------------- losetas de los bloques (16x16)
 def loseta(f, sem):
@@ -496,14 +522,14 @@ NOMBRES_ES = {'papa': 'Papa', 'papa_tiras': 'Papa en tiras', 'papas_fritas': 'Pa
               'papas_quemadas': 'Papas quemadas', 'baya': 'Baya', 'limonada': 'Limonada de bayas', 'lechuga': 'Lechuga', 'lechuga_picada': 'Lechuga picada', 'ensalada': 'Ensalada de bayas',
               'plato_sucio': 'Plato sucio', 'plato_limpio': 'Plato limpio', 'cocinero_charmander': 'Charmander cocinero', 'cocinero_squirtle': 'Squirtle cocinero', 'cocinero_bulbasaur': 'Bulbasaur cocinero',
               'campana': 'Campana', 'puerta': 'Puerta', 'reloj': 'Reloj', 'corazon': 'Corazón', 'mesas_icono': 'Mesas', 'pila_platos': 'Pila de platos', 'megafono': 'Megáfono', 'libro': 'Recetario',
-              'invitar': 'Invitar', 'cerrado': 'Cerrado',
+              'invitar': 'Invitar', 'cerrado': 'Cerrado', 'estrella': 'Estrella del Café', 'trofeo': 'Trofeo', 'mision': 'Misión',
               'caja_bayas': 'Caja de bayas', 'caja_lechuga': 'Caja de lechugas', 'exprimidor': 'Exprimidor', 'emplatar': 'Mesa de emplatar', 'fregadero': 'Fregadero', 'caja_registradora': 'Caja registradora'}
 NOMBRES_EN = {'papa': 'Potato', 'papa_tiras': 'Potato Strips', 'papas_fritas': 'French Fries', 'burbuja': 'Order Bubble', 'moneda': 'Cafe Coin',
               'caja_papas': 'Potato Crate', 'tabla_cortar': 'Cutting Board', 'freidora': 'Fryer', 'basura': 'Trash Bin', 'mesa': 'Cafe Table', 'encimera': 'Counter',
               'papas_quemadas': 'Burnt Fries', 'baya': 'Berry', 'limonada': 'Berry Lemonade', 'lechuga': 'Lettuce', 'lechuga_picada': 'Chopped Lettuce', 'ensalada': 'Berry Salad',
               'plato_sucio': 'Dirty Plate', 'plato_limpio': 'Clean Plate', 'cocinero_charmander': 'Chef Charmander', 'cocinero_squirtle': 'Chef Squirtle', 'cocinero_bulbasaur': 'Chef Bulbasaur',
               'campana': 'Bell', 'puerta': 'Door', 'reloj': 'Clock', 'corazon': 'Heart', 'mesas_icono': 'Tables', 'pila_platos': 'Plate Stack', 'megafono': 'Megaphone', 'libro': 'Recipe Book',
-              'invitar': 'Invite', 'cerrado': 'Closed',
+              'invitar': 'Invite', 'cerrado': 'Closed', 'estrella': 'Cafe Star', 'trofeo': 'Trophy', 'mision': 'Mission',
               'caja_bayas': 'Berry Crate', 'caja_lechuga': 'Lettuce Crate', 'exprimidor': 'Juicer', 'emplatar': 'Plating Table', 'fregadero': 'Sink', 'caja_registradora': 'Cash Register'}
 
 def escribir():

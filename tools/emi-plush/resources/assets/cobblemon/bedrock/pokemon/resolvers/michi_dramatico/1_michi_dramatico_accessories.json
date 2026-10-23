@@ -112,6 +112,13 @@
       ],
       "model": "cobblemon:michi_dramatico_pumpkin.geo",
       "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_pumpkin.png"
+    },
+    {
+      "aspects": [
+        "chef-accessory"
+      ],
+      "model": "cobblemon:michi_dramatico_chef.geo",
+      "texture": "cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_chef.png"
     }
   ]
 }

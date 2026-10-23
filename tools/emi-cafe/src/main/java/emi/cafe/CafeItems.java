@@ -41,6 +41,9 @@ public final class CafeItems {
     public static final Item LIBRO = reg("libro", "Recetario");
     public static final Item INVITAR = reg("invitar", "Invitar");
     public static final Item CERRADO = reg("cerrado", "Cerrado");
+    public static final Item ESTRELLA = reg("estrella", "Estrella del Café");
+    public static final Item TROFEO = reg("trofeo", "Trofeo");
+    public static final Item MISION = reg("mision", "Misión");
 
     private static Item reg(String id, String nombre) {
         Item i = Registry.register(Registries.ITEM, Identifier.of("emi_cafe", id), new Item(new Item.Settings().maxCount(1)));

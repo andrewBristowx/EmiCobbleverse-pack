@@ -42,6 +42,7 @@ final class Cafe {
         int listoTicks;                       // desde cuando espera (la freidora quema)
         final List<Item> dentro = new ArrayList<>();      // en la mesa de emplatar: lo que se ha puesto
         int cola;                             // en el fregadero: platos sucios esperando
+        final List<UUID> quien = new ArrayList<>();       // y quien puso cada uno (para las misiones)
         Entity icono, barra;
     }
 
@@ -66,6 +67,8 @@ final class Cafe {
     // lo de este turno (para el resumen)
     int servidos, enfadados, propinas, ganado;
     final Map<UUID, Integer> ganadoPor = new HashMap<>();
+    final Map<UUID, Integer> servidosPor = new HashMap<>();
+    final Map<UUID, Integer> estrellasTurno = new HashMap<>();
 
     Cafe(MinecraftServer server, ServerWorld w, UUID duenio, int slot) {
         this.server = server; this.w = w; this.duenio = duenio; this.slot = slot; this.ox = slot * Local.SEPARACION;
@@ -137,7 +140,7 @@ final class Cafe {
         proximoCliente = 40;
         platos = platosMax();
         servidos = enfadados = propinas = ganado = 0;
-        ganadoPor.clear();
+        ganadoPor.clear(); servidosPor.clear(); estrellasTurno.clear();
         aTodos(p -> {
             Msg.title(p, Text.literal("¡ABRIMOS!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Turno de 4 minutos").formatted(Formatting.YELLOW), 5, 40, 10);
             Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.2f);
@@ -158,10 +161,20 @@ final class Cafe {
     }
 
     private void terminarTurno() {
-        Datos.Jugador d = dj();
-        d.turnos++;
-        if (ganado > d.mejorTurno) d.mejorTurno = ganado;
-        EmiCafe.datos.guardar(duenio);
+        for (ServerPlayerEntity p : presentes()) {
+            Datos.Jugador d = dj(p);
+            int gan = ganadoPor.getOrDefault(p.getUuid(), 0), serv = servidosPor.getOrDefault(p.getUuid(), 0);
+            if (serv > 0) {
+                d.turnos++;
+                Progreso.dar(this, d, p.getUuid(), 5);                                    // por terminar el turno sirviendo
+                Progreso.evento(this, p, d, "turnos", 1);
+                if (enfadados == 0 && serv >= 3) { d.sinEnfados++; Progreso.dar(this, d, p.getUuid(), 5); Progreso.evento(this, p, d, "sin_enfado", 1); }
+                if (gan > d.mejorTurno) { if (d.mejorTurno > 0) Progreso.dar(this, d, p.getUuid(), 5); d.mejorTurno = gan; }      // el primer turno no cuenta como record
+                Progreso.evento(this, p, d, "turno_max", gan);
+            }
+            Progreso.revisarLogros(this, p, d);
+            EmiCafe.datos.guardar(p.getUuid());
+        }
         estado = Estado.PREPARANDO;
         for (UUID id : jugadores) manos.put(id, null);
         reconstruir();
@@ -366,7 +379,7 @@ final class Cafe {
         Est est = est(pos);
         if (carga == CafeItems.PLATO_SUCIO) {
             if (est.cola >= 4) { msg(p, "El fregadero está lleno de platos"); return; }
-            est.cola++;
+            est.cola++; est.quien.add(p.getUuid());
             manos.put(p.getUuid(), null);
             sonido(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, SoundEvents.BLOCK_WOOD_PLACE, 0.8f, 0.8f);
             if (est.resultado == null) { est.resultado = CafeItems.PLATO_LIMPIO; est.ticks = 0; est.total = Math.max(10, (int) Math.round(e.ticks * velocidad())); }
@@ -384,6 +397,7 @@ final class Cafe {
                 if (e.tipo == Estacion.Tipo.FREGADERO) {
                     est.cola--;
                     platos++;
+                    if (!est.quien.isEmpty()) { ServerPlayerEntity lav = jugador(est.quien.remove(0)); if (lav != null) { Datos.Jugador dl = dj(lav); dl.lavados++; Progreso.evento(this, lav, dl, "lavados", 1); } }
                     sonido(x, y, z, SoundEvents.ENTITY_PLAYER_SPLASH, 0.5f, 1.6f);
                     w.spawnParticles(ParticleTypes.SPLASH, x, y + 0.3, z, 6, 0.2, 0.1, 0.2, 0.0);
                     if (est.cola > 0) { est.ticks = 0; } else est.resultado = null;
@@ -452,9 +466,15 @@ final class Cafe {
         if (m.plato != null) Disp.quitar(m.plato);
         m.plato = Disp.objeto(w, CafeItems.id(carga), m.bloque.getX() + 0.5, m.bloque.getY() + 1.35, m.bloque.getZ() + 0.5, 0.5f, true);
         Datos.Jugador d = dj(p);
-        d.monedas += pago; d.clientes++;
+        d.monedas += pago; d.clientes++; d.monedasTotal += pago; d.propinasTotal += propina;
         servidos++; propinas += propina; ganado += pago;
         ganadoPor.merge(p.getUuid(), pago, Integer::sum);
+        servidosPor.merge(p.getUuid(), 1, Integer::sum);
+        Progreso.dar(this, d, p.getUuid(), 2);
+        Progreso.evento(this, p, d, "servidos", 1);
+        Progreso.evento(this, p, d, "ganado", pago);
+        if (propina > 0) Progreso.evento(this, p, d, "propinas", propina);
+        Progreso.revisarLogros(this, p, d);
         EmiCafe.datos.guardar(p.getUuid());
         sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.8f);

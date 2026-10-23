@@ -32,7 +32,7 @@ final class Cmds {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null) return "No estás en tu café: entra con /cafe entrar.";
                     Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
-                    p.sendMessage(Msg.say("Monedas: " + j.monedas + " · clientes servidos: " + j.clientes + " · turnos: " + j.turnos + " · mejor turno: " + j.mejorTurno), false);
+                    p.sendMessage(Msg.say("Monedas: " + j.monedas + " · clientes servidos: " + j.clientes + " · turnos: " + j.turnos + " · mejor turno: " + j.mejorTurno + " · estrellas: " + j.estrellas), false);
                     return null;
                 })))
                 .then(CommandManager.literal("dev").requires(Perm::admin)
@@ -54,6 +54,13 @@ final class Cmds {
                             if (cf == null) return "Entra primero con /cafe entrar.";
                             BlockPos pos = BlockPosArgumentType.getBlockPos(c, "pos");
                             cf.usarBloque(p, pos);
+                            return null;
+                        }))))
+                        .then(CommandManager.literal("estrellas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000)).executes(c -> con(c, p -> {
+                            Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            j.estrellas = Math.max(0, j.estrellas + IntegerArgumentType.getInteger(c, "n"));
+                            EmiCafe.datos.guardar(p.getUuid());
+                            p.sendMessage(Msg.say("Ahora tienes " + j.estrellas + " estrellas."), false);
                             return null;
                         }))))
                         .then(CommandManager.literal("turno").executes(c -> con(c, p -> {

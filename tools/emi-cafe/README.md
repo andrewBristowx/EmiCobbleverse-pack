@@ -1,4 +1,4 @@
-# Café Michialien (`emi-cafe`) — 0.2.0
+# Café Michialien (`emi-cafe`) — 0.3.0 (estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
 
 Pedido del dueño (2026-10-23): «un juego como **Pokémon Café** en Minecraft: un restaurante donde cada cierto tiempo entran Pokémon y te piden comida; los platos se
 preparan **llevando los ingredientes en las manos (no en el inventario) a la estación que toca** (una papa a la freidora, etc.); al empezar eliges **1 de 3 Pokémon**
@@ -9,7 +9,17 @@ y **todos los objetos y estaciones con textura propia**».
 **puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
 nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
 
-## 0. Qué hay hecho en la 0.2.0 (y qué se probó)
+## 0b. Novedades de la 0.3.0 (y qué se probó)
+- **Estrellas** (la moneda de la tienda del servidor, como en carreras/huida/fall): **2 por cliente servido**, **+5 por terminar un turno sirviendo**, **+5 si no se enfadó nadie** (y serviste ≥ 3) y **+5 por batir tu récord** (el primer turno no cuenta como récord), más las de misiones y logros. Cada jugador (dueño o invitado) gana las suyas.
+- **Tienda de estrellas** (botón de la estrella en la caja registradora y en el resumen): los **mismos artículos** que las otras tiendas —7 tickets de Emipokemon y 5 objetos de Cobblemon— **máx. 10 de cada uno al día, entrega por `/correo`** (por reflexión a `MailboxService.sendGift`; solo se cobra si el correo lo acepta), y el artículo exclusivo **«Peluche Michialien Chef»** (`emi_plush:gatitoalien_chef`, **1000 estrellas, una vez por jugador**). Los precios son una propuesta del asistente (`Tienda.java`).
+- **Misiones:** 3 del día y 2 de la semana (las mismas para todos, salen de la fecha) con premio en estrellas, que se pagan solas al cumplirlas: servir clientes, ganar monedas en un turno, terminar turnos, turno sin enfados, propinas, lavar platos…
+- **Logros** con escalones (camarero, jornada completa, pequeño empresario, turno de récord, encantador, todos contentos, chef variado, local de lujo), también pagados en estrellas al alcanzarlos.
+- **emi-plush 1.20.0:** aspecto `chef` y el peluche del Michialien chef (ver el README de `emi-plush`).
+- Textos nuevos en los datos del jugador (`estrellas`, `misDia`, `logros`, `tiendaCompras`, `unicos`…); admin: `/cafe dev estrellas <n>`; `-Demi.cafe.correo_prueba=true` da por entregado todo sin Emipokemon (solo pruebas).
+- **Probado en el juego** (banco ligero con emi-plush 1.20.0): el menú de la caja con la fila nueva (misiones, logros, estrellas), la tienda de estrellas (los objetos de Cobblemon con su dibujo, **comprar el peluche** → «COMPRADO ✔» y el cobro de 1000, entrega con el correo de prueba), los menús de misiones y logros, y un turno servido de verdad: el resumen enseña «Estrellas ganadas: 17» y el saldo sube; el peluche y el Pokémon con el uniforme de chef se ven bien de frente.
+- **No probado:** la entrega real por `/correo` con Emipokemon (los tickets salen con un icono de estrella de repuesto cuando Emipokemon no está), el cambio real de día o de semana en las misiones, que todas las misiones y escalones de logros se cumplan jugando de verdad (solo se vio el primer logro), el servidor real y el equilibrio de las cifras (estrellas por cliente, premios y precios son estimaciones).
+
+## 0. Qué había en la 0.2.0 (y qué se probó)
 Mod **servidor + cliente** (el cliente lo necesita por las texturas de objetos y bloques; los menús son cofres de Minecraft con objetos propios, sin pantallas de cliente). Dimensión `emi_cafe:cafe`.
 - **Entrar:** `/cafe entrar` (o el botón «Café Michialien» de Ms. President, emi-survivors 0.29.0). Se guarda lo tuyo (inventario, sitio, modo…) y se devuelve al salir (`/cafe salir`, el botón «Parar por ahora» o al desconectarte; si se cae el servidor, al volver a entrar).
   Cada dueño tiene **su local** (se construye por código, 64 bloques de separación entre locales).
@@ -40,7 +50,7 @@ el **equilibrio** (precios, tiempos, paciencia y llegada de clientes son **estim
 
 ## Lo que falta (ver las fases de abajo)
 **F3 contenido:** ~20 platos (hoy 3), más ingredientes y estaciones (plancha, olla, horno, batidora…), más especies de clientes y sus gustos, ayudantes Pokémon, decoración.
-**F4 conexión con el servidor:** música y sonidos propios, **estrellas + tienda con tickets de Emipokemon y el peluche «Michialien chef»** (accesorio nuevo de `emi-plush`, 1000 estrellas, una vez), misiones y logros, reputación del café.
+**F4 (lo que queda):** música y sonidos propios y reputación del café (estrellas, tienda, peluche chef, misiones y logros ya están en la 0.3.0).
 **F5:** equilibrio con gente real y servidor real.
 
 ---

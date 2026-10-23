@@ -26,6 +26,17 @@ final class Datos {
         java.util.List<String> platos = new java.util.ArrayList<>();                 // platos que sabe hacer
         java.util.Map<String, Integer> mejoras = new java.util.HashMap<>();          // nivel de cada mejora
 
+        // estrellas (la moneda de la tienda del servidor), estadisticas, tienda, misiones y logros
+        int estrellas, estrellasTotal;
+        long monedasTotal; int propinasTotal, sinEnfados, lavados;
+        String tiendaDia = "";
+        java.util.Map<String, Integer> tiendaCompras = new java.util.HashMap<>();      // articulo -> compras de hoy
+        java.util.List<String> unicos = new java.util.ArrayList<>();                   // articulos de una sola vez ya comprados
+        String misDia = "", misSemana = "";
+        java.util.Map<String, Integer> misProg = new java.util.HashMap<>();            // progreso de las misiones de hoy y de la semana
+        java.util.List<String> misHechas = new java.util.ArrayList<>();
+        java.util.Map<String, Integer> logros = new java.util.HashMap<>();             // familia de logro -> nivel ya cobrado
+
         int nivel(String mejora) { return mejoras == null ? 0 : mejoras.getOrDefault(mejora, 0); }
     }
 
