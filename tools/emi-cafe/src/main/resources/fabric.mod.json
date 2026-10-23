@@ -7,7 +7,7 @@
   "authors": ["SomitadePony"],
   "license": "All-Rights-Reserved",
   "environment": "*",
-  "entrypoints": { "main": ["emi.cafe.EmiCafe"] },
+  "entrypoints": { "main": ["emi.cafe.EmiCafe"], "client": ["emi.cafe.client.EmiCafeClient"] },
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21.1",

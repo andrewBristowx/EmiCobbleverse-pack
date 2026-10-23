@@ -389,6 +389,7 @@ def bolsillo(face, i, j, w, h): return (CH_W if (i in (0, w - 1) or j in (0, h -
 
 def chef(g, f):
     bones = {b['name']: b for b in g['minecraft:geometry'][0]['bones']}
+    for n in ('ear_left', 'ear_right', 'antenna_left', 'antenna_right'): bones[n].pop('cubes', None)       # pedido del dueño: el gorro las esconde (los huesos quedan vacios para las animaciones)
     c = lambda nombre, o, sz, p=chaqueta, rot=None, piv=None: cube(g, f, nombre, o, sz, p, rot, piv)
     # ---- el gorro de cocinero: banda plisada y dos pisos de "nube"; las orejas y las antenas del michi asoman por el, como con el sombrero de bruja
     c('acc_chef', (-14, 31, -14), (28, 5, 28), pliegues)

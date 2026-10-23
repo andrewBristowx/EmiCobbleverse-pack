@@ -21,6 +21,12 @@ final class Cmds {
                     if (!Cafes.salir(p)) return "No encuentro lo que guardé de ti.";
                     return null;
                 })))
+                .then(CommandManager.literal("menu").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null) return "Entra primero con /cafe entrar.";
+                    Menus.principal(cf, p);
+                    return null;
+                })))
                 .then(CommandManager.literal("invitar").then(CommandManager.argument("jugador", net.minecraft.command.argument.EntityArgumentType.player()).executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null) return "Entra primero a tu café con /cafe entrar.";

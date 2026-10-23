@@ -1,4 +1,4 @@
-# Café Michialien (`emi-cafe`) — 0.3.0 (estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
+# Café Michialien (`emi-cafe`) — 0.4.0 (menú propio como el de los otros juegos; antes 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
 
 Pedido del dueño (2026-10-23): «un juego como **Pokémon Café** en Minecraft: un restaurante donde cada cierto tiempo entran Pokémon y te piden comida; los platos se
 preparan **llevando los ingredientes en las manos (no en el inventario) a la estación que toca** (una papa a la freidora, etc.); al empezar eliges **1 de 3 Pokémon**
@@ -8,6 +8,10 @@ y **todos los objetos y estaciones con textura propia**».
 **Decisiones del dueño (2026-10-23):** turno de **4 minutos** que **cierra el local y enseña el resumen de ganancias** con «comprar» o «parar por ahora»; **un café por jugador**, que
 **puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
 nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
+
+## 0c. Novedades de la 0.4.0: el menú es una pantalla propia (como Emi Fall)
+Pedido del dueño: «que el menú de Emi Café se vea como el de mis otros juegos». Los cofres de Minecraft se sustituyen por la **pantalla propia** de Emi Fall (`client/MenuPantalla` sobre `client/Lienzo`, lienzo de 640×360 escalado; los datos van por JSON en `net/TextoPayload` y los clics vuelven por `net/AccionPayload`, el servidor lo comprueba todo en `Menus.recibir`). Se abre con la **caja registradora** o con `/cafe menu`. Pestañas: **CAFÉ** (elegir cocinero con tres tarjetas, abrir el turno, parar por ahora, quién está en el café e invitar), **RECETARIO**, **TIENDA** (platos y mejoras con monedas, con barras de nivel), **ESTRELLAS** (la misma disposición que la tienda de Emi Fall, con el peluche chef en la fila dorada), **MISIONES** y **LOGROS** (barras de avance). Al cerrar el turno sale encima el **resumen de ganancias** con COMPRAR / OTRO TURNO / PARAR POR AHORA / SEGUIR EN EL MENÚ (los invitados solo ven ACEPTAR). Se refresca solo cada 1,5 s. **Hace falta el mod también en el cliente** (ya hacía falta por las texturas).
+**Probado en el juego** (banco ligero, un cliente real, con clics de ratón): elegir cocinero, las 6 pestañas, comprar un plato (se cobran las monedas y suma el logro «Chef variado»), el resumen tras un turno servido, COMPRAR (lleva a la tienda) y SALIR (devuelve al mundo normal). **No probado** con el menú nuevo: la vista del invitado con dos clientes (el menú del invitado es el mismo con menos botones), el botón INVITAR de la pantalla (sí `/cafe invitar`, probado en 0.2.0), comprar mejoras y artículos de la tienda de estrellas desde la pantalla (la lógica es la de 0.3.0), y otras resoluciones de pantalla.
 
 ## 0b. Novedades de la 0.3.0 (y qué se probó)
 - **Estrellas** (la moneda de la tienda del servidor, como en carreras/huida/fall): **2 por cliente servido**, **+5 por terminar un turno sirviendo**, **+5 si no se enfadó nadie** (y serviste ≥ 3) y **+5 por batir tu récord** (el primer turno no cuenta como récord), más las de misiones y logros. Cada jugador (dueño o invitado) gana las suyas.

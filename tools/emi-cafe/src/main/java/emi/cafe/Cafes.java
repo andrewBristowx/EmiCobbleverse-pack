@@ -133,7 +133,7 @@ final class Cafes {
                 POR_JUGADOR.remove(id);
                 if (id.equals(p.getUuid())) continue;
                 ServerPlayerEntity g = c.jugador(id);
-                if (g != null) { g.sendMessage(Msg.say("El dueño cerró el café."), false); g.closeHandledScreen(); Saved.restore(s, g); }
+                if (g != null) { g.sendMessage(Msg.say("El dueño cerró el café."), false); Menus.cerrar(g); g.closeHandledScreen(); Saved.restore(s, g); }
             }
             DUENIOS.remove(p.getUuid());
             c.cerrar();
@@ -155,7 +155,7 @@ final class Cafes {
             for (UUID id : new ArrayList<>(c.jugadores)) {
                 POR_JUGADOR.remove(id);
                 ServerPlayerEntity g = c.jugador(id);
-                if (g != null) { g.sendMessage(Msg.say("El dueño se fue: se cerró el café."), false); g.closeHandledScreen(); Saved.restore(p.getServer(), g); }
+                if (g != null) { g.sendMessage(Msg.say("El dueño se fue: se cerró el café."), false); Menus.cerrar(g); g.closeHandledScreen(); Saved.restore(p.getServer(), g); }
             }
             DUENIOS.remove(p.getUuid());
             c.cerrar();
@@ -173,7 +173,7 @@ final class Cafes {
                 POR_JUGADOR.remove(id);
                 if (id.equals(p.getUuid())) continue;
                 ServerPlayerEntity g = c.jugador(id);
-                if (g != null) { g.sendMessage(Msg.say("El dueño salió: se cerró el café."), false); g.closeHandledScreen(); Saved.restore(s, g); }
+                if (g != null) { g.sendMessage(Msg.say("El dueño salió: se cerró el café."), false); Menus.cerrar(g); g.closeHandledScreen(); Saved.restore(s, g); }
             }
             DUENIOS.remove(p.getUuid());
             c.cerrar();
