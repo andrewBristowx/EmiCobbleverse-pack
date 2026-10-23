@@ -30,6 +30,7 @@ public final class CafeBlocks {
     public static final Block CAJA_CARNE = reg("caja_carne");
     public static final Block CAJA_LECHE = reg("caja_leche");
     public static final Block CAJA_GRANOS = reg("caja_granos");
+    public static final Block CAJA_QUESO = reg("caja_queso");
     public static final Block PLANCHA = reg("plancha");
     public static final Block OLLA = reg("olla");
     public static final Block HORNO = reg("horno");

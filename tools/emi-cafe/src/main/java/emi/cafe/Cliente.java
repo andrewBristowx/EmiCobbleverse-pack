@@ -22,7 +22,7 @@ final class Cliente {
 
     static final String[] ESPECIES = {"rattata", "pidgey", "eevee", "pikachu", "slowpoke", "meowth", "psyduck", "jigglypuff", "snubbull", "growlithe"};
     /** Especies cuyo modelo se ve mucho mas grande que su caja de colision (medido en el juego): se encogen para no pasar por encima de la mesa. */
-    static final java.util.Map<String, Float> AJUSTE = java.util.Map.of("rattata", 0.58f, "slowpoke", 0.65f);
+    static final java.util.Map<String, Float> AJUSTE = java.util.Map.of("rattata", 0.58f, "slowpoke", 0.65f, "gatitoalien", 1.2f);
     static String forzar;                           // solo pruebas: /cafe dev especie <id> hace que todos sean de esa especie
     static final double VELOCIDAD = 0.14;           // bloques por tick al andar
     static final double ALTURA = 1.15;              // todos se ven del mismo tamaño aproximado
@@ -39,16 +39,21 @@ final class Cliente {
     private final List<double[]> ruta;
     private int paso;
     private double alto = ALTURA;
-    private Entity burbuja, icono, barra;
+    private Entity burbuja, icono, barra, titulo;
     private PoseType pose = PoseType.STAND;
+
+    /** Si es un visitante especial (un Michialien con accesorio que enseña su plato), cual; null = cliente normal. */
+    Especial esp;
 
     private Cliente(PokemonEntity e, Mesa mesa, String especie, List<double[]> ruta) { this.e = e; this.mesa = mesa; this.especie = especie; this.ruta = ruta; }
 
     /** Crea el cliente en la calle, delante de la puerta, y lo manda a su mesa; null si Cobblemon no pudo crearlo. */
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd) {
-        String especie = forzar != null ? forzar : ESPECIES[rnd.nextInt(ESPECIES.length)];
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd) { return crear(w, ox, mesa, rnd, null); }
+
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp) {
+        String especie = esp != null ? "gatitoalien" : forzar != null ? forzar : ESPECIES[rnd.nextInt(ESPECIES.length)];
         try {
-            PokemonEntity e = PokemonProperties.Companion.parse(especie + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
+            PokemonEntity e = PokemonProperties.Companion.parse(especie + (esp != null ? " " + esp.aspecto : "") + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
             e.setAiDisabled(true);
             e.setEnablePoseTypeRecalculation(false);
             e.setInvulnerable(true);
@@ -71,6 +76,7 @@ final class Cliente {
             float escala = (float) Math.max(0.35, Math.min(3.0, ALTURA / Math.max(0.3, e.getHeight()))) * AJUSTE.getOrDefault(especie, 1f);
             e.getPokemon().setScaleModifier(escala);
             c.alto = ALTURA;
+            c.esp = esp;
             return c;
         } catch (Throwable t) {
             EmiCafe.LOG.error("No se pudo crear el cliente {}", especie, t);
@@ -88,8 +94,9 @@ final class Cliente {
                 if (andar(ruta.get(paso)) && ++paso >= ruta.size()) {
                     fase = Fase.ESPERANDO;
                     mirarAlNorte();
-                    pedido = cafe.elegirPedido(rnd);
-                    pacienciaMax = paciencia = cafe.pacienciaTicks();
+                    pedido = esp != null ? esp.plato : cafe.elegirPedido(rnd);
+                    pacienciaMax = paciencia = esp != null ? cafe.pacienciaTicks() * 8 / 5 : cafe.pacienciaTicks();
+                    if (esp != null) cafe.alLlegarEspecial(this);
                     ponerPose(PoseType.STAND);
                     crearGlobo(w);
                     cafe.sonido(e.getX(), e.getY(), e.getZ(), net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.4f);
@@ -160,6 +167,7 @@ final class Cliente {
         burbuja = Disp.objeto(w, CafeItems.id(CafeItems.BURBUJA), e.getX(), ybase(), e.getZ(), 0.95f, true);
         icono = Disp.objeto(w, CafeItems.id(pedido), e.getX(), ybase() + 0.08, e.getZ(), 0.5f, true, 0.04f);
         barra = Disp.texto(w, barraJson(), e.getX(), ybase() + 0.62, e.getZ(), 1.0f, false);
+        if (esp != null) titulo = Disp.texto(w, "{\"text\":\"★ " + esp.michi + " ★\",\"color\":\"gold\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
     }
 
     private void actualizarGlobo(ServerWorld w) { Disp.cambiarTexto(barra, barraJson(), e.getX(), ybase() + 0.62, e.getZ(), 1.0f, false); }
@@ -171,7 +179,7 @@ final class Cliente {
         return "{\"text\":\"" + "▮".repeat(Math.max(0, n)) + "\",\"color\":\"" + color + "\"}";
     }
 
-    private void quitarGlobo() { Disp.quitar(burbuja); Disp.quitar(icono); Disp.quitar(barra); burbuja = icono = barra = null; }
+    private void quitarGlobo() { Disp.quitar(burbuja); Disp.quitar(icono); Disp.quitar(barra); Disp.quitar(titulo); burbuja = icono = barra = titulo = null; }
 
     void quitar() { quitarGlobo(); if (!e.isRemoved()) e.discard(); }
 

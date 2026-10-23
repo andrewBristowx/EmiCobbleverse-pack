@@ -232,11 +232,52 @@ final class Cafe {
                 .append(Text.literal("   Llevas: ").formatted(Formatting.GOLD)).append(mano);
     }
 
+    /** Probabilidad (de 100) de que el siguiente cliente sea un visitante especial, si hay alguno disponible y no hay otro dentro. */
+    static final int PROB_ESPECIAL = 12;
+
+    /** Los visitantes especiales que pueden venir: los que tienen todas las estaciones que necesitan sus ingredientes. */
+    List<Especial> elegibles() {
+        List<Especial> l = new ArrayList<>();
+        Set<Estacion> act = activas();
+        for (Especial e : Especial.values()) if (act.containsAll(e.requiere)) l.add(e);
+        return l;
+    }
+
+    private boolean hayEspecial() { for (Cliente c : clientes) if (c.esp != null) return true; return false; }
+
     private void nuevoCliente() {
         List<Mesa> libres = new ArrayList<>();
         for (Mesa m : mesas) if (m.libre()) libres.add(m);
         if (libres.isEmpty()) return;
-        forzarCliente(libres.get(rnd.nextInt(libres.size())));
+        Mesa m = libres.get(rnd.nextInt(libres.size()));
+        if (!hayEspecial() && rnd.nextInt(100) < PROB_ESPECIAL) {
+            List<Especial> el = elegibles();
+            if (!el.isEmpty() && forzarEspecial(m, el.get(rnd.nextInt(el.size())))) return;
+        }
+        forzarCliente(m);
+    }
+
+    /** Crea ya un visitante especial en esa mesa (tambien lo usa el comando de pruebas). */
+    boolean forzarEspecial(Mesa m, Especial e) {
+        Cliente c = Cliente.crear(w, ox, m, rnd, e);
+        if (c == null) return false;
+        m.cliente = c;
+        clientes.add(c);
+        return true;
+    }
+
+    /** El visitante especial llega a su mesa: el café aprende su plato y se lo explica a todos. */
+    void alLlegarEspecial(Cliente c) {
+        Especial e = c.esp;
+        Datos.Jugador d = dj();
+        boolean nuevo = !d.especiales.contains(e.id);
+        if (nuevo) { d.especiales.add(e.id); ServerPlayerEntity duenioP = jugador(duenio); if (duenioP != null) EmiCafe.datos.guardar(duenio); }
+        aTodos(p -> {
+            Msg.title(p, Text.literal("¡" + e.michi + "!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Quiere: " + e.nombrePlato()).formatted(Formatting.YELLOW), 5, 60, 10);
+            p.sendMessage(Msg.say((nuevo ? "¡Visita especial! " : "Otra vez por aquí: ") + e.michi + " " + (nuevo ? "te enseña" : "pide") + " «" + e.nombrePlato() + "»: " + e.receta() + ". Paga " + e.precio + " monedas, y se queda más tiempo."), false);
+            Msg.sound(p, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.2f);
+        });
+        w.spawnParticles(ParticleTypes.END_ROD, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 14, 0.4, 0.5, 0.4, 0.02);
     }
 
     /** Crea un cliente ya (tambien lo usa el comando de pruebas). false si no hay mesa libre. */
@@ -465,7 +506,7 @@ final class Cafe {
         }
         if (platos <= 0) { msg(p, "No quedan platos limpios: lava los sucios en el fregadero"); sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), 0.8f, 0.7f); return; }
         Recetas.Plato pl = Recetas.Plato.de(carga);
-        int base = pl == null ? 10 : pl.precio;
+        int base = c.esp != null ? c.esp.precio : pl == null ? 10 : pl.precio;
         int propina = (int) Math.round(base * 0.6 * c.pacienciaRestante());
         int pago = base + propina;
         platos--;
@@ -478,7 +519,8 @@ final class Cafe {
         servidos++; propinas += propina; ganado += pago;
         ganadoPor.merge(p.getUuid(), pago, Integer::sum);
         servidosPor.merge(p.getUuid(), 1, Integer::sum);
-        Progreso.dar(this, d, p.getUuid(), 2);
+        Progreso.dar(this, d, p.getUuid(), c.esp != null ? 12 : 2);
+        if (c.esp != null) { d.especialesServidos++; p.sendMessage(Msg.say("¡" + c.esp.michi + " quedó encantado con «" + c.esp.nombrePlato() + "»!"), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
         Progreso.evento(this, p, d, "servidos", 1);
         Progreso.evento(this, p, d, "ganado", pago);
         if (propina > 0) Progreso.evento(this, p, d, "propinas", propina);

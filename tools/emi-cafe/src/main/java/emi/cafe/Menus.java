@@ -103,6 +103,15 @@ final class Menus {
             e.addProperty("tengo", dd.platos.contains(pl.id));
             rec.add(e);
         }
+        for (Especial es : Especial.values()) {                              // los platos de los visitantes especiales: solo se ven los que ya han enseñado
+            boolean sabe = dd.especiales.contains(es.id);
+            JsonObject e = new JsonObject();
+            e.addProperty("id", "ev_" + es.id); e.addProperty("item", idItem(es.plato)); e.addProperty("nombre", sabe ? es.nombrePlato() : "???");
+            e.addProperty("precio", es.precio); e.addProperty("coste", 0);
+            e.addProperty("receta", sabe ? es.receta() : "Un Michialien especial vendrá a enseñártelo");
+            e.addProperty("tengo", sabe); e.addProperty("especial", true); e.addProperty("michi", sabe ? es.michi : "???");
+            rec.add(e);
+        }
         o.add("platos", rec);
         JsonArray mej = new JsonArray();
         for (Recetas.Mejora m : Recetas.Mejora.values()) {

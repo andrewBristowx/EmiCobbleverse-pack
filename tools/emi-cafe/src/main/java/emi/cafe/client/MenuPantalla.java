@@ -36,7 +36,7 @@ public final class MenuPantalla extends Lienzo {
 
     // ------------------------------------------------------------ datos
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
-    private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo) {}
+    private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi) {}
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
     private record GenteC(String nombre, boolean yo, boolean host) {}
     private record MisionC(String texto, int prog, int objetivo, int premio, boolean hecha) {}
@@ -44,7 +44,8 @@ public final class MenuPantalla extends Lienzo {
     private record ArticuloC(String id, String item, String nombre, String texto, int precio, String grupo, int hoy, boolean unico, boolean comprado) {}
 
     private final List<InicialC> iniciales = new ArrayList<>();
-    private final List<PlatoC> platos = new ArrayList<>();
+    private final List<PlatoC> platos = new ArrayList<>();            // todos, para el recetario
+    private final List<PlatoC> tiendaPlatos = new ArrayList<>();      // los que se compran (sin los de visitantes especiales)
     private final List<MejoraC> mejoras = new ArrayList<>();
     private final List<GenteC> gente = new ArrayList<>();
     private final List<String> invitables = new ArrayList<>();
@@ -83,8 +84,10 @@ public final class MenuPantalla extends Lienzo {
         platos.clear();
         for (JsonElement e : o.getAsJsonArray("platos")) {
             JsonObject j = e.getAsJsonObject();
-            platos.add(new PlatoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("precio").getAsInt(), j.get("coste").getAsInt(), s(j, "receta"), j.get("tengo").getAsBoolean()));
+            platos.add(new PlatoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("precio").getAsInt(), j.get("coste").getAsInt(), s(j, "receta"), j.get("tengo").getAsBoolean(), j.has("especial") && j.get("especial").getAsBoolean(), j.has("michi") ? s(j, "michi") : ""));
         }
+        tiendaPlatos.clear();
+        for (PlatoC p : platos) if (!p.especial()) tiendaPlatos.add(p);
         mejoras.clear();
         for (JsonElement e : o.getAsJsonArray("mejoras")) {
             JsonObject j = e.getAsJsonObject();
@@ -292,12 +295,14 @@ public final class MenuPantalla extends Lienzo {
             if (i >= platos.size()) break;
             PlatoC p = platos.get(i);
             int x = LX + (n % 2) * (REC_W + 8), y = CY + 14 + (n / 2) * (REC_H + 4);
-            caja(g, x, y, REC_W, REC_H, FONDO, p.tengo() ? 0xFF6FE08A : 0xFF444455);
+            caja(g, x, y, REC_W, REC_H, FONDO, p.especial() ? (p.tengo() ? ORO : 0xFF444455) : p.tengo() ? 0xFF6FE08A : 0xFF444455);
             objeto(g, p.item(), x + 8, y + 10, 2f);
             texto(g, p.nombre(), x + 46, y + 5, p.tengo() ? BLANCO : 0xFF888899, 1f);
-            texto(g, p.tengo() ? "Paga " + p.precio() + " monedas (+ propina)" : "Cuesta " + p.coste() + " monedas en la TIENDA", x + 46, y + 17, p.tengo() ? MONEDA : ROJO, 0.75f);
+            if (p.especial()) texto(g, p.tengo() ? "★ Visita especial · paga " + p.precio() + " monedas" : "★ Visita especial", x + 46, y + 17, p.tengo() ? ORO : 0xFF888899, 0.75f);
+            else texto(g, p.tengo() ? "Paga " + p.precio() + " monedas (+ propina)" : "Cuesta " + p.coste() + " monedas en la TIENDA", x + 46, y + 17, p.tengo() ? MONEDA : ROJO, 0.75f);
             parrafo(g, p.receta(), x + 46, y + 29, REC_W - 54, 0xFF9AC8FF, 0.7f);
-            texto(g, p.tengo() ? "¡Ya sabes hacerlo!" : "Sin aprender", x + 46, y + REC_H - 10, p.tengo() ? VERDE : SUAVE, 0.65f);
+            if (p.especial()) texto(g, p.tengo() ? "Lo enseñó el " + p.michi() : "Aún no ha venido", x + 46, y + REC_H - 10, p.tengo() ? VERDE : SUAVE, 0.65f);
+            else texto(g, p.tengo() ? "¡Ya sabes hacerlo!" : "Sin aprender", x + 46, y + REC_H - 10, p.tengo() ? VERDE : SUAVE, 0.65f);
         }
     }
 
@@ -312,13 +317,13 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Tus monedas: " + monedas, LX + 140, CY - 5, MONEDA, 0.9f);
         texto(g, !duenio ? "Solo el dueño compra aquí." : abierto() || estado.equals("cerrando") ? "Se compra con el café cerrado." : "Platos nuevos y mejoras para tu café.", LX + 250, CY - 5, SUAVE, 0.8f);
         texto(g, "PLATOS NUEVOS", LX, CY + 8, 0xFF6CC8FF, 0.95f);
-        int totalPag = paginas(platos.size(), TIENDA_POR_PAG);
+        int totalPag = paginas(tiendaPlatos.size(), TIENDA_POR_PAG);
         pagTienda = Math.min(pagTienda, totalPag - 1);
         paginador(g, mx, my, LX + PW - 72, CY + 5, pagTienda, totalPag);
         for (int n = 0; n < TIENDA_POR_PAG; n++) {
             int i = pagTienda * TIENDA_POR_PAG + n;
-            if (i >= platos.size()) break;
-            PlatoC p = platos.get(i);
+            if (i >= tiendaPlatos.size()) break;
+            PlatoC p = tiendaPlatos.get(i);
             int y = CY + 22 + n * (PH + 4);
             caja(g, LX, y, PW, PH, FONDO, p.tengo() ? 0xFF6FE08A : BORDE);
             objeto(g, p.item(), LX + 8, y + 8, 1.5f);
@@ -526,12 +531,12 @@ public final class MenuPantalla extends Lienzo {
 
     private void clicTienda(int mx, int my) {
         int d = clicPaginador(mx, my, LX + PW - 72, CY + 5);
-        if (d != 0) { pagTienda = Math.max(0, Math.min(paginas(platos.size(), TIENDA_POR_PAG) - 1, pagTienda + d)); return; }
+        if (d != 0) { pagTienda = Math.max(0, Math.min(paginas(tiendaPlatos.size(), TIENDA_POR_PAG) - 1, pagTienda + d)); return; }
         if (!puedeComprar()) return;
         for (int n = 0; n < TIENDA_POR_PAG; n++) {
             int i = pagTienda * TIENDA_POR_PAG + n;
-            if (i >= platos.size()) break;
-            PlatoC p = platos.get(i);
+            if (i >= tiendaPlatos.size()) break;
+            PlatoC p = tiendaPlatos.get(i);
             int y = CY + 22 + n * (PH + 4);
             if (!p.tengo() && monedas >= p.coste() && dentro(mx, my, LX + PW - 92, y + 36, 86, 20)) enviar("comprarPlato", p.id(), "");
         }

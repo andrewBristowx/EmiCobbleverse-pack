@@ -47,6 +47,14 @@ final class Cmds {
                             if (cf == null) return "Entra primero con /cafe entrar.";
                             return cf.forzarCliente() ? null : "No hay mesa libre.";
                         })))
+                        .then(CommandManager.literal("visitante").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            Especial e = Especial.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
+                            if (e == null) { StringBuilder b = new StringBuilder(); for (Especial x : Especial.values()) b.append(x.id).append(' '); return "Uno de: " + b; }
+                            for (Mesa m : cf.mesas) if (m.libre()) return cf.forzarEspecial(m, e) ? null : "No se pudo crear.";
+                            return "No hay mesa libre.";
+                        }))))
                         .then(CommandManager.literal("especie").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                             String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
                             Cliente.forzar = id.equals("azar") ? null : id;

@@ -444,6 +444,97 @@ def comida_quemada():
     for (x, y) in ((6, 3), (7, 2), (6, 1), (10, 4), (9, 3), (10, 2)): px[x, y] = (150, 150, 150, 210)           # humo
     return im
 
+
+# ---------------------------------------------------------------- 0.7.0: mas productos
+def queso():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    d.polygon([(1, 12), (14, 12), (14, 6), (4, 3)], fill=C('f6c83a'), outline=C('a8761a'))
+    d.rectangle([2, 12, 13, 14], fill=C('e8b020'), outline=C('a8761a'))
+    for (x, y) in ((6, 8), (10, 9), (8, 6), (4, 13), (11, 13)): px[x, y] = C('b8861a'); px[x + 1, y] = C('b8861a')
+    return im
+
+def pizza_cruda():
+    im = lienzo(); px = im.load()
+    elipse(im, 8, 8.5, 7, 5.2, C('f4e4bd'), C('fff6dc'), C('d3b985'), C('9a7d4a'))
+    elipse(im, 8, 8.5, 5, 3.6, C('f9e9a0'), C('fff3c2'), C('e6d070'), C('e6d070'))
+    return im
+
+def pizza():
+    im = lienzo(); px = im.load()
+    elipse(im, 8, 8.5, 7, 5.2, C('d8903c'), C('f2b866'), C('a8641f'), C('6a3a10'))
+    elipse(im, 8, 8.5, 5.6, 4.0, C('e8b52a'), C('ffd84a'), C('c8901a'), C('c8901a'))
+    for (x, y) in ((6, 7), (10, 8), (8, 10), (5, 10), (11, 11), (9, 6)): px[x, y] = C('b8302a'); px[x + 1, y] = C('d84a3a')
+    return im
+
+def sandwich():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([2, 3, 13, 6], radius=2, fill=C('e8b86a'), outline=C('8a5a20'))
+    d.rectangle([3, 7, 12, 8], fill=C('4aa845'))
+    d.polygon([(2, 9), (13, 9), (13, 11), (2, 11)], fill=C('f6c83a'), outline=C('a8761a'))
+    d.rounded_rectangle([2, 11, 13, 14], radius=2, fill=C('e8b86a'), outline=C('8a5a20'))
+    return im
+
+def tostadas():
+    im = lienzo(); px = im.load()
+    for (dx, dy) in ((0, 0), (3, 2)):
+        for y in range(3, 11):
+            for x in range(2, 10): px[x + dx, y + dy] = C('e8a850') if 3 < x + 0 < 9 and 4 < y < 10 else C('b8782a')
+        for x in range(3, 9): px[x + dx, 2 + dy + 1] = C('f2c878')
+    for (x, y) in ((5, 6), (6, 7), (8, 9)): px[x + 3, y + 2] = C('f6dea0')
+    return im
+
+def papas_queso():
+    im = papas_fritas(); px = im.load()
+    for (x, y) in ((4, 3), (5, 4), (6, 3), (7, 5), (8, 4), (9, 3), (10, 5), (11, 4)): px[x, y] = C('f6c83a'); px[x, y + 1] = C('e8a820')
+    return im
+
+def chocolate():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([2, 6, 11, 14], radius=2, fill=C('fbfbff'), outline=C('8a90b0'))
+    d.arc([9, 7, 15, 12], -90, 90, fill=C('8a90b0'))
+    d.rectangle([3, 7, 10, 8], fill=C('5a2e18'))
+    for x in (4, 6, 8): d.rectangle([x, 6, x + 1, 7], fill=C('ffffff'))                     # malvaviscos
+    for y in range(9, 14): px[3, y] = C('ffffff'); px[10, y] = C('d5d8ea')
+    for (x, y) in ((4, 3), (5, 2), (4, 1), (8, 3), (7, 2), (8, 1)): px[x, y] = C('e8ebf6')
+    return im
+
+def te():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([2, 6, 11, 14], radius=2, fill=C('fbfbff'), outline=C('8a90b0'))
+    d.arc([9, 7, 15, 12], -90, 90, fill=C('8a90b0'))
+    d.rectangle([3, 7, 10, 8], fill=C('9a58c8'))
+    elipse(im, 6.5, 7.5, 1.8, 1.0, C('4f86e0'), C('9cc4ff'), C('2d54b0'), C('1c3470'))
+    for y in range(9, 14): px[3, y] = C('ffffff'); px[10, y] = C('d5d8ea')
+    for (x, y) in ((4, 3), (5, 2), (4, 1), (8, 3), (7, 2), (8, 1)): px[x, y] = C('e8ebf6')
+    return im
+
+def huevos_fritos():
+    im = lienzo(); px = im.load(); plato_base(im, 7.7, 8.4, 7.3, 5.4)
+    elipse(im, 6.5, 8.4, 3.6, 2.6, C('ffffff'), C('ffffff'), C('e1e4f4'), C('c8cce0'))
+    elipse(im, 10.2, 9.0, 2.6, 2.0, C('ffffff'), C('ffffff'), C('e1e4f4'), C('c8cce0'))
+    elipse(im, 6.5, 8.2, 1.6, 1.4, C('f8b820'), C('ffd84a'), C('e09810'), C('e09810'))
+    elipse(im, 10.2, 8.8, 1.2, 1.0, C('f8b820'), C('ffd84a'), C('e09810'), C('e09810'))
+    return im
+
+def estofado():
+    im = lienzo(); px = im.load(); d = ImageDraw.Draw(im)
+    d.pieslice([1, 4, 14, 17], 0, 180, fill=C('f8f4ee'), outline=C('8a90b0'))
+    elipse(im, 7.6, 8.4, 6.2, 2.2, C('8a5030'), C('b3774a'), C('5e3418'), C('3a1c0a'))
+    for (x, y) in ((5, 8), (9, 9)): px[x, y] = C('f08a2a'); px[x + 1, y] = C('f08a2a')
+    for (x, y) in ((7, 8), (11, 8)): px[x, y] = C('4aa845')
+    for (x, y) in ((6, 3), (7, 2), (6, 1), (10, 3), (9, 2), (10, 1)): px[x, y] = C('e8ebf6')
+    return im
+
+def donas():
+    im = lienzo(); px = im.load()
+    elipse(im, 8, 8.5, 6.6, 5.2, C('e8a850'), C('f6c880'), C('b8782a'), C('7a4a14'))
+    elipse(im, 8, 8.2, 5.6, 4.2, C('f6a4c0'), C('ffc4d8'), C('d878a0'), C('d878a0'))
+    elipse(im, 8, 8.5, 1.6, 1.2, C('00000000'), C('00000000'), C('00000000'), C('7a4a14'))
+    for y in range(7, 10):
+        for x in range(7, 10): px[x, y] = (0, 0, 0, 0)
+    for (x, y, c) in ((4, 6, 'ffffff'), (11, 7, 'fff23a'), (6, 11, '3aa8ff'), (10, 11, 'ffffff'), (5, 8, 'fff23a'), (11, 10, '3aa8ff'), (8, 5, 'ffffff')): px[x, y] = C(c)
+    return im
+
 OBJETOS = {'papa': papa, 'papa_tiras': papa_tiras, 'papas_fritas': papas_fritas, 'burbuja': burbuja, 'moneda': moneda,
             'papas_quemadas': papas_quemadas, 'baya': baya, 'limonada': limonada, 'lechuga': lechuga, 'lechuga_picada': lechuga_picada, 'ensalada': ensalada,
             'plato_sucio': plato_sucio, 'plato_limpio': plato_limpio,
@@ -451,8 +542,41 @@ OBJETOS = {'papa': papa, 'papa_tiras': papa_tiras, 'papas_fritas': papas_fritas,
             'huevo': huevo, 'harina': harina, 'carne': carne, 'leche': leche, 'granos': granos, 'masa': masa, 'pan': pan, 'carne_asada': carne_asada, 'bayas_leche': bayas_leche,
             'tortilla': tortilla, 'panqueques': panqueques, 'hamburguesa': hamburguesa, 'pastel': pastel, 'sopa': sopa, 'batido': batido, 'cafe': cafe, 'capuchino': capuchino,
             'comida_quemada': comida_quemada,
+            'queso': queso, 'pizza_cruda': pizza_cruda, 'pizza': pizza, 'sandwich': sandwich, 'tostadas': tostadas, 'papas_queso': papas_queso, 'chocolate': chocolate, 'te': te,
+            'huevos_fritos': huevos_fritos, 'estofado': estofado, 'donas': donas,
             'campana': campana, 'puerta': puerta, 'reloj': reloj, 'corazon': corazon, 'mesas_icono': mesas_icono, 'pila_platos': pila_platos, 'megafono': megafono,
             'libro': libro, 'invitar': invitar, 'cerrado': cerrado, 'estrella': estrella, 'trofeo': trofeo, 'mision': mision}
+
+
+# ---------------------------------------------------------------- visitantes especiales: el plato del evento = los dos ingredientes sobre un plato con un destello del color del Michialien
+EVENTOS = [  # id, ingrediente A, ingrediente B, color del destello
+    ('navideno', 'leche', 'pan', 'd8302a'), ('brujita', 'te', 'bayas_leche', '8a3ac8'), ('calabaza', 'pastel', 'cafe', 'f08a1a'), ('chef', 'hamburguesa', 'papas_fritas', 'f4f4ff'),
+    ('dino', 'carne_asada', 'lechuga_picada', '4aa845'), ('carrito', 'batido', 'papas_fritas', 'e04b4b'), ('ejecutivo', 'capuchino', 'tortilla', '3a3a4a'), ('gafas', 'batido', 'limonada', '3a3a4a'),
+    ('playero', 'limonada', 'bayas_leche', '3ac8e8'), ('rey', 'pastel', 'capuchino', 'ffd23f'), ('lazo', 'panqueques', 'bayas_leche', 'f08ab4'), ('dj', 'cafe', 'hamburguesa', '3a8af0'),
+    ('bufanda', 'sopa', 'pan', 'e04b4b'), ('angel', 'panqueques', 'leche', 'fff7a0'), ('diablillo', 'hamburguesa', 'baya', 'd8302a'), ('florido', 'ensalada', 'limonada', 'f08ab4'),
+    ('pirata', 'tortilla', 'carne_asada', 'a8761a'), ('dorado', 'pastel', 'hamburguesa', 'ffd23f')]
+
+def _mini(im, lado):
+    """Reduce un icono a lado x lado con el borde duro (sin semitransparencias)."""
+    r = im.resize((lado, lado), Image.BOX)
+    px = r.load()
+    for y in range(lado):
+        for x in range(lado):
+            c = px[x, y]
+            px[x, y] = (c[0], c[1], c[2], 255) if c[3] > 110 else (0, 0, 0, 0)
+    return r
+
+def evento_plato(a, b, color):
+    im = lienzo(); plato_base(im, 7.7, 10.2, 7.4, 4.6)
+    ia, ib = _mini(OBJETOS[a](), 10), _mini(OBJETOS[b](), 10)
+    im.paste(ia, (0, 1), ia); im.paste(ib, (6, 0), ib)
+    px = im.load(); c = C(color)
+    for (x, y) in ((13, 2), (12, 3), (14, 3), (13, 4), (13, 3)): px[x, y] = c if (x, y) != (13, 3) else C('ffffff')       # el destello
+    px[1, 13] = c; px[14, 13] = c
+    return im
+
+for _id, _a, _b, _c in EVENTOS:
+    OBJETOS['ev_' + _id] = (lambda a=_a, b=_b, c=_c: evento_plato(a, b, c))
 
 # ---------------------------------------------------------------- losetas de los bloques (16x16)
 def loseta(f, sem):
@@ -682,6 +806,14 @@ def t_batido_t(im, px, rnd):
         for x in range(16): px[x, y] = mezcla(C('f6a0c8'), C('ffd0e4'), 0.5 + 0.5 * math.sin(x * 0.8 + y * 0.5) * 0.5)
     for _ in range(5): px[rnd.randrange(1, 15), rnd.randrange(1, 15)] = C('ffffff')
 
+def t_queso_t(im, px, rnd):
+    for y in range(16):
+        for x in range(16): px[x, y] = C('f6c83a') if rnd.random() > 0.15 else C('e8b020')
+    for _ in range(8):
+        x, y = rnd.randrange(1, 14), rnd.randrange(1, 14)
+        for dy in range(2):
+            for dx in range(2): px[x + dx, y + dy] = C('b8861a')
+
 def t_vidrio_oscuro(im, px, rnd):
     for y in range(16):
         for x in range(16): px[x, y] = C('3a4660') if (x + y) % 6 else C('566488')
@@ -694,7 +826,7 @@ TILES = {
     'aceite': t_aceite, 'papas': t_papas, 'tabla': t_tabla, 'mantel': t_mantel, 'mueble': t_mueble, 'encimera': t_encimera, 'cubo': t_cubo,
     'bayas': t_bayas, 'lechugas': t_lechugas, 'cristal': t_cristal, 'limonada_t': t_limonada, 'agua': t_agua, 'bandeja': t_bandeja, 'registradora': t_registradora, 'registradora_top': t_registradora_top,
     'huevos': t_huevos, 'harina_t': t_harina, 'carne_t': t_carne_t, 'leche_t': t_leche_t, 'granos_t': t_granos_t, 'plancha_t': t_plancha_t, 'sopa_t': t_sopa_t,
-    'horno_puerta': t_horno_puerta, 'cafe_t': t_cafe_t, 'batido_t': t_batido_t, 'vidrio_oscuro': t_vidrio_oscuro,
+    'queso_t': t_queso_t, 'horno_puerta': t_horno_puerta, 'cafe_t': t_cafe_t, 'batido_t': t_batido_t, 'vidrio_oscuro': t_vidrio_oscuro,
 }
 
 # ---------------------------------------------------------------- modelos de los bloques
@@ -791,6 +923,7 @@ MODELOS.update({
     'caja_harina': modelo([base(), caja((3, 10, 3), (13, 16, 13), {'up': 'harina_t', 'down': 'harina_t', 'lados': 'harina_t'}), caja((6, 16, 6), (10, 17, 10), 'madera_oscura')],
                           ['mueble', 'encimera', 'harina_t', 'madera_oscura']),
     'caja_carne': _caja_cajon('carne_t', 'carne_t'),
+    'caja_queso': _caja_cajon('queso_t', 'queso_t'),
     'caja_leche': modelo([base(), caja((3, 10, 3), (13, 15, 13), {'up': 'leche_t', 'down': 'leche_t', 'lados': 'leche_t'}), caja((5, 15, 5), (11, 17, 11), 'leche_t'), caja((7, 17, 7), (9, 18, 9), 'metal')],
                          ['mueble', 'encimera', 'leche_t', 'metal']),
     'caja_granos': modelo([base(), caja((3, 10, 3), (13, 15, 13), {'up': 'granos_t', 'down': 'madera', 'lados': 'madera_oscura'}), caja((3, 10, 3), (13, 12, 13), 'madera_oscura')],
@@ -832,6 +965,9 @@ NOMBRES_ES.update({'huevo': 'Huevo', 'harina': 'Harina', 'carne': 'Carne', 'lech
 NOMBRES_EN.update({'huevo': 'Egg', 'harina': 'Flour', 'carne': 'Meat', 'leche': 'Milk', 'granos': 'Coffee Beans', 'masa': 'Dough', 'pan': 'Bread', 'carne_asada': 'Grilled Meat', 'bayas_leche': 'Berries and Milk', 'tortilla': 'Omelette', 'panqueques': 'Pancakes', 'hamburguesa': 'Burger', 'pastel': 'Cake', 'sopa': 'Potato Soup', 'batido': 'Berry Smoothie', 'cafe': 'Coffee', 'capuchino': 'Cappuccino', 'comida_quemada': 'Burnt Food', 'caja_huevos': 'Egg Crate', 'caja_harina': 'Flour Sack', 'caja_carne': 'Meat Crate', 'caja_leche': 'Milk Crate', 'caja_granos': 'Coffee Bean Sack', 'plancha': 'Griddle', 'olla': 'Pot', 'horno': 'Oven', 'batidora': 'Blender', 'cafetera': 'Coffee Machine'})
 
 EXTERNOS = ['cocinero_charmander', 'cocinero_squirtle', 'cocinero_bulbasaur']            # sus PNG los hace cocineros.py; aqui solo se escribe su modelo
+
+NOMBRES_ES.update({'queso': 'Queso', 'pizza_cruda': 'Pizza cruda', 'pizza': 'Pizza', 'sandwich': 'Sándwich de queso', 'tostadas': 'Tostadas', 'papas_queso': 'Papas con queso', 'chocolate': 'Chocolate caliente', 'te': 'Té de bayas', 'huevos_fritos': 'Huevos fritos', 'estofado': 'Estofado', 'donas': 'Donas', 'caja_queso': 'Caja de queso', 'ev_navideno': 'Leche y galletas', 'ev_brujita': 'Poción de bayas', 'ev_calabaza': 'Tarta de calabaza', 'ev_chef': 'Menú del chef', 'ev_dino': 'Costillar jurásico', 'ev_carrito': 'Menú del carrito', 'ev_ejecutivo': 'Almuerzo ejecutivo', 'ev_gafas': 'Batido tropical', 'ev_playero': 'Granizado de playa', 'ev_rey': 'Banquete real', 'ev_lazo': 'Desayuno de lazos', 'ev_dj': 'Combo DJ', 'ev_bufanda': 'Sopa con pan', 'ev_angel': 'Maná celestial', 'ev_diablillo': 'Hamburguesa infernal', 'ev_florido': 'Ensalada floral', 'ev_pirata': 'Desayuno pirata', 'ev_dorado': 'Festín dorado'})
+NOMBRES_EN.update({'queso': 'Cheese', 'pizza_cruda': 'Raw Pizza', 'pizza': 'Pizza', 'sandwich': 'Cheese Sandwich', 'tostadas': 'Toast', 'papas_queso': 'Cheese Fries', 'chocolate': 'Hot Chocolate', 'te': 'Berry Tea', 'huevos_fritos': 'Fried Eggs', 'estofado': 'Stew', 'donas': 'Donuts', 'caja_queso': 'Cheese Crate', 'ev_navideno': 'Milk and Cookies', 'ev_brujita': 'Berry Potion', 'ev_calabaza': 'Pumpkin Pie', 'ev_chef': 'Chef Menu', 'ev_dino': 'Jurassic Ribs', 'ev_carrito': 'Toy Car Menu', 'ev_ejecutivo': 'Executive Lunch', 'ev_gafas': 'Tropical Smoothie', 'ev_playero': 'Beach Slush', 'ev_rey': 'Royal Banquet', 'ev_lazo': 'Ribbon Breakfast', 'ev_dj': 'DJ Combo', 'ev_bufanda': 'Soup and Bread', 'ev_angel': 'Heavenly Manna', 'ev_diablillo': 'Infernal Burger', 'ev_florido': 'Flower Salad', 'ev_pirata': 'Pirate Breakfast', 'ev_dorado': 'Golden Feast'})
 
 def escribir():
     hoja = []

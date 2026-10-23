@@ -12,25 +12,35 @@ final class Recetas {
     static Item procesa(Estacion e, Item entra) {
         switch (e) {
             case TABLA -> { if (entra == CafeItems.PAPA) return CafeItems.PAPA_TIRAS; if (entra == CafeItems.LECHUGA) return CafeItems.LECHUGA_PICADA; }
-            case FREIDORA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.PAPAS_FRITAS; }
+            case FREIDORA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.PAPAS_FRITAS; if (entra == CafeItems.HUEVO) return CafeItems.HUEVOS_FRITOS; if (entra == CafeItems.MASA) return CafeItems.DONAS; }
             case EXPRIMIDOR -> { if (entra == CafeItems.BAYA) return CafeItems.LIMONADA; }
-            case PLANCHA -> { if (entra == CafeItems.HUEVO) return CafeItems.TORTILLA; if (entra == CafeItems.MASA) return CafeItems.PANQUEQUES; if (entra == CafeItems.CARNE) return CafeItems.CARNE_ASADA; }
-            case OLLA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.SOPA; }
-            case HORNO -> { if (entra == CafeItems.MASA) return CafeItems.PASTEL; if (entra == CafeItems.HARINA) return CafeItems.PAN; }
+            case PLANCHA -> { if (entra == CafeItems.PAN) return CafeItems.TOSTADAS; if (entra == CafeItems.HUEVO) return CafeItems.TORTILLA; if (entra == CafeItems.MASA) return CafeItems.PANQUEQUES; if (entra == CafeItems.CARNE) return CafeItems.CARNE_ASADA; }
+            case OLLA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.SOPA; if (entra == CafeItems.BAYA) return CafeItems.TE; if (entra == CafeItems.CARNE) return CafeItems.ESTOFADO; }
+            case HORNO -> { if (entra == CafeItems.PIZZA_CRUDA) return CafeItems.PIZZA; if (entra == CafeItems.MASA) return CafeItems.PASTEL; if (entra == CafeItems.HARINA) return CafeItems.PAN; }
             case BATIDORA -> { if (entra == CafeItems.BAYAS_LECHE) return CafeItems.BATIDO; }
-            case CAFETERA -> { if (entra == CafeItems.GRANOS) return CafeItems.CAFE; }
+            case CAFETERA -> { if (entra == CafeItems.GRANOS) return CafeItems.CAFE; if (entra == CafeItems.LECHE) return CafeItems.CHOCOLATE; }
             default -> { }
         }
         return null;
     }
 
     /** Las parejas que se juntan en la mesa de emplatar: {a, b, resultado} (el orden da igual). */
-    private static final Item[][] COMBINACIONES = {
+    private static final Item[][] BASE_COMBINACIONES = {
             {CafeItems.LECHUGA_PICADA, CafeItems.BAYA, CafeItems.ENSALADA},
             {CafeItems.HARINA, CafeItems.HUEVO, CafeItems.MASA},
             {CafeItems.CARNE_ASADA, CafeItems.PAN, CafeItems.HAMBURGUESA},
             {CafeItems.BAYA, CafeItems.LECHE, CafeItems.BAYAS_LECHE},
-            {CafeItems.CAFE, CafeItems.LECHE, CafeItems.CAPUCHINO}};
+            {CafeItems.CAFE, CafeItems.LECHE, CafeItems.CAPUCHINO},
+            {CafeItems.PAN, CafeItems.QUESO, CafeItems.SANDWICH},
+            {CafeItems.MASA, CafeItems.QUESO, CafeItems.PIZZA_CRUDA},
+            {CafeItems.PAPAS_FRITAS, CafeItems.QUESO, CafeItems.PAPAS_QUESO}};
+    /** Las de arriba mas una por cada visitante especial. */
+    private static final Item[][] COMBINACIONES;
+    static {
+        Especial[] es = Especial.values();
+        COMBINACIONES = java.util.Arrays.copyOf(BASE_COMBINACIONES, BASE_COMBINACIONES.length + es.length);
+        for (int i = 0; i < es.length; i++) COMBINACIONES[BASE_COMBINACIONES.length + i] = new Item[]{es[i].a, es[i].b, es[i].plato};
+    }
 
     /** Lo que sale de juntar dos objetos en la mesa de emplatar (null si no combinan). */
     static Item combina(Item a, Item b) {
@@ -62,7 +72,20 @@ final class Recetas {
         HAMBURGUESA("hamburguesa", CafeItems.HAMBURGUESA, 30, 260, List.of(Estacion.CAJA_CARNE, Estacion.CAJA_HARINA, Estacion.PLANCHA, Estacion.HORNO, Estacion.EMPLATAR),
                 "Carne → Plancha; harina → Horno (pan); carne asada + pan en la Mesa de emplatar"),
         PASTEL("pastel", CafeItems.PASTEL, 32, 300, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.HORNO),
-                "Harina + huevo (masa) en la Mesa de emplatar → Horno. ¡Se quema si lo dejas!");
+                "Harina + huevo (masa) en la Mesa de emplatar → Horno. ¡Se quema si lo dejas!"),
+        TE("te", CafeItems.TE, 13, 100, List.of(Estacion.CAJA_BAYAS, Estacion.OLLA), "Caja de bayas → Olla"),
+        CHOCOLATE("chocolate", CafeItems.CHOCOLATE, 14, 110, List.of(Estacion.CAJA_LECHE, Estacion.CAFETERA), "Caja de leche → Cafetera"),
+        HUEVOS_FRITOS("huevos_fritos", CafeItems.HUEVOS_FRITOS, 15, 110, List.of(Estacion.CAJA_HUEVOS, Estacion.FREIDORA), "Caja de huevos → Freidora (¡se quema!)"),
+        TOSTADAS("tostadas", CafeItems.TOSTADAS, 18, 150, List.of(Estacion.CAJA_HARINA, Estacion.HORNO, Estacion.PLANCHA), "Saco de harina → Horno (pan) → Plancha"),
+        PAPAS_QUESO("papas_queso", CafeItems.PAPAS_QUESO, 22, 190, List.of(Estacion.CAJA_PAPAS, Estacion.TABLA, Estacion.FREIDORA, Estacion.CAJA_QUESO, Estacion.EMPLATAR),
+                "Papas fritas + queso en la Mesa de emplatar"),
+        SANDWICH("sandwich", CafeItems.SANDWICH, 24, 220, List.of(Estacion.CAJA_HARINA, Estacion.HORNO, Estacion.CAJA_QUESO, Estacion.EMPLATAR),
+                "Harina → Horno (pan); pan + queso en la Mesa de emplatar"),
+        DONAS("donas", CafeItems.DONAS, 24, 210, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.FREIDORA),
+                "Harina + huevo (masa) en la Mesa de emplatar → Freidora"),
+        ESTOFADO("estofado", CafeItems.ESTOFADO, 26, 240, List.of(Estacion.CAJA_CARNE, Estacion.OLLA), "Caja de carne → Olla"),
+        PIZZA("pizza", CafeItems.PIZZA, 34, 320, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.CAJA_QUESO, Estacion.EMPLATAR, Estacion.HORNO),
+                "Masa (harina + huevo) + queso en la Mesa de emplatar → Horno");
 
         final String id;
         final Item item;

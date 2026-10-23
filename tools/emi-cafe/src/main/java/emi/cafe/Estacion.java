@@ -23,6 +23,7 @@ enum Estacion {
     CAJA_CARNE("Caja de carne", CafeBlocks.CAJA_CARNE, Tipo.CAJA, 3, 5, 0, CafeItems.CARNE, false),
     CAJA_LECHE("Caja de leche", CafeBlocks.CAJA_LECHE, Tipo.CAJA, 4, 5, 0, CafeItems.LECHE, false),
     CAJA_GRANOS("Saco de granos de café", CafeBlocks.CAJA_GRANOS, Tipo.CAJA, 5, 5, 0, CafeItems.GRANOS, false),
+    CAJA_QUESO("Caja de queso", CafeBlocks.CAJA_QUESO, Tipo.CAJA, 6, 5, 0, CafeItems.QUESO, false),
     PLANCHA("Plancha", CafeBlocks.PLANCHA, Tipo.PROCESO, 9, 5, 100, null, false),
     OLLA("Olla", CafeBlocks.OLLA, Tipo.PROCESO, 10, 5, 140, null, false),
     HORNO("Horno", CafeBlocks.HORNO, Tipo.PROCESO, 11, 5, 200, null, false),

@@ -25,6 +25,8 @@ final class Datos {
         String inicial;              // el Pokemon cocinero elegido (null = aun no ha elegido)
         java.util.List<String> platos = new java.util.ArrayList<>();                 // platos que sabe hacer
         java.util.Map<String, Integer> mejoras = new java.util.HashMap<>();          // nivel de cada mejora
+        java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
+        int especialesServidos;                                                       // visitantes especiales atendidos en total
 
         // estrellas (la moneda de la tienda del servidor), estadisticas, tienda, misiones y logros
         int estrellas, estrellasTotal;
