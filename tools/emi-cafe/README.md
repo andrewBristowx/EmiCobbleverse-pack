@@ -1,4 +1,4 @@
-# Café Michialien (`emi-cafe`) — 0.5.1 (arreglos: ojos de Bulbasaur y tamaño de clientes; 0.5.0: 8 platos y 10 estaciones nuevos y cocineros con la cara de los Pokémon reales; antes 0.4.0: menú propio como el de los otros juegos; 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
+# Café Michialien (`emi-cafe`) — 0.6.0 (sin reloj, letrero y local ampliable; antes 0.5.1: arreglos: ojos de Bulbasaur y tamaño de clientes; 0.5.0: 8 platos y 10 estaciones nuevos y cocineros con la cara de los Pokémon reales; antes 0.4.0: menú propio como el de los otros juegos; 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
 
 Pedido del dueño (2026-10-23): «un juego como **Pokémon Café** en Minecraft: un restaurante donde cada cierto tiempo entran Pokémon y te piden comida; los platos se
 preparan **llevando los ingredientes en las manos (no en el inventario) a la estación que toca** (una papa a la freidora, etc.); al empezar eliges **1 de 3 Pokémon**
@@ -8,6 +8,13 @@ y **todos los objetos y estaciones con textura propia**».
 **Decisiones del dueño (2026-10-23):** turno de **4 minutos** que **cierra el local y enseña el resumen de ganancias** con «comprar» o «parar por ahora»; **un café por jugador**, que
 **puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
 nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
+
+## 0f. Novedades de la 0.6.0 (pedido del dueño con una captura de las cajas parpadeando)
+- **Z-fighting arreglado en todos los modelos de bloque** (las cajas parpadeaban porque los postes de las esquinas tenían las caras en el mismo plano que el cuerpo): `assets/generar.py` ahora corre `sin_zfight()` en cada modelo (saca 0,02 la cara del cubo posterior que coincide con una anterior) y `conflictos()` comprueba que no queda ninguno (0 de 22 modelos). Visto en el juego.
+- **Ya no hay reloj de 4 minutos.** El dueño **abre y cierra el café desde la caja registradora** (botones ABRIR EL CAFÉ / CERRAR EL CAFÉ); los clientes llegan mientras esté abierto. Al cerrar, sale el resumen de la jornada y se vuelve a poder comprar. La barra de abajo pone «● ABIERTO». Para que no se pueda abusar, **«jornada» solo cuenta con 3 o más clientes servidos** (estrellas, logros, misiones); las metas de «monedas en una jornada» subieron (300/800/2000/5000, misión de día 300). Las misiones y logros hablan de «jornadas».
+- **Letrero de la calle** a la derecha de la puerta: panel **verde «ABIERTO»** o **rojo «CERRADO»** (bloques de hormigón + cartel de texto que mira al jugador; `Local.letrero`), cambia al abrir y al cerrar sin reconstruir el local.
+- **Nueva mejora «Ampliar el local»** (2 niveles, 300 y 600 monedas): cada nivel añade **8 bloques de ancho** (ventanas, techo, barra y cocina se alargan) y **2 mesas** (máximo 8 mesas con «Más mesas» al tope). `Local.ancho(nivel)`, `Local.MESAS` ya tiene 8 sitios; el local de 30 de ancho cabe en los 64 bloques entre cafés. Comando de pruebas `/cafe dev mejora <id> <nivel>`.
+- Probado en el juego con un cliente: cajas sin parpadeo, letrero rojo y verde, abrir y cerrar (comando y botón del menú con clic real), resumen, local ampliado al máximo con 8 mesas y las 6 mejoras en la tienda. **No probado:** varios clientes reales en el local ampliado, ni que un invitado vea el letrero, ni el servidor real.
 
 ## 0e. Arreglos de la 0.5.1 (el dueño vio dos fallos en capturas)
 - **Ojos de Bulbasaur mal** en el icono: eran cubos pegados a la cara de la cabeza (z-fighting); `assets/cocineros.py` los adelanta 0,15 y salen rojos y limpios.

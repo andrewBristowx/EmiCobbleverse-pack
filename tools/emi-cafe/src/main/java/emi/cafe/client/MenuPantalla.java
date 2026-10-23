@@ -166,7 +166,7 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "CAFÉ MICHIALIEN", 20, 10, ORO, 2.2f);
         texto(g, duenio ? "Sirve a los Pokémon y haz crecer tu café" : "Estás en el café de " + nombreDuenio, 22, 32, GRIS, 0.9f);
         texto(g, "● " + monedas + " monedas   ★ " + estrellas + " estrellas", 400, 10, MONEDA, 1.2f);
-        texto(g, "Clientes: " + clientes + " · Turnos: " + turnos + " · Mejor turno: " + mejorTurno, 400, 26, GRIS, 0.8f);
+        texto(g, "Clientes: " + clientes + " · Jornadas: " + turnos + " · Mejor jornada: " + mejorTurno, 400, 26, GRIS, 0.8f);
         texto(g, "Las monedas son del café; las estrellas, de la tienda del servidor", 400, 36, LILA, 0.65f);
 
         for (int i = 0; i < TABS.length; i++) {
@@ -215,27 +215,27 @@ public final class MenuPantalla extends Lienzo {
         switch (estado) {
             case "abierto" -> {
                 texto(g, "CAFÉ ABIERTO", LX, CY - 7, VERDE, 1.1f);
-                parrafo(g, "Hay un turno en marcha: el reloj sale abajo en la pantalla. Cocina llevando los ingredientes en las manos y sirve con clic derecho al cliente o a su mesa.", LX, CY + 10, LW, GRIS, 0.85f);
+                parrafo(g, "El café está abierto y no hay reloj: cierra cuando quieras desde aquí. Cocina llevando los ingredientes en las manos y sirve con clic derecho al cliente o a su mesa.", LX, CY + 10, LW, GRIS, 0.85f);
                 texto(g, "Platos limpios: " + platosLimpios, LX, CY + 62, platosLimpios == 0 ? ROJO : BLANCO, 1f);
                 if (duenio) {
                     boton(g, LX, CY + 84, LW, 28, "SEGUIR SIRVIENDO", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 84, LW, 28), 1f);
-                    boton(g, LX, CY + 118, LW, 28, "CERRAR EL TURNO YA", 0xFF8A3A3A, true, dentro(mx, my, LX, CY + 118, LW, 28), 1f);
+                    boton(g, LX, CY + 118, LW, 28, "CERRAR EL CAFÉ", 0xFF8A3A3A, true, dentro(mx, my, LX, CY + 118, LW, 28), 1f);
                 } else boton(g, LX, CY + 84, LW, 28, "SEGUIR SIRVIENDO", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 84, LW, 28), 1f);
             }
             case "cerrando" -> {
                 texto(g, "CERRANDO EL LOCAL", LX, CY - 7, ROJO, 1.1f);
-                parrafo(g, "Se acabó el turno. En un momento verás el resumen de ganancias.", LX, CY + 10, LW, GRIS, 0.9f);
+                parrafo(g, "Ya no entran clientes. En un momento verás el resumen de ganancias.", LX, CY + 10, LW, GRIS, 0.9f);
             }
             default -> {
                 texto(g, duenio ? "TU CAFÉ ESTÁ CERRADO" : "CAFÉ CERRADO", LX, CY - 7, ORO, 1.1f);
-                parrafo(g, duenio ? "Abre un turno de 4 minutos: llegan clientes, cocinas, sirves y al acabar verás el resumen de ganancias. Entre turnos compras platos y mejoras."
-                        : "El dueño abrirá el turno. Mientras tanto mira la tienda de estrellas, las misiones y los logros.", LX, CY + 10, LW, GRIS, 0.85f);
+                parrafo(g, duenio ? "Ábrelo cuando quieras: llegan clientes, cocinas y sirves. Al cerrarlo verás el resumen de ganancias. Con el café cerrado compras platos y mejoras."
+                        : "El dueño abrirá el café. Mientras tanto mira la tienda de estrellas, las misiones y los logros.", LX, CY + 10, LW, GRIS, 0.85f);
                 if (duenio) {
-                    boton(g, LX, CY + 66, LW, 30, "ABRIR EL CAFÉ (turno de 4 minutos)", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 66, LW, 30), 0.95f);
+                    boton(g, LX, CY + 66, LW, 30, "ABRIR EL CAFÉ", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 66, LW, 30), 0.95f);
                     boton(g, LX, CY + 102, LW, 26, "PARAR POR AHORA (salir)", 0xFF8A3A3A, true, dentro(mx, my, LX, CY + 102, LW, 26), 0.95f);
                 } else boton(g, LX, CY + 66, LW, 28, "SALIR DEL CAFÉ", 0xFF8A3A3A, true, dentro(mx, my, LX, CY + 66, LW, 28), 1f);
-                texto(g, "Estrellas: +2 por cliente, +5 por turno,", LX, CY + 140, SUAVE, 0.7f);
-                texto(g, "+5 sin enfados y +5 por récord.", LX, CY + 150, SUAVE, 0.7f);
+                texto(g, "Estrellas: +2 por cliente, +5 por jornada", LX, CY + 140, SUAVE, 0.7f);
+                texto(g, "con 3 o más clientes, +5 sin enfados y +5 por récord.", LX, CY + 150, SUAVE, 0.7f);
             }
         }
         // la parte de la derecha: quien esta en el cafe y a quien invitar
@@ -451,7 +451,7 @@ public final class MenuPantalla extends Lienzo {
         g.getMatrices().translate(0, 0, 400);
         g.fill(0, 0, W, H, 0xA0000010);
         caja(g, x, y, w, h, 0xFF14142A, ORO);
-        textoCentrado(g, "¡CERRAMOS! RESUMEN DEL TURNO", x + w / 2, y + 10, ORO, 1.4f);
+        textoCentrado(g, "¡CERRAMOS! RESUMEN DE LA JORNADA", x + w / 2, y + 10, ORO, 1.4f);
         int tuyo = resumen.get("tuyo").getAsInt(), total = resumen.get("ganado").getAsInt();
         textoCentrado(g, "Ganancias del café: " + total + " monedas", x + w / 2, y + 34, MONEDA, 1.2f);
         if (tuyo != total) textoCentrado(g, "De ellas, tuyas: " + tuyo, x + w / 2, y + 48, BLANCO, 0.9f);
@@ -459,9 +459,9 @@ public final class MenuPantalla extends Lienzo {
         textoCentrado(g, "Estrellas ganadas: +" + resumen.get("estrellasTurno").getAsInt() + "  (ahora tienes " + estrellas + ")", x + w / 2, y + 80, ESTRELLA, 1f);
         textoCentrado(g, "Tus monedas ahora: " + monedas, x + w / 2, y + 96, MONEDA, 0.9f);
         if (duenio) {
-            textoCentrado(g, "¿Quieres comprar algo, abrir otro turno o parar por ahora?", x + w / 2, y + 122, BLANCO, 0.9f);
+            textoCentrado(g, "¿Quieres comprar algo, abrir otra vez o parar por ahora?", x + w / 2, y + 122, BLANCO, 0.9f);
             boton(g, x + 20, y + 144, 164, 24, "COMPRAR", 0xFF7A4AC0, true, dentro(mx, my, x + 20, y + 144, 164, 24), 1f);
-            boton(g, x + w - 184, y + 144, 164, 24, "OTRO TURNO", 0xFF2E8B57, true, dentro(mx, my, x + w - 184, y + 144, 164, 24), 1f);
+            boton(g, x + w - 184, y + 144, 164, 24, "ABRIR OTRA VEZ", 0xFF2E8B57, true, dentro(mx, my, x + w - 184, y + 144, 164, 24), 1f);
             boton(g, x + 20, y + 176, 164, 24, "PARAR POR AHORA", 0xFF8A3A3A, true, dentro(mx, my, x + 20, y + 176, 164, 24), 1f);
             boton(g, x + w - 184, y + 176, 164, 24, "SEGUIR EN EL MENÚ", 0xFF444466, true, dentro(mx, my, x + w - 184, y + 176, 164, 24), 1f);
         } else {

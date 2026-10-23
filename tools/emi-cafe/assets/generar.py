@@ -716,7 +716,36 @@ def base():                                                                  # e
 
 TEXTURAS_COMUNES = ['madera', 'madera_oscura', 'metal', 'metal_oscuro', 'aceite', 'papas', 'tabla', 'mantel', 'mueble', 'encimera', 'cubo']
 
+EPS = 0.02
+
+def _solapan(a0, a1, b0, b1): return min(a1, b1) - max(a0, b0) > 1e-6
+
+def conflictos(elementos):
+    """Pares (i, j, eje, signo) con caras del MISMO sentido en el mismo plano y que se solapan: eso es lo que parpadea (z-fighting)."""
+    res = []
+    for j in range(len(elementos)):
+        for i in range(j):
+            a, b = elementos[i], elementos[j]
+            for eje in range(3):
+                o1, o2 = [k for k in range(3) if k != eje]
+                if not (_solapan(a['from'][o1], a['to'][o1], b['from'][o1], b['to'][o1]) and _solapan(a['from'][o2], a['to'][o2], b['from'][o2], b['to'][o2])): continue
+                if abs(a['to'][eje] - b['to'][eje]) < 1e-6: res.append((i, j, eje, 1))
+                if abs(a['from'][eje] - b['from'][eje]) < 1e-6: res.append((i, j, eje, -1))
+    return res
+
+def sin_zfight(elementos):
+    """Saca 0,02 hacia fuera la cara del elemento posterior que coincide con la de uno anterior (los detalles se dibujan encima del cuerpo)."""
+    for _ in range(4):
+        cs = conflictos(elementos)
+        if not cs: break
+        for (i, j, eje, sg) in cs:
+            e = elementos[j]
+            if sg > 0: e['to'][eje] = round(e['to'][eje] + EPS, 4)
+            else: e['from'][eje] = round(e['from'][eje] - EPS, 4)
+    return elementos
+
 def modelo(elementos, usa):
+    elementos = sin_zfight(elementos)
     return {'parent': 'minecraft:block/block', 'textures': dict({'particle': 'emi_cafe:block/' + usa[0]}, **{u: 'emi_cafe:block/' + u for u in usa}), 'elements': elementos,
             'display': {'gui': {'rotation': [30, 225, 0], 'scale': [0.6, 0.6, 0.6]}, 'fixed': {'scale': [0.5, 0.5, 0.5]}}}
 

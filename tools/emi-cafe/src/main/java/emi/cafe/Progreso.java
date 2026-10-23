@@ -35,16 +35,16 @@ final class Progreso {
 
     static final List<Mision> DIA = List.of(
             new Mision("d_servir", "Sirve 8 clientes", "servidos", 8, 10),
-            new Mision("d_turno", "Gana 120 monedas en un solo turno", "turno_max", 120, 12),
-            new Mision("d_turnos", "Termina 2 turnos", "turnos", 2, 8),
-            new Mision("d_sinenfado", "Termina un turno sin que se enfade nadie", "sin_enfado", 1, 12),
+            new Mision("d_turno", "Gana 300 monedas en una sola jornada", "turno_max", 300, 12),
+            new Mision("d_turnos", "Cierra el café 2 veces habiendo servido", "turnos", 2, 8),
+            new Mision("d_sinenfado", "Cierra una jornada sin que se enfade nadie", "sin_enfado", 1, 12),
             new Mision("d_propina", "Consigue 40 monedas de propina", "propinas", 40, 10),
             new Mision("d_lavar", "Lava 6 platos", "lavados", 6, 8));
     static final List<Mision> SEMANA = List.of(
             new Mision("s_servir", "Sirve 40 clientes", "servidos", 40, 40),
-            new Mision("s_turnos", "Termina 8 turnos", "turnos", 8, 35),
+            new Mision("s_turnos", "Cierra el café 8 veces habiendo servido", "turnos", 8, 35),
             new Mision("s_ganado", "Gana 800 monedas", "ganado", 800, 40),
-            new Mision("s_sinenfado", "Termina 3 turnos sin que se enfade nadie", "sin_enfado", 3, 40));
+            new Mision("s_sinenfado", "Cierra 3 jornadas sin que se enfade nadie", "sin_enfado", 3, 40));
 
     static String claveSemana(LocalDate d) { return d.get(IsoFields.WEEK_BASED_YEAR) + "-W" + d.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR); }
 
@@ -94,13 +94,13 @@ final class Progreso {
 
     static final List<Logro> LOGROS = List.of(
             new Logro("clientes", "Camarero", "clientes servidos", new int[]{10, 50, 200, 1000}, new int[]{5, 15, 40, 100}, j -> j.clientes),
-            new Logro("turnos", "Jornada completa", "turnos terminados", new int[]{3, 10, 30, 100}, new int[]{5, 15, 40, 100}, j -> j.turnos),
+            new Logro("turnos", "Jornada completa", "jornadas cerradas", new int[]{3, 10, 30, 100}, new int[]{5, 15, 40, 100}, j -> j.turnos),
             new Logro("ganancias", "Pequeño empresario", "monedas ganadas en total", new int[]{200, 1000, 5000, 20000}, new int[]{5, 15, 40, 100}, j -> j.monedasTotal),
-            new Logro("mejor", "Turno de récord", "monedas en un solo turno", new int[]{100, 250, 500, 900}, new int[]{5, 15, 40, 100}, j -> j.mejorTurno),
+            new Logro("mejor", "Jornada de récord", "monedas en una sola jornada", new int[]{300, 800, 2000, 5000}, new int[]{5, 15, 40, 100}, j -> j.mejorTurno),
             new Logro("propinas", "Encantador", "monedas de propina", new int[]{50, 300, 1500}, new int[]{5, 20, 60}, j -> j.propinasTotal),
-            new Logro("sinenfados", "Todos contentos", "turnos sin que se enfade nadie", new int[]{1, 5, 20}, new int[]{10, 30, 80}, j -> j.sinEnfados),
+            new Logro("sinenfados", "Todos contentos", "jornadas sin que se enfade nadie", new int[]{1, 5, 20}, new int[]{10, 30, 80}, j -> j.sinEnfados),
             new Logro("platos", "Chef variado", "platos aprendidos", new int[]{2, 4, 7, 11}, new int[]{10, 20, 40, 80}, j -> j.platos.size()),
-            new Logro("mejoras", "Local de lujo", "niveles de mejora comprados", new int[]{1, 4, 8, 10}, new int[]{5, 15, 30, 50}, j -> j.mejoras.values().stream().mapToInt(Integer::intValue).sum()));
+            new Logro("mejoras", "Local de lujo", "niveles de mejora comprados", new int[]{1, 4, 8, 12}, new int[]{5, 15, 30, 50}, j -> j.mejoras.values().stream().mapToInt(Integer::intValue).sum()));
 
     /** Cobra los escalones de logros que se acaban de alcanzar. */
     static void revisarLogros(Cafe cafe, ServerPlayerEntity p, Datos.Jugador j) {

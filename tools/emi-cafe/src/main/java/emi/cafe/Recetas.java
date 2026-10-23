@@ -101,6 +101,7 @@ final class Recetas {
         VELOCIDAD("velocidad", "Estaciones más rápidas", CafeItems.RELOJ, new int[]{150, 300}, "Las estaciones tardan un 20 % menos por nivel."),
         PACIENCIA("paciencia", "Clientes más pacientes", CafeItems.CORAZON, new int[]{120, 240}, "Esperan un 25 % más por nivel antes de irse."),
         VAJILLA("vajilla", "Más vajilla", CafeItems.PILA_PLATOS, new int[]{100, 200}, "Dos platos limpios más en la pila por nivel."),
+        AMPLIAR("ampliar", "Ampliar el local", CafeItems.PUERTA, new int[]{300, 600}, "8 bloques más de ancho y 2 mesas más por nivel."),
         PUBLICIDAD("publicidad", "Publicidad", CafeItems.MEGAFONO, new int[]{120, 240}, "Llegan clientes más seguido.");
 
         final String id, nombre, descripcion;

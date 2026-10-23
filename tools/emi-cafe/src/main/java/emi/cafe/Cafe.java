@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * El cafe de un jugador (su «dueño»): el local, los clientes, las estaciones, el turno de 4 minutos y quienes estan dentro (el dueño y los amigos que invite).
+ * El cafe de un jugador (su «dueño»): el local, los clientes, las estaciones, la jornada (se abre y se cierra desde la caja registradora, sin reloj) y quienes estan dentro (el dueño y los amigos que invite).
  * Lo que cada uno lleva en las manos es el objeto de verdad en la mano (hueco 1 de la barra, que no se puede cambiar), no en el inventario.
  * El dinero ganado va a quien sirve; las mejoras y los platos que se conocen son los del dueño.
  */
@@ -46,7 +46,6 @@ final class Cafe {
         Entity icono, barra;
     }
 
-    static final int TURNO = 20 * 60 * 4;                 // 4 minutos
     static final int QUEMA_AVISO = 20 * 6, QUEMA = 20 * 10;
 
     final UUID duenio;
@@ -61,7 +60,7 @@ final class Cafe {
     final Map<BlockPos, Est> ests = new HashMap<>();
     Estado estado = Estado.PREPARANDO;
     int t;
-    int restante, cierre;
+    int cierre;
     int proximoCliente;
     int platos;                                           // platos limpios en la pila
     // lo de este turno (para el resumen)
@@ -84,7 +83,7 @@ final class Cafe {
     // ------------------------------------------------------------ lo que dicen las mejoras
 
     int nivel(Recetas.Mejora m) { return dj().nivel(m.id); }
-    int numMesas() { return Math.min(Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS)); }
+    int numMesas() { return Math.min(Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS) + 2 * nivel(Recetas.Mejora.AMPLIAR)); }
     double velocidad() { return 1.0 - 0.2 * nivel(Recetas.Mejora.VELOCIDAD); }
     int pacienciaTicks() { return (int) (20 * 90 * (1.0 + 0.25 * nivel(Recetas.Mejora.PACIENCIA))); }
     int platosMax() { return 4 + 2 * nivel(Recetas.Mejora.VAJILLA); }
@@ -104,7 +103,7 @@ final class Cafe {
         mesas.clear();
         for (Est e : ests.values()) { Disp.quitar(e.icono); Disp.quitar(e.barra); }
         ests.clear();
-        Local.construir(w, ox, activas(), numMesas());
+        Local.construir(w, ox, activas(), numMesas(), nivel(Recetas.Mejora.AMPLIAR));
         for (int i = 0; i < numMesas(); i++) mesas.add(new Mesa(Local.pos(ox, Local.MESAS[i][0], 1, Local.MESAS[i][1])));
     }
 
@@ -131,31 +130,32 @@ final class Cafe {
 
     // ------------------------------------------------------------ el turno
 
-    /** Abre el turno de 4 minutos (solo el dueño, y solo si ya eligio cocinero). */
+    /** Abre el cafe (solo el dueño, y solo si ya eligio cocinero). No hay reloj: se cierra desde la caja registradora cuando se quiera. */
     String abrirTurno() {
         if (estado != Estado.PREPARANDO) return "El café ya está abierto.";
         if (dj().inicial == null) return "Primero elige a tu Pokémon cocinero.";
         estado = Estado.ABIERTO;
-        restante = TURNO;
         proximoCliente = 40;
         platos = platosMax();
         servidos = enfadados = propinas = ganado = 0;
         ganadoPor.clear(); servidosPor.clear(); estrellasTurno.clear();
         aTodos(p -> {
-            Msg.title(p, Text.literal("¡ABRIMOS!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Turno de 4 minutos").formatted(Formatting.YELLOW), 5, 40, 10);
+            Msg.title(p, Text.literal("¡ABRIMOS!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Cierra desde la caja registradora cuando quieras").formatted(Formatting.YELLOW), 5, 50, 10);
             Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.2f);
         });
+        Local.letrero(w, ox, true);
         return null;
     }
 
-    /** Termina el turno antes de tiempo o cuando se acaba el reloj: no entran mas clientes y los que esperan se van sin pagar. */
+    /** Cierra el cafe: no entran mas clientes y los que esperan se van sin pagar. */
     void cerrarTurno() {
         if (estado != Estado.ABIERTO) return;
         estado = Estado.CERRANDO;
         cierre = 0;
         for (Cliente c : clientes) c.despedir();
+        Local.letrero(w, ox, false);
         aTodos(p -> {
-            Msg.title(p, Text.literal("¡CERRAMOS!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Se acabó el turno").formatted(Formatting.YELLOW), 5, 40, 10);
+            Msg.title(p, Text.literal("¡CERRAMOS!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Hasta mañana").formatted(Formatting.YELLOW), 5, 40, 10);
             Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 0.7f);
         });
     }
@@ -164,11 +164,11 @@ final class Cafe {
         for (ServerPlayerEntity p : presentes()) {
             Datos.Jugador d = dj(p);
             int gan = ganadoPor.getOrDefault(p.getUuid(), 0), serv = servidosPor.getOrDefault(p.getUuid(), 0);
-            if (serv > 0) {
+            if (serv >= 3) {                                                          // cerrar sin haber servido casi nada no cuenta como jornada
                 d.turnos++;
                 Progreso.dar(this, d, p.getUuid(), 5);                                    // por terminar el turno sirviendo
                 Progreso.evento(this, p, d, "turnos", 1);
-                if (enfadados == 0 && serv >= 3) { d.sinEnfados++; Progreso.dar(this, d, p.getUuid(), 5); Progreso.evento(this, p, d, "sin_enfado", 1); }
+                if (enfadados == 0) { d.sinEnfados++; Progreso.dar(this, d, p.getUuid(), 5); Progreso.evento(this, p, d, "sin_enfado", 1); }
                 if (gan > d.mejorTurno) { if (d.mejorTurno > 0) Progreso.dar(this, d, p.getUuid(), 5); d.mejorTurno = gan; }      // el primer turno no cuenta como record
                 Progreso.evento(this, p, d, "turno_max", gan);
             }
@@ -194,8 +194,7 @@ final class Cafe {
         ps = presentes();
         if (ps.isEmpty()) return;
         if (estado == Estado.ABIERTO) {
-            if (--restante <= 0) cerrarTurno();
-            else if (--proximoCliente <= 0) { proximoCliente = intervalo(); nuevoCliente(); }
+            if (--proximoCliente <= 0) { proximoCliente = intervalo(); nuevoCliente(); }
         }
         for (int i = clientes.size() - 1; i >= 0; i--) {
             Cliente c = clientes.get(i);
@@ -218,7 +217,7 @@ final class Cafe {
                 p.setHealth(p.getMaxHealth());
                 Msg.actionBar(p, hud(p));
             }
-            for (Entity e : w.getEntitiesByType(EntityType.ITEM, new Box(ox - 4, Local.Y - 2, -4, ox + 20, Local.Y + 8, 24), x -> true)) e.discard();
+            for (Entity e : w.getEntitiesByType(EntityType.ITEM, new Box(ox - 4, Local.Y - 2, -4, ox + Local.ancho(2) + 6, Local.Y + 8, 24), x -> true)) e.discard();
         }
     }
 
@@ -226,10 +225,8 @@ final class Cafe {
         Item c = manos.get(p.getUuid());
         Text mano = c == null ? Text.literal("manos vacías").formatted(Formatting.GRAY) : Text.literal(CafeItems.nombre(c)).formatted(Formatting.YELLOW);
         Text r = Text.literal("");
-        if (estado == Estado.ABIERTO) {
-            int s = restante / 20;
-            r = Text.literal(String.format("⏱ %d:%02d   ", s / 60, s % 60)).formatted(s < 30 ? Formatting.RED : Formatting.WHITE, Formatting.BOLD);
-        } else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
+        if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO   ").formatted(Formatting.GREEN, Formatting.BOLD);
+        else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
         return Text.empty().append(r).append(Text.literal("Monedas: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(dj(p).monedas)).formatted(Formatting.WHITE, Formatting.BOLD))
                 .append(Text.literal("   Platos limpios: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(platos)).formatted(platos == 0 ? Formatting.RED : Formatting.WHITE, Formatting.BOLD))
                 .append(Text.literal("   Llevas: ").formatted(Formatting.GOLD)).append(mano);

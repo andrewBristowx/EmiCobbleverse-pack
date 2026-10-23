@@ -77,7 +77,7 @@ final class Cmds {
                         .then(CommandManager.literal("turno").executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf == null) return "Entra primero con /cafe entrar.";
-                            if (cf.estado == Cafe.Estado.ABIERTO) cf.restante = 40;                 // acaba el turno en 2 s
+                            if (cf.estado == Cafe.Estado.ABIERTO) cf.cerrarTurno();
                             else return cf.abrirTurno();
                             return null;
                         })))
@@ -99,6 +99,16 @@ final class Cmds {
                             if (cf != null) cf.reconstruir();
                             return null;
                         })))
+                        .then(CommandManager.literal("mejora").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("nivel", IntegerArgumentType.integer(0, 9)).executes(c -> con(c, p -> {
+                            Recetas.Mejora m = Recetas.Mejora.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
+                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad";
+                            Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            j.mejoras.put(m.id, Math.min(m.max(), IntegerArgumentType.getInteger(c, "nivel")));
+                            EmiCafe.datos.guardar(p.getUuid());
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null) cf.reconstruir();
+                            return null;
+                        })))))
                         .then(CommandManager.literal("reiniciar").executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.inicial = null; j.platos.clear(); j.mejoras.clear(); j.monedas = 0;
