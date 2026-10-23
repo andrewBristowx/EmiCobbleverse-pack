@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "emi_cafe",
+  "version": "${version}",
+  "name": "Cafe Michialien",
+  "description": "Minijuego de cafeteria con clientes Pokemon (tipo Pokemon Cafe) para el servidor de Emi.",
+  "authors": ["SomitadePony"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": { "main": ["emi.cafe.EmiCafe"] },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "fabric-api": "*",
+    "cobblemon": "*"
+  }
+}
