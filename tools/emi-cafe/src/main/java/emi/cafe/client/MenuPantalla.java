@@ -57,6 +57,7 @@ public final class MenuPantalla extends Lienzo {
     private boolean duenio, lleno;
     private int monedas, estrellas, clientes, turnos, mejorTurno, platosLimpios, limiteTienda = 10;
     private int tab;
+    private int pagRec, pagTienda;                    // pagina del recetario (6 platos) y de los platos de la tienda (3)
     private long ultimoRefresco = System.currentTimeMillis();
 
     public MenuPantalla(String json) {
@@ -178,7 +179,7 @@ public final class MenuPantalla extends Lienzo {
 
         switch (tab) {
             case T_CAFE -> cafe(g, mx, my);
-            case T_RECETARIO -> recetario(g);
+            case T_RECETARIO -> recetario(g, mx, my);
             case T_TIENDA -> tienda(g, mx, my);
             case T_ESTRELLAS -> estrellasTab(g, mx, my);
             case T_MISIONES -> misionesTab(g);
@@ -262,19 +263,41 @@ public final class MenuPantalla extends Lienzo {
 
     // ------------------------------------------------------------ recetario
 
-    private void recetario(DrawContext g) {
+    private static final int REC_POR_PAG = 6, REC_W = 296, REC_H = 62, TIENDA_POR_PAG = 3;
+
+    private static int paginas(int total, int porPag) { return Math.max(1, (total + porPag - 1) / porPag); }
+
+    /** Dibuja «◀ 1/2 ▶» con su esquina superior izquierda en (x, y). */
+    private void paginador(DrawContext g, int mx, int my, int x, int y, int pag, int total) {
+        boton(g, x, y, 18, 14, "◀", 0xFF7A4AC0, pag > 0, pag > 0 && dentro(mx, my, x, y, 18, 14), 0.9f);
+        texto(g, (pag + 1) + "/" + total, x + 24, y + 3, BLANCO, 0.85f);
+        boton(g, x + 54, y, 18, 14, "▶", 0xFF7A4AC0, pag < total - 1, pag < total - 1 && dentro(mx, my, x + 54, y, 18, 14), 0.9f);
+    }
+
+    /** -1 / +1 si se pulso una flecha del paginador dibujado en (x, y), 0 si no. */
+    private int clicPaginador(int mx, int my, int x, int y) {
+        if (dentro(mx, my, x, y, 18, 14)) return -1;
+        if (dentro(mx, my, x + 54, y, 18, 14)) return 1;
+        return 0;
+    }
+
+    private void recetario(DrawContext g, int mx, int my) {
         texto(g, "RECETARIO", LX, CY - 8, ORO, 1.1f);
         texto(g, "Cómo se hace cada plato. Clic derecho en el cliente o en su mesa con el plato en las manos.", LX + 90, CY - 6, GRIS, 0.8f);
-        int n = 0;
-        for (PlatoC p : platos) {
-            int y = CY + 12 + n * 70;
-            caja(g, LX, y, 600, 64, FONDO, p.tengo() ? 0xFF6FE08A : 0xFF444455);
-            objeto(g, p.item(), LX + 12, y + 14, 2.5f);
-            texto(g, p.nombre(), LX + 64, y + 8, p.tengo() ? BLANCO : 0xFF888899, 1.2f);
-            texto(g, p.tengo() ? "Paga " + p.precio() + " monedas (+ propina de hasta el 60 %)" : "Sin aprender · cuesta " + p.coste() + " monedas en la TIENDA", LX + 64, y + 24, p.tengo() ? MONEDA : ROJO, 0.85f);
-            texto(g, "Receta: " + p.receta(), LX + 64, y + 38, 0xFF9AC8FF, 0.85f);
-            texto(g, p.tengo() ? "¡Ya sabes hacerlo!" : "Cuando lo aprendas sus estaciones aparecen en la cocina.", LX + 64, y + 50, p.tengo() ? VERDE : SUAVE, 0.7f);
-            n++;
+        int total = paginas(platos.size(), REC_POR_PAG);
+        pagRec = Math.min(pagRec, total - 1);
+        paginador(g, mx, my, LX + 528, CY - 12, pagRec, total);
+        for (int n = 0; n < REC_POR_PAG; n++) {
+            int i = pagRec * REC_POR_PAG + n;
+            if (i >= platos.size()) break;
+            PlatoC p = platos.get(i);
+            int x = LX + (n % 2) * (REC_W + 8), y = CY + 14 + (n / 2) * (REC_H + 4);
+            caja(g, x, y, REC_W, REC_H, FONDO, p.tengo() ? 0xFF6FE08A : 0xFF444455);
+            objeto(g, p.item(), x + 8, y + 10, 2f);
+            texto(g, p.nombre(), x + 46, y + 5, p.tengo() ? BLANCO : 0xFF888899, 1f);
+            texto(g, p.tengo() ? "Paga " + p.precio() + " monedas (+ propina)" : "Cuesta " + p.coste() + " monedas en la TIENDA", x + 46, y + 17, p.tengo() ? MONEDA : ROJO, 0.75f);
+            parrafo(g, p.receta(), x + 46, y + 29, REC_W - 54, 0xFF9AC8FF, 0.7f);
+            texto(g, p.tengo() ? "¡Ya sabes hacerlo!" : "Sin aprender", x + 46, y + REC_H - 10, p.tengo() ? VERDE : SUAVE, 0.65f);
         }
     }
 
@@ -289,9 +312,14 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Tus monedas: " + monedas, LX + 140, CY - 5, MONEDA, 0.9f);
         texto(g, !duenio ? "Solo el dueño compra aquí." : abierto() || estado.equals("cerrando") ? "Se compra con el café cerrado." : "Platos nuevos y mejoras para tu café.", LX + 250, CY - 5, SUAVE, 0.8f);
         texto(g, "PLATOS NUEVOS", LX, CY + 8, 0xFF6CC8FF, 0.95f);
-        for (int i = 0; i < platos.size(); i++) {
+        int totalPag = paginas(platos.size(), TIENDA_POR_PAG);
+        pagTienda = Math.min(pagTienda, totalPag - 1);
+        paginador(g, mx, my, LX + PW - 72, CY + 5, pagTienda, totalPag);
+        for (int n = 0; n < TIENDA_POR_PAG; n++) {
+            int i = pagTienda * TIENDA_POR_PAG + n;
+            if (i >= platos.size()) break;
             PlatoC p = platos.get(i);
-            int y = CY + 22 + i * (PH + 4);
+            int y = CY + 22 + n * (PH + 4);
             caja(g, LX, y, PW, PH, FONDO, p.tengo() ? 0xFF6FE08A : BORDE);
             objeto(g, p.item(), LX + 8, y + 8, 1.5f);
             texto(g, p.nombre(), LX + 40, y + 6, BLANCO, 1f);
@@ -462,6 +490,7 @@ public final class MenuPantalla extends Lienzo {
         switch (tab) {
             case T_CAFE -> clicCafe(mx, my);
             case T_TIENDA -> clicTienda(mx, my);
+            case T_RECETARIO -> { int d = clicPaginador(mx, my, LX + 528, CY - 12); if (d != 0) pagRec = Math.max(0, Math.min(paginas(platos.size(), REC_POR_PAG) - 1, pagRec + d)); }
             case T_ESTRELLAS -> clicEstrellas(mx, my);
             default -> { }
         }
@@ -496,10 +525,14 @@ public final class MenuPantalla extends Lienzo {
     }
 
     private void clicTienda(int mx, int my) {
+        int d = clicPaginador(mx, my, LX + PW - 72, CY + 5);
+        if (d != 0) { pagTienda = Math.max(0, Math.min(paginas(platos.size(), TIENDA_POR_PAG) - 1, pagTienda + d)); return; }
         if (!puedeComprar()) return;
-        for (int i = 0; i < platos.size(); i++) {
+        for (int n = 0; n < TIENDA_POR_PAG; n++) {
+            int i = pagTienda * TIENDA_POR_PAG + n;
+            if (i >= platos.size()) break;
             PlatoC p = platos.get(i);
-            int y = CY + 22 + i * (PH + 4);
+            int y = CY + 22 + n * (PH + 4);
             if (!p.tengo() && monedas >= p.coste() && dentro(mx, my, LX + PW - 92, y + 36, 86, 20)) enviar("comprarPlato", p.id(), "");
         }
         for (int i = 0; i < mejoras.size(); i++) {

@@ -86,6 +86,14 @@ final class Cmds {
                             if (cf != null) cf.reconstruir();
                             return null;
                         }))))
+                        .then(CommandManager.literal("platos").executes(c -> con(c, p -> {            // aprende todos los platos (para probar la cocina entera)
+                            Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            for (Recetas.Plato pl : Recetas.Plato.values()) if (!j.platos.contains(pl.id)) j.platos.add(pl.id);
+                            EmiCafe.datos.guardar(p.getUuid());
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null) cf.reconstruir();
+                            return null;
+                        })))
                         .then(CommandManager.literal("reiniciar").executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.inicial = null; j.platos.clear(); j.mejoras.clear(); j.monedas = 0;

@@ -1,4 +1,4 @@
-# Café Michialien (`emi-cafe`) — 0.4.0 (menú propio como el de los otros juegos; antes 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
+# Café Michialien (`emi-cafe`) — 0.5.0 (8 platos y 10 estaciones nuevos y cocineros con la cara de los Pokémon reales; antes 0.4.0: menú propio como el de los otros juegos; 0.3.0: estrellas, tienda de estrellas con el peluche del Michialien chef, misiones y logros; sobre la 0.2.0)
 
 Pedido del dueño (2026-10-23): «un juego como **Pokémon Café** en Minecraft: un restaurante donde cada cierto tiempo entran Pokémon y te piden comida; los platos se
 preparan **llevando los ingredientes en las manos (no en el inventario) a la estación que toca** (una papa a la freidora, etc.); al empezar eliges **1 de 3 Pokémon**
@@ -8,6 +8,21 @@ y **todos los objetos y estaciones con textura propia**».
 **Decisiones del dueño (2026-10-23):** turno de **4 minutos** que **cierra el local y enseña el resumen de ganancias** con «comprar» o «parar por ahora»; **un café por jugador**, que
 **puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
 nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
+
+## 0d. Novedades de la 0.5.0: más comidas, más estaciones y cocineros «de verdad»
+Pedido del dueño: «quiero más comidas y estaciones de trabajo, y el icono hecho como los Pokémon reales pero con sombreros de cocineros».
+- **8 platos nuevos** (11 en total; cada uno desbloquea sus cajas y estaciones al comprarlo, precio de venta / coste en la tienda): **Café** 12/90 (granos → cafetera), **Tortilla** 14/100 (huevo → plancha), **Sopa de papas** 19/140 (papa → tabla → olla),
+  **Batido de bayas** 20/160 (baya + leche en la mesa de emplatar → batidora), **Panqueques** 22/160 (harina + huevo = masa en la mesa de emplatar → plancha), **Capuchino** 20/200 (café + leche en la mesa de emplatar),
+  **Hamburguesa** 30/260 (carne → plancha; harina → horno = pan; carne asada + pan en la mesa de emplatar) y **Pastel** 32/300 (masa → horno). La **masa** sale de harina + huevo y sirve para panqueques y pastel.
+- **10 estaciones nuevas** con modelo y textura propios: cajas de **huevos, harina, carne, leche y granos de café**, y las estaciones **plancha, olla, horno, batidora y cafetera**. Van en una **segunda fila de la cocina junto a la barra** (z = 5; los huecos x = 7-8 quedan libres para pasar al comedor; la fila solo se monta si algún plato comprado la usa).
+  **El horno se quema** como la freidora (avisa a los 6 s y a los 10 s sale «comida quemada», que se tira a la basura); la plancha no. `Estacion` lleva ahora `z`, `quema()` y `quemado()`; las combinaciones de la mesa de emplatar son una tabla (`Recetas.COMBINACIONES`).
+- **18 objetos nuevos** (huevo, harina, carne, leche, granos, masa, pan, carne asada, bayas con leche, los 8 platos y comida quemada) y **10 bloques** nuevos, **todo dibujado por código** (`assets/generar.py`).
+- **Menú:** el **recetario** va a dos columnas con **páginas** (6 platos por página, flechas ◀ ▶) y la tienda de platos va de 3 en 3 con las mismas flechas. El logro «Chef variado» pasa a 2/4/7/11 platos aprendidos (premios de 10, 20, 40 y 80 estrellas).
+- **Iconos de los cocineros:** ya no son bolitas: `assets/cocineros.py` **dibuja los modelos reales de Cobblemon** (Charmander, Squirtle y Bulbasaur, sin llama ni lianas, con los brazos hacia abajo) **con un gorro de cocinero** de cubos y los reduce a 64×64. Hay que pasarle el jar de Cobblemon (`COBBLEMON_JAR=… python3 assets/cocineros.py --vista X.png`);
+  `generar.py` ya no los toca (solo escribe su modelo). **Los modelos y texturas de Cobblemon son de licencia no comercial (CC): estos tres PNG son derivados; no usarlos fuera del pack.**
+- **Comando de pruebas nuevo:** `/cafe dev platos` (aprende todos los platos; reconstruye el local).
+- **Probado en el juego** (banco ligero, un cliente): los 8 platos cocinados de principio a fin con `dev usar` (el clic derecho simulado), la masa y el pan intermedios, la comida quemada del horno con su aviso, las dos filas de la cocina, el recetario y la tienda con sus páginas (clics reales en las flechas),
+  los iconos nuevos en la pantalla de elegir cocinero y en la barra de objetos, un turno abierto con clientes que piden capuchino y hamburguesa y servir un capuchino (monedas). **No probado:** jugar los 8 platos a mano con clic derecho real y dos jugadores, el equilibrio de precios, tiempos y costes (**estimaciones**), la plancha con la sartén y el humo a ojo, sonidos, el servidor real.
 
 ## 0c. Novedades de la 0.4.0: el menú es una pantalla propia (como Emi Fall)
 Pedido del dueño: «que el menú de Emi Café se vea como el de mis otros juegos». Los cofres de Minecraft se sustituyen por la **pantalla propia** de Emi Fall (`client/MenuPantalla` sobre `client/Lienzo`, lienzo de 640×360 escalado; los datos van por JSON en `net/TextoPayload` y los clics vuelven por `net/AccionPayload`, el servidor lo comprueba todo en `Menus.recibir`). Se abre con la **caja registradora** o con `/cafe menu`. Pestañas: **CAFÉ** (elegir cocinero con tres tarjetas, abrir el turno, parar por ahora, quién está en el café e invitar), **RECETARIO**, **TIENDA** (platos y mejoras con monedas, con barras de nivel), **ESTRELLAS** (la misma disposición que la tienda de Emi Fall, con el peluche chef en la fila dorada), **MISIONES** y **LOGROS** (barras de avance). Al cerrar el turno sale encima el **resumen de ganancias** con COMPRAR / OTRO TURNO / PARAR POR AHORA / SEGUIR EN EL MENÚ (los invitados solo ven ACEPTAR). Se refresca solo cada 1,5 s. **Hace falta el mod también en el cliente** (ya hacía falta por las texturas).
@@ -40,8 +55,8 @@ Mod **servidor + cliente** (el cliente lo necesita por las texturas de objetos y
 - **Invitar:** el dueño elige a un jugador conectado (menú con cabezas o `/cafe invitar <jugador>`); le llega un mensaje con **[ACEPTAR]** (o `/cafe aceptar <dueño>`, vale 1 minuto). Entra como invitado (hasta 4 personas en total), cocina y sirve, **lo que gana es suyo**;
   si el dueño sale o se desconecta, el café se cierra y los invitados vuelven a donde estaban. Con más gente llegan clientes más seguido.
 - **Datos** en `world/emi_cafe/jugadores/<uuid>.json` (monedas, cocinero, platos, mejoras, turnos, mejor turno) y `world/emi_cafe/saved/<uuid>.nbt` (lo que tenías antes de entrar).
-- **Comandos:** `/cafe entrar|salir|info|invitar <jugador>|aceptar [dueño]`; admin (`op` 2 o permiso `emi_cafe.admin`): `/cafe dev cliente|monedas <n>|turno|inicial <charmander|squirtle|bulbasaur>|reiniciar|usar <x y z>|local`.
-- **Texturas:** 26 objetos (ingredientes, platos, platos quemados y sucios, cocineros con gorro, iconos del menú) y 12 bloques con 19 texturas de superficie, **dibujadas por código** (`assets/generar.py`, Python con Pillow; **ejecútalo para regenerar** y `--hoja X.png` para ver todas juntas).
+- **Comandos:** `/cafe entrar|salir|info|invitar <jugador>|aceptar [dueño]`; admin (`op` 2 o permiso `emi_cafe.admin`): `/cafe dev cliente|monedas <n>|estrellas <n>|turno|inicial <charmander|squirtle|bulbasaur>|platos|reiniciar|usar <x y z>|local`.
+- **Texturas:** 44 objetos (ingredientes, platos, platos quemados y sucios, cocineros con gorro, iconos del menú) y 22 bloques con 30 texturas de superficie, **dibujadas por código** (`assets/generar.py`, Python con Pillow; **ejecútalo para regenerar** y `--hoja X.png` para ver todas juntas).
   Para cambiar una a mano basta reemplazar el PNG (los nombres son fijos) y no volver a ejecutar el script.
 - **Compilar:** `COBBLEMON_JAR=… KOTLIN_JAR=… tools/emi-cafe/build.sh` (como `emi-fall`). **En el servidor real hay que copiar a mano el jar a `mods/`**; y `emi-survivors` 0.29.0 para el botón de Ms. President.
 
@@ -53,7 +68,7 @@ el **equilibrio** (precios, tiempos, paciencia y llegada de clientes son **estim
 **Limitación conocida:** si un jugador dentro del café escribe a mano el comando de otro minijuego (`/fall entrar`…) sin salir antes, el café lo da de baja sin devolverle lo suyo hasta que vuelva a la dimensión del café (entonces `Retornos` se lo devuelve); `Ms. President` y survivors ya lo avisan.
 
 ## Lo que falta (ver las fases de abajo)
-**F3 contenido:** ~20 platos (hoy 3), más ingredientes y estaciones (plancha, olla, horno, batidora…), más especies de clientes y sus gustos, ayudantes Pokémon, decoración.
+**F3 contenido:** ~20 platos (hoy 11), más ingredientes y estaciones, más especies de clientes y sus gustos, ayudantes Pokémon, decoración.
 **F4 (lo que queda):** música y sonidos propios y reputación del café (estrellas, tienda, peluche chef, misiones y logros ya están en la 0.3.0).
 **F5:** equilibrio con gente real y servidor real.
 

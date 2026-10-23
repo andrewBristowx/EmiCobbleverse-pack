@@ -23,6 +23,24 @@ public final class CafeItems {
     public static final Item LECHUGA = reg("lechuga", "Lechuga");
     public static final Item LECHUGA_PICADA = reg("lechuga_picada", "Lechuga picada");
     public static final Item ENSALADA = reg("ensalada", "Ensalada de bayas");
+    public static final Item HUEVO = reg("huevo", "Huevo");
+    public static final Item HARINA = reg("harina", "Harina");
+    public static final Item CARNE = reg("carne", "Carne");
+    public static final Item LECHE = reg("leche", "Leche");
+    public static final Item GRANOS = reg("granos", "Granos de café");
+    public static final Item MASA = reg("masa", "Masa");
+    public static final Item PAN = reg("pan", "Pan");
+    public static final Item CARNE_ASADA = reg("carne_asada", "Carne asada");
+    public static final Item BAYAS_LECHE = reg("bayas_leche", "Bayas con leche");
+    public static final Item TORTILLA = reg("tortilla", "Tortilla");
+    public static final Item PANQUEQUES = reg("panqueques", "Panqueques");
+    public static final Item HAMBURGUESA = reg("hamburguesa", "Hamburguesa");
+    public static final Item PASTEL = reg("pastel", "Pastel");
+    public static final Item SOPA = reg("sopa", "Sopa de papas");
+    public static final Item BATIDO = reg("batido", "Batido de bayas");
+    public static final Item CAFE = reg("cafe", "Café");
+    public static final Item CAPUCHINO = reg("capuchino", "Capuchino");
+    public static final Item COMIDA_QUEMADA = reg("comida_quemada", "Comida quemada");
     public static final Item PLATO_SUCIO = reg("plato_sucio", "Plato sucio");
     public static final Item PLATO_LIMPIO = reg("plato_limpio", "Plato limpio");
     /** Solo se usan como dibujo (el globo de los pedidos y los iconos de los menus). */

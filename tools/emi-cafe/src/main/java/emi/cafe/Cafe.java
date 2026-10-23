@@ -343,9 +343,20 @@ final class Cafe {
             if (sale == null) { msg(p, "Eso no va aquí: " + e.nombre.toLowerCase()); sonido(x, y, z, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), 0.7f, 0.8f); return; }
             est.resultado = sale; est.ticks = 0; est.total = Math.max(10, (int) Math.round(e.ticks * velocidad()));
             manos.put(p.getUuid(), null);
-            sonido(x, y, z, e == Estacion.FREIDORA ? SoundEvents.BLOCK_BREWING_STAND_BREW : e == Estacion.EXPRIMIDOR ? SoundEvents.ITEM_BUCKET_FILL : SoundEvents.BLOCK_WOOD_HIT, 0.8f, 1.0f);
+            sonido(x, y, z, sonidoDe(e), 0.8f, 1.0f);
         }
         dibujar(pos, e, est);
+    }
+
+    private static SoundEvent sonidoDe(Estacion e) {
+        return switch (e) {
+            case FREIDORA, CAFETERA -> SoundEvents.BLOCK_BREWING_STAND_BREW;
+            case EXPRIMIDOR, OLLA -> SoundEvents.ITEM_BUCKET_FILL;
+            case PLANCHA -> SoundEvents.BLOCK_FIRE_EXTINGUISH;
+            case HORNO -> SoundEvents.BLOCK_FURNACE_FIRE_CRACKLE;
+            case BATIDORA -> SoundEvents.BLOCK_GRINDSTONE_USE;
+            default -> SoundEvents.BLOCK_WOOD_HIT;
+        };
     }
 
     private void emplatar(ServerPlayerEntity p, Estacion e, BlockPos pos, Item carga) {
@@ -409,19 +420,19 @@ final class Cafe {
                 dibujar(pos, e, est);
             } else if (est.ticks % 5 == 0) {
                 dibujar(pos, e, est);
-                if (e == Estacion.FREIDORA && est.ticks % 15 == 0) w.spawnParticles(ParticleTypes.SMOKE, x, y + 0.1, z, 2, 0.15, 0.05, 0.15, 0.0);
+                if ((e == Estacion.FREIDORA || e == Estacion.PLANCHA || e == Estacion.HORNO || e == Estacion.OLLA) && est.ticks % 15 == 0) w.spawnParticles(ParticleTypes.SMOKE, x, y + 0.1, z, 2, 0.15, 0.05, 0.15, 0.0);
                 if (e == Estacion.TABLA && est.ticks % 10 == 0) sonido(x, y, z, SoundEvents.BLOCK_WOOD_HIT, 0.5f, 1.4f);
                 if (e == Estacion.FREGADERO && est.ticks % 12 == 0) sonido(x, y, z, SoundEvents.BLOCK_WATER_AMBIENT, 0.4f, 1.3f);
             }
-        } else if (est.listo != null && e == Estacion.FREIDORA) {
+        } else if (est.listo != null && e.quema()) {
             est.listoTicks++;
             if (est.listoTicks == QUEMA_AVISO) { sonido(x, y, z, SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1.0f, 0.6f); w.spawnParticles(ParticleTypes.SMOKE, x, y + 0.2, z, 8, 0.2, 0.1, 0.2, 0.01); dibujar(pos, e, est); }
             else if (est.listoTicks > QUEMA_AVISO && est.listoTicks % 8 == 0) w.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y + 0.3, z, 2, 0.15, 0.1, 0.15, 0.01);
             if (est.listoTicks >= QUEMA) {
-                est.listo = CafeItems.PAPAS_QUEMADAS;
+                est.listo = e.quemado();
                 sonido(x, y, z, SoundEvents.ENTITY_GENERIC_EXTINGUISH_FIRE, 1.0f, 1.0f);
                 w.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y + 0.3, z, 12, 0.25, 0.15, 0.25, 0.02);
-                aTodos(pl -> Msg.actionBar(pl, Text.literal("¡Se quemaron unas papas! Tíralas a la basura").formatted(Formatting.RED)));
+                aTodos(pl -> Msg.actionBar(pl, Text.literal("¡Se quemó algo en: " + e.nombre.toLowerCase() + "! Tíralo a la basura").formatted(Formatting.RED)));
                 dibujar(pos, e, est);
             }
         }
@@ -435,7 +446,7 @@ final class Cafe {
         if (est.icono == null || est.icono.isRemoved()) est.icono = Disp.objeto(w, CafeItems.id(mostrar), x, y + 0.2, z, 0.55f, true);
         else Disp.cambiarObjeto(est.icono, CafeItems.id(mostrar), x, y + 0.2, z, 0.55f, true);
         String barra;
-        if (est.listo == CafeItems.PAPAS_QUEMADAS) barra = "{\"text\":\"¡Quemado!\",\"color\":\"red\",\"bold\":true}";
+        if (est.listo == CafeItems.PAPAS_QUEMADAS || est.listo == CafeItems.COMIDA_QUEMADA) barra = "{\"text\":\"¡Quemado!\",\"color\":\"red\",\"bold\":true}";
         else if (est.listo != null) barra = est.listoTicks >= QUEMA_AVISO ? "{\"text\":\"¡Se quema!\",\"color\":\"gold\",\"bold\":true}" : "{\"text\":\"¡Listo!\",\"color\":\"green\",\"bold\":true}";
         else if (est.resultado != null) {
             int n = Math.round(8f * est.ticks / Math.max(1, est.total));

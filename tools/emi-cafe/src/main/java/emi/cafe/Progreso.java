@@ -99,7 +99,7 @@ final class Progreso {
             new Logro("mejor", "Turno de récord", "monedas en un solo turno", new int[]{100, 250, 500, 900}, new int[]{5, 15, 40, 100}, j -> j.mejorTurno),
             new Logro("propinas", "Encantador", "monedas de propina", new int[]{50, 300, 1500}, new int[]{5, 20, 60}, j -> j.propinasTotal),
             new Logro("sinenfados", "Todos contentos", "turnos sin que se enfade nadie", new int[]{1, 5, 20}, new int[]{10, 30, 80}, j -> j.sinEnfados),
-            new Logro("platos", "Chef variado", "platos aprendidos", new int[]{2, 3}, new int[]{10, 20}, j -> j.platos.size()),
+            new Logro("platos", "Chef variado", "platos aprendidos", new int[]{2, 4, 7, 11}, new int[]{10, 20, 40, 80}, j -> j.platos.size()),
             new Logro("mejoras", "Local de lujo", "niveles de mejora comprados", new int[]{1, 4, 8, 10}, new int[]{5, 15, 30, 50}, j -> j.mejoras.values().stream().mapToInt(Integer::intValue).sum()));
 
     /** Cobra los escalones de logros que se acaban de alcanzar. */

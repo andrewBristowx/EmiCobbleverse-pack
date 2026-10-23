@@ -8,30 +8,41 @@ import net.minecraft.item.Item;
  * {@code EMPLATAR} junta dos objetos; {@code FREGADERO} lava platos sucios (cola) y los devuelve a la pila de platos limpios.
  */
 enum Estacion {
-    BASURA("Basura", CafeBlocks.BASURA, Tipo.BASURA, 1, 0, null, true),
-    CAJA_PAPAS("Caja de papas", CafeBlocks.CAJA_PAPAS, Tipo.CAJA, 3, 0, CafeItems.PAPA, false),
-    CAJA_BAYAS("Caja de bayas", CafeBlocks.CAJA_BAYAS, Tipo.CAJA, 4, 0, CafeItems.BAYA, false),
-    CAJA_LECHUGA("Caja de lechugas", CafeBlocks.CAJA_LECHUGA, Tipo.CAJA, 5, 0, CafeItems.LECHUGA, false),
-    TABLA("Tabla de cortar", CafeBlocks.TABLA, Tipo.PROCESO, 7, 60, null, false),
-    FREIDORA("Freidora", CafeBlocks.FREIDORA, Tipo.PROCESO, 9, 120, null, false),
-    EXPRIMIDOR("Exprimidor", CafeBlocks.EXPRIMIDOR, Tipo.PROCESO, 10, 80, null, false),
-    EMPLATAR("Mesa de emplatar", CafeBlocks.EMPLATAR, Tipo.EMPLATAR, 12, 60, null, false),
-    FREGADERO("Fregadero", CafeBlocks.FREGADERO, Tipo.FREGADERO, 13, 80, null, true),
-    MESA("Mesa", CafeBlocks.MESA, Tipo.MESA, -1, 0, null, true),
-    REGISTRADORA("Caja registradora", CafeBlocks.REGISTRADORA, Tipo.REGISTRADORA, -1, 0, null, true);
+    BASURA("Basura", CafeBlocks.BASURA, Tipo.BASURA, 1, 1, 0, null, true),
+    CAJA_PAPAS("Caja de papas", CafeBlocks.CAJA_PAPAS, Tipo.CAJA, 3, 1, 0, CafeItems.PAPA, false),
+    CAJA_BAYAS("Caja de bayas", CafeBlocks.CAJA_BAYAS, Tipo.CAJA, 4, 1, 0, CafeItems.BAYA, false),
+    CAJA_LECHUGA("Caja de lechugas", CafeBlocks.CAJA_LECHUGA, Tipo.CAJA, 5, 1, 0, CafeItems.LECHUGA, false),
+    TABLA("Tabla de cortar", CafeBlocks.TABLA, Tipo.PROCESO, 7, 1, 60, null, false),
+    FREIDORA("Freidora", CafeBlocks.FREIDORA, Tipo.PROCESO, 9, 1, 120, null, false),
+    EXPRIMIDOR("Exprimidor", CafeBlocks.EXPRIMIDOR, Tipo.PROCESO, 10, 1, 80, null, false),
+    EMPLATAR("Mesa de emplatar", CafeBlocks.EMPLATAR, Tipo.EMPLATAR, 12, 1, 60, null, false),
+    FREGADERO("Fregadero", CafeBlocks.FREGADERO, Tipo.FREGADERO, 13, 1, 80, null, true),
+    // la segunda fila de la cocina (z = 5, pegada a la barra; los huecos x = 7-8 quedan libres para pasar al comedor)
+    CAJA_HUEVOS("Caja de huevos", CafeBlocks.CAJA_HUEVOS, Tipo.CAJA, 1, 5, 0, CafeItems.HUEVO, false),
+    CAJA_HARINA("Saco de harina", CafeBlocks.CAJA_HARINA, Tipo.CAJA, 2, 5, 0, CafeItems.HARINA, false),
+    CAJA_CARNE("Caja de carne", CafeBlocks.CAJA_CARNE, Tipo.CAJA, 3, 5, 0, CafeItems.CARNE, false),
+    CAJA_LECHE("Caja de leche", CafeBlocks.CAJA_LECHE, Tipo.CAJA, 4, 5, 0, CafeItems.LECHE, false),
+    CAJA_GRANOS("Saco de granos de café", CafeBlocks.CAJA_GRANOS, Tipo.CAJA, 5, 5, 0, CafeItems.GRANOS, false),
+    PLANCHA("Plancha", CafeBlocks.PLANCHA, Tipo.PROCESO, 9, 5, 100, null, false),
+    OLLA("Olla", CafeBlocks.OLLA, Tipo.PROCESO, 10, 5, 140, null, false),
+    HORNO("Horno", CafeBlocks.HORNO, Tipo.PROCESO, 11, 5, 200, null, false),
+    BATIDORA("Batidora", CafeBlocks.BATIDORA, Tipo.PROCESO, 12, 5, 70, null, false),
+    CAFETERA("Cafetera", CafeBlocks.CAFETERA, Tipo.PROCESO, 13, 5, 90, null, false),
+    MESA("Mesa", CafeBlocks.MESA, Tipo.MESA, -1, 0, 0, null, true),
+    REGISTRADORA("Caja registradora", CafeBlocks.REGISTRADORA, Tipo.REGISTRADORA, -1, 0, 0, null, true);
 
     enum Tipo { CAJA, PROCESO, EMPLATAR, FREGADERO, BASURA, MESA, REGISTRADORA }
 
     final String nombre;
     final Block bloque;
     final Tipo tipo;
-    final int x;                          // su hueco en la fila de la cocina (x del local, z = 1); -1 = no va en la fila
+    final int x, z;                       // su hueco en la cocina (x y z del local; las dos filas son z = 1 y z = 5); x = -1 = no va en la cocina
     final int ticks;                      // lo que tarda en procesar (a velocidad normal)
     final Item ingrediente;               // lo que da una caja
     final boolean siempre;                // viene con el cafe (no hace falta comprar un plato que la use)
 
-    Estacion(String nombre, Block bloque, Tipo tipo, int x, int ticks, Item ingrediente, boolean siempre) {
-        this.nombre = nombre; this.bloque = bloque; this.tipo = tipo; this.x = x; this.ticks = ticks; this.ingrediente = ingrediente; this.siempre = siempre;
+    Estacion(String nombre, Block bloque, Tipo tipo, int x, int z, int ticks, Item ingrediente, boolean siempre) {
+        this.nombre = nombre; this.bloque = bloque; this.tipo = tipo; this.x = x; this.z = z; this.ticks = ticks; this.ingrediente = ingrediente; this.siempre = siempre;
     }
 
     /** Que estacion es un bloque (null si no es ninguna). */
@@ -41,5 +52,11 @@ enum Estacion {
     }
 
     /** Altura (sobre el bloque) a la que se dibuja lo que hay dentro y su barra. */
-    double alturaVisual() { return this == FREIDORA ? 1.1 : this == EXPRIMIDOR ? 1.3 : 0.85; }
+    double alturaVisual() { return this == FREIDORA ? 1.1 : this == EXPRIMIDOR || this == BATIDORA || this == CAFETERA ? 1.3 : this == OLLA ? 1.0 : this == HORNO ? 1.1 : 0.85; }
+
+    /** ¿Se quema lo que se deja esperando? (la freidora y el horno; la plancha no) */
+    boolean quema() { return this == FREIDORA || this == HORNO; }
+
+    /** Lo que sale cuando se quema. */
+    Item quemado() { return this == HORNO ? CafeItems.COMIDA_QUEMADA : CafeItems.PAPAS_QUEMADAS; }
 }

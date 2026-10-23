@@ -25,6 +25,16 @@ public final class CafeBlocks {
     public static final Block EMPLATAR = reg("emplatar");
     public static final Block FREGADERO = reg("fregadero");
     public static final Block REGISTRADORA = reg("caja_registradora");
+    public static final Block CAJA_HUEVOS = reg("caja_huevos");
+    public static final Block CAJA_HARINA = reg("caja_harina");
+    public static final Block CAJA_CARNE = reg("caja_carne");
+    public static final Block CAJA_LECHE = reg("caja_leche");
+    public static final Block CAJA_GRANOS = reg("caja_granos");
+    public static final Block PLANCHA = reg("plancha");
+    public static final Block OLLA = reg("olla");
+    public static final Block HORNO = reg("horno");
+    public static final Block BATIDORA = reg("batidora");
+    public static final Block CAFETERA = reg("cafetera");
 
     private static Block reg(String id) {
         Block b = new Block(AbstractBlock.Settings.create().strength(1.5f, 6.0f).nonOpaque().sounds(BlockSoundGroup.WOOD));

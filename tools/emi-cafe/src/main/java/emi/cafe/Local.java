@@ -6,7 +6,7 @@ import net.minecraft.util.math.BlockPos;
 
 /**
  * El local del cafe (se construye por codigo en la dimension {@code emi_cafe:cafe}, un local por jugador separados 64 bloques). Medidas en bloques desde la esquina (ox, 0):
- * paredes en x = 0 y 14, z = 0 y 13; cocina al norte (z 2-5) con las estaciones pegadas a la pared de fondo (z = 1); una barra en z = 6 con un hueco en x = 7-8;
+ * paredes en x = 0 y 14, z = 0 y 13; cocina al norte (z 2-5) con las estaciones pegadas a la pared de fondo (z = 1) y, cuando hacen falta, una segunda fila junto a la barra (z = 5); una barra en z = 6 con un hueco en x = 7-8;
  * comedor al sur (z 7-12) con las mesas en z = 9; la puerta en z = 13 (x = 7-8) y la calle fuera.
  */
 final class Local {
@@ -52,7 +52,11 @@ final class Local {
         for (int z = 0; z <= 13; z++) { Obra.poner(w, ox, Y + 5, z, "white_concrete"); Obra.poner(w, ox + 14, Y + 5, z, "white_concrete"); }
         // la fila de encimeras y estaciones al fondo (z = 1)
         for (int x = 1; x <= 13; x++) ponerBloque(w, ox, x, 1, 1, CafeBlocks.ENCIMERA);
-        for (Estacion e : Estacion.values()) if (e.x >= 0 && (e.siempre || activas.contains(e))) ponerBloque(w, ox, e.x, 1, 1, e.bloque);
+        // la segunda fila (z = 5) solo se monta si hace falta alguna de sus estaciones; se deja libre el paso del comedor (x = 7-8)
+        boolean segunda = false;
+        for (Estacion e : activas) if (e.x >= 0 && e.z == 5) segunda = true;
+        if (segunda) for (int x = 1; x <= 13; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 5, CafeBlocks.ENCIMERA);
+        for (Estacion e : Estacion.values()) if (e.x >= 0 && (e.siempre || activas.contains(e))) ponerBloque(w, ox, e.x, 1, e.z, e.bloque);
         // la barra que separa la cocina del comedor (con un hueco para pasar) y la caja registradora en su extremo
         for (int x = 1; x <= 13; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 6, CafeBlocks.ENCIMERA);
         ponerBloque(w, ox, X_REGISTRADORA, 1, Z_REGISTRADORA, CafeBlocks.REGISTRADORA);
