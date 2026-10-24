@@ -1,6 +1,7 @@
 package emi.cafe;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.DoorBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.BlockItem;
@@ -76,7 +77,7 @@ final class Obras {
             String nombre = m.group(1);
             if (!nombre.startsWith("emi_cafe:")) continue;
             cNombres.add(nombre);
-            if (nombre.startsWith("emi_cafe:puerta_cristal_")) cPuertas.add(new int[]{Integer.parseInt(en.getKey().split(",")[0]), Integer.parseInt(en.getKey().split(",")[2]), Integer.parseInt(en.getKey().split(",")[1])});
+            if (nombre.startsWith("emi_cafe:puerta_") && en.getValue().contains("half:\"lower\"")) cPuertas.add(new int[]{Integer.parseInt(en.getKey().split(",")[0]), Integer.parseInt(en.getKey().split(",")[2]), Integer.parseInt(en.getKey().split(",")[1])});
             String[] k = en.getKey().split(",");
             int rx = Integer.parseInt(k[0]), ry = Integer.parseInt(k[1]), rz = Integer.parseInt(k[2]);
             Estacion e = pb.get(nombre);
@@ -386,20 +387,28 @@ final class Obras {
             boolean hay = false;
             for (double[] q : gente) if (Math.abs(q[0] - pos.getX() - 0.5) <= 2.2 && Math.abs(q[2] - pos.getZ() - 0.5) <= 2.2 && q[1] > pos.getY() - 2.0 && q[1] < pos.getY() + 2.5) { hay = true; break; }
             long k = pos.asLong();
-            boolean abierta = st.get(PuertaCristalBlock.ABIERTA);
+            boolean abierta = st.get(DoorBlock.OPEN);
             if (hay) {
                 puertaSinGente.put(k, 0);
                 if (!abierta) {
-                    c.w.setBlockState(pos, st.with(PuertaCristalBlock.ABIERTA, true), Block.NOTIFY_ALL);
+                    abrir(pos, true);
                     if (!sono) { Sonidos.mundo(c.w, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, "campanilla", 1.0f, 1.0f); sono = true; }
                 }
             } else if (abierta) {
                 int n = puertaSinGente.merge(k, 1, Integer::sum);
                 if (n >= 5) {                                                                       // ~1 s sin nadie cerca
-                    c.w.setBlockState(pos, st.with(PuertaCristalBlock.ABIERTA, false), Block.NOTIFY_ALL);
+                    abrir(pos, false);
                     puertaSinGente.remove(k);
                 }
             }
+        }
+    }
+
+    /** Abre o cierra las dos mitades de una puerta (sin el sonido de vainilla: suena la campanilla). */
+    private void abrir(BlockPos pos, boolean si) {
+        for (BlockPos q : new BlockPos[]{pos, pos.up()}) {
+            BlockState s = c.w.getBlockState(q);
+            if (s.getBlock() instanceof PuertaCristalBlock) c.w.setBlockState(q, s.with(DoorBlock.OPEN, si), Block.NOTIFY_ALL | Block.FORCE_STATE);
         }
     }
 
@@ -686,6 +695,12 @@ final class Obras {
         if (!construible(pos)) return "Ahí no se puede construir.";
         c.w.setBlockState(pos, st, Block.NOTIFY_ALL);
         d().decor.put(clave(pos), Decor.guardar(st));
+        cambio();
+        if (st.getBlock() instanceof DoorBlock) {                                          // una puerta son dos bloques
+            BlockState alta = st.with(DoorBlock.HALF, net.minecraft.block.enums.DoubleBlockHalf.UPPER);
+            c.w.setBlockState(pos.up(), alta, Block.NOTIFY_ALL);
+            d().decor.put(clave(pos.up()), Decor.guardar(alta));
+        }
         guardarPronto();
         return null;
     }

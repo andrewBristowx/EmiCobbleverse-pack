@@ -45,15 +45,16 @@ public final class CafeBlocks {
     public static final Block CARTEL = placa("cartel", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0.25, 0, 1, 0.75, 1 / 16.0));
     public static final Block LIBRO_PARED = placa("libro_pared", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0, 0, 1, 1, 1 / 16.0));
 
-    /** Las puertas de cristal de colores (0.18.1): un panel por color, que se abre solo con quien se acerca. */
+    /** Las puertas de cristal de colores (0.18.2): 2 estilos (marco de madera y blanco) por 12 colores, puertas de verdad de 2 bloques que ademas se abren solas con quien se acerca. */
     public static final java.util.List<Block> PUERTAS = new java.util.ArrayList<>();
     static final String[] COLORES_PUERTA = {"white", "pink", "magenta", "purple", "blue", "light_blue", "cyan", "lime", "yellow", "orange", "red", "black"};
+    static final String[] ESTILOS_PUERTA = {"madera", "blanca"};
     static {
-        for (String c : COLORES_PUERTA) {
+        for (String e : ESTILOS_PUERTA) for (String c : COLORES_PUERTA) {
             Block b = new PuertaCristalBlock();
-            Identifier i = Identifier.of("emi_cafe", "puerta_cristal_" + c);
+            Identifier i = Identifier.of("emi_cafe", "puerta_" + e + "_" + c);
             Registry.register(Registries.BLOCK, i, b);
-            Registry.register(Registries.ITEM, i, new BlockItem(b, new Item.Settings()));
+            Registry.register(Registries.ITEM, i, new net.minecraft.item.TallBlockItem(b, new Item.Settings()));
             PUERTAS.add(b);
         }
     }

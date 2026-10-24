@@ -170,6 +170,12 @@ final class Cmds {
                             else return cf.abrirTurno();
                             return null;
                         })))
+                        .then(CommandManager.literal("construir").executes(c -> con(c, p -> {                // solo pruebas: entra o sale del modo construccion
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            if (cf.construyendo) { cf.salirConstruccion(p); return null; }
+                            return cf.entrarConstruccion(p);
+                        })))
                         .then(CommandManager.literal("inicial").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                             Recetas.Inicial ini = Recetas.Inicial.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
                             if (ini == null) return "charmander, squirtle o bulbasaur";
