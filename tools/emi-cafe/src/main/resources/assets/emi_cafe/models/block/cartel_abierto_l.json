@@ -1,0 +1,48 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/madera_oscura",
+    "tex": "emi_cafe:block/cartel_abierto_l",
+    "borde": "emi_cafe:block/madera_oscura"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        4,
+        0
+      ],
+      "to": [
+        16,
+        12,
+        1
+      ],
+      "faces": {
+        "south": {
+          "texture": "#tex",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#borde"
+        },
+        "east": {
+          "texture": "#borde"
+        },
+        "west": {
+          "texture": "#borde"
+        },
+        "up": {
+          "texture": "#borde"
+        },
+        "down": {
+          "texture": "#borde"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_right_open",
+  "textures": {
+    "top": "emi_cafe:block/puerta_madera_pink_top",
+    "bottom": "emi_cafe:block/puerta_madera_pink_bottom"
+  }
+}

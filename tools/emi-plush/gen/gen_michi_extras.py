@@ -354,6 +354,69 @@ def calabaza(g, f):
             p = bones[padre[b['name']]]; b['parent'] = p['name']; b['pivot'] = list(p['pivot'])
     return []
 
+# ---------------------------------------------------------------- uniforme de chef (solo aspecto `chef`: peluche exclusivo de la tienda del Cafe Michialien; no es una forma Pokemon)
+# Lleva su PROPIA textura (michi_dramatico_chef.png). Gorro de cocinero alto y abullonado, chaqueta blanca con dos filas de botones, panuelo rojo, delantal rosa con bolsillo y mangas con puno.
+CH_W = (250, 247, 250); CH_S = (224, 228, 242); CH_SS = (196, 202, 224); BTN = (70, 74, 98); DELANTAL = (244, 150, 190); DELANTAL_D = (214, 104, 152)
+def pliegues(face, i, j, w, h):
+    c = CH_S if i % 4 == 0 else CH_W
+    if face == 'up': c = CH_W
+    return c + (255,)
+def bollo(face, i, j, w, h):
+    c = CH_W
+    if (i * 3 + j * 5) % 9 == 0: c = CH_S
+    if (i * 7 + j * 2) % 23 == 0: c = CH_SS
+    if face == 'up': c = CH_W if (i + j) % 6 else CH_S
+    return c + (255,)
+def chaqueta(face, i, j, w, h):
+    c = CH_W
+    if i in (0, w - 1) or j == 0: c = CH_S
+    if (i * 5 + j * 3) % 17 == 0: c = CH_S
+    return c + (255,)
+def abotonadura(face, i, j, w, h):
+    """panel de delante (26 de ancho): dos filas de botones oscuros sobre la solapa blanca"""
+    c = CH_W
+    if face == 'north':
+        if i in (0, w - 1): c = CH_S
+        if i in (w // 2 - 1, w // 2): c = CH_SS                                           # la costura del centro
+        if i in (w // 2 - 6, w // 2 + 5) and j % 3 == 1: c = BTN
+    return c + (255,)
+def panuelo(face, i, j, w, h): return (RED_D if (i + j) % 4 == 0 else RED) + (255,)
+def delantal(face, i, j, w, h):
+    c = DELANTAL if (i + j) % 7 else DELANTAL_D
+    if face == 'north' and (i in (0, w - 1) or j in (0, h - 1)): c = DELANTAL_D
+    return c + (255,)
+def bolsillo(face, i, j, w, h): return (CH_W if (i in (0, w - 1) or j in (0, h - 1)) else CH_S) + (255,)
+
+def chef(g, f):
+    bones = {b['name']: b for b in g['minecraft:geometry'][0]['bones']}
+    for n in ('ear_left', 'ear_right', 'antenna_left', 'antenna_right'): bones[n].pop('cubes', None)       # pedido del dueño: el gorro las esconde (los huesos quedan vacios para las animaciones)
+    c = lambda nombre, o, sz, p=chaqueta, rot=None, piv=None: cube(g, f, nombre, o, sz, p, rot, piv)
+    # ---- el gorro de cocinero: banda plisada y dos pisos de "nube"; las orejas y las antenas del michi asoman por el, como con el sombrero de bruja
+    c('acc_chef', (-14, 31, -14), (28, 5, 28), pliegues)
+    c('acc_chef', (-17, 36, -17), (34, 7, 34), bollo)
+    c('acc_chef', (-15, 43, -15), (30, 5, 30), bollo)
+    # ---- chaqueta de cocinero alrededor de la parte de abajo del cuerpo, con la abotonadura, el panuelo rojo y el delantal rosa con bolsillo
+    c('acc_chef', (-21, 1, -18.6), (42, 13, 37), chaqueta)
+    c('acc_chef', (-13, 2, -19.2), (26, 10, 1), abotonadura)
+    c('acc_chef', (-9, 11, -19.9), (18, 2, 1), panuelo)
+    c('acc_chef', (-5, 9, -19.9), (10, 2, 1), panuelo)
+    c('acc_chef', (-14, 1, -19.9), (28, 6, 1), delantal)
+    c('acc_chef', (-4, 2, -20.6), (8, 3, 1), bolsillo)
+    # ---- mangas blancas con puno gris azulado (siguen a los brazos), y botitas blancas
+    for lado in ('l', 'r'):
+        a = bones['arm_' + ('left' if lado == 'l' else 'right')]['cubes'][0]; o, sz = a['origin'], a['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_chef_arm_{lado}', no, ns, chaqueta, a['rotation'], a['pivot'])
+        c(f'acc_chef_arm_{lado}', (no[0] - 0.5, no[1] - 0.5, no[2] - 0.5), (ns[0] + 1, 2, ns[2] + 1), flat(CH_SS), a['rotation'], a['pivot'])
+        pie = bones['foot_' + ('left' if lado == 'l' else 'right')]['cubes'][0]; o, sz = pie['origin'], pie['size']
+        ns = [int(math.ceil(v)) + 1 for v in sz]; no = [o[i] - (ns[i] - sz[i]) / 2 for i in range(3)]
+        c(f'acc_chef_foot_{lado}', no, ns, chaqueta)
+    padre = {'acc_chef_arm_l': 'arm_left', 'acc_chef_arm_r': 'arm_right', 'acc_chef_foot_l': 'foot_left', 'acc_chef_foot_r': 'foot_right'}
+    for b in g['minecraft:geometry'][0]['bones']:
+        if b['name'] in padre:
+            p = bones[padre[b['name']]]; b['parent'] = p['name']; b['pivot'] = list(p['pivot'])
+    return []
+
 ACCESORIOS = {
     'sunglasses': lambda g, f: [
         cube(g, f, 'acc_sunglasses', (-15, 15, -19), (12, 11, 2), lens), cube(g, f, 'acc_sunglasses', (3, 15, -19), (12, 11, 2), lens),
@@ -446,6 +509,16 @@ def main():
     img_c.save(f'{TEX}/michi_dramatico_pumpkin.png')
     variantes.append({'aspects': ['pumpkin-accessory'], 'model': 'cobblemon:michi_dramatico_pumpkin.geo', 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_pumpkin.png'})
     print('disfraz de calabaza: textura usada hasta la fila', free_c.y + free_c.rowh, 'de', img_c.height)
+    # el uniforme de chef va aparte, igual que el disfraz de calabaza (su propia textura)
+    img_h = Image.new('RGBA', img.size, (0, 0, 0, 0)); img_h.paste(img.crop((0, 0, img.width, 112)), (0, 0))
+    g = copy.deepcopy(geo0); g['minecraft:geometry'][0]['description']['identifier'] = 'geometry.michi_dramatico_chef'
+    free_h = Free(img_h, 112); chef(g, free_h)
+    malos = [(b['name'], c['origin']) for b in g['minecraft:geometry'][0]['bones'] if b['name'].startswith('acc_') for c in b.get('cubes', []) if not c.get('rotation') and zfight.conflictos(g, c, 0.3)]
+    assert not malos, f'chef: caras coplanares (z-fighting) en {malos}'
+    json.dump(g, open(f'{GEO}/michi_dramatico_chef.geo.json', 'w'), separators=(',', ':'))
+    img_h.save(f'{TEX}/michi_dramatico_chef.png')
+    variantes.append({'aspects': ['chef-accessory'], 'model': 'cobblemon:michi_dramatico_chef.geo', 'texture': 'cobblemon:textures/pokemon/michi_dramatico/michi_dramatico_chef.png'})
+    print('uniforme de chef: textura usada hasta la fila', free_h.y + free_h.rowh, 'de', img_h.height)
     img.save(f'{TEX}/michi_dramatico.png')
     oro = gold_shiny(img)
     # accesorios que se pierden sobre el pelaje dorado (la corona es dorada): en la textura dorada pasan a plata
@@ -461,7 +534,7 @@ def main():
     json.dump({'species': 'cobblemon:gatitoalien', 'order': 1, 'variations': variantes}, open(f'{rd}/1_michi_dramatico_accessories.json', 'w'), indent=2)
     data = os.path.join(OUT, 'data/cobblemon')
     os.makedirs(f'{data}/species_features', exist_ok=True); os.makedirs(f'{data}/species_feature_assignments', exist_ok=True)
-    json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS) + ['dino', 'pumpkin'], 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
+    json.dump({'type': 'choice', 'keys': ['accessory'], 'default': 'none', 'choices': ['none'] + list(ACCESORIOS) + ['dino', 'pumpkin', 'chef'], 'isAspect': True, 'aspectFormat': '{{choice}}-accessory'}, open(f'{data}/species_features/accessory.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['accessory']}, open(f'{data}/species_feature_assignments/accessory.json', 'w'))
     json.dump({'keys': ['gold'], 'type': 'flag', 'isAspect': True, 'default': False}, open(f'{data}/species_features/gold.json', 'w'))
     json.dump({'pokemon': ['gatitoalien'], 'features': ['gold']}, open(f'{data}/species_feature_assignments/gold.json', 'w'))

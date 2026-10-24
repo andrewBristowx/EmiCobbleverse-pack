@@ -1,0 +1,195 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/mueble",
+    "mueble": "emi_cafe:block/mueble",
+    "encimera": "emi_cafe:block/encimera",
+    "metal": "emi_cafe:block/metal",
+    "metal_oscuro": "emi_cafe:block/metal_oscuro",
+    "waflera_t": "emi_cafe:block/waflera_t",
+    "madera_oscura": "emi_cafe:block/madera_oscura"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mueble"
+        },
+        "south": {
+          "texture": "#mueble"
+        },
+        "east": {
+          "texture": "#mueble"
+        },
+        "west": {
+          "texture": "#mueble"
+        },
+        "up": {
+          "texture": "#encimera"
+        },
+        "down": {
+          "texture": "#mueble"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        10,
+        3
+      ],
+      "to": [
+        14,
+        12,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal_oscuro"
+        },
+        "south": {
+          "texture": "#metal_oscuro"
+        },
+        "east": {
+          "texture": "#metal_oscuro"
+        },
+        "west": {
+          "texture": "#metal_oscuro"
+        },
+        "up": {
+          "texture": "#waflera_t"
+        },
+        "down": {
+          "texture": "#metal_oscuro"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        12,
+        12
+      ],
+      "to": [
+        14,
+        15,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        12,
+        5
+      ],
+      "to": [
+        13,
+        13,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#waflera_t"
+        },
+        "south": {
+          "texture": "#waflera_t"
+        },
+        "east": {
+          "texture": "#waflera_t"
+        },
+        "west": {
+          "texture": "#waflera_t"
+        },
+        "up": {
+          "texture": "#waflera_t"
+        },
+        "down": {
+          "texture": "#waflera_t"
+        }
+      }
+    },
+    {
+      "from": [
+        13,
+        10.5,
+        6
+      ],
+      "to": [
+        16,
+        12.02,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#madera_oscura"
+        },
+        "south": {
+          "texture": "#madera_oscura"
+        },
+        "east": {
+          "texture": "#madera_oscura"
+        },
+        "west": {
+          "texture": "#madera_oscura"
+        },
+        "up": {
+          "texture": "#madera_oscura"
+        },
+        "down": {
+          "texture": "#madera_oscura"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

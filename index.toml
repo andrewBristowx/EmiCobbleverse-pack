@@ -1840,6 +1840,10 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
+file = "mods/emi-cafe-0.18.2.jar"
+hash = "5607c5b6c941cc8585eaf06e7058936a542c34c6c892f14a364c6ac2ae1579b6"
+
+[[files]]
 file = "mods/emi-carreras-0.8.0.jar"
 hash = "1fb6295878227b8656a0d0136a184dc0fc699be02e113ef9f7dc79911da3dabb"
 
@@ -1860,16 +1864,20 @@ file = "mods/emi-huida-0.12.0.jar"
 hash = "99b057d6f896f26bdf27ab49d00d753a4ad297c181da0860c7ff657cb0cb442d"
 
 [[files]]
-file = "mods/emi-plush-1.19.0.jar"
-hash = "cf4dcd7a67d6601f6f2d67e95a6ec82948343dd3e62d24cbf5761e2b49709f24"
+file = "mods/emi-plush-1.20.1.jar"
+hash = "52be264c33d5f8a34e7e03387b6a1b2b3e5d47562bb48a3589ce6fce960be46f"
+
+[[files]]
+file = "mods/emi-recursos-1.0.0.jar"
+hash = "410dfbc33e53b8a7b8e58435f6ac8e7fb28f25fd238e4d14a0e07d0f52c27976"
 
 [[files]]
 file = "mods/emi-streamlabs-1.2.0.jar"
 hash = "194d923b6a1430bb6c4535e71046c9b0ad6a940374af5b76f4b8b5bf2680af92"
 
 [[files]]
-file = "mods/emi-survivors-0.28.0.jar"
-hash = "e4167f6bd3b3823dee8714f7e83f42049a798f079625ee29d6ecea0af37c85fc"
+file = "mods/emi-survivors-0.29.0.jar"
+hash = "646d3f995a86b91fcf25c453f1ab2a9e64106e730558edeb3d6cf46b54e7a593"
 
 [[files]]
 file = "mods/enchantment-descriptions.pw.toml"

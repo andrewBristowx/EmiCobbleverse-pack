@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_right",
+  "textures": {
+    "top": "emi_cafe:block/puerta_madera_purple_top",
+    "bottom": "emi_cafe:block/puerta_madera_purple_bottom"
+  }
+}

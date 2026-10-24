@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "emi.recursos.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["AbstractFireBlockMixin", "EndPortalBlockMixin", "GraveUtilsMixin", "NetherPortalBlockMixin", "ServerPlayerEntityMixin", "ServerWorldMixin", "EntityAccessor"],
+  "injectors": { "defaultRequire": 1 }
+}
