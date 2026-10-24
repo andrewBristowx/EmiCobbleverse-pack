@@ -34,6 +34,14 @@ final class Cmds {
                 }))))
                 .then(CommandManager.literal("aceptar").executes(c -> con(c, p -> Cafes.aceptar(p, null)))
                         .then(CommandManager.argument("duenio", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.aceptar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "duenio"))))))
+                .then(CommandManager.literal("visitar").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.visitar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
+                .then(CommandManager.literal("visitas").then(CommandManager.argument("si", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(c -> con(c, p -> {
+                    Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                    j.visitas = com.mojang.brigadier.arguments.BoolArgumentType.getBool(c, "si");
+                    EmiCafe.datos.guardar(p.getUuid());
+                    p.sendMessage(Msg.say(j.visitas ? "Tu café acepta visitas." : "Tu café ya no acepta visitas."), false);
+                    return null;
+                }))))
                 .then(CommandManager.literal("info").executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null) return "No estás en tu café: entra con /cafe entrar.";
@@ -75,6 +83,26 @@ final class Cmds {
                             cf.usarBloque(p, pos);
                             return null;
                         }))))
+                        .then(CommandManager.literal("evento").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            Evento e = Evento.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
+                            if (e == null) return "ninguno, hora_punta, plato_del_dia, dia_michialien o critico";
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            if (cf.estado == Cafe.Estado.ABIERTO) cf.aplicarEvento(e); else { Cafe.eventoForzado = e; p.sendMessage(Msg.say("El evento saldrá la próxima vez que abras."), false); }
+                            return null;
+                        }))))
+                        .then(CommandManager.literal("rep").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000)).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            cf.ganarRep(IntegerArgumentType.getInteger(c, "n"));
+                            p.sendMessage(Msg.say("Reputación: " + cf.dj().rep + " (nivel " + cf.nivelRep() + "); estilo: " + cf.puntosEstilo() + " puntos (nivel " + cf.nivelEstilo() + ")"), false);
+                            return null;
+                        }))))
+                        .then(CommandManager.literal("critico").executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            return cf.forzarCritico() ? null : "No hay mesa libre.";
+                        })))
                         .then(CommandManager.literal("estrellas").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000)).executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.estrellas = Math.max(0, j.estrellas + IntegerArgumentType.getInteger(c, "n"));
@@ -109,7 +137,7 @@ final class Cmds {
                         })))
                         .then(CommandManager.literal("mejora").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("nivel", IntegerArgumentType.integer(0, 9)).executes(c -> con(c, p -> {
                             Recetas.Mejora m = Recetas.Mejora.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
-                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad";
+                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad, ayud_lava, ayud_mesero";
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.mejoras.put(m.id, Math.min(m.max(), IntegerArgumentType.getInteger(c, "nivel")));
                             EmiCafe.datos.guardar(p.getUuid());

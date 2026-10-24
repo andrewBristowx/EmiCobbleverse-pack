@@ -1,0 +1,3 @@
+# duracion de cada bucle de musica en ticks (Musica.TICKS de Musica.java tiene que coincidir)
+abierto=640
+cerrado=800

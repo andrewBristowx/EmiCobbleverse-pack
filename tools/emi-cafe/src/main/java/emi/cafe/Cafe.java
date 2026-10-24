@@ -63,6 +63,13 @@ final class Cafe {
     Estado estado = Estado.PREPARANDO;
     final Set<Estacion> estEnMano = EnumSet.noneOf(Estacion.class);   // estaciones que el dueño ha recogido en el modo construccion y aun no ha vuelto a poner
     boolean construyendo;                                 // modo construccion: el dueño decora a solas (el cafe esta cerrado)
+    final List<Ayudante> ayudantes = new ArrayList<>();
+    final Set<UUID> visitantes = new LinkedHashSet<>();   // gente que solo esta de visita (tambien estan en `jugadores`, pero no cocinan ni sirven)
+    Evento evento = Evento.NINGUNO;                       // el suceso de la jornada de hoy
+    static Evento eventoForzado;                          // solo pruebas: /cafe dev evento <nombre> lo pone para la proxima vez que se abra
+    Recetas.Plato platoDelDia;
+    boolean criticoPendiente;
+    int criticoEn;
     int t;
     int cierre;
     int proximoCliente;
@@ -80,6 +87,8 @@ final class Cafe {
 
     Datos.Jugador dj() { ServerPlayerEntity p = jugador(duenio); return EmiCafe.datos.jugador(duenio, p == null ? null : p.getGameProfile().getName()); }
     Datos.Jugador dj(ServerPlayerEntity p) { return EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName()); }
+    /** Quita a alguien del cafe (dueño aparte): ya no trabaja ni visita. */
+    void quitarJugador(UUID id) { jugadores.remove(id); visitantes.remove(id); manos.remove(id); }
     ServerPlayerEntity jugador(UUID id) { return server.getPlayerManager().getPlayer(id); }
     List<ServerPlayerEntity> presentes() { List<ServerPlayerEntity> l = new ArrayList<>(); for (UUID id : jugadores) { ServerPlayerEntity p = jugador(id); if (p != null) l.add(p); } return l; }
     boolean esDuenio(ServerPlayerEntity p) { return p.getUuid().equals(duenio); }
@@ -89,10 +98,55 @@ final class Cafe {
     int nivel(Recetas.Mejora m) { return dj().nivel(m.id); }
     int numMesas() { return Math.min(Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS) + 2 * nivel(Recetas.Mejora.AMPLIAR)); }
     double velocidad() { return 1.0 - 0.2 * nivel(Recetas.Mejora.VELOCIDAD); }
-    int pacienciaTicks() { return (int) (20 * 90 * (1.0 + 0.25 * nivel(Recetas.Mejora.PACIENCIA))); }
+    int pacienciaTicks() { return (int) (20 * 90 * (1.0 + 0.25 * nivel(Recetas.Mejora.PACIENCIA)) * (evento == Evento.HORA_PUNTA ? 0.85 : 1.0)); }
     int platosMax() { return 4 + 2 * nivel(Recetas.Mejora.VAJILLA); }
     /** Ticks entre un cliente y el siguiente (menos con mejor publicidad y con mas gente cocinando). */
-    int intervalo() { return (int) (20 * (16 - 3 * nivel(Recetas.Mejora.PUBLICIDAD)) / (1.0 + 0.5 * (jugadores.size() - 1))) + rnd.nextInt(60); }
+    int intervalo() {
+        double base = 20 * (16 - 3 * nivel(Recetas.Mejora.PUBLICIDAD)) / (1.0 + 0.5 * (trabajadores() - 1));
+        base *= Estilo.multLlegada(nivelEstilo()) * (evento == Evento.HORA_PUNTA ? 0.55 : 1.0);
+        return (int) base + rnd.nextInt(60);
+    }
+
+    /** Los que cocinan y sirven (sin contar a los que solo visitan). */
+    int trabajadores() { return jugadores.size() - visitantes.size(); }
+
+    // ------------------------------------------------------------ estilo, reputacion y gustos
+
+    int puntosEstilo() { Datos.Jugador d = dj(); return Estilo.puntos(d.decor, d.estilo); }
+    int nivelEstilo() { return Estilo.nivelDe(puntosEstilo()); }
+    int nivelRep() { return Reputacion.nivel(dj().rep); }
+
+    /** Suma (o resta) reputacion al cafe; al subir de nivel avisa a todos y da estrellas al dueño. */
+    void ganarRep(int n) {
+        Datos.Jugador d = dj();
+        int antes = Reputacion.nivel(d.rep);
+        d.rep = Math.max(0, d.rep + n);
+        int ahora = Reputacion.nivel(d.rep);
+        if (ahora <= antes) return;
+        int estrellas = 5 * ahora;
+        Progreso.dar(this, d, duenio, estrellas);
+        String extra = ahora == 2 ? " Ya puedes contratar al lavaplatos." : ahora == Reputacion.NIVEL_CRITICO ? " Ahora el crítico gastronómico puede visitarte." : ahora == 4 ? " Ya puedes contratar al camarero." : "";
+        aTodos(p -> {
+            Msg.title(p, Text.literal("¡Tu café sube!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal(Reputacion.nombre(ahora) + " (nivel " + ahora + ")").formatted(Formatting.YELLOW), 5, 60, 10);
+            p.sendMessage(Msg.say("¡Reputación del café: " + Reputacion.nombre(ahora) + " (nivel " + ahora + ")! Todo se paga un poco más y el dueño gana " + estrellas + " estrellas." + extra), false);
+            Sonidos.jugador(p, "subir", 1f, 1f);
+        });
+        EmiCafe.datos.guardar(duenio);
+    }
+
+    /** El plato favorito de esa especie (entre los que el dueño sabe hacer); null si no sabe ninguno. */
+    Item favoritoDe(String especie) {
+        String id = Gustos.favorito(especie, dj().platos);
+        Recetas.Plato pl = id == null ? null : Recetas.Plato.de(id);
+        return pl == null ? null : pl.item;
+    }
+
+    /** El plato mas caro que sabe hacer el dueño (lo que pide el critico). */
+    Item pedidoCritico() {
+        Recetas.Plato mejor = null;
+        for (String id : dj().platos) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null && (mejor == null || pl.precio > mejor.precio)) mejor = pl; }
+        return mejor == null ? CafeItems.PAPAS_FRITAS : mejor.item;
+    }
 
     Set<Estacion> activas() {
         Set<Estacion> s = EnumSet.noneOf(Estacion.class);
@@ -107,10 +161,57 @@ final class Cafe {
         mesas.clear();
         for (Est e : ests.values()) { Disp.quitar(e.icono); Disp.quitar(e.barra); }
         ests.clear();
+        quitarAyudantes();
         List<int[]> pos = mesasPos();
         Local.construir(w, ox, posEstaciones(), pos, nivel(Recetas.Mejora.AMPLIAR), dj().estilo);
         for (int[] m : pos) mesas.add(new Mesa(Local.pos(ox, m[0], 1, m[1])));
         aplicarDecor();
+        for (Ayudante.Tipo ti : Ayudante.Tipo.values()) {
+            Recetas.Mejora me = Recetas.Mejora.de(ti.mejora);
+            if (me != null && nivel(me) > 0) { Ayudante a = Ayudante.crear(w, ox, ti); if (a != null) ayudantes.add(a); }
+        }
+    }
+
+    private void quitarAyudantes() { for (Ayudante a : ayudantes) a.quitar(); ayudantes.clear(); }
+
+    /** Las tareas de los ayudantes (solo con el cafe abierto). */
+    private void tickAyudantes() {
+        if (estado != Estado.ABIERTO) return;
+        ServerPlayerEntity duenioP = jugador(duenio);
+        if (duenioP == null) return;
+        for (Ayudante a : ayudantes) {
+            if (a.e.isRemoved() || --a.espera > 0) continue;
+            a.espera = a.tipo.cada;
+            switch (a.tipo) {
+                case LAVA -> {
+                    for (Mesa m : mesas) if (m.sucio != null) {
+                        Disp.quitar(m.sucio); m.sucio = null; platos++;
+                        Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "lavar", 0.7f, 1.0f);
+                        w.spawnParticles(ParticleTypes.SPLASH, a.e.getX(), a.e.getY() + 0.8, a.e.getZ(), 8, 0.3, 0.2, 0.3, 0.0);
+                        break;
+                    }
+                }
+                case MESERO -> {
+                    if (platos <= 0) break;
+                    search:
+                    for (Map.Entry<BlockPos, Est> en : ests.entrySet()) {
+                        Est est = en.getValue();
+                        if (est.listo == null) continue;
+                        for (Mesa m : mesas) {
+                            Cliente c = m.cliente;
+                            if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.pedido != est.listo) continue;
+                            Item plato = est.listo;
+                            est.listo = null; est.listoTicks = 0;
+                            Estacion e = Estacion.de(w.getBlockState(en.getKey()).getBlock());
+                            if (e != null) dibujar(en.getKey(), e, est);
+                            w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 0.9, a.e.getZ(), 6, 0.3, 0.3, 0.3, 0.0);
+                            cobrar(duenioP, m, plato, true);
+                            break search;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------ modo construccion
@@ -189,7 +290,7 @@ final class Cafe {
     String entrarConstruccion(ServerPlayerEntity p) {
         if (!esDuenio(p)) return "Solo el dueño puede construir.";
         if (estado != Estado.PREPARANDO) return "Cierra el café antes de construir.";
-        if (jugadores.size() > 1) return "Despide primero a tus invitados: solo se construye a solas.";
+        if (trabajadores() > 1) return "Despide primero a tus invitados: solo se construye a solas.";
         construyendo = true;
         estEnMano.clear();
         manos.put(p.getUuid(), null);
@@ -325,15 +426,20 @@ final class Cafe {
 
     // ------------------------------------------------------------ cosas que piden los clientes
 
-    Item elegirPedido(Random r) {
+    /** Lo que pide un cliente de esa especie: a menudo su plato favorito, en el dia del plato casi siempre ese, y si no uno cualquiera de los que se saben. */
+    Item elegirPedido(Random r, String especie) {
         List<String> ids = dj().platos;
         if (ids.isEmpty()) return CafeItems.PAPAS_FRITAS;
+        if (platoDelDia != null && r.nextInt(100) < 30) return platoDelDia.item;
+        Item fav = favoritoDe(especie);
+        if (fav != null && r.nextInt(100) < 45) return fav;
         Recetas.Plato pl = Recetas.Plato.de(ids.get(r.nextInt(ids.size())));
         return pl == null ? CafeItems.PAPAS_FRITAS : pl.item;
     }
 
     void alEnfadarse(Cliente c) {
         enfadados++;
+        ganarRep(c.critico ? -10 : -3);
         aTodos(p -> Msg.actionBar(p, Text.literal("Un cliente se fue enfadado...").formatted(Formatting.RED)));
         sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
     }
@@ -350,12 +456,42 @@ final class Cafe {
         platos = platosMax();
         servidos = enfadados = propinas = ganado = 0;
         ganadoPor.clear(); servidosPor.clear(); estrellasTurno.clear();
+        Evento ev = eventoForzado != null ? eventoForzado : elegirEvento();
+        eventoForzado = null;
         aTodos(p -> {
             Msg.title(p, Text.literal("¡ABRIMOS!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Cierra desde la caja registradora cuando quieras").formatted(Formatting.YELLOW), 5, 50, 10);
-            Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.2f);
+            Sonidos.jugador(p, "abrir", 1.0f, 1.0f);
         });
         Local.letrero(w, ox, true);
+        aplicarEvento(ev);
         return null;
+    }
+
+    /** El suceso de hoy al azar (con condiciones: el critico pide reputacion y 3 platos, el dia del plato 2 platos, el dia Michialien algun visitante posible). */
+    private Evento elegirEvento() {
+        int r = rnd.nextInt(100);
+        Evento e = r < 25 ? Evento.NINGUNO : r < 45 ? Evento.HORA_PUNTA : r < 65 ? Evento.PLATO_DEL_DIA : r < 85 ? Evento.DIA_MICHIALIEN : Evento.CRITICO;
+        Datos.Jugador d = dj();
+        if (e == Evento.CRITICO && (Reputacion.nivel(d.rep) < Reputacion.NIVEL_CRITICO || d.platos.size() < 3)) e = Evento.HORA_PUNTA;
+        if (e == Evento.PLATO_DEL_DIA && d.platos.size() < 2) e = Evento.HORA_PUNTA;
+        if (e == Evento.DIA_MICHIALIEN && elegibles().isEmpty()) e = Evento.HORA_PUNTA;
+        return e;
+    }
+
+    /** Pone el suceso del dia (y lo anuncia a todos). */
+    void aplicarEvento(Evento e) {
+        evento = e;
+        platoDelDia = null; criticoPendiente = false;
+        if (e == Evento.NINGUNO) return;
+        if (e == Evento.PLATO_DEL_DIA) {
+            List<Recetas.Plato> sabe = new ArrayList<>();
+            for (String id : dj().platos) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null) sabe.add(pl); }
+            if (sabe.isEmpty()) { evento = Evento.NINGUNO; return; }
+            platoDelDia = sabe.get(rnd.nextInt(sabe.size()));
+        }
+        if (e == Evento.CRITICO) { criticoPendiente = true; criticoEn = 20 * 25; }
+        String texto = e.nombre + (platoDelDia != null ? ": " + platoDelDia.nombre() + " (se paga el doble)" : "") + ". " + e.descripcion;
+        aTodos(p -> { p.sendMessage(Msg.say("Hoy: " + texto), false); Sonidos.jugador(p, "evento", 1f, 1f); });
     }
 
     /** Cierra el cafe: no entran mas clientes y los que esperan se van sin pagar. */
@@ -367,7 +503,7 @@ final class Cafe {
         Local.letrero(w, ox, false);
         aTodos(p -> {
             Msg.title(p, Text.literal("¡CERRAMOS!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Hasta mañana").formatted(Formatting.YELLOW), 5, 40, 10);
-            Msg.sound(p, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 0.7f);
+            Sonidos.jugador(p, "cerrar", 1.0f, 1.0f);
         });
     }
 
@@ -387,6 +523,7 @@ final class Cafe {
             EmiCafe.datos.guardar(p.getUuid());
         }
         estado = Estado.PREPARANDO;
+        evento = Evento.NINGUNO; platoDelDia = null; criticoPendiente = false;
         for (UUID id : jugadores) manos.put(id, null);
         reconstruir();
         aTodos(p -> { sincronizarMano(p); Menus.resumen(this, p); });
@@ -406,7 +543,9 @@ final class Cafe {
         if (ps.isEmpty()) return;
         if (estado == Estado.ABIERTO) {
             if (--proximoCliente <= 0) { proximoCliente = intervalo(); nuevoCliente(); }
+            if (criticoPendiente && --criticoEn <= 0) { if (forzarCritico()) criticoPendiente = false; else criticoEn = 40; }
         }
+        tickAyudantes();
         for (int i = clientes.size() - 1; i >= 0; i--) {
             Cliente c = clientes.get(i);
             boolean fin = c.fuera() || c.tick(this, rnd);
@@ -433,10 +572,15 @@ final class Cafe {
     }
 
     private Text hud(ServerPlayerEntity p) {
+        if (visitantes.contains(p.getUuid())) {
+            ServerPlayerEntity du = jugador(duenio);
+            Datos.Jugador d = dj();
+            return Text.literal("Visitando el café de " + (du == null ? "?" : du.getGameProfile().getName()) + " · ♥ " + d.megusta + " · Estilo: " + Estilo.NOMBRES[nivelEstilo()] + " · Reputación: " + Reputacion.nombre(Reputacion.nivel(d.rep)) + " · caja registradora = menú").formatted(Formatting.AQUA);
+        }
         Item c = manos.get(p.getUuid());
         Text mano = c == null ? Text.literal("manos vacías").formatted(Formatting.GRAY) : Text.literal(CafeItems.nombre(c)).formatted(Formatting.YELLOW);
         Text r = Text.literal("");
-        if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO   ").formatted(Formatting.GREEN, Formatting.BOLD);
+        if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO" + (evento != Evento.NINGUNO ? " · " + evento.nombre : "") + "   ").formatted(Formatting.GREEN, Formatting.BOLD);
         else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — caja registradora para terminar   ").formatted(Formatting.GOLD, Formatting.BOLD);
         else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
         return Text.empty().append(r).append(Text.literal("Monedas: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(dj(p).monedas)).formatted(Formatting.WHITE, Formatting.BOLD))
@@ -462,7 +606,8 @@ final class Cafe {
         for (Mesa m : mesas) if (m.libre()) libres.add(m);
         if (libres.isEmpty()) return;
         Mesa m = libres.get(rnd.nextInt(libres.size()));
-        if (!hayEspecial() && rnd.nextInt(100) < PROB_ESPECIAL) {
+        int prob = evento == Evento.DIA_MICHIALIEN ? 40 : PROB_ESPECIAL + Estilo.probEspecialExtra(nivelEstilo());
+        if (!hayEspecial() && rnd.nextInt(100) < prob) {
             List<Especial> el = elegibles();
             if (!el.isEmpty() && forzarEspecial(m, el.get(rnd.nextInt(el.size())))) return;
         }
@@ -488,6 +633,28 @@ final class Cafe {
             Msg.title(p, Text.literal("¡" + e.michi + "!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Quiere: " + e.nombrePlato()).formatted(Formatting.YELLOW), 5, 60, 10);
             p.sendMessage(Msg.say((nuevo ? "¡Visita especial! " : "Otra vez por aquí: ") + e.michi + " " + (nuevo ? "te enseña" : "pide") + " «" + e.nombrePlato() + "»: " + e.receta() + ". Paga " + e.precio + " monedas, y se queda más tiempo."), false);
             Msg.sound(p, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.2f);
+        });
+        w.spawnParticles(ParticleTypes.END_ROD, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 14, 0.4, 0.5, 0.4, 0.02);
+    }
+
+    /** Crea ya al critico gastronomico en una mesa libre (false si no hay ninguna). */
+    boolean forzarCritico() {
+        for (Mesa m : mesas) if (m.libre()) {
+            Cliente c = Cliente.crear(w, ox, m, rnd, null, true);
+            if (c == null) return false;
+            m.cliente = c;
+            clientes.add(c);
+            return true;
+        }
+        return false;
+    }
+
+    /** El critico llega a su mesa. */
+    void alLlegarCritico(Cliente c) {
+        aTodos(p -> {
+            Msg.title(p, Text.literal("¡Crítico gastronómico!").formatted(Formatting.AQUA, Formatting.BOLD), Text.literal("Quiere: " + CafeItems.nombre(c.pedido) + " — paga el triple").formatted(Formatting.YELLOW), 5, 60, 10);
+            p.sendMessage(Msg.say("¡Ha llegado un crítico gastronómico! Pide «" + CafeItems.nombre(c.pedido) + "», paga el triple y, si lo dejas contento, tu reputación sube mucho. Si se va enfadado, baja."), false);
+            Msg.sound(p, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1f, 0.8f);
         });
         w.spawnParticles(ParticleTypes.END_ROD, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 14, 0.4, 0.5, 0.4, 0.02);
     }
@@ -537,6 +704,7 @@ final class Cafe {
     void usarBloque(ServerPlayerEntity p, BlockPos pos) {
         Estacion e = Estacion.de(w.getBlockState(pos).getBlock());
         if (e == null) return;
+        if (visitantes.contains(p.getUuid())) { if (e.tipo == Estacion.Tipo.REGISTRADORA) Menus.abrir(this, p, "cafes", false); else msg(p, "Estás de visita: mira, no toques"); return; }
         Item carga = manos.get(p.getUuid());
         double x = pos.getX() + 0.5, y = pos.getY() + 1, z = pos.getZ() + 0.5;
         switch (e.tipo) {
@@ -572,6 +740,7 @@ final class Cafe {
 
     /** Clic derecho a un Pokemon: si es un cliente, es como tocar su mesa. */
     boolean usarEntidad(ServerPlayerEntity p, Entity en) {
+        if (visitantes.contains(p.getUuid())) return false;
         for (Cliente c : clientes) if (c.e == en) { servir(p, c.mesa, manos.get(p.getUuid())); sincronizarMano(p); return true; }
         return false;
     }
@@ -594,7 +763,8 @@ final class Cafe {
             if (sale == null) { msg(p, "Eso no va aquí: " + e.nombre.toLowerCase()); sonido(x, y, z, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), 0.7f, 0.8f); return; }
             est.resultado = sale; est.ticks = 0; est.total = Math.max(10, (int) Math.round(e.ticks * velocidad()));
             manos.put(p.getUuid(), null);
-            sonido(x, y, z, sonidoDe(e), 0.8f, 1.0f);
+            if (e == Estacion.FREIDORA || e == Estacion.PLANCHA || e == Estacion.HORNO || e == Estacion.OLLA) Sonidos.mundo(w, x, y, z, "chisporroteo", 0.8f, 1.0f);
+            else sonido(x, y, z, sonidoDe(e), 0.8f, 1.0f);
         }
         dibujar(pos, e, est);
     }
@@ -660,12 +830,12 @@ final class Cafe {
                     est.cola--;
                     platos++;
                     if (!est.quien.isEmpty()) { ServerPlayerEntity lav = jugador(est.quien.remove(0)); if (lav != null) { Datos.Jugador dl = dj(lav); dl.lavados++; Progreso.evento(this, lav, dl, "lavados", 1); } }
-                    sonido(x, y, z, SoundEvents.ENTITY_PLAYER_SPLASH, 0.5f, 1.6f);
+                    Sonidos.mundo(w, x, y, z, "lavar", 0.7f, 1.0f);
                     w.spawnParticles(ParticleTypes.SPLASH, x, y + 0.3, z, 6, 0.2, 0.1, 0.2, 0.0);
                     if (est.cola > 0) { est.ticks = 0; } else est.resultado = null;
                 } else {
                     est.listo = est.resultado; est.resultado = null; est.listoTicks = 0;
-                    sonido(x, y, z, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.0f, 1.5f);
+                    Sonidos.mundo(w, x, y, z, "listo", 1.0f, 1.0f);
                     w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, x, y + 0.2, z, 4, 0.2, 0.1, 0.2, 0.0);
                 }
                 dibujar(pos, e, est);
@@ -681,7 +851,7 @@ final class Cafe {
             else if (est.listoTicks > QUEMA_AVISO && est.listoTicks % 8 == 0) w.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y + 0.3, z, 2, 0.15, 0.1, 0.15, 0.01);
             if (est.listoTicks >= QUEMA) {
                 est.listo = e.quemado();
-                sonido(x, y, z, SoundEvents.ENTITY_GENERIC_EXTINGUISH_FIRE, 1.0f, 1.0f);
+                Sonidos.mundo(w, x, y, z, "quemado", 1.0f, 1.0f);
                 w.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y + 0.3, z, 12, 0.25, 0.15, 0.25, 0.02);
                 aTodos(pl -> Msg.actionBar(pl, Text.literal("¡Se quemó algo en: " + e.nombre.toLowerCase() + "! Tíralo a la basura").formatted(Formatting.RED)));
                 dibujar(pos, e, est);
@@ -718,12 +888,24 @@ final class Cafe {
             return;
         }
         if (platos <= 0) { msg(p, "No quedan platos limpios: lava los sucios en el fregadero"); sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), 0.8f, 0.7f); return; }
+        cobrar(p, m, carga, false);
+    }
+
+    /** Cobra el plato servido a esa mesa (a {@code p}; {@code auto} = lo llevo el camarero ayudante, asi que no se toca lo que lleva en las manos). */
+    private void cobrar(ServerPlayerEntity p, Mesa m, Item carga, boolean auto) {
+        Cliente c = m.cliente;
+        Datos.Jugador dd = dj();
         Recetas.Plato pl = Recetas.Plato.de(carga);
         int base = c.esp != null ? c.esp.precio : pl == null ? 10 : pl.precio;
-        int propina = (int) Math.round(base * 0.6 * c.pacienciaRestante());
-        int pago = base + propina;
+        if (c.critico) base *= 3;
+        else if (c.esp == null && platoDelDia != null && pl == platoDelDia) base *= 2;
+        double pac = c.pacienciaRestante();
+        int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()));
+        boolean fav = c.favorito;
+        if (fav) propina += (int) Math.round(base * 0.4);
+        int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)));
         platos--;
-        manos.put(p.getUuid(), null);
+        if (!auto) manos.put(p.getUuid(), null);
         c.comer();
         if (m.plato != null) Disp.quitar(m.plato);
         m.plato = Disp.objeto(w, CafeItems.id(carga), m.bloque.getX() + 0.5, m.bloque.getY() + 1.35, m.bloque.getZ() + 0.5, 0.5f, true);
@@ -732,17 +914,19 @@ final class Cafe {
         servidos++; propinas += propina; ganado += pago;
         ganadoPor.merge(p.getUuid(), pago, Integer::sum);
         servidosPor.merge(p.getUuid(), 1, Integer::sum);
-        Progreso.dar(this, d, p.getUuid(), c.esp != null ? 12 : 2);
+        Progreso.dar(this, d, p.getUuid(), c.esp != null ? 12 : c.critico ? 15 : 2);
         if (c.esp != null) { d.especialesServidos++; p.sendMessage(Msg.say("¡" + c.esp.michi + " quedó encantado con «" + c.esp.nombrePlato() + "»!"), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
+        if (c.critico) { p.sendMessage(Msg.say("¡El crítico quedó encantado! +15 estrellas y mucha reputación."), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
+        if (fav) { w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.6, c.e.getZ(), 8, 0.4, 0.3, 0.4, 0.0); }
         Progreso.evento(this, p, d, "servidos", 1);
         Progreso.evento(this, p, d, "ganado", pago);
         if (propina > 0) Progreso.evento(this, p, d, "propinas", propina);
         Progreso.revisarLogros(this, p, d);
         EmiCafe.datos.guardar(p.getUuid());
-        sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-        sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.0f, 1.8f);
+        ganarRep(c.critico ? 8 : c.esp != null ? 5 : pac > 0.5 ? 2 : 1);
+        Sonidos.mundo(w, c.e.getX(), c.e.getY(), c.e.getZ(), "cobrar", 1.0f, 1.0f);
         w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.4, c.e.getZ(), 4, 0.3, 0.2, 0.3, 0.0);
-        Msg.actionBar(p, Text.literal("+" + pago + " monedas" + (propina > 0 ? " (propina " + propina + ")" : "")).formatted(Formatting.GOLD, Formatting.BOLD));
+        Msg.actionBar(p, Text.literal("+" + pago + " monedas" + (propina > 0 ? " (propina " + propina + ")" : "") + (fav ? " ♥ ¡su favorito!" : "") + (auto ? " (camarero)" : "")).formatted(Formatting.GOLD, Formatting.BOLD));
     }
 
     // ------------------------------------------------------------ cerrar
@@ -750,6 +934,7 @@ final class Cafe {
     /** Quita clientes, objetos y bloques de dibujo. */
     void cerrar() {
         if (construyendo) { construyendo = false; estEnMano.clear(); if (EmiCafe.datos != null) EmiCafe.datos.guardar(duenio); }
+        quitarAyudantes();
         for (Cliente c : clientes) c.quitar();
         clientes.clear();
         for (Mesa m : mesas) { Disp.quitar(m.plato); Disp.quitar(m.sucio); m.plato = null; m.sucio = null; m.cliente = null; }

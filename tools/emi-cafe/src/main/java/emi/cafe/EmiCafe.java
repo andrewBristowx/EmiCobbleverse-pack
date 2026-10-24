@@ -41,6 +41,7 @@ public class EmiCafe implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(Cafes::tick);
         ServerTickEvents.END_SERVER_TICK.register(Retornos::tick);
+        ServerTickEvents.END_SERVER_TICK.register(Sonidos::tick);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Retornos.alEntrar(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Cafes.alDesconectar(handler.player));
 

@@ -1,0 +1,95 @@
+{
+  "sfx.cobrar": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_cobrar"
+      }
+    ]
+  },
+  "sfx.campana": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_campana"
+      }
+    ]
+  },
+  "sfx.listo": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_listo"
+      }
+    ]
+  },
+  "sfx.quemado": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_quemado"
+      }
+    ]
+  },
+  "sfx.chisporroteo": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_chisporroteo"
+      }
+    ]
+  },
+  "sfx.lavar": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_lavar"
+      }
+    ]
+  },
+  "sfx.subir": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_subir"
+      }
+    ]
+  },
+  "sfx.evento": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_evento"
+      }
+    ]
+  },
+  "sfx.megusta": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_megusta"
+      }
+    ]
+  },
+  "sfx.abrir": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_abrir"
+      }
+    ]
+  },
+  "sfx.cerrar": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_cerrar"
+      }
+    ]
+  },
+  "musica.cerrado": {
+    "sounds": [
+      {
+        "name": "emi_cafe:musica_cerrado",
+        "stream": true
+      }
+    ]
+  },
+  "musica.abierto": {
+    "sounds": [
+      {
+        "name": "emi_cafe:musica_abierto",
+        "stream": true
+      }
+    ]
+  }
+}

@@ -89,13 +89,64 @@ final class Cafes {
         return null;
     }
 
+    static final int MAX_VISITANTES = 8;
+
+    /** Los cafes abiertos ahora mismo (para la pestaña CAFÉS). */
+    static java.util.Collection<Cafe> abiertos() { return DUENIOS.values(); }
+
+    static Cafe deDuenio(String nombre) {
+        for (Cafe c : DUENIOS.values()) { ServerPlayerEntity d = c.jugador(c.duenio); if (d != null && d.getGameProfile().getName().equalsIgnoreCase(nombre)) return c; }
+        return null;
+    }
+
+    /** Va de visita al cafe de otro jugador (que tiene que estar dentro de él y permitir visitas). Solo mira: no cocina ni sirve. Devuelve el error, o null. */
+    static String visitar(ServerPlayerEntity p, String nombre) {
+        MinecraftServer s = p.getServer();
+        if (mundo(s) == null) return "No existe la dimensión del café.";
+        if (EmiCafe.datos == null) return "El café aún no está listo.";
+        if (POR_JUGADOR.containsKey(p.getUuid())) return "Ya estás en un café: sal primero (/cafe salir).";
+        String oc = ocupado(p);
+        if (oc != null) return "Estás en otro minijuego (o mundo del servidor): sal primero de él.";
+        Cafe c = deDuenio(nombre);
+        if (c == null) return nombre + " no tiene su café abierto ahora mismo (solo se visita a quien está dentro de él).";
+        ServerPlayerEntity du = c.jugador(c.duenio);
+        if (c.duenio.equals(p.getUuid())) return "Ese es tu propio café.";
+        if (!c.dj().visitas) return du.getGameProfile().getName() + " no acepta visitas ahora.";
+        if (c.visitantes.size() >= MAX_VISITANTES) return "Ya hay demasiadas visitas en ese café.";
+        meter(p, c);
+        c.visitantes.add(p.getUuid());
+        p.teleport(c.w, c.ox + Local.PUERTA_X, Local.Y + 1, Local.CALLE_Z + 0.5, 180f, 0f);
+        p.sendMessage(Msg.say("Estás de visita en el café de " + du.getGameProfile().getName() + ". Mira cómo lo decoró y, si te gusta, toca la caja registradora y dale «me gusta». /cafe salir para irte."), false);
+        du.sendMessage(Msg.say(p.getGameProfile().getName() + " está de visita en tu café."), false);
+        return null;
+    }
+
+    /** Un visitante da «me gusta» al cafe (una vez por persona): el dueño gana estrellas y reputacion. */
+    static String megusta(Cafe c, ServerPlayerEntity p) {
+        if (!c.visitantes.contains(p.getUuid())) return "Solo se da «me gusta» estando de visita.";
+        Datos.Jugador d = c.dj();
+        String id = p.getUuid().toString();
+        if (d.likesDe.contains(id)) return "Ya le diste «me gusta» a este café.";
+        d.likesDe.add(id); d.megusta++;
+        Progreso.dar(c, d, c.duenio, 2);
+        EmiCafe.datos.guardar(c.duenio);
+        c.ganarRep(3);
+        Progreso.dar(null, c.dj(p), p.getUuid(), 1);
+        EmiCafe.datos.guardar(p.getUuid());
+        ServerPlayerEntity du = c.jugador(c.duenio);
+        if (du != null) { du.sendMessage(Msg.say("¡" + p.getGameProfile().getName() + " le dio «me gusta» a tu café! (♥ " + d.megusta + ") +2 estrellas."), false); Sonidos.jugador(du, "megusta", 1f, 1f); }
+        p.sendMessage(Msg.say("Le diste «me gusta» al café. +1 estrella."), false);
+        Sonidos.jugador(p, "megusta", 1f, 1f);
+        return null;
+    }
+
     /** Invita a otro jugador conectado a tu café (solo el dueño). */
     static String invitar(Cafe c, ServerPlayerEntity host, ServerPlayerEntity target) {
         if (!c.esDuenio(host)) return "Solo el dueño del café puede invitar.";
         if (c.construyendo) return "Estás construyendo: termina antes de invitar.";
         if (target == host) return "No puedes invitarte a ti mismo.";
         if (POR_JUGADOR.containsKey(target.getUuid())) return target.getGameProfile().getName() + " ya está en un café.";
-        if (c.jugadores.size() >= MAX_JUGADORES) return "Tu café está lleno (máximo " + MAX_JUGADORES + " personas).";
+        if (c.trabajadores() >= MAX_JUGADORES) return "Tu café está lleno (máximo " + MAX_JUGADORES + " personas).";
         String oc = ocupado(target);
         if (oc != null) return target.getGameProfile().getName() + " " + oc + ".";
         INVITACIONES.put(target.getUuid(), new Invitacion(host.getUuid(), reloj + 20 * 60));
@@ -115,7 +166,7 @@ final class Cafes {
         if (c == null || host == null) { INVITACIONES.remove(guest.getUuid()); return "Ese café ya cerró."; }
         if (nombreDuenio != null && !nombreDuenio.isEmpty() && !host.getGameProfile().getName().equalsIgnoreCase(nombreDuenio)) return "Esa invitación no es de " + nombreDuenio + ".";
         if (POR_JUGADOR.containsKey(guest.getUuid())) return "Ya estás en un café.";
-        if (c.jugadores.size() >= MAX_JUGADORES) return "El café está lleno.";
+        if (c.trabajadores() >= MAX_JUGADORES) return "El café está lleno.";
         String oc = ocupado(guest);
         if (oc != null) return "Estás en otro minijuego (o mundo del servidor): sal primero de él.";
         INVITACIONES.remove(guest.getUuid());
@@ -140,8 +191,7 @@ final class Cafes {
             c.cerrar();
         } else if (c != null) {
             POR_JUGADOR.remove(p.getUuid());
-            c.jugadores.remove(p.getUuid());
-            c.manos.remove(p.getUuid());
+            c.quitarJugador(p.getUuid());
         }
         return Saved.restore(s, p);
     }
@@ -150,8 +200,7 @@ final class Cafes {
     static void sinRestaurar(ServerPlayerEntity p) {
         Cafe c = POR_JUGADOR.remove(p.getUuid());
         if (c == null) return;
-        c.jugadores.remove(p.getUuid());
-        c.manos.remove(p.getUuid());
+        c.quitarJugador(p.getUuid());
         if (c.esDuenio(p)) {
             for (UUID id : new ArrayList<>(c.jugadores)) {
                 POR_JUGADOR.remove(id);
@@ -180,8 +229,7 @@ final class Cafes {
             c.cerrar();
         } else {
             POR_JUGADOR.remove(p.getUuid());
-            c.jugadores.remove(p.getUuid());
-            c.manos.remove(p.getUuid());
+            c.quitarJugador(p.getUuid());
         }
     }
 

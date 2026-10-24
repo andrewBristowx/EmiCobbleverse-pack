@@ -87,6 +87,36 @@ final class Menus {
         }
         o.add("estilo", est);
         o.addProperty("estacionesEnMano", c.estEnMano.size());
+        o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
+        o.addProperty("visitas", dd.visitas);
+        o.addProperty("megusta", dd.megusta);
+        o.addProperty("yaMeGusta", dd.likesDe.contains(p.getUuid().toString()));
+        o.addProperty("nVisitantes", c.visitantes.size());
+        int nRep = Reputacion.nivel(dd.rep);
+        o.addProperty("repValor", dd.rep); o.addProperty("repNivel", nRep); o.addProperty("repNombre", Reputacion.nombre(nRep)); o.addProperty("repSig", Reputacion.siguiente(dd.rep));
+        int pts = Estilo.puntos(dd.decor, dd.estilo), nEst = Estilo.nivelDe(pts);
+        o.addProperty("estPuntos", pts); o.addProperty("estNivel", nEst); o.addProperty("estNombre", Estilo.NOMBRES[nEst]); o.addProperty("estSig", Estilo.siguiente(pts));
+        o.addProperty("evento", c.evento == Evento.NINGUNO ? "" : c.evento.nombre + (c.platoDelDia != null ? ": " + c.platoDelDia.nombre() : ""));
+        o.addProperty("eventoTexto", c.evento.descripcion);
+        JsonArray cafes = new JsonArray();                                   // los cafes abiertos ahora mismo (para visitar)
+        for (Cafe otro : Cafes.abiertos()) {
+            ServerPlayerEntity du = otro.jugador(otro.duenio);
+            if (du == null || otro == c) continue;
+            Datos.Jugador od = otro.dj();
+            JsonObject e = new JsonObject();
+            e.addProperty("nombre", du.getGameProfile().getName()); e.addProperty("megusta", od.megusta);
+            e.addProperty("estilo", Estilo.nivelDe(Estilo.puntos(od.decor, od.estilo))); e.addProperty("rep", Reputacion.nivel(od.rep));
+            e.addProperty("abierto", otro.estado == Cafe.Estado.ABIERTO); e.addProperty("visitas", od.visitas); e.addProperty("gente", otro.visitantes.size());
+            cafes.add(e);
+        }
+        o.add("cafes", cafes);
+        JsonArray top = new JsonArray();
+        for (Datos.Fila f : EmiCafe.datos.top(6)) {
+            JsonObject e = new JsonObject();
+            e.addProperty("nombre", f.nombre()); e.addProperty("megusta", f.megusta()); e.addProperty("rep", Reputacion.nivel(f.rep())); e.addProperty("estilo", Estilo.nivelDe(f.estilo()));
+            top.add(e);
+        }
+        o.add("top", top);
 
         JsonArray ini = new JsonArray();
         for (Recetas.Inicial i : Recetas.Inicial.values()) {
@@ -100,11 +130,11 @@ final class Menus {
         JsonArray gente = new JsonArray();
         for (ServerPlayerEntity q : c.presentes()) {
             JsonObject e = new JsonObject();
-            e.addProperty("nombre", q.getGameProfile().getName()); e.addProperty("yo", q == p); e.addProperty("host", c.esDuenio(q));
+            e.addProperty("nombre", q.getGameProfile().getName()); e.addProperty("yo", q == p); e.addProperty("host", c.esDuenio(q)); e.addProperty("visita", c.visitantes.contains(q.getUuid()));
             gente.add(e);
         }
         o.add("gente", gente);
-        o.addProperty("lleno", c.jugadores.size() >= Cafes.MAX_JUGADORES);
+        o.addProperty("lleno", c.trabajadores() >= Cafes.MAX_JUGADORES);
         JsonArray inv = new JsonArray();
         if (duenio) for (ServerPlayerEntity q : c.server.getPlayerManager().getPlayerList()) {
             if (q == p || Cafes.de(q.getUuid()) != null || inv.size() >= 6) continue;
@@ -136,7 +166,7 @@ final class Menus {
         for (Recetas.Mejora m : Recetas.Mejora.values()) {
             int nv = dd.nivel(m.id);
             JsonObject e = new JsonObject();
-            e.addProperty("id", m.id); e.addProperty("item", idItem(m.icono)); e.addProperty("nombre", m.nombre); e.addProperty("texto", m.descripcion);
+            e.addProperty("id", m.id); e.addProperty("item", idItem(m.icono)); e.addProperty("nombre", m.nombre + (m.reqRep > 0 ? " · reputación " + m.reqRep + (nRep >= m.reqRep ? " ✔" : " ✘") : "")); e.addProperty("texto", m.descripcion);
             e.addProperty("nivel", nv); e.addProperty("max", m.max()); e.addProperty("precio", nv >= m.max() ? 0 : m.precios[nv]);
             mej.add(e);
         }
@@ -229,6 +259,18 @@ final class Menus {
                     }
                     actualizar(c, p);
                 }
+                case "megusta" -> { String err = Cafes.megusta(c, p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "visitas" -> { if (duenio) { Datos.Jugador dd = c.dj(); dd.visitas = !dd.visitas; EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }
+                case "visitar" -> {
+                    String nombre = a.a();
+                    if (duenio && (c.estado != Cafe.Estado.PREPARANDO || c.trabajadores() > 1 || c.construyendo)) { p.sendMessage(Msg.err("Para ir de visita tienes que tener tu café cerrado, sin construir y sin invitados."), false); actualizar(c, p); return; }
+                    Cafe destino = Cafes.deDuenio(nombre);
+                    if (destino == null || destino == c) { p.sendMessage(Msg.err("Ese café ya no está abierto."), false); actualizar(c, p); return; }
+                    cerrar(p);
+                    Cafes.salir(p);
+                    String err = Cafes.visitar(p, nombre);
+                    if (err != null) p.sendMessage(Msg.err(err), false);
+                }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
                 case "salir" -> { cerrar(p); Cafes.salir(p); }
@@ -303,6 +345,7 @@ final class Menus {
         if (me == null || !c.esDuenio(p)) return;
         Datos.Jugador d = c.dj(p);
         int nv = d.nivel(me.id);
+        if (Reputacion.nivel(d.rep) < me.reqRep) { p.sendMessage(Msg.err("Hace falta reputación de nivel " + me.reqRep + " (" + Reputacion.nombre(me.reqRep) + ") para contratarlo."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         if (c.estado != Cafe.Estado.PREPARANDO) { p.sendMessage(Msg.err("Solo se compra con el café cerrado."), false); return; }
         if (nv >= me.max()) return;
         int precio = me.precios[nv];

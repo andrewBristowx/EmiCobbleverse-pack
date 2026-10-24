@@ -125,13 +125,18 @@ final class Recetas {
         PACIENCIA("paciencia", "Clientes más pacientes", CafeItems.CORAZON, new int[]{120, 240}, "Esperan un 25 % más por nivel antes de irse."),
         VAJILLA("vajilla", "Más vajilla", CafeItems.PILA_PLATOS, new int[]{100, 200}, "Dos platos limpios más en la pila por nivel."),
         AMPLIAR("ampliar", "Ampliar el local", CafeItems.PUERTA, new int[]{300, 600}, "8 bloques más de ancho y 2 mesas más por nivel."),
-        PUBLICIDAD("publicidad", "Publicidad", CafeItems.MEGAFONO, new int[]{120, 240}, "Llegan clientes más seguido.");
+        PUBLICIDAD("publicidad", "Publicidad", CafeItems.MEGAFONO, new int[]{120, 240}, "Llegan clientes más seguido."),
+        AYUD_LAVA("ayud_lava", "Ayudante: lavaplatos", CafeItems.PILA_PLATOS, new int[]{400}, "Un Squirtle lava solo los platos sucios de las mesas.", 2),
+        AYUD_MESERO("ayud_mesero", "Ayudante: camarero", CafeItems.MEGAFONO, new int[]{800}, "Un Chansey sirve los platos que quedan listos.", 4);
 
         final String id, nombre, descripcion;
         final Item icono;
         final int[] precios;
+        final int reqRep;                     // nivel de reputacion que hace falta para comprarla
 
-        Mejora(String id, String nombre, Item icono, int[] precios, String descripcion) { this.id = id; this.nombre = nombre; this.icono = icono; this.precios = precios; this.descripcion = descripcion; }
+        Mejora(String id, String nombre, Item icono, int[] precios, String descripcion) { this(id, nombre, icono, precios, descripcion, 0); }
+
+        Mejora(String id, String nombre, Item icono, int[] precios, String descripcion, int reqRep) { this.id = id; this.nombre = nombre; this.icono = icono; this.precios = precios; this.descripcion = descripcion; this.reqRep = reqRep; }
 
         int max() { return precios.length; }
 

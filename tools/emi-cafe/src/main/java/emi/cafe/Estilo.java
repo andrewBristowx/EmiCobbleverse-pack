@@ -55,4 +55,39 @@ final class Estilo {
 
     /** El bloque del suelo en (x, z): damero de los dos colores. */
     static String suelo(int[] v, int parte, int x, int z) { Op o = op(v, parte); return ((x + z) & 1) == 0 ? o.a() : o.b(); }
+
+    // ------------------------------------------------------------------------------------------------ puntos de estilo (lo decorado cuenta)
+
+    /** Puntos que hacen falta para cada nivel de estilo (nivel 1 = 15 puntos... nivel 5 = 220). */
+    static final int[] NIVELES = {15, 40, 80, 140, 220};
+    static final String[] NOMBRES = {"Sencillo", "Acogedor", "Bonito", "Elegante", "De revista", "De ensueño"};
+
+    private static final java.util.regex.Pattern NOMBRE_BLOQUE = java.util.regex.Pattern.compile("Name:\\s*\"([^\"]+)\"");
+
+    /**
+     * Los puntos de estilo del local: 1 por cada bloque decorativo colocado (hasta 12 del mismo tipo, para que llenar de lo mismo no valga), +3 por cada tipo distinto de bloque
+     * y +3 por cada material de paredes o suelos que no sea el de siempre. {@code decor} = la lista guardada del jugador (clave -> estado del bloque como texto).
+     */
+    static int puntos(java.util.Map<String, String> decor, int[] estilo) {
+        java.util.Map<String, Integer> por = new java.util.HashMap<>();
+        if (decor != null) for (String v : decor.values()) {
+            java.util.regex.Matcher m = NOMBRE_BLOQUE.matcher(v);
+            por.merge(m.find() ? m.group(1) : "?", 1, Integer::sum);
+        }
+        int pts = 0;
+        for (int n : por.values()) pts += Math.min(n, 12) + 3;
+        for (int i = 0; i < PARTES.length; i++) if (indice(estilo, i) != DEFECTO[i]) pts += 3;
+        return pts;
+    }
+
+    /** El nivel de estilo (0 a 5) de esos puntos. */
+    static int nivelDe(int pts) { int n = 0; for (int u : NIVELES) if (pts >= u) n++; return n; }
+
+    /** Puntos para el siguiente nivel (-1 si ya esta al maximo). */
+    static int siguiente(int pts) { int n = nivelDe(pts); return n >= NIVELES.length ? -1 : NIVELES[n]; }
+
+    /** Lo que da el estilo: mas propina, clientes mas seguido y mas visitantes especiales. */
+    static double multPropina(int nivel) { return 1.0 + 0.08 * nivel; }
+    static double multLlegada(int nivel) { return 1.0 - 0.05 * nivel; }
+    static int probEspecialExtra(int nivel) { return 2 * nivel; }
 }
