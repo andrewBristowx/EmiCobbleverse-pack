@@ -17,11 +17,11 @@ final class Local {
     static final double SX = 7.5, SZ = 4.5;                   // donde aparece el jugador
     /** Las mesas (x, z del bloque) en el orden en que se van abriendo; el cliente se pone justo al sur. */
     static final int[][] MESAS = {{5, 9}, {9, 9}, {2, 9}, {12, 9}, {16, 9}, {20, 9}, {24, 9}, {28, 9}, {32, 9}, {36, 9}, {40, 9}, {44, 9}};
-    /** Cuantas estaciones de trabajo (cajas, procesadoras y la mesa de emplatar; sin contar la basura ni el fregadero) caben en cada nivel de local (1 a 5). */
-    static final int[] MAX_ESTACIONES = {5, 8, 12, 17, 22};
+    /** Cuantas estaciones de trabajo (cajas, procesadoras y la mesa de emplatar; sin contar la basura ni el fregadero) caben en cada nivel de local (1 a 10). */
+    static final int[] MAX_ESTACIONES = {5, 8, 12, 17, 22, 28, 34, 40, 46, 52};
     static int maxEstaciones(int nivelLocal) { return MAX_ESTACIONES[Math.max(1, Math.min(MAX_ESTACIONES.length, nivelLocal)) - 1]; }
     static final int ANCHO_BASE = 14, ANCHO_POR_NIVEL = 8;
-    static int ancho(int nivel) { return ANCHO_BASE + ANCHO_POR_NIVEL * nivel; }
+    static int ancho(int nivel) { return ANCHO_BASE + ANCHO_POR_NIVEL * Math.min(nivel, 4); }          // el edificio de un cafe de antes no crece mas del nivel 5
     static final int X_REGISTRADORA = 13, Z_REGISTRADORA = 6;
     static final double PUERTA_X = 8.0, CALLE_Z = 15.5, PASILLO_Z = 11.5;       // CALLE_Z = la acera de delante de la puerta
     // la parcela (64 de ancho, ver Ciudad): muro de atras, jardin, el local (z 0-13), acera, avenida, otra acera, parque y muro de delante

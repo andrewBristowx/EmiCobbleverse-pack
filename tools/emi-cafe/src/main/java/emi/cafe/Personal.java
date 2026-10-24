@@ -8,9 +8,9 @@ final class Personal {
 
     /** Lo que sabe hacer cada uno. {@code cada} = ticks entre una tarea y la siguiente. */
     enum Rol {
-        MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 3),
-        LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 2),
-        CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 3);
+        MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 6),
+        LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 4),
+        CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 6);
 
         final String id, nombre, descripcion, icono;
         final int precio, reqLocal, reqRep, cada, aspectoDefecto, max;
@@ -22,10 +22,10 @@ final class Personal {
         static Rol de(String id) { for (Rol r : values()) if (r.id.equals(id)) return r; return null; }
     }
 
-    static final int NIVEL_MAX = 5;
-    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
+    static final int NIVEL_MAX = 10;
+    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4, 3.4, 4.6, 6.0, 7.6, 9.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
 
-    /** El nivel del empleado (1 a 5). */
+    /** El nivel del empleado (1 a 10). */
     static int nivel(Datos.Empleado e) { return Math.max(1, Math.min(NIVEL_MAX, e.nivel)); }
 
     /** Monedas que cuesta subirlo al nivel siguiente (0 si ya esta al maximo). */

@@ -83,6 +83,27 @@ public final class CafeItems {
     public static final Item EV_FLORIDO = reg("ev_florido", "Ensalada floral");
     public static final Item EV_PIRATA = reg("ev_pirata", "Desayuno pirata");
     public static final Item EV_DORADO = reg("ev_dorado", "Festín dorado");
+    // local de nivel 6 a 10 (0.20.0)
+    public static final Item TOMATE = reg("tomate", "Tomate");
+    public static final Item PESCADO = reg("pescado", "Pescado");
+    public static final Item CACAO = reg("cacao", "Cacao");
+    public static final Item MIEL = reg("miel", "Miel");
+    public static final Item PESCADO_ASADO = reg("pescado_asado", "Pescado a la parrilla");
+    public static final Item BISTEC = reg("bistec", "Bistec");
+    public static final Item CHOCOLATE_FUNDIDO = reg("chocolate_fundido", "Chocolate fundido");
+    public static final Item SOPA_TOMATE = reg("sopa_tomate", "Sopa de tomate");
+    public static final Item CREPES = reg("crepes", "Crepes");
+    public static final Item ONIGIRI = reg("onigiri", "Onigiri de pescado");
+    public static final Item BAYAS_CHOCOLATE = reg("bayas_chocolate", "Bayas con chocolate");
+    public static final Item PIZZA_MARGARITA = reg("pizza_margarita", "Pizza margarita");
+    public static final Item CREPES_MIEL = reg("crepes_miel", "Crepes con miel");
+    public static final Item PAN_MIEL = reg("pan_miel", "Pan con miel");
+    public static final Item BISTEC_PAPAS = reg("bistec_papas", "Bistec con papas");
+    public static final Item PESCADO_VAPOR = reg("pescado_vapor", "Pescado al vapor");
+    public static final Item BOLLOS_VAPOR = reg("bollos_vapor", "Bollos al vapor");
+    public static final Item PASTEL_CHOCOLATE = reg("pastel_chocolate", "Pastel de chocolate");
+    public static final Item HELADO_CHOCOLATE = reg("helado_chocolate", "Copa de helado de chocolate");
+    public static final Item MENU_GRAN_CHEF = reg("menu_gran_chef", "Menú del gran chef");
     public static final Item PLATO_SUCIO = reg("plato_sucio", "Plato sucio");
     public static final Item PLATO_LIMPIO = reg("plato_limpio", "Plato limpio");
     /** Solo se usan como dibujo (el globo de los pedidos y los iconos de los menus). */

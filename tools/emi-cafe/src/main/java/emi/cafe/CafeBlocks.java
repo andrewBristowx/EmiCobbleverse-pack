@@ -40,6 +40,15 @@ public final class CafeBlocks {
     public static final Block CAJA_ARROZ = reg("caja_arroz");
     public static final Block HELADERA = reg("heladera");
     public static final Block WAFLERA = reg("waflera");
+    // local de nivel 6 a 10 (0.20.0)
+    public static final Block CAJA_TOMATE = reg("caja_tomate");
+    public static final Block CAJA_PESCADO = reg("caja_pescado");
+    public static final Block CAJA_CACAO = reg("caja_cacao");
+    public static final Block CAJA_MIEL = reg("caja_miel");
+    public static final Block PARRILLA = reg("parrilla");
+    public static final Block CREPERA = reg("crepera");
+    public static final Block VAPORERA = reg("vaporera");
+    public static final Block FUENTE_CHOCOLATE = reg("fuente_chocolate");
 
     /** El letrero de la puerta (2 casillas de ancho, medio bloque de alto) y el libro de recetas de la pared (1 casilla): imagenes sobre una placa fina, sin objeto. */
     public static final Block CARTEL = placa("cartel", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0.25, 0, 1, 0.75, 1 / 16.0));

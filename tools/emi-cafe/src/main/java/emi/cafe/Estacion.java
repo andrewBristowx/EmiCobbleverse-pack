@@ -34,6 +34,15 @@ enum Estacion {
     CAJA_ARROZ("Saco de arroz", CafeBlocks.CAJA_ARROZ, Tipo.CAJA, 6, 1, 0, CafeItems.ARROZ, false),
     HELADERA("Heladera", CafeBlocks.HELADERA, Tipo.PROCESO, 8, 1, 100, null, false),
     WAFLERA("Waflera", CafeBlocks.WAFLERA, Tipo.PROCESO, 11, 1, 90, null, false),
+    // las ocho del local de nivel 6 a 10 (0.20.0; en un cafe de antes van al final de las dos filas de la cocina)
+    CAJA_TOMATE("Caja de tomates", CafeBlocks.CAJA_TOMATE, Tipo.CAJA, 14, 1, 0, CafeItems.TOMATE, false),
+    CAJA_PESCADO("Caja de pescado", CafeBlocks.CAJA_PESCADO, Tipo.CAJA, 15, 1, 0, CafeItems.PESCADO, false),
+    CAJA_CACAO("Saco de cacao", CafeBlocks.CAJA_CACAO, Tipo.CAJA, 16, 1, 0, CafeItems.CACAO, false),
+    CAJA_MIEL("Tarro de miel", CafeBlocks.CAJA_MIEL, Tipo.CAJA, 17, 1, 0, CafeItems.MIEL, false),
+    PARRILLA("Parrilla", CafeBlocks.PARRILLA, Tipo.PROCESO, 14, 5, 140, null, false),
+    CREPERA("Crepera", CafeBlocks.CREPERA, Tipo.PROCESO, 15, 5, 90, null, false),
+    VAPORERA("Vaporera", CafeBlocks.VAPORERA, Tipo.PROCESO, 16, 5, 130, null, false),
+    FUENTE_CHOCOLATE("Fuente de chocolate", CafeBlocks.FUENTE_CHOCOLATE, Tipo.PROCESO, 17, 5, 100, null, false),
     MESA("Mesa", CafeBlocks.MESA, Tipo.MESA, -1, 0, 0, null, true),
     REGISTRADORA("Caja registradora", CafeBlocks.REGISTRADORA, Tipo.REGISTRADORA, -1, 0, 0, null, true);
 
@@ -62,8 +71,8 @@ enum Estacion {
     double alturaVisual() { return this == FREIDORA ? 1.1 : this == EXPRIMIDOR || this == BATIDORA || this == CAFETERA ? 1.3 : this == OLLA ? 1.0 : this == HORNO ? 1.1 : 0.85; }
 
     /** ¿Se quema lo que se deja esperando? (la freidora y el horno; la plancha no) */
-    boolean quema() { return this == FREIDORA || this == HORNO; }
+    boolean quema() { return this == FREIDORA || this == HORNO || this == PARRILLA; }
 
     /** Lo que sale cuando se quema. */
-    Item quemado() { return this == HORNO ? CafeItems.COMIDA_QUEMADA : CafeItems.PAPAS_QUEMADAS; }
+    Item quemado() { return this == HORNO || this == PARRILLA ? CafeItems.COMIDA_QUEMADA : CafeItems.PAPAS_QUEMADAS; }
 }

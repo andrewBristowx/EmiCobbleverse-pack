@@ -467,7 +467,7 @@ public final class MenuPantalla extends Lienzo {
             boton(g, 400 + 220 - 86, y + 5, 80, 16, txt, 0xFF2E8B57, ok, ok && dentro(mx, my, 400 + 220 - 86, y + 5, 80, 16), 0.72f);
         }
         texto(g, "Hasta 3 meseros, 3 chefs y 2 lavaplatos; el 2.º y el 3.º piden un local más grande.", 400, CY + 8 + 3 * 66 + 2, SUAVE, 0.62f);
-        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 5). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 14, 220, SUAVE, 0.7f);
+        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 10). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 14, 220, SUAVE, 0.7f);
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 
