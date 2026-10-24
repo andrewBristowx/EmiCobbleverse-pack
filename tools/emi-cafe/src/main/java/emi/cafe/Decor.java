@@ -111,7 +111,20 @@ final class Decor {
             new Articulo("ladrillo_piedra_losa", "minecraft:stone_brick_slab", 8, 20, "Losas", "Losas de ladrillo de piedra"),
             new Articulo("ladrillo_losa", "minecraft:brick_slab", 8, 22, "Losas", "Losas de ladrillo"),
             new Articulo("cuarzo_losa", "minecraft:quartz_slab", 8, 32, "Losas", "Losas de cuarzo"),
-            new Articulo("piedra_lisa_losa", "minecraft:smooth_stone_slab", 8, 20, "Losas", "Losas de piedra lisa"));
+            new Articulo("piedra_lisa_losa", "minecraft:smooth_stone_slab", 8, 20, "Losas", "Losas de piedra lisa"),
+            // puertas de cristal de colores (0.18.1): se abren solas con quien se acerca y suena una campanilla
+            new Articulo("puerta_white", "emi_cafe:puerta_cristal_white", 2, 40, "Puertas", "Puerta de cristal blanca"),
+            new Articulo("puerta_pink", "emi_cafe:puerta_cristal_pink", 2, 40, "Puertas", "Puerta de cristal rosa"),
+            new Articulo("puerta_magenta", "emi_cafe:puerta_cristal_magenta", 2, 40, "Puertas", "Puerta de cristal magenta"),
+            new Articulo("puerta_purple", "emi_cafe:puerta_cristal_purple", 2, 40, "Puertas", "Puerta de cristal morada"),
+            new Articulo("puerta_blue", "emi_cafe:puerta_cristal_blue", 2, 40, "Puertas", "Puerta de cristal azul"),
+            new Articulo("puerta_light_blue", "emi_cafe:puerta_cristal_light_blue", 2, 40, "Puertas", "Puerta de cristal celeste"),
+            new Articulo("puerta_cyan", "emi_cafe:puerta_cristal_cyan", 2, 40, "Puertas", "Puerta de cristal cian"),
+            new Articulo("puerta_lime", "emi_cafe:puerta_cristal_lime", 2, 40, "Puertas", "Puerta de cristal lima"),
+            new Articulo("puerta_yellow", "emi_cafe:puerta_cristal_yellow", 2, 40, "Puertas", "Puerta de cristal amarilla"),
+            new Articulo("puerta_orange", "emi_cafe:puerta_cristal_orange", 2, 40, "Puertas", "Puerta de cristal naranja"),
+            new Articulo("puerta_red", "emi_cafe:puerta_cristal_red", 2, 40, "Puertas", "Puerta de cristal roja"),
+            new Articulo("puerta_black", "emi_cafe:puerta_cristal_black", 2, 40, "Puertas", "Puerta de cristal negra"));
 
     /** El articulo de la tienda que corresponde a un objeto (null si no se vende: asi solo se pueden colocar cosas sin «entidad de bloque»). */
     static Articulo articuloDe(net.minecraft.item.Item it) {

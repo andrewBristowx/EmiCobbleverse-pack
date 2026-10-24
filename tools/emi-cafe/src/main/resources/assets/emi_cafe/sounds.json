@@ -13,6 +13,13 @@
       }
     ]
   },
+  "sfx.campanilla": {
+    "sounds": [
+      {
+        "name": "emi_cafe:sfx_campanilla"
+      }
+    ]
+  },
   "sfx.listo": {
     "sounds": [
       {

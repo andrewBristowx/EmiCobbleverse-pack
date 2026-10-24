@@ -941,6 +941,7 @@ final class Cafe {
         }
         tickAyudantes();
         obras.tick(t);
+        obras.tickPuertas(t);
         tickMuestras(ps);
         if (tut != null && t % 10 == 0) { tut.tick(); if (tut.terminada()) tut = null; }
         for (int i = clientes.size() - 1; i >= 0; i--) {

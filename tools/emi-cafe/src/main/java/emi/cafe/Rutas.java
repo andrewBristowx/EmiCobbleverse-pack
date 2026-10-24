@@ -56,6 +56,7 @@ final class Rutas {
             esc[i] = 0;
             if (s.isAir()) { h[i] = 0; continue; }
             net.minecraft.block.Block b = s.getBlock();
+            if (b instanceof PuertaCristalBlock) { h[i] = 0; continue; }                 // las puertas de cristal se abren solas: para los caminos no son pared
             if (net.minecraft.registry.Registries.BLOCK.getId(b).getNamespace().equals("emi_cafe") && (b == CafeBlocks.ENCIMERA || b == CafeBlocks.MESA || Estacion.de(b) != null)) { h[i] = 2f; continue; }     // mesas y estaciones: no se pisan
             var forma = s.getCollisionShape(w, p);
             if (forma.isEmpty()) { h[i] = 0; continue; }

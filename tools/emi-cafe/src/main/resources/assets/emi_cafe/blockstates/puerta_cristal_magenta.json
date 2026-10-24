@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "abierta=false": {
+      "model": "emi_cafe:block/puerta_cristal_magenta"
+    },
+    "abierta=true": {
+      "model": "emi_cafe:block/puerta_cristal_magenta_abierta"
+    }
+  }
+}

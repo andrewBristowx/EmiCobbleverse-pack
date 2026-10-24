@@ -6,12 +6,15 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
 
 /** Parte de cliente del Cafe Michialien: abre, refresca y cierra la pantalla del menu con los datos que manda el servidor. */
 public class EmiCafeClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        for (net.minecraft.block.Block b : emi.cafe.CafeBlocks.PUERTAS) BlockRenderLayerMap.INSTANCE.putBlock(b, RenderLayer.getTranslucent());      // el cristal de las puertas se ve a traves
         ClientPlayNetworking.registerGlobalReceiver(TextoPayload.ID, (p, ctx) -> ctx.client().execute(() -> menu(p)));
         HudRenderCallback.EVENT.register((g, tick) -> PanelCafe.dibujar(g));
         // dentro del cafe se esconden el equipo Pokemon, el minimapa y los otros cuadros (hay un panel propio); al salir se devuelven

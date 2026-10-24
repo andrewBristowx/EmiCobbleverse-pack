@@ -36,6 +36,12 @@ def campana():
     return pegar([(0.0, S.v_campana(midi('G6'), 1.0, True, 2.4), 0.9, 0.0), (0.16, S.v_campana(midi('C7'), 1.2, True, 2.2), 0.8, 0.0)], 1.5)
 
 
+def campanilla():
+    """La campanilla que suena sobre la puerta de una tienda cuando entra alguien: tres tintineos agudos y rapidos, el ultimo mas largo."""
+    return pegar([(0.0, S.v_campana(midi('G7'), 0.45, True, 6.0), 0.7, 0.0), (0.06, S.v_campana(midi('E7'), 0.5, True, 5.5), 0.75, 0.0), (0.13, S.v_campana(midi('C8'), 0.9, True, 4.2), 0.8, 0.0),
+                  (0.0, S.pasaaltos(S.ruido(int(0.012 * S.SR)), 5000) * 0.25, 1.0, 0.0)], 1.3)
+
+
 def listo():
     return pegar([(0.0, S.v_cajita(midi('C6'), 0.5), 0.9, 0.0), (0.09, S.v_cajita(midi('G6'), 0.7), 0.8, 0.0)], 0.9)
 
@@ -95,20 +101,22 @@ def cerrar():
     return pegar([(0.0, S.v_campana(midi('G6'), 1.0, True, 2.2), 0.9, 0.2), (0.18, S.v_campana(midi('D6'), 1.0, True, 2.2), 0.8, 0.0), (0.36, S.v_campana(midi('G5'), 1.6, True, 1.8), 0.9, -0.2)], 2.0)
 
 
-EFECTOS = {'cobrar': (cobrar, True), 'campana': (campana, True), 'listo': (listo, True), 'quemado': (quemado, True), 'chisporroteo': (chisporroteo, True), 'lavar': (lavar, True),
+EFECTOS = {'cobrar': (cobrar, True), 'campana': (campana, True), 'campanilla': (campanilla, True), 'listo': (listo, True), 'quemado': (quemado, True), 'chisporroteo': (chisporroteo, True), 'lavar': (lavar, True),
            'subir': (subir, False), 'evento': (evento, False), 'megusta': (megusta, False), 'abrir': (abrir, False), 'cerrar': (cerrar, False)}
 
 
 def main():
     os.makedirs(SALIDA, exist_ok=True)
     sj = {}
+    solo = sys.argv[1:]                                   # python3 sonidos.py campanilla = solo regenera ese (los demas se quedan como estan)
     for nombre, (f, mono) in EFECTOS.items():
+        sj['sfx.' + nombre] = {'sounds': [{'name': 'emi_cafe:sfx_' + nombre}]}
+        if solo and nombre not in solo: continue
         x = f()
         x = S.normalizar(S.sin_continua(x), 0.12, 0.85)
         x = S.fundido(x, 0.002, 0.03)
         seg, kb = S.a_ogg(x, os.path.join(SALIDA, 'sfx_%s.ogg' % nombre), 4, mono=mono)
         print('  sfx_%s.ogg: %.2f s, %d KB%s' % (nombre, seg, kb, ' (mono)' if mono else ''))
-        sj['sfx.' + nombre] = {'sounds': [{'name': 'emi_cafe:sfx_' + nombre}]}
     for pista in ('cerrado', 'abierto'):
         sj['musica.' + pista] = {'sounds': [{'name': 'emi_cafe:musica_' + pista, 'stream': True}]}
     with open(os.path.join(RAIZ, 'sounds.json'), 'w') as f:

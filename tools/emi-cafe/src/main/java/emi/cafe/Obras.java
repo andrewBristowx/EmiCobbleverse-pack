@@ -47,6 +47,7 @@ final class Obras {
     private final List<int[]> cMesas = new ArrayList<>();
     private final Set<String> cNombres = new HashSet<>();
     private int[] cCartel;
+    private final List<int[]> cPuertas = new ArrayList<>();
     private static final Pattern NOMBRE = Pattern.compile("Name:\"([^\"]+)\"");
     private static Map<String, Estacion> porBloque;
 
@@ -65,7 +66,7 @@ final class Obras {
     private void escanear() {
         if (verCache == ver) return;
         verCache = ver;
-        cEst.clear(); cMesas.clear(); cNombres.clear(); cCartel = null;
+        cEst.clear(); cMesas.clear(); cNombres.clear(); cPuertas.clear(); cCartel = null;
         Datos.Jugador d = d();
         if (!d.libre || d.decor == null) return;
         Map<String, Estacion> pb = porBloque();
@@ -75,6 +76,7 @@ final class Obras {
             String nombre = m.group(1);
             if (!nombre.startsWith("emi_cafe:")) continue;
             cNombres.add(nombre);
+            if (nombre.startsWith("emi_cafe:puerta_cristal_")) cPuertas.add(new int[]{Integer.parseInt(en.getKey().split(",")[0]), Integer.parseInt(en.getKey().split(",")[2]), Integer.parseInt(en.getKey().split(",")[1])});
             String[] k = en.getKey().split(",");
             int rx = Integer.parseInt(k[0]), ry = Integer.parseInt(k[1]), rz = Integer.parseInt(k[2]);
             Estacion e = pb.get(nombre);
@@ -304,7 +306,7 @@ final class Obras {
     static boolean permitido(Block b) {
         Identifier id = Registries.BLOCK.getId(b);
         String p = id.getPath();
-        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || b == CafeBlocks.MESA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || Estacion.de(b) != null;
+        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || b == CafeBlocks.MESA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || b instanceof PuertaCristalBlock || Estacion.de(b) != null;
         if (PROHIBIDOS.contains(p) || p.contains("command_block") || p.contains("structure") || p.contains("redstone") || p.contains("piston") || p.contains("repeater") || p.contains("comparator") || p.contains("test_")) return false;
         if (b instanceof net.minecraft.block.FallingBlock || b instanceof net.minecraft.block.FluidBlock || b instanceof net.minecraft.block.AbstractFireBlock || b instanceof net.minecraft.block.TntBlock) return false;
         if (b instanceof net.minecraft.block.BlockWithEntity) {
@@ -316,7 +318,7 @@ final class Obras {
 
     /** En un cafe de antes, los bloques del cafe que no se quitan con el clic normal (la caja registradora, el libro, el letrero). */
     private static boolean protegido(Block b) {
-        return Registries.BLOCK.getId(b).getNamespace().equals("emi_cafe") && b != CafeBlocks.ENCIMERA && b != CafeBlocks.MESA && Estacion.de(b) == null;
+        return Registries.BLOCK.getId(b).getNamespace().equals("emi_cafe") && b != CafeBlocks.ENCIMERA && b != CafeBlocks.MESA && !(b instanceof PuertaCristalBlock) && Estacion.de(b) == null;
     }
 
     String clave(BlockPos pos) { return Decor.clave(pos.getX() - c.ox, pos.getY() - Local.Y, pos.getZ()); }
@@ -356,6 +358,49 @@ final class Obras {
             c.w.setBlockState(pos, st, Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
         }
         cambio();
+    }
+
+    // ------------------------------------------------------------ las puertas de cristal
+
+    private final java.util.Map<Long, Integer> puertaSinGente = new HashMap<>();       // ticks (de 4 en 4) que lleva cada puerta abierta sin nadie cerca
+
+    /**
+     * Abre las puertas de cristal cuando se acerca alguien (con una campanilla de tienda) y las cierra cuando ya no queda nadie cerca. Abren: siempre el dueño y los jugadores del cafe;
+     * con el cafe abierto, tambien los clientes y los empleados. Con el cafe cerrado nadie mas entra. El estado abierto/cerrado solo vive en el mundo (en lo guardado siempre esta cerrada).
+     */
+    void tickPuertas(int t) {
+        if (t % 4 != 0) return;
+        escanear();
+        if (cPuertas.isEmpty()) return;
+        List<double[]> gente = new ArrayList<>();
+        for (ServerPlayerEntity p : c.presentes()) gente.add(new double[]{p.getX(), p.getY(), p.getZ()});
+        if (c.estado == Cafe.Estado.ABIERTO) {
+            for (Cliente cl : c.clientes) if (!cl.e.isRemoved()) gente.add(new double[]{cl.e.getX(), cl.e.getY(), cl.e.getZ()});
+            for (Ayudante a : c.ayudantes) if (!a.e.isRemoved()) gente.add(new double[]{a.e.getX(), a.e.getY(), a.e.getZ()});
+        }
+        boolean sono = false;
+        for (int[] d : cPuertas) {
+            BlockPos pos = Local.pos(c.ox, d[0], d[2], d[1]);
+            BlockState st = c.w.getBlockState(pos);
+            if (!(st.getBlock() instanceof PuertaCristalBlock)) continue;
+            boolean hay = false;
+            for (double[] q : gente) if (Math.abs(q[0] - pos.getX() - 0.5) <= 2.2 && Math.abs(q[2] - pos.getZ() - 0.5) <= 2.2 && q[1] > pos.getY() - 2.0 && q[1] < pos.getY() + 2.5) { hay = true; break; }
+            long k = pos.asLong();
+            boolean abierta = st.get(PuertaCristalBlock.ABIERTA);
+            if (hay) {
+                puertaSinGente.put(k, 0);
+                if (!abierta) {
+                    c.w.setBlockState(pos, st.with(PuertaCristalBlock.ABIERTA, true), Block.NOTIFY_ALL);
+                    if (!sono) { Sonidos.mundo(c.w, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, "campanilla", 1.0f, 1.0f); sono = true; }
+                }
+            } else if (abierta) {
+                int n = puertaSinGente.merge(k, 1, Integer::sum);
+                if (n >= 5) {                                                                       // ~1 s sin nadie cerca
+                    c.w.setBlockState(pos, st.with(PuertaCristalBlock.ABIERTA, false), Block.NOTIFY_ALL);
+                    puertaSinGente.remove(k);
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------ el cartel con el nombre y el letrero abierto/cerrado

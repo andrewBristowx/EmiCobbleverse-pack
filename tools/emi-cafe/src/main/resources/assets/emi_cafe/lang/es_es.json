@@ -115,5 +115,17 @@
   "block.emi_cafe.heladera": "Heladera",
   "block.emi_cafe.waflera": "Waflera",
   "block.emi_cafe.cartel": "Cartel del café",
-  "block.emi_cafe.libro_pared": "Recetario de pared"
+  "block.emi_cafe.libro_pared": "Recetario de pared",
+  "block.emi_cafe.puerta_cristal_white": "Puerta de cristal blanca",
+  "block.emi_cafe.puerta_cristal_pink": "Puerta de cristal rosa",
+  "block.emi_cafe.puerta_cristal_magenta": "Puerta de cristal magenta",
+  "block.emi_cafe.puerta_cristal_purple": "Puerta de cristal morada",
+  "block.emi_cafe.puerta_cristal_blue": "Puerta de cristal azul",
+  "block.emi_cafe.puerta_cristal_light_blue": "Puerta de cristal celeste",
+  "block.emi_cafe.puerta_cristal_cyan": "Puerta de cristal cian",
+  "block.emi_cafe.puerta_cristal_lime": "Puerta de cristal lima",
+  "block.emi_cafe.puerta_cristal_yellow": "Puerta de cristal amarilla",
+  "block.emi_cafe.puerta_cristal_orange": "Puerta de cristal naranja",
+  "block.emi_cafe.puerta_cristal_red": "Puerta de cristal roja",
+  "block.emi_cafe.puerta_cristal_black": "Puerta de cristal negra"
 }

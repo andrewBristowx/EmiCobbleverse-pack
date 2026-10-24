@@ -115,5 +115,17 @@
   "block.emi_cafe.heladera": "Ice Cream Maker",
   "block.emi_cafe.waflera": "Waffle Iron",
   "block.emi_cafe.cartel": "Cafe sign",
-  "block.emi_cafe.libro_pared": "Wall recipe book"
+  "block.emi_cafe.libro_pared": "Wall recipe book",
+  "block.emi_cafe.puerta_cristal_white": "White glass door",
+  "block.emi_cafe.puerta_cristal_pink": "Pink glass door",
+  "block.emi_cafe.puerta_cristal_magenta": "Magenta glass door",
+  "block.emi_cafe.puerta_cristal_purple": "Purple glass door",
+  "block.emi_cafe.puerta_cristal_blue": "Blue glass door",
+  "block.emi_cafe.puerta_cristal_light_blue": "Light Blue glass door",
+  "block.emi_cafe.puerta_cristal_cyan": "Cyan glass door",
+  "block.emi_cafe.puerta_cristal_lime": "Lime glass door",
+  "block.emi_cafe.puerta_cristal_yellow": "Yellow glass door",
+  "block.emi_cafe.puerta_cristal_orange": "Orange glass door",
+  "block.emi_cafe.puerta_cristal_red": "Red glass door",
+  "block.emi_cafe.puerta_cristal_black": "Black glass door"
 }
