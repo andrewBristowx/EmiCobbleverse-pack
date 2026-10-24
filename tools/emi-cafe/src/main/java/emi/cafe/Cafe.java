@@ -306,6 +306,29 @@ final class Cafe {
         return null;
     }
 
+    /** Sube de nivel a un empleado (necesita que el local tenga ese nivel, y cuesta monedas). Devuelve el error, o null. */
+    String mejorarEmpleado(ServerPlayerEntity p, int idx) {
+        if (!esDuenio(p)) return "Solo el dueño mejora a su personal.";
+        if (estado != Estado.PREPARANDO || construyendo) return "Mejora al personal con el café cerrado y sin construir.";
+        Datos.Jugador d = dj();
+        if (idx < 0 || idx >= d.personal.size()) return "Ese empleado no existe.";
+        Datos.Empleado e = d.personal.get(idx);
+        Personal.Rol rol = Personal.Rol.de(e.rol);
+        if (rol == null) return "Ese empleado no existe.";
+        int n = Personal.nivel(e);
+        if (n >= Personal.NIVEL_MAX) return e.nombre + " ya está al nivel máximo.";
+        if (n + 1 > nivelLocal()) return "Para subir a " + e.nombre + " al nivel " + (n + 1) + " hace falta un local de nivel " + (n + 1) + ".";
+        int coste = Personal.costeSubida(rol, n);
+        if (d.monedas < coste) return "Te faltan monedas (" + coste + ").";
+        d.monedas -= coste;
+        e.nivel = n + 1;
+        EmiCafe.datos.guardar(duenio);
+        recargarPersonal();
+        p.sendMessage(Msg.say(e.nombre + " sube al nivel " + (n + 1) + ": anda un " + Math.round((Personal.velocidad(n + 1) - 1) * 100) + " % más rápido y trabaja un " + Math.round((Personal.trabajo(n + 1) - 1) * 100) + " % más rápido."), false);
+        Sonidos.jugador(p, "subir", 1f, 1.1f);
+        return null;
+    }
+
     String cambiarAspecto(ServerPlayerEntity p, int idx) {
         if (!esDuenio(p)) return "Solo el dueño puede cambiar aspectos.";
         Datos.Jugador d = dj();
@@ -402,7 +425,7 @@ final class Cafe {
                 case MESERO -> tareaMesero(a);
                 case CHEF -> tareaChef(a);
             }
-            a.espera = a.ocupado() ? 0 : 20;                       // sin tarea: vuelve a mirar dentro de 1 s
+            a.espera = a.ocupado() ? 0 : a.t(20);                       // sin tarea: vuelve a mirar dentro de 1 s
         }
     }
 
@@ -417,15 +440,15 @@ final class Cafe {
             a.mesaLava = m;
             dbg(a, "va a recoger el plato sucio de la mesa " + m.bloque.toShortString());
             a.ruta(ruta(a.e.getX(), a.e.getZ(), pm[0], pm[1]), pm[2], pm[3]);
-            a.paso(pm[0], pm[1], 14, null, () -> {
+            a.paso(pm[0], pm[1], a.t(14), null, () -> {
                 if (m.sucio == null) { mandarACasa(a); return; }
                 Disp.quitar(m.sucio); m.sucio = null;
                 dbg(a, "recogio el plato sucio, va al fregadero");
                 a.llevar(w, CafeItems.id(CafeItems.PILA_PLATOS));
                 Runnable lavado = () -> { a.llevar(w, null); platos++; a.mesaLava = null; dbg(a, "plato lavado (limpios: " + platos + ")"); };
-                if (pf == null) { a.paso(pm[0], pm[1], 40, () -> lavando(a), lavado, pm[2], pm[3]); return; }   // sin fregadero (lo lleva el dueño en la mano): lava alli mismo
+                if (pf == null) { a.paso(pm[0], pm[1], a.t(40), () -> lavando(a), lavado, pm[2], pm[3]); return; }   // sin fregadero (lo lleva el dueño en la mano): lava alli mismo
                 a.ruta(ruta(a.e.getX(), a.e.getZ(), pf[0], pf[1]), pf[2], pf[3]);
-                a.paso(pf[0], pf[1], 50, () -> lavando(a), lavado, pf[2], pf[3]);
+                a.paso(pf[0], pf[1], a.t(50), () -> lavando(a), lavado, pf[2], pf[3]);
             }, pm[2], pm[3]);
             a.vigente = () -> m.sucio != null || a.llevado != null;
             return;
@@ -454,7 +477,7 @@ final class Cafe {
                 a.mesaServ = m; a.estReserva = est; est.reserva = a;
                 dbg(a, "va por " + es.nombre + " para servir en la mesa " + m.bloque.toShortString());
                 a.ruta(ruta(a.e.getX(), a.e.getZ(), pe[0], pe[1]), pe[2], pe[3]);
-                a.paso(pe[0], pe[1], 10, null, () -> {
+                a.paso(pe[0], pe[1], a.t(10), null, () -> {
                     if (est.listo != plato) { mandarACasa(a); return; }             // alguien (el dueño) se lo llevo
                     est.listo = null; est.listoTicks = 0;
                     dibujar(pos, es, est);
@@ -463,7 +486,7 @@ final class Cafe {
                     a.llevar(w, CafeItems.id(plato));
                     a.vigente = () -> esperaPlato(m, plato);
                     a.ruta(ruta(a.e.getX(), a.e.getZ(), pm[0], pm[1]), pm[2], pm[3]);
-                    a.paso(pm[0], pm[1], 10, null, () -> servir(a, m, plato), pm[2], pm[3]);
+                    a.paso(pm[0], pm[1], a.t(10), null, () -> servir(a, m, plato), pm[2], pm[3]);
                 }, pe[2], pe[3]);
                 a.vigente = () -> (est.listo == plato || a.llevado != null) && esperaPlato(m, plato);
                 return;
@@ -507,13 +530,13 @@ final class Cafe {
                 a.ruta(ruta(fx, fz, pe[0], pe[1]), pe[2], pe[3]);
                 int espera = es.tipo == Estacion.Tipo.CAJA ? 24 : es.tipo == Estacion.Tipo.EMPLATAR ? 44 : Math.max(44, Math.min(100, es.ticks / 2));
                 boolean proceso = es.tipo != Estacion.Tipo.CAJA;
-                a.paso(pe[0], pe[1], espera, () -> cocinando(a, proceso), null, pe[2], pe[3]);
+                a.paso(pe[0], pe[1], a.t(espera), () -> cocinando(a, proceso), null, pe[2], pe[3]);
                 fx = pe[0]; fz = pe[1];
             }
             double[] pm = puestoMesa(m);
             a.pasos.add(new Ayudante.Paso(fx, fz, 0, null, () -> a.llevar(w, CafeItems.id(pl.item)), Double.NaN, Double.NaN));
             a.ruta(ruta(fx, fz, pm[0], pm[1]), pm[2], pm[3]);
-            a.paso(pm[0], pm[1], 10, null, () -> servir(a, m, pl.item), pm[2], pm[3]);
+            a.paso(pm[0], pm[1], a.t(10), null, () -> servir(a, m, pl.item), pm[2], pm[3]);
             a.vigente = () -> esperaPlato(m, pl.item) && !mesaOcupada(m, a, false);          // si un mesero ya lleva a esa mesa el plato del dueño, el chef lo deja
             return;
         }

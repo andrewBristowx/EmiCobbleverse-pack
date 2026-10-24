@@ -22,6 +22,19 @@ final class Personal {
         static Rol de(String id) { for (Rol r : values()) if (r.id.equals(id)) return r; return null; }
     }
 
+    static final int NIVEL_MAX = 5;
+    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
+
+    /** El nivel del empleado (1 a 5). */
+    static int nivel(Datos.Empleado e) { return Math.max(1, Math.min(NIVEL_MAX, e.nivel)); }
+
+    /** Monedas que cuesta subirlo al nivel siguiente (0 si ya esta al maximo). */
+    static int costeSubida(Rol rol, int nivel) { return nivel >= NIVEL_MAX ? 0 : (int) Math.round(rol.precio * COSTE_SUBIDA[nivel - 1]); }
+
+    /** Cuanto mas rapido anda (+12 % por nivel) y trabaja (+15 % por nivel): multiplicadores de 1,0 a 1,48 y de 1,0 a 1,6. */
+    static double velocidad(int nivel) { return 1 + 0.12 * (nivel - 1); }
+    static double trabajo(int nivel) { return 1 + 0.15 * (nivel - 1); }
+
     /** Los aspectos del Michialien: {propiedades de Cobblemon de emi-plush, nombre}. */
     static final String[][] ASPECTOS = {
         {"accessory=chef", "Gorro de chef"}, {"accessory=suit", "Traje y corbata"}, {"accessory=bow", "Lazo"}, {"accessory=scarf", "Bufanda"},

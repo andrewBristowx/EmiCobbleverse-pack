@@ -40,7 +40,7 @@ public final class MenuPantalla extends Lienzo {
     private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi, int nivelLocal, String bloqueo) {}
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
     private record CafeC(String nombre, String titulo, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente, boolean dentro) {}
-    private record PersonaC(int idx, String nombre, String rol, String icono, String aspecto) {}
+    private record PersonaC(int idx, String nombre, String rol, String icono, String aspecto, int nivel, int costo, String tope, String efecto) {}
     private record ContratoC(String rol, String nombre, String texto, String icono, int precio, String bloqueo) {}
     private record TopC(String nombre, int megusta, int rep, int estilo) {}
     private record EstiloC(String parte, String nombre) {}
@@ -114,7 +114,7 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("estilo")) for (JsonElement e : o.getAsJsonArray("estilo")) { JsonObject j = e.getAsJsonObject(); estilo.add(new EstiloC(s(j, "parte"), s(j, "nombre"))); }
         nombreCafe = o.has("nombreCafe") ? o.get("nombreCafe").getAsString() : "";
         personal.clear();
-        if (o.has("personal")) for (JsonElement e : o.getAsJsonArray("personal")) { JsonObject j = e.getAsJsonObject(); personal.add(new PersonaC(j.get("idx").getAsInt(), s(j, "nombre"), s(j, "rol"), s(j, "icono"), s(j, "aspecto"))); }
+        if (o.has("personal")) for (JsonElement e : o.getAsJsonArray("personal")) { JsonObject j = e.getAsJsonObject(); personal.add(new PersonaC(j.get("idx").getAsInt(), s(j, "nombre"), s(j, "rol"), s(j, "icono"), s(j, "aspecto"), j.has("nivel") ? j.get("nivel").getAsInt() : 1, j.has("costo") ? j.get("costo").getAsInt() : 0, s(j, "tope"), s(j, "efecto"))); }
         personalMax = o.has("personalMax") ? o.get("personalMax").getAsInt() : 1;
         contratos.clear();
         if (o.has("contratos")) for (JsonElement e : o.getAsJsonArray("contratos")) { JsonObject j = e.getAsJsonObject(); contratos.add(new ContratoC(s(j, "rol"), s(j, "nombre"), s(j, "texto"), s(j, "icono"), j.get("precio").getAsInt(), s(j, "bloqueo"))); }
@@ -423,12 +423,16 @@ public final class MenuPantalla extends Lienzo {
             int y = CY + 8 + i * (PERS_H + 4);
             caja(g, LX, y, 360, PERS_H, FONDO, BORDE);
             objeto(g, p.icono(), LX + 8, y + 9, 1.3f);
-            texto(g, recortar(p.nombre(), 16), LX + 38, y + 5, ORO, 1.1f);
-            texto(g, p.rol() + " · " + recortar(p.aspecto(), 18), LX + 38, y + 20, GRIS, 0.78f);
+            texto(g, recortar(p.nombre(), 16), LX + 38, y + 4, ORO, 1.1f);
+            texto(g, p.rol() + " · " + recortar(p.aspecto(), 18), LX + 38, y + 17, GRIS, 0.78f);
+            texto(g, "★".repeat(p.nivel()) + "☆".repeat(5 - p.nivel()) + "  Nv " + p.nivel(), LX + 38, y + 27, ORO, 0.75f);
             int bx = LX + 360 - 3 * 66;
-            boton(g, bx, y + 10, 62, 18, "✎ NOMBRE", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, bx, y + 10, 62, 18), 0.7f);
-            boton(g, bx + 66, y + 10, 62, 18, "ASPECTO ▶", 0xFF4A7AC0, puede, puede && dentro(mx, my, bx + 66, y + 10, 62, 18), 0.7f);
-            boton(g, bx + 132, y + 10, 62, 18, "DESPEDIR", 0xFF8A3A3A, puede, puede && dentro(mx, my, bx + 132, y + 10, 62, 18), 0.7f);
+            boton(g, bx, y + 3, 62, 15, "✎ NOMBRE", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, bx, y + 3, 62, 15), 0.7f);
+            boton(g, bx + 66, y + 3, 62, 15, "ASPECTO ▶", 0xFF4A7AC0, puede, puede && dentro(mx, my, bx + 66, y + 3, 62, 15), 0.7f);
+            boton(g, bx + 132, y + 3, 62, 15, "DESPEDIR", 0xFF8A3A3A, puede, puede && dentro(mx, my, bx + 132, y + 3, 62, 15), 0.7f);
+            boolean sube = puede && p.tope().isEmpty() && monedas >= p.costo();
+            String txt = !p.tope().isEmpty() ? p.tope() : "▲ MEJORAR a Nv " + (p.nivel() + 1) + " · " + p.costo() + " monedas";
+            boton(g, bx, y + 21, 194, 15, txt, 0xFF2E8B57, sube, sube && dentro(mx, my, bx, y + 21, 194, 15), 0.7f);
         }
         if (!personal.isEmpty()) texto(g, "«NOMBRE»: escribe el nombre en el chat y pulsa Enter.", LX, CY + 8 + 5 * (PERS_H + 4) + 2, SUAVE, 0.75f);
         texto(g, "CONTRATAR", 400, CY - 8, ORO, 1.1f);
@@ -446,6 +450,7 @@ public final class MenuPantalla extends Lienzo {
             boton(g, 400 + 220 - 86, y + 5, 80, 16, txt, 0xFF2E8B57, ok, ok && dentro(mx, my, 400 + 220 - 86, y + 5, 80, 16), 0.72f);
         }
         texto(g, "Más sitio para empleados = local más grande (hasta 5).", 400, CY + 8 + 3 * 66 + 2, SUAVE, 0.75f);
+        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 5). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 14, 220, SUAVE, 0.7f);
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 
@@ -454,9 +459,10 @@ public final class MenuPantalla extends Lienzo {
         for (int i = 0; i < personal.size() && i < 5; i++) {
             PersonaC p = personal.get(i);
             int y = CY + 8 + i * (PERS_H + 4), bx = LX + 360 - 3 * 66;
-            if (duenio && dentro(mx, my, bx, y + 10, 62, 18)) { pedirTexto("/cafe personal nombre " + (p.idx() + 1) + " "); return; }
-            if (puede && dentro(mx, my, bx + 66, y + 10, 62, 18)) { enviar("aspecto", String.valueOf(p.idx()), ""); return; }
-            if (puede && dentro(mx, my, bx + 132, y + 10, 62, 18)) { enviar("despedir", String.valueOf(p.idx()), ""); return; }
+            if (duenio && dentro(mx, my, bx, y + 3, 62, 15)) { pedirTexto("/cafe personal nombre " + (p.idx() + 1) + " "); return; }
+            if (puede && dentro(mx, my, bx + 66, y + 3, 62, 15)) { enviar("aspecto", String.valueOf(p.idx()), ""); return; }
+            if (puede && dentro(mx, my, bx + 132, y + 3, 62, 15)) { enviar("despedir", String.valueOf(p.idx()), ""); return; }
+            if (puede && p.tope().isEmpty() && dentro(mx, my, bx, y + 21, 194, 15)) { enviar("mejorar_emp", String.valueOf(p.idx()), ""); return; }
         }
         for (int k = 0; k < contratos.size() && k < 3; k++) {
             int y = CY + 8 + k * 66;

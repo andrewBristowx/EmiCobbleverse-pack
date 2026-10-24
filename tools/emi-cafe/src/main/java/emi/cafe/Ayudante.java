@@ -55,6 +55,11 @@ final class Ayudante {
         return "{\"text\":\"" + nombre + "\",\"color\":\"gold\",\"bold\":true,\"extra\":[{\"text\":\" · " + rol + (extra.isEmpty() ? "" : " · " + extra) + "\",\"color\":\"gray\",\"bold\":false}]}";
     }
 
+    private static String rolNivel(Personal.Rol rol, Datos.Empleado emp) { return rol.nombre + " Nv " + Personal.nivel(emp); }
+
+    /** Ticks de espera en un sitio, acortados segun el nivel (con un minimo de 2). */
+    int t(int ticks) { return Math.max(2, (int) Math.round(ticks / Personal.trabajo(Personal.nivel(emp)))); }
+
     static Ayudante crear(ServerWorld w, int ox, Datos.Empleado emp, int idx, int ancho) {
         Personal.Rol rol = Personal.Rol.de(emp.rol);
         if (rol == null) return null;
@@ -76,7 +81,7 @@ final class Ayudante {
             e.refreshPositionAndAngles(ox + x, Local.Y + 1, z, 0f, 0f);
             w.spawnEntity(e);
             e.getPokemon().setScaleModifier((float) Math.max(0.35, Math.min(3.0, 1.0 / Math.max(0.3, e.getHeight()))));
-            Entity rotulo = Disp.texto(w, json(emp.nombre, rol.nombre, ""), ox + x, Local.Y + 2.4, z, 0.9f, false);
+            Entity rotulo = Disp.texto(w, json(emp.nombre, rolNivel(rol, emp), ""), ox + x, Local.Y + 2.4, z, 0.9f, false);
             return new Ayudante(rol, emp, e, rotulo, ox + x, z, carril, idx);
         } catch (Throwable t) {
             EmiCafe.LOG.error("No se pudo crear al empleado {}", emp.nombre, t);
@@ -87,7 +92,7 @@ final class Ayudante {
     /** Cambia lo que dice el rotulo (el chef pone «cocina: pizza» mientras trabaja). */
     void rotular(String extra) {
         if (rotulo == null || rotulo.isRemoved()) return;
-        Disp.cambiarTexto(rotulo, json(emp.nombre, rol.nombre, extra), e.getX(), Local.Y + 2.4, e.getZ(), 0.9f, false);
+        Disp.cambiarTexto(rotulo, json(emp.nombre, rolNivel(rol, emp), extra), e.getX(), Local.Y + 2.4, e.getZ(), 0.9f, false);
     }
 
     void quitar() { Disp.quitar(rotulo); Disp.quitar(llevado); llevado = null; if (!e.isRemoved()) e.discard(); }
@@ -163,7 +168,7 @@ final class Ayudante {
     boolean cancelarAviso;
 
     private void andar(double dx, double dz, double d, List<Ayudante> todos) {
-        double v = Math.min(VELOCIDAD, d);
+        double v = Math.min(VELOCIDAD * Personal.velocidad(Personal.nivel(emp)), d);
         double ux = dx / d, uz = dz / d;
         if (libre > 0) libre--;
         else if (choca(e.getX() + ux * v, e.getZ() + uz * v, todos)) {

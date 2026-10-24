@@ -141,6 +141,11 @@ final class Menus {
             JsonObject e = new JsonObject();
             e.addProperty("idx", i); e.addProperty("nombre", em.nombre); e.addProperty("rol", rol.nombre); e.addProperty("icono", rol.icono);
             e.addProperty("aspecto", Personal.ASPECTOS[Math.floorMod(em.aspecto, Personal.ASPECTOS.length)][1]);
+            int nv = Personal.nivel(em);
+            e.addProperty("nivel", nv);
+            e.addProperty("costo", Personal.costeSubida(rol, nv));
+            e.addProperty("tope", nv >= Personal.NIVEL_MAX ? "NIVEL MÁXIMO" : nv + 1 > c.nivelLocal() ? "NECESITA LOCAL NIVEL " + (nv + 1) : "");
+            e.addProperty("efecto", "Anda +" + Math.round((Personal.velocidad(nv) - 1) * 100) + " % · trabaja +" + Math.round((Personal.trabajo(nv) - 1) * 100) + " %");
             pers.add(e);
         }
         o.add("personal", pers);
@@ -357,6 +362,7 @@ final class Menus {
                     actualizar(c, p);
                 }
                 case "despedir" -> { String err = c.despedir(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "mejorar_emp" -> { String err = c.mejorarEmpleado(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }

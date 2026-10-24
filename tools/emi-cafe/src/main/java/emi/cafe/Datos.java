@@ -21,6 +21,7 @@ final class Datos {
         String rol = "";
         String nombre = "";
         int aspecto;
+        int nivel;                   // 1 a 5 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
     }
 
     static final class Jugador {
