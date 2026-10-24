@@ -8,15 +8,15 @@ final class Personal {
 
     /** Lo que sabe hacer cada uno. {@code cada} = ticks entre una tarea y la siguiente. */
     enum Rol {
-        MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1),
-        LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2),
-        CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0);
+        MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 3),
+        LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 2),
+        CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 3);
 
         final String id, nombre, descripcion, icono;
-        final int precio, reqLocal, reqRep, cada, aspectoDefecto;
+        final int precio, reqLocal, reqRep, cada, aspectoDefecto, max;
 
-        Rol(String id, String nombre, String descripcion, int precio, int reqLocal, int reqRep, int cada, String icono, int aspectoDefecto) {
-            this.id = id; this.nombre = nombre; this.descripcion = descripcion; this.precio = precio; this.reqLocal = reqLocal; this.reqRep = reqRep; this.cada = cada; this.icono = icono; this.aspectoDefecto = aspectoDefecto;
+        Rol(String id, String nombre, String descripcion, int precio, int reqLocal, int reqRep, int cada, String icono, int aspectoDefecto, int max) {
+            this.id = id; this.nombre = nombre; this.descripcion = descripcion; this.precio = precio; this.reqLocal = reqLocal; this.reqRep = reqRep; this.cada = cada; this.icono = icono; this.aspectoDefecto = aspectoDefecto; this.max = max;
         }
 
         static Rol de(String id) { for (Rol r : values()) if (r.id.equals(id)) return r; return null; }
@@ -44,8 +44,18 @@ final class Personal {
 
     static final String[] NOMBRES = {"Michi", "Luna", "Nube", "Canela", "Fresa", "Moka", "Pepita", "Tofu", "Coco", "Mochi", "Brisa", "Chispa"};
 
-    /** Cuantas personas contratadas caben segun el nivel del local (1 a 5). */
-    static int maximo(int nivelLocal) { return Math.max(1, Math.min(5, nivelLocal)); }
+    /** Cuantos hay ya de ese puesto. */
+    static int cuantos(java.util.List<Datos.Empleado> l, Rol rol) { int n = 0; for (Datos.Empleado e : l) if (rol.id.equals(e.rol)) n++; return n; }
+
+    /** El nivel de local que hace falta para contratar al siguiente de ese puesto, teniendo ya {@code tienes}: el primero pide el del puesto y cada uno mas, un nivel mas. */
+    static int localNecesario(Rol rol, int tienes) { return rol.reqLocal + tienes; }
+
+    /** Por que no se puede contratar a otro de ese puesto (vacio = se puede, salvo monedas y reputacion). */
+    static String bloqueo(Rol rol, int tienes, int nivelLocal) {
+        if (tienes >= rol.max) return "MÁXIMO (" + rol.max + ")";
+        if (nivelLocal < localNecesario(rol, tienes)) return "Local nivel " + localNecesario(rol, tienes);
+        return "";
+    }
 
     /** Un nombre por defecto que no se repita con los que ya hay. */
     static String nombreNuevo(java.util.List<Datos.Empleado> actuales) {

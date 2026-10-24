@@ -35,6 +35,7 @@ final class Datos {
         java.util.Map<String, Integer> mejoras = new java.util.HashMap<>();          // nivel de cada mejora
         int mesasCap;                                                                  // cuantas mesas tenia ya asignadas (para saber cuando una mejora da mesas nuevas)
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
+        java.util.Set<String> quitados = new java.util.LinkedHashSet<>();             // bloques del edificio original que el dueño ha quitado en el modo construccion («x,y,z» relativos al local)
         java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();         // lo que el dueño ha colocado en el modo construccion: «x,y,z» (relativos al local) -> estado del bloque (SNBT)
         String nombreCafe = "";                                                       // el nombre que el dueño le puso a su cafe (vacio = «CAFÉ MICHIALIEN»)
         java.util.List<Empleado> personal = new java.util.ArrayList<>();             // los Michialien contratados (mesero, lavaplatos, chef)

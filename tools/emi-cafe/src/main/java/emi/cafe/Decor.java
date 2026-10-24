@@ -21,7 +21,7 @@ final class Decor {
         Item objeto() { return Registries.ITEM.get(Identifier.of(item)); }
     }
 
-    static final int MAX_BLOQUES = 3000;
+    static final int MAX_BLOQUES = 12000;
 
     static final List<Articulo> CATALOGO = List.of(
             new Articulo("mesa", "emi_cafe:mesa", 1, 60, "Café", "Mesa del café"),

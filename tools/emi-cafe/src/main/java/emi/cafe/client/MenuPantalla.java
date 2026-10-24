@@ -41,7 +41,7 @@ public final class MenuPantalla extends Lienzo {
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
     private record CafeC(String nombre, String titulo, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente, boolean dentro) {}
     private record PersonaC(int idx, String nombre, String rol, String icono, String aspecto, int nivel, int costo, String tope, String efecto) {}
-    private record ContratoC(String rol, String nombre, String texto, String icono, int precio, String bloqueo) {}
+    private record ContratoC(String rol, String nombre, String texto, String icono, int precio, String bloqueo, int tienes, int max) {}
     private record TopC(String nombre, int megusta, int rep, int estilo) {}
     private record EstiloC(String parte, String nombre) {}
     private record GenteC(String nombre, boolean yo, boolean host, boolean visita) {}
@@ -60,6 +60,7 @@ public final class MenuPantalla extends Lienzo {
     private final List<PersonaC> personal = new ArrayList<>();
     private final List<ContratoC> contratos = new ArrayList<>();
     private int personalMax;
+    private int persPag;                                  // pagina de la lista de empleados (5 por pagina)
     private String nombreCafe = "";
     private final List<CafeC> cafesAbiertos = new ArrayList<>();
     private final List<TopC> topCafes = new ArrayList<>();
@@ -117,7 +118,7 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("personal")) for (JsonElement e : o.getAsJsonArray("personal")) { JsonObject j = e.getAsJsonObject(); personal.add(new PersonaC(j.get("idx").getAsInt(), s(j, "nombre"), s(j, "rol"), s(j, "icono"), s(j, "aspecto"), j.has("nivel") ? j.get("nivel").getAsInt() : 1, j.has("costo") ? j.get("costo").getAsInt() : 0, s(j, "tope"), s(j, "efecto"))); }
         personalMax = o.has("personalMax") ? o.get("personalMax").getAsInt() : 1;
         contratos.clear();
-        if (o.has("contratos")) for (JsonElement e : o.getAsJsonArray("contratos")) { JsonObject j = e.getAsJsonObject(); contratos.add(new ContratoC(s(j, "rol"), s(j, "nombre"), s(j, "texto"), s(j, "icono"), j.get("precio").getAsInt(), s(j, "bloqueo"))); }
+        if (o.has("contratos")) for (JsonElement e : o.getAsJsonArray("contratos")) { JsonObject j = e.getAsJsonObject(); contratos.add(new ContratoC(s(j, "rol"), s(j, "nombre"), s(j, "texto"), s(j, "icono"), j.get("precio").getAsInt(), s(j, "bloqueo"), j.has("tienes") ? j.get("tienes").getAsInt() : 0, j.has("max") ? j.get("max").getAsInt() : 1)); }
         nivelLocal = o.has("nivelLocal") ? o.get("nivelLocal").getAsInt() : 1; estUsadas = o.has("estUsadas") ? o.get("estUsadas").getAsInt() : 0; estMax = o.has("estMax") ? o.get("estMax").getAsInt() : 0;
         visitante = o.has("visitante") && o.get("visitante").getAsBoolean();
         visitasOn = !o.has("visitas") || o.get("visitas").getAsBoolean();
@@ -414,12 +415,19 @@ public final class MenuPantalla extends Lienzo {
     private static final int PERS_H = 38;
 
     private void personalTab(DrawContext g, int mx, int my) {
+        int pags = Math.max(1, (personal.size() + 4) / 5);
+        persPag = Math.max(0, Math.min(pags - 1, persPag));
         texto(g, "TU PERSONAL (" + personal.size() + "/" + personalMax + ")", LX, CY - 8, ORO, 1.1f);
-        texto(g, "Trabajan cuando el café está abierto.", LX + 150, CY - 5, SUAVE, 0.8f);
+        texto(g, "Trabajan cuando el café está abierto.", LX + 130, CY - 5, SUAVE, 0.75f);
+        if (pags > 1) {
+            boton(g, LX + 290, CY - 11, 20, 14, "◀", 0xFF4A4A6A, persPag > 0, persPag > 0 && dentro(mx, my, LX + 290, CY - 11, 20, 14), 0.8f);
+            texto(g, (persPag + 1) + "/" + pags, LX + 314, CY - 8, BLANCO, 0.8f);
+            boton(g, LX + 340, CY - 11, 20, 14, "▶", 0xFF4A4A6A, persPag < pags - 1, persPag < pags - 1 && dentro(mx, my, LX + 340, CY - 11, 20, 14), 0.8f);
+        }
         if (personal.isEmpty()) parrafo(g, "Todavía no tienes a nadie. Contrata a un mesero, un lavaplatos o un chef a la derecha: pueden llevar el nombre que quieras.", LX, CY + 10, 340, GRIS, 0.9f);
         boolean puede = duenio && estado.equals("preparando") && !construyendo;
-        for (int i = 0; i < personal.size() && i < 5; i++) {
-            PersonaC p = personal.get(i);
+        for (int i = 0; i < 5 && persPag * 5 + i < personal.size(); i++) {
+            PersonaC p = personal.get(persPag * 5 + i);
             int y = CY + 8 + i * (PERS_H + 4);
             caja(g, LX, y, 360, PERS_H, FONDO, BORDE);
             objeto(g, p.icono(), LX + 8, y + 9, 1.3f);
@@ -443,21 +451,26 @@ public final class MenuPantalla extends Lienzo {
             caja(g, 400, y, 220, 62, FONDO, libre ? 0xFF6FE08A : BORDE);
             objeto(g, c.icono(), 408, y + 6, 1.4f);
             texto(g, c.nombre(), 436, y + 5, BLANCO, 1.05f);
-            texto(g, c.precio() + " monedas", 436, y + 17, MONEDA, 0.8f);
+            texto(g, c.precio() + " monedas · tienes " + c.tienes() + "/" + c.max(), 436, y + 17, MONEDA, 0.72f);
             parrafo(g, c.texto(), 406, y + 29, 208, SUAVE, 0.7f);
-            boolean ok = puede && libre && personal.size() < personalMax && monedas >= c.precio();
-            String txt = !libre ? c.bloqueo() : personal.size() >= personalMax ? "SIN SITIO" : "CONTRATAR";
+            boolean ok = puede && libre && monedas >= c.precio();
+            String txt = !libre ? c.bloqueo() : "CONTRATAR";
             boton(g, 400 + 220 - 86, y + 5, 80, 16, txt, 0xFF2E8B57, ok, ok && dentro(mx, my, 400 + 220 - 86, y + 5, 80, 16), 0.72f);
         }
-        texto(g, "Más sitio para empleados = local más grande (hasta 5).", 400, CY + 8 + 3 * 66 + 2, SUAVE, 0.75f);
+        texto(g, "Hasta 3 meseros, 3 chefs y 2 lavaplatos; el 2.º y el 3.º piden un local más grande.", 400, CY + 8 + 3 * 66 + 2, SUAVE, 0.62f);
         parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 5). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 14, 220, SUAVE, 0.7f);
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 
     private void clicPersonal(int mx, int my) {
         boolean puede = duenio && estado.equals("preparando") && !construyendo;
-        for (int i = 0; i < personal.size() && i < 5; i++) {
-            PersonaC p = personal.get(i);
+        int pags = Math.max(1, (personal.size() + 4) / 5);
+        if (pags > 1) {
+            if (persPag > 0 && dentro(mx, my, LX + 290, CY - 11, 20, 14)) { persPag--; return; }
+            if (persPag < pags - 1 && dentro(mx, my, LX + 340, CY - 11, 20, 14)) { persPag++; return; }
+        }
+        for (int i = 0; i < 5 && persPag * 5 + i < personal.size(); i++) {
+            PersonaC p = personal.get(persPag * 5 + i);
             int y = CY + 8 + i * (PERS_H + 4), bx = LX + 360 - 3 * 66;
             if (duenio && dentro(mx, my, bx, y + 3, 62, 15)) { pedirTexto("/cafe personal nombre " + (p.idx() + 1) + " "); return; }
             if (puede && dentro(mx, my, bx + 66, y + 3, 62, 15)) { enviar("aspecto", String.valueOf(p.idx()), ""); return; }

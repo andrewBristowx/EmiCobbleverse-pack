@@ -149,15 +149,16 @@ final class Menus {
             pers.add(e);
         }
         o.add("personal", pers);
-        o.addProperty("personalMax", Personal.maximo(c.nivelLocal()));
+        o.addProperty("personalMax", 8);
         JsonArray contr = new JsonArray();                                   // a quien se puede contratar
         for (Personal.Rol rol : Personal.Rol.values()) {
             JsonObject e = new JsonObject();
             e.addProperty("rol", rol.id); e.addProperty("nombre", rol.nombre); e.addProperty("texto", rol.descripcion); e.addProperty("icono", rol.icono);
             e.addProperty("precio", rol.precio); e.addProperty("reqLocal", rol.reqLocal); e.addProperty("reqRep", rol.reqRep);
-            String blq = "";
-            if (c.nivelLocal() < rol.reqLocal) blq = "Local nivel " + rol.reqLocal;
-            else if (c.nivelRep() < rol.reqRep) blq = "Reputación nivel " + rol.reqRep;
+            int tienes = dd.personal == null ? 0 : Personal.cuantos(dd.personal, rol);
+            e.addProperty("tienes", tienes); e.addProperty("max", rol.max);
+            String blq = Personal.bloqueo(rol, tienes, c.nivelLocal());
+            if (blq.isEmpty() && c.nivelRep() < rol.reqRep) blq = "Reputación nivel " + rol.reqRep;
             e.addProperty("bloqueo", blq);
             contr.add(e);
         }

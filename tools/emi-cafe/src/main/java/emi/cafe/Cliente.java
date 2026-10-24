@@ -42,6 +42,8 @@ final class Cliente {
     static final double VELOCIDAD = 0.14;           // bloques por tick al andar
     static final double ALTURA = 1.15;              // todos se ven del mismo tamaño aproximado
 
+    private static long LLEGADAS;                // contador de llegadas: el que llego antes se atiende antes
+    long llegada;                                // numero de llegada a su mesa (0 = aun camino de ella)
     final PokemonEntity e;
     final Mesa mesa;
     final String especie;
@@ -68,7 +70,7 @@ final class Cliente {
     /** El critico gastronomico (un Persian): pide el plato mas caro, paga el triple y da o quita reputacion. */
     static final String ESPECIE_CRITICO = "persian";
 
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal) {
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora) {
         String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal);
         try {
             PokemonEntity e = PokemonProperties.Companion.parse(especie + (esp != null ? " " + esp.aspecto : "") + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
@@ -85,11 +87,25 @@ final class Cliente {
             double x0 = ox + Local.PUERTA_X, z0 = Local.CALLE_Z;
             e.refreshPositionAndAngles(x0, Local.Y + 1, z0, 180f, 0f);
             w.spawnEntity(e);
-            List<double[]> ruta = new ArrayList<>();
-            ruta.add(new double[]{x0, z0});
-            ruta.add(new double[]{x0, Local.PASILLO_Z});
-            ruta.add(new double[]{mesa.sx, Local.PASILLO_Z});
-            ruta.add(new double[]{mesa.sx, mesa.sz});
+            List<double[]> ruta = null;
+            if (rutas != null) {                                   // por donde se pueda andar: esquiva paredes, mesas y decoracion y se sienta en una casilla libre junto a su mesa
+                List<double[]> cam = rutas.camino(x0, z0, rutas.adyacentes(mesa.bloque, ahora), ahora);
+                if (cam != null && !cam.isEmpty()) {
+                    ruta = new ArrayList<>();
+                    ruta.add(new double[]{x0, z0});
+                    ruta.addAll(cam);
+                    double[] fin = cam.get(cam.size() - 1);
+                    mesa.sx = fin[0]; mesa.sz = fin[1];
+                }
+            }
+            if (ruta == null) {                                    // sin camino (la puerta tapada...): la ruta de siempre
+                mesa.sx = mesa.bloque.getX() + 0.5; mesa.sz = mesa.bloque.getZ() + 1.5;
+                ruta = new ArrayList<>();
+                ruta.add(new double[]{x0, z0});
+                ruta.add(new double[]{x0, Local.PASILLO_Z});
+                ruta.add(new double[]{mesa.sx, Local.PASILLO_Z});
+                ruta.add(new double[]{mesa.sx, mesa.sz});
+            }
             Cliente c = new Cliente(e, mesa, especie, ruta);
             float escala = (float) Math.max(0.35, Math.min(3.0, ALTURA / Math.max(0.3, e.getHeight()))) * AJUSTE.getOrDefault(especie, 1f);
             e.getPokemon().setScaleModifier(escala);
@@ -112,7 +128,8 @@ final class Cliente {
             case ENTRANDO -> {
                 if (andar(ruta.get(paso)) && ++paso >= ruta.size()) {
                     fase = Fase.ESPERANDO;
-                    mirarAlNorte();
+                    mirarMesa();
+                    llegada = ++LLEGADAS;
                     pedido = esp != null ? esp.plato : critico ? cafe.pedidoCritico() : cafe.elegirPedido(rnd, especie);
                     favorito = esp == null && !critico && pedido == cafe.favoritoDe(especie);
                     pacienciaMax = paciencia = esp != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks();
@@ -157,7 +174,12 @@ final class Cliente {
         if (enfadado) w.spawnParticles(ParticleTypes.ANGRY_VILLAGER, e.getX(), e.getY() + alto, e.getZ(), 4, 0.3, 0.2, 0.3, 0.0);
     }
 
-    private void mirarAlNorte() { e.setYaw(180f); e.setHeadYaw(180f); e.setBodyYaw(180f); }
+    /** Se sienta mirando a su mesa. */
+    private void mirarMesa() {
+        double dx = mesa.bloque.getX() + 0.5 - e.getX(), dz = mesa.bloque.getZ() + 0.5 - e.getZ();
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        e.setYaw(yaw); e.setHeadYaw(yaw); e.setBodyYaw(yaw);
+    }
 
     /** Un paso hacia (x, z) de la ruta; true si ya llego. */
     private boolean andar(double[] p) {

@@ -4,7 +4,9 @@ import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.entity.PoseType;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.Item;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayDeque;
@@ -19,8 +21,6 @@ import java.util.function.BooleanSupplier;
  */
 final class Ayudante {
     static final double VELOCIDAD = 0.13;           // bloques por tick al andar (los clientes, 0.14)
-    /** Los tres carriles de la cocina (la cocina libre mide de z = 2 a 5): cada empleado trabaja en el suyo para no chocar con los otros. */
-    private static final double[] CARRILES = {3.5, 2.6, 4.4};
     private static final double SEPARACION = 0.8;   // a menos de esto de otro empleado, espera o esquiva
 
     /** Un paso de la tarea: ir a (x, z), esperar {@code espera} ticks mirando a (mx, mz) (si es finito), con {@code mientras} cada 10 ticks, y al final {@code alLlegar}. */
@@ -31,7 +31,8 @@ final class Ayudante {
     final PokemonEntity e;
     final Entity rotulo;
     final double hx, hz;                            // su sitio de descanso (coordenadas del mundo)
-    final double carril;                            // la z por la que anda por la cocina
+    Rutas rutas;                                    // para no salirse de las casillas pisables al esquivar
+    private int tick;
     int espera;                                     // ticks que faltan para buscar una tarea nueva (cuenta en su sitio)
 
     // la tarea de ahora
@@ -40,6 +41,12 @@ final class Ayudante {
     Entity llevado;                                 // el plato que lleva en las manos (dibujo)
     Mesa mesaChef, mesaServ, mesaLava;              // la mesa a la que sirve el chef / el mesero / de la que recoge el lavaplatos
     Recetas.Plato platoChef;
+    // la ventanilla del chef: donde deja el plato terminado para que lo lleve un mesero
+    BlockPos pase;
+    Item paseItem;
+    Mesa paseMesa;
+    Entity paseVisual;
+    Ayudante paseReserva;                           // el mesero que va a recogerlo
     Cafe.Est estReserva;                            // el plato listo que el mesero va a recoger (que otro mesero no lo coja)
     private boolean llegado, moviendo;
     private final int prio;                         // al cruzarse dos que andan, cede el de numero mas alto (el primero contratado pasa)
@@ -47,8 +54,8 @@ final class Ayudante {
     private PoseType pose = PoseType.STAND;
     private int vigilancia;
 
-    private Ayudante(Personal.Rol rol, Datos.Empleado emp, PokemonEntity e, Entity rotulo, double hx, double hz, double carril, int prio) {
-        this.rol = rol; this.emp = emp; this.e = e; this.rotulo = rotulo; this.hx = hx; this.hz = hz; this.carril = carril; this.prio = prio; this.espera = 40;
+    private Ayudante(Personal.Rol rol, Datos.Empleado emp, PokemonEntity e, Entity rotulo, double hx, double hz) {
+        this.rol = rol; this.emp = emp; this.e = e; this.rotulo = rotulo; this.hx = hx; this.hz = hz; this.prio = (int) (emp.nombre.hashCode() & 0xffff); this.espera = 40;
     }
 
     private static String json(String nombre, String rol, String extra) {
@@ -60,12 +67,11 @@ final class Ayudante {
     /** Ticks de espera en un sitio, acortados segun el nivel (con un minimo de 2). */
     int t(int ticks) { return Math.max(2, (int) Math.round(ticks / Personal.trabajo(Personal.nivel(emp)))); }
 
-    static Ayudante crear(ServerWorld w, int ox, Datos.Empleado emp, int idx, int ancho) {
+    /** Crea al empleado en su sitio de descanso (x, z del mundo). */
+    static Ayudante crear(ServerWorld w, Datos.Empleado emp, double x, double z) {
         Personal.Rol rol = Personal.Rol.de(emp.rol);
         if (rol == null) return null;
         String aspecto = Personal.ASPECTOS[Math.floorMod(emp.aspecto, Personal.ASPECTOS.length)][0];
-        double carril = CARRILES[idx % CARRILES.length];
-        double x = Math.min(ancho - 1.5, 3.0 + 3.0 * idx), z = carril;
         try {
             PokemonEntity e = PokemonProperties.Companion.parse("gatitoalien " + aspecto + " level=20").createEntity(w);
             e.setAiDisabled(true);
@@ -78,11 +84,11 @@ final class Ayudante {
             e.setCustomNameVisible(false);
             try { e.hideNameRendering(); } catch (Throwable t) { /* version de Cobblemon sin esta funcion */ }
             e.addCommandTag(Disp.TAG);
-            e.refreshPositionAndAngles(ox + x, Local.Y + 1, z, 0f, 0f);
+            e.refreshPositionAndAngles(x, Local.Y + 1, z, 0f, 0f);
             w.spawnEntity(e);
             e.getPokemon().setScaleModifier((float) Math.max(0.35, Math.min(3.0, 1.0 / Math.max(0.3, e.getHeight()))));
-            Entity rotulo = Disp.texto(w, json(emp.nombre, rolNivel(rol, emp), ""), ox + x, Local.Y + 2.4, z, 0.9f, false);
-            return new Ayudante(rol, emp, e, rotulo, ox + x, z, carril, idx);
+            Entity rotulo = Disp.texto(w, json(emp.nombre, rolNivel(rol, emp), ""), x, Local.Y + 2.4, z, 0.9f, false);
+            return new Ayudante(rol, emp, e, rotulo, x, z);
         } catch (Throwable t) {
             EmiCafe.LOG.error("No se pudo crear al empleado {}", emp.nombre, t);
             return null;
@@ -95,7 +101,17 @@ final class Ayudante {
         Disp.cambiarTexto(rotulo, json(emp.nombre, rolNivel(rol, emp), extra), e.getX(), Local.Y + 2.4, e.getZ(), 0.9f, false);
     }
 
-    void quitar() { Disp.quitar(rotulo); Disp.quitar(llevado); llevado = null; if (!e.isRemoved()) e.discard(); }
+    void quitar() { Disp.quitar(rotulo); Disp.quitar(llevado); llevado = null; Disp.quitar(paseVisual); paseVisual = null; if (!e.isRemoved()) e.discard(); }
+
+    /** Deja un plato terminado en su ventanilla (se ve flotando sobre la barra). */
+    void ponerEnPase(ServerWorld w, Item plato, Mesa para) {
+        Disp.quitar(paseVisual);
+        paseItem = plato; paseMesa = para; paseReserva = null;
+        if (pase != null) paseVisual = Disp.objeto(w, CafeItems.id(plato), pase.getX() + 0.5, Local.Y + 2.3, pase.getZ() + 0.5, 0.55f, true);
+    }
+
+    /** Quita el plato de la ventanilla (lo recogio un mesero o ya no hace falta). */
+    void vaciarPase() { Disp.quitar(paseVisual); paseVisual = null; paseItem = null; paseMesa = null; }
 
     // ------------------------------------------------------------ la tarea
 
@@ -132,6 +148,7 @@ final class Ayudante {
     /** Lo deja en su sitio de golpe (al cerrar el cafe o al reconstruirse el local). */
     void alSitio() {
         limpiar();
+        vaciarPase(); paseReserva = null;
         e.setPosition(hx, Local.Y + 1, hz);
         e.setYaw(0f); e.setHeadYaw(0f); e.setBodyYaw(0f);
         ponerPose(PoseType.STAND);
@@ -141,7 +158,8 @@ final class Ayudante {
     // ------------------------------------------------------------ el movimiento
 
     /** Un tick de movimiento. {@code todos} = los demas empleados (para no chocar). */
-    void mover(List<Ayudante> todos) {
+    void mover(List<Ayudante> todos, int ahora) {
+        tick = ahora;
         moviendo = false;
         if (vigente != null && ++vigilancia % 5 == 0 && !vigente.getAsBoolean()) { cancelarAviso = true; return; }
         Paso p = pasos.peek();
@@ -177,7 +195,8 @@ final class Ayudante {
             for (double ang : new double[]{0.9, -0.9}) {
                 double c = Math.cos(ang), s = Math.sin(ang);
                 double vx = ux * c - uz * s, vz = ux * s + uz * c;
-                if (!choca(e.getX() + vx * v, e.getZ() + vz * v, todos)) { ux = vx; uz = vz; paso = true; break; }
+                double qx = e.getX() + vx * v, qz = e.getZ() + vz * v;
+                if (!choca(qx, qz, todos) && (rutas == null || rutas.libre(qx, qz, tick))) { ux = vx; uz = vz; paso = true; break; }
             }
             if (!paso) {
                 ponerPose(PoseType.STAND);
