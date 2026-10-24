@@ -104,7 +104,9 @@ final class Cafe {
     // ------------------------------------------------------------ lo que dicen las mejoras
 
     int nivel(Recetas.Mejora m) { return dj().nivel(m.id); }
-    int numMesas() { return Math.min(Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS) + 2 * nivel(Recetas.Mejora.AMPLIAR)); }
+    int numMesas() { return Math.min(dj().libre ? 30 : Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS) + 2 * nivel(Recetas.Mejora.AMPLIAR)); }
+    /** Las estaciones de cocina que caben: las del nivel del local mas dos por cada nivel de «Mas estaciones». */
+    int maxEstaciones() { return Local.maxEstaciones(nivelLocal()) + 2 * nivel(Recetas.Mejora.ESTACIONES); }
     double velocidad() { return 1.0 - 0.2 * nivel(Recetas.Mejora.VELOCIDAD); }
     int pacienciaTicks() { return (int) (20 * 90 * (1.0 + 0.25 * nivel(Recetas.Mejora.PACIENCIA)) * (evento == Evento.HORA_PUNTA ? 0.85 : 1.0)); }
     int platosMax() { return 4 + 2 * nivel(Recetas.Mejora.VAJILLA); }
@@ -131,7 +133,7 @@ final class Cafe {
         if (pl.nivelLocal() > nl) return "Hace falta el local de nivel " + pl.nivelLocal() + " (ahora tienes el " + nl + ")";
         Set<Estacion> despues = activas();
         despues.addAll(pl.estaciones);
-        int max = Local.maxEstaciones(nl), n = cuentaEstaciones(despues);
+        int max = maxEstaciones(), n = cuentaEstaciones(despues);
         if (n > max) return "Tu local de nivel " + nl + " solo admite " + max + " estaciones (con este plato tendrías " + n + "): amplíalo";
         return null;
     }
@@ -218,7 +220,7 @@ final class Cafe {
         Local.construir(w, ox, libre ? new java.util.EnumMap<>(Estacion.class) : posEstaciones(), libre ? new ArrayList<>() : pos, nivel(Recetas.Mejora.AMPLIAR), d.estilo, d.pintura, d.nombreCafe, d.nombre, Ciudad.hay(slot + 1), libre);
         for (int[] m : pos) mesas.add(new Mesa(Local.pos(ox, m[0], m.length > 2 ? m[2] : 1, m[1])));
         aplicarDecor();
-        if (libre) { obras.actualizarRotulo(); obras.letrero(estado == Estado.ABIERTO); }
+        if (libre) { obras.actualizarRotulo(); obras.actualizarVitrinas(); obras.letrero(estado == Estado.ABIERTO); }
         crearPersonal();
     }
 
@@ -1153,6 +1155,7 @@ final class Cafe {
     void usarBloque(ServerPlayerEntity p, BlockPos pos) {
         net.minecraft.block.Block bl = w.getBlockState(pos).getBlock();
         if (bl == CafeBlocks.LIBRO_PARED) { Menus.libro(this, p); return; }
+        if (bl instanceof VitrinaBlock) { if (contiene(pos) && !visitantes.contains(p.getUuid())) obras.usarVitrina(p, pos); return; }
         Estacion e = Estacion.de(bl);
         if (e == null) return;
         if (!contiene(pos)) {                                                        // un local de otro vecino: se puede mirar y pasear, pero no se cocina sin invitacion
@@ -1355,6 +1358,7 @@ final class Cafe {
         Datos.Jugador dd = dj();
         Recetas.Plato pl = Recetas.Plato.de(carga);
         int base = c.esp != null ? c.esp.precio : pl == null ? 10 : pl.precio;
+        base = (int) Math.round(base * (1.0 + 0.06 * nivel(Recetas.Mejora.LUJO)));
         if (c.critico) base *= 3;
         else if (c.esp == null && platoDelDia != null && pl == platoDelDia) base *= 2;
         double pac = c.pacienciaRestante();

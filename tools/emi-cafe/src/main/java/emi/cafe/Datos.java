@@ -42,6 +42,7 @@ final class Datos {
         boolean kitDado;                                                               // ya recibio el kit del principio
         java.util.Set<String> quitados = new java.util.LinkedHashSet<>();             // bloques del edificio original que el dueño ha quitado en el modo construccion («x,y,z» relativos al local)
         java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();         // lo que el dueño ha colocado en el modo construccion: «x,y,z» (relativos al local) -> estado del bloque (SNBT)
+        java.util.Map<String, String> vitrina = new java.util.LinkedHashMap<>();       // lo que hay expuesto en cada vitrina: «x,y,z» (relativos al local) -> objeto (desde 0.19.0)
         String nombreCafe = "";                                                       // el nombre que el dueño le puso a su cafe (vacio = «CAFÉ MICHIALIEN»)
         java.util.List<Empleado> personal = new java.util.ArrayList<>();             // los Michialien contratados (mesero, lavaplatos, chef)
         String[] pintura = new String[6];                                             // bloque con el que el dueño pinto cada parte del local (Estilo.PARED... VENTANA); null = el material elegido en la lista

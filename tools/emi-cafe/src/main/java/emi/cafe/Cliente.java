@@ -26,7 +26,12 @@ final class Cliente {
             {"vulpix", "mareep", "marill"},
             {"cubone", "teddiursa", "wooper"},
             {"shinx", "piplup", "buneary"},
-            {"togepi", "skitty", "chikorita"}};
+            {"togepi", "skitty", "chikorita"},
+            {"torchic", "mudkip", "treecko"},
+            {"riolu", "munchlax", "pichu"},
+            {"ponyta", "dratini", "oddish"},
+            {"espeon", "umbreon", "vaporeon"},
+            {"flareon", "jolteon", "leafeon"}};
 
     /** Una especie al azar de las que ya pueden venir a un local de ese nivel. */
     static String elegirEspecie(Random rnd, int nivelLocal) {
