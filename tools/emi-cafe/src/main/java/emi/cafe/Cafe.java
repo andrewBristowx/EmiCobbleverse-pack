@@ -1,5 +1,7 @@
 package emi.cafe;
 
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import emi.cafe.net.TextoPayload;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
@@ -1017,6 +1019,9 @@ final class Cafe {
                 p.setHealth(p.getMaxHealth());
                 Msg.actionBar(p, hud(p));
             }
+        }
+        if (t % 5 == 0) for (ServerPlayerEntity p : ps) enviarPanel(p);
+        if (t % 10 == 0) {
             for (Entity e : w.getEntitiesByType(EntityType.ITEM, new Box(ox - 4, Local.Y - 2, -4, ox + Local.ancho(2) + 6, Local.Y + 8, 24), x -> true)) e.discard();
         }
     }
@@ -1033,9 +1038,50 @@ final class Cafe {
         if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO" + (evento != Evento.NINGUNO ? " · " + evento.nombre : "") + "   ").formatted(Formatting.GREEN, Formatting.BOLD);
         else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — agachado + clic con un bloque = pintar · caja = terminar   ").formatted(Formatting.GOLD, Formatting.BOLD);
         else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
-        return Text.empty().append(r).append(Text.literal("Monedas: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(dj(p).monedas)).formatted(Formatting.WHITE, Formatting.BOLD))
-                .append(Text.literal("   Platos limpios: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(platos)).formatted(platos == 0 ? Formatting.RED : Formatting.WHITE, Formatting.BOLD))
-                .append(Text.literal("   Llevas: ").formatted(Formatting.GOLD)).append(mano);
+        return Text.empty().append(r).append(Text.literal("Llevas: ").formatted(Formatting.GOLD)).append(mano);       // las monedas, los platos limpios y los pedidos van en el panel del cliente
+    }
+
+    /** Lo que dibuja el panel de la esquina (cliente): local, monedas, ganancias de la jornada y los pedidos que esperan. Sin panel viejo = el cliente lo olvida a los 2 s. */
+    private void enviarPanel(ServerPlayerEntity p) {
+        com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+        Datos.Jugador d = dj();
+        boolean visita = visitantes.contains(p.getUuid());
+        o.addProperty("visita", visita);
+        o.addProperty("cafe", d.nombreCafe == null || d.nombreCafe.isEmpty() ? "Café Michialien" : d.nombreCafe);
+        o.addProperty("dueno", d.nombre);
+        o.addProperty("estado", estado == Estado.ABIERTO ? "abierto" : construyendo ? "obras" : estado == Estado.CERRANDO ? "cerrando" : "cerrado");
+        o.addProperty("local", nivelLocal());
+        o.addProperty("rep", Reputacion.nombre(nivelRep()));
+        o.addProperty("estilo", Estilo.NOMBRES[nivelEstilo()]);
+        o.addProperty("megusta", d.megusta);
+        if (!visita) {
+            o.addProperty("monedas", dj(p).monedas);
+            o.addProperty("ganado", ganadoPor.getOrDefault(p.getUuid(), 0));
+            o.addProperty("ganadoCafe", ganado);
+            o.addProperty("servidos", servidos);
+            o.addProperty("enfadados", enfadados);
+            o.addProperty("propinas", propinas);
+            o.addProperty("platos", platos);
+            o.addProperty("equipo", trabajadores());
+            if (!evento.equals(Evento.NINGUNO)) o.addProperty("evento", evento.nombre);
+            com.google.gson.JsonArray ped = new com.google.gson.JsonArray();
+            for (Mesa m : mesas) {
+                Cliente c = m.cliente;
+                if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.pedido == null) continue;
+                com.google.gson.JsonObject e = new com.google.gson.JsonObject();
+                e.addProperty("item", CafeItems.id(c.pedido));
+                e.addProperty("plato", CafeItems.nombre(c.pedido));
+                e.addProperty("pac", (int) Math.round(c.pacienciaRestante() * 100));
+                e.addProperty("quien", c.esp != null ? c.esp.michi : c.critico ? "Crítico" : c.especie);
+                e.addProperty("especial", c.esp != null || c.critico);
+                boolean atiende = false;
+                for (Ayudante a : ayudantes) if (a.mesaChef == m || a.mesaServ == m) atiende = true;
+                e.addProperty("atiende", atiende);
+                ped.add(e);
+            }
+            o.add("pedidos", ped);
+        }
+        ServerPlayNetworking.send(p, new TextoPayload("panel", o.toString()));
     }
 
     /** Probabilidad (de 100) de que el siguiente cliente sea un visitante especial, si hay alguno disponible y no hay otro dentro. */
