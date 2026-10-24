@@ -228,6 +228,22 @@ final class Disp {
         return l.size();
     }
 
+    /** Borra los displays y los Pokemon de este mod de una parcela entera (la de origen {@code ox}), sin tocar a los vecinos. */
+    static int barrerParcela(ServerWorld w, int ox) {
+        net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(ox + Ciudad.X0, w.getBottomY(), Local.Z_ATRAS, ox + Ciudad.X1 + 1, w.getTopY(), Local.Z_FRENTE + 1);
+        java.util.List<Entity> l = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains(TAG));
+        for (Entity e : l) e.discard();
+        return l.size();
+    }
+
+    /** Como {@link #barrerParcela} pero deja los carteles de texto (el nombre sobre la puerta se queda cuando el dueño se va). */
+    static int barrerParcelaMoviles(ServerWorld w, int ox) {
+        net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(ox + Ciudad.X0, w.getBottomY(), Local.Z_ATRAS, ox + Ciudad.X1 + 1, w.getTopY(), Local.Z_FRENTE + 1);
+        java.util.List<Entity> l = w.getEntitiesByClass(Entity.class, caja, e -> e.getCommandTags().contains(TAG) && e.getType() != EntityType.TEXT_DISPLAY);
+        for (Entity e : l) e.discard();
+        return l.size();
+    }
+
     /** Borra todos los displays de este mod que haya en un cuadrado de la dimension (por si un servidor se paro a medias). */
     static int barrer(ServerWorld w, double cx, double cz, double radio) {
         net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(cx - radio, w.getBottomY(), cz - radio, cx + radio, w.getTopY(), cz + radio);

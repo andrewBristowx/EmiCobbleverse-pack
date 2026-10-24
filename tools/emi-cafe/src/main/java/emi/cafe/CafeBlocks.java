@@ -41,6 +41,16 @@ public final class CafeBlocks {
     public static final Block HELADERA = reg("heladera");
     public static final Block WAFLERA = reg("waflera");
 
+    /** El letrero de la puerta (2 casillas de ancho, medio bloque de alto) y el libro de recetas de la pared (1 casilla): imagenes sobre una placa fina, sin objeto. */
+    public static final Block CARTEL = placa("cartel", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0.25, 0, 1, 0.75, 1 / 16.0));
+    public static final Block LIBRO_PARED = placa("libro_pared", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0, 0, 1, 1, 1 / 16.0));
+
+    private static Block placa(String id, net.minecraft.util.shape.VoxelShape forma) {
+        Block b = new PlacaBlock(forma);
+        Registry.register(Registries.BLOCK, Identifier.of("emi_cafe", id), b);
+        return b;
+    }
+
     private static Block reg(String id) {
         Block b = new Block(AbstractBlock.Settings.create().strength(1.5f, 6.0f).nonOpaque().sounds(BlockSoundGroup.WOOD));
         Identifier i = Identifier.of("emi_cafe", id);

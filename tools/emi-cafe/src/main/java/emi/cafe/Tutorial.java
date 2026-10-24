@@ -128,6 +128,6 @@ final class Tutorial {
         Msg.title(p, Text.literal("¡Primer plato servido!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Ya sabes lo básico: +10 estrellas").formatted(Formatting.YELLOW), 5, 70, 15);
         Sonidos.jugador(p, "subir", 1f, 1f);
         p.sendMessage(Msg.say("¡Muy bien! Con las monedas compra platos nuevos y mejoras en la TIENDA de la caja registradora. Cuando el café esté cerrado puedes ampliarlo (más sitio, más estaciones y más platos), contratar ayudantes y decorarlo en el MODO CONSTRUCCIÓN."), false);
-        p.sendMessage(Msg.say("Mira también el RECETARIO (cómo se hace cada plato), las MISIONES y los LOGROS, invita a un amigo a cocinar con /cafe invitar, y visita el café de otros en la pestaña CAFÉS. Para repetir esta guía: /cafe tutorial."), false);
+        p.sendMessage(Msg.say("Mira también el LIBRO DE RECETAS de la pared de la cocina (clic derecho: te enseña cada plato), las MISIONES y los LOGROS, invita a un amigo a cocinar con /cafe invitar, y visita el café de otros en la pestaña CAFÉS. Para repetir esta guía: /cafe tutorial."), false);
     }
 }

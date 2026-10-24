@@ -35,6 +35,18 @@ final class Cmds {
                 .then(CommandManager.literal("aceptar").executes(c -> con(c, p -> Cafes.aceptar(p, null)))
                         .then(CommandManager.argument("duenio", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.aceptar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "duenio"))))))
                 .then(CommandManager.literal("visitar").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.visitar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
+                .then(CommandManager.literal("ir").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.irA(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
+                .then(CommandManager.literal("megusta").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                    Cafe otro = Cafes.deDuenio(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"));
+                    if (otro == null) return "Solo se da «me gusta» a un café cuyo dueño está dentro de él.";
+                    return Cafes.megusta(otro, p);
+                }))))
+                .then(CommandManager.literal("libro").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null) return "Entra primero con /cafe entrar.";
+                    Menus.libro(cf, p);
+                    return null;
+                })))
                 .then(CommandManager.literal("visitas").then(CommandManager.argument("si", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(c -> con(c, p -> {
                     Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                     j.visitas = com.mojang.brigadier.arguments.BoolArgumentType.getBool(c, "si");
@@ -63,6 +75,17 @@ final class Cmds {
                     return null;
                 })))
                 .then(CommandManager.literal("dev").requires(Perm::admin)
+                        .then(CommandManager.literal("vecino").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            String nombre = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre");
+                            java.util.UUID id = java.util.UUID.nameUUIDFromBytes(("vecino:" + nombre).getBytes());
+                            net.minecraft.server.world.ServerWorld mundo = Cafes.mundo(p.getServer());
+                            if (mundo == null) return "No existe la dimensión del café.";
+                            EmiCafe.datos.jugador(id, nombre);
+                            Cafe cf = new Cafe(p.getServer(), mundo, id, Ciudad.slotDe(id, nombre));
+                            cf.reconstruir(); cf.cerrar();
+                            p.sendMessage(Msg.say("Vecino de prueba «" + nombre + "» en la parcela " + cf.slot + " (x=" + cf.ox + "). Ir: /cafe ir " + nombre), false);
+                            return null;
+                        }))))
                         .then(CommandManager.literal("cliente").executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf == null) return "Entra primero con /cafe entrar.";

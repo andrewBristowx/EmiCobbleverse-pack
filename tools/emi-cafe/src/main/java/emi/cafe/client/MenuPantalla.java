@@ -39,7 +39,7 @@ public final class MenuPantalla extends Lienzo {
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
     private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi, int nivelLocal, String bloqueo) {}
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
-    private record CafeC(String nombre, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente) {}
+    private record CafeC(String nombre, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente, boolean dentro) {}
     private record TopC(String nombre, int megusta, int rep, int estilo) {}
     private record EstiloC(String parte, String nombre) {}
     private record GenteC(String nombre, boolean yo, boolean host, boolean visita) {}
@@ -72,7 +72,7 @@ public final class MenuPantalla extends Lienzo {
     private boolean duenio, lleno;
     private int monedas, estrellas, clientes, turnos, mejorTurno, platosLimpios, limiteTienda = 10;
     private int tab;
-    private int pagRec, pagTienda;                    // pagina del recetario (6 platos) y de los platos de la tienda (3)
+    private int pagRec, pagTienda, pagCafes;                    // pagina del recetario (6 platos) y de los platos de la tienda (3)
     private long ultimoRefresco = System.currentTimeMillis();
 
     public MenuPantalla(String json) {
@@ -117,7 +117,7 @@ public final class MenuPantalla extends Lienzo {
         estNombre = o.has("estNombre") ? o.get("estNombre").getAsString() : "";
         evento = o.has("evento") ? o.get("evento").getAsString() : ""; eventoTexto = o.has("eventoTexto") ? o.get("eventoTexto").getAsString() : "";
         cafesAbiertos.clear();
-        if (o.has("cafes")) for (JsonElement e : o.getAsJsonArray("cafes")) { JsonObject j = e.getAsJsonObject(); cafesAbiertos.add(new CafeC(s(j, "nombre"), j.get("megusta").getAsInt(), j.get("estilo").getAsInt(), j.get("rep").getAsInt(), j.get("abierto").getAsBoolean(), j.get("visitas").getAsBoolean(), j.get("gente").getAsInt())); }
+        if (o.has("cafes")) for (JsonElement e : o.getAsJsonArray("cafes")) { JsonObject j = e.getAsJsonObject(); cafesAbiertos.add(new CafeC(s(j, "nombre"), j.get("megusta").getAsInt(), j.get("estilo").getAsInt(), j.get("rep").getAsInt(), j.get("abierto").getAsBoolean(), j.get("visitas").getAsBoolean(), j.get("gente").getAsInt(), j.has("dentro") && j.get("dentro").getAsBoolean())); }
         topCafes.clear();
         if (o.has("top")) for (JsonElement e : o.getAsJsonArray("top")) { JsonObject j = e.getAsJsonObject(); topCafes.add(new TopC(s(j, "nombre"), j.get("megusta").getAsInt(), j.get("rep").getAsInt(), j.get("estilo").getAsInt())); }
         estacionesEnMano = o.has("estacionesEnMano") ? o.get("estacionesEnMano").getAsInt() : 0;
@@ -261,7 +261,7 @@ public final class MenuPantalla extends Lienzo {
             boton(g, LX, CY + 134, LW, 24, "VER OTROS CAFÉS", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 134, LW, 24), 0.9f);
         } else if (construyendo) {
             texto(g, "MODO CONSTRUCCIÓN", LX, CY - 7, ORO, 1.1f);
-            parrafo(g, "Compra bloques en la pestaña DECORAR. Clic derecho = colocar; clic izquierdo = recoger lo que pusiste. Para mover una estación o una mesa: recógela con clic izquierdo y ponla con clic derecho en otro sitio (las estaciones, solo en la cocina). Los materiales los eliges a la derecha.", LX, CY + 10, LW, GRIS, 0.8f);
+            parrafo(g, "Compra bloques en DECORAR. Clic derecho = poner; clic izquierdo = recoger. Decora dentro y fuera (jardín, lados, acera). Mesas y estaciones: recógelas y ponlas en otro sitio. Con la mano vacía, clic derecho en una pared, el techo o el suelo = cambiar su material.", LX, CY + 10, LW, GRIS, 0.8f);
             texto(g, "Mesas: " + mesasUsadas + "/" + mesasMax + " colocadas", LX, CY + 82, BLANCO, 0.9f);
             boton(g, LX, CY + 100, LW, 28, "IR A DECORAR (tienda)", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 100, LW, 28), 1f);
             boton(g, LX, CY + 134, LW, 28, "TERMINAR DE CONSTRUIR", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 134, LW, 28), 1f);
@@ -296,14 +296,15 @@ public final class MenuPantalla extends Lienzo {
         if (construyendo) {                                                  // la parte de la derecha: los materiales del local
             texto(g, "MATERIALES DEL LOCAL", RX, CY - 7, ORO, 0.95f);
             for (int i = 0; i < estilo.size(); i++) {
-                int y = CY + 8 + i * 36;
+                int y = CY + 4 + i * 36;
                 texto(g, estilo.get(i).parte(), RX, y, SUAVE, 0.8f);
                 boton(g, RX, y + 11, 24, 20, "◀", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, RX, y + 11, 24, 20), 1f);
                 caja(g, RX + 28, y + 11, RW - 56, 20, FONDO, BORDE);
                 textoCentrado(g, estilo.get(i).nombre(), RX + RW / 2, y + 17, BLANCO, 0.95f);
                 boton(g, RX + RW - 24, y + 11, 24, 20, "▶", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, RX + RW - 24, y + 11, 24, 20), 1f);
             }
-            if (estacionesEnMano > 0) texto(g, "Llevas " + estacionesEnMano + " estación(es) en la mano: ponla(s) en la cocina", RX, CY + 154, 0xFFFFD27F, 0.8f);
+            texto(g, "Con la mano vacía, clic derecho en una pared, el techo o el suelo para cambiarlo.", RX, CY + 188, 0xFF9AC8FF, 0.7f);
+            if (estacionesEnMano > 0) texto(g, "Llevas " + estacionesEnMano + " estación(es) en la mano: ponla(s) en la cocina", RX, CY + 200, 0xFFFFD27F, 0.8f);
             return;
         }
         // la parte de la derecha: quien esta en el cafe y a quien invitar
@@ -343,17 +344,23 @@ public final class MenuPantalla extends Lienzo {
 
     // ------------------------------------------------------------ cafes de otros: visitar y top
 
+    private static final int CAFES_POR_PAG = 6;
+
     private void cafesTab(DrawContext g, int mx, int my) {
-        texto(g, "CAFÉS ABIERTOS AHORA", LX, CY - 8, ORO, 1.0f);
-        if (cafesAbiertos.isEmpty()) parrafo(g, "Ahora mismo no hay ningún otro café abierto. Cuando un amigo entre al suyo saldrá aquí. También puedes ir con /cafe visitar <jugador>.", LX, CY + 8, 340, GRIS, 0.85f);
-        for (int i = 0; i < cafesAbiertos.size() && i < 6; i++) {
+        texto(g, "CAFÉS DE LA CIUDAD", LX, CY - 8, ORO, 1.0f);
+        int total = paginas(cafesAbiertos.size(), CAFES_POR_PAG);
+        pagCafes = Math.min(pagCafes, total - 1);
+        if (total > 1) paginador(g, mx, my, LX + 288, CY - 12, pagCafes, total);
+        if (cafesAbiertos.isEmpty()) parrafo(g, "Todavía no hay más vecinos. Cuando un amigo entre a su café tendrá su parcela en la calle y saldrá aquí.", LX, CY + 8, 340, GRIS, 0.85f);
+        for (int n = 0; n < CAFES_POR_PAG; n++) {
+            int i = pagCafes * CAFES_POR_PAG + n;
+            if (i >= cafesAbiertos.size()) break;
             CafeC c = cafesAbiertos.get(i);
-            int y = CY + 8 + i * 30;
-            caja(g, LX, y, 360, 26, FONDO, BORDE);
+            int y = CY + 8 + n * 30;
+            caja(g, LX, y, 360, 26, FONDO, c.dentro() ? 0xFF6FE08A : BORDE);
             texto(g, recortar(c.nombre(), 16), LX + 8, y + 4, BLANCO, 0.95f);
-            texto(g, "♥ " + c.megusta() + " · estilo " + c.estilo() + " · rep " + c.rep() + (c.abierto() ? " · ABIERTO" : "") + (c.gente() > 0 ? " · " + c.gente() + " de visita" : ""), LX + 8, y + 15, SUAVE, 0.7f);
-            boolean puede = c.visitas();
-            boton(g, LX + 360 - 92, y + 4, 86, 18, puede ? "VISITAR" : "SIN VISITAS", 0xFF7A4AC0, puede, puede && dentro(mx, my, LX + 360 - 92, y + 4, 86, 18), 0.85f);
+            texto(g, "♥ " + c.megusta() + " · estilo " + c.estilo() + " · rep " + c.rep() + (c.abierto() ? " · ABIERTO" : c.dentro() ? " · en su café" : " · no está") + (c.gente() > 0 ? " · " + c.gente() + " de visita" : ""), LX + 8, y + 15, SUAVE, 0.7f);
+            boton(g, LX + 360 - 92, y + 4, 86, 18, "IR A SU CAFÉ", 0xFF7A4AC0, true, dentro(mx, my, LX + 360 - 92, y + 4, 86, 18), 0.8f);
         }
         texto(g, "LOS MÁS QUERIDOS", 400, CY - 8, ORO, 1.0f);
         if (topCafes.isEmpty()) texto(g, "Aún nadie tiene «me gusta».", 400, CY + 8, GRIS, 0.8f);
@@ -364,15 +371,20 @@ public final class MenuPantalla extends Lienzo {
             texto(g, (i + 1) + ". " + recortar(t.nombre(), 13), 406, y + 5, i == 0 ? ORO : BLANCO, 0.85f);
             texto(g, "♥ " + t.megusta() + " · e" + t.estilo() + " · r" + t.rep(), 520, y + 5, SUAVE, 0.7f);
         }
-        texto(g, "Visitar es solo mirar: se da «me gusta» una vez por café.", 400, CY + 148, SUAVE, 0.7f);
-        texto(g, "Para ir de visita tu café tiene que estar cerrado y sin invitados.", 400, CY + 158, SUAVE, 0.7f);
+        texto(g, "«IR A SU CAFÉ» te lleva a su acera: puedes entrar a mirar.", 400, CY + 138, SUAVE, 0.7f);
+        texto(g, "Para cocinar con alguien, te tiene que invitar.", 400, CY + 148, SUAVE, 0.7f);
+        texto(g, "«Me gusta»: toca la caja registradora de su café.", 400, CY + 158, SUAVE, 0.7f);
     }
 
     private void clicCafes(int mx, int my) {
-        for (int i = 0; i < cafesAbiertos.size() && i < 6; i++) {
+        int total = paginas(cafesAbiertos.size(), CAFES_POR_PAG);
+        if (total > 1) { int d = clicPaginador(mx, my, LX + 288, CY - 12); if (d != 0) { pagCafes = Math.max(0, Math.min(total - 1, pagCafes + d)); return; } }
+        for (int n = 0; n < CAFES_POR_PAG; n++) {
+            int i = pagCafes * CAFES_POR_PAG + n;
+            if (i >= cafesAbiertos.size()) break;
             CafeC c = cafesAbiertos.get(i);
-            int y = CY + 8 + i * 30;
-            if (c.visitas() && dentro(mx, my, LX + 360 - 92, y + 4, 86, 18)) { enviar("visitar", c.nombre(), ""); return; }
+            int y = CY + 8 + n * 30;
+            if (dentro(mx, my, LX + 360 - 92, y + 4, 86, 18)) { enviar("visitar", c.nombre(), ""); return; }
         }
     }
 

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "abierto=true,der=false": {
+      "model": "emi_cafe:block/cartel_abierto_l"
+    },
+    "abierto=true,der=true": {
+      "model": "emi_cafe:block/cartel_abierto_r"
+    },
+    "abierto=false,der=false": {
+      "model": "emi_cafe:block/cartel_cerrado_l"
+    },
+    "abierto=false,der=true": {
+      "model": "emi_cafe:block/cartel_cerrado_r"
+    }
+  }
+}

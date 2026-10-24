@@ -36,7 +36,7 @@ public class EmiCafe implements ModInitializer {
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(emi.cafe.net.TextoPayload.ID, emi.cafe.net.TextoPayload.CODEC);
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S().register(emi.cafe.net.AccionPayload.ID, emi.cafe.net.AccionPayload.CODEC);
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(emi.cafe.net.AccionPayload.ID, (payload, ctx) -> ctx.server().execute(() -> Menus.recibir(ctx.player(), payload)));
-        ServerLifecycleEvents.SERVER_STARTED.register(s -> datos = new Datos(s.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("emi_cafe")));
+        ServerLifecycleEvents.SERVER_STARTED.register(s -> { java.nio.file.Path raiz = s.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("emi_cafe"); datos = new Datos(raiz); Ciudad.cargar(raiz); });
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> { Cafes.cerrarTodos(); datos = null; });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> Cmds.register(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(Cafes::tick);

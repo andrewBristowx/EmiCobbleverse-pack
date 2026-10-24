@@ -36,6 +36,49 @@ final class Menus {
         ServerPlayNetworking.send(p, new TextoPayload("menu", json(c, p, tab, conResumen)));
     }
 
+    /** El libro de recetas de la pared: abre su pantalla con todos los platos y sus pasos. */
+    static void libro(Cafe c, ServerPlayerEntity p) {
+        if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) {
+            p.sendMessage(Msg.err("Tu juego no tiene el mod Café Michialien actualizado: actualiza el pack para ver el libro."), false);
+            return;
+        }
+        Datos.Jugador dd = c.dj();
+        JsonObject o = new JsonObject();
+        JsonArray rec = new JsonArray();
+        for (Recetas.Plato pl : Recetas.Plato.values()) {
+            JsonObject e = new JsonObject();
+            e.addProperty("id", pl.id); e.addProperty("item", idItem(pl.item)); e.addProperty("nombre", pl.nombre());
+            e.addProperty("precio", pl.precio); e.addProperty("coste", pl.coste); e.addProperty("receta", pl.receta);
+            e.addProperty("tengo", dd.platos.contains(pl.id));
+            e.addProperty("nivelLocal", pl.nivelLocal());
+            String blq = dd.platos.contains(pl.id) ? null : c.bloqueoPlato(pl);
+            e.addProperty("bloqueo", blq == null ? "" : blq);
+            JsonArray ests = new JsonArray();
+            for (Estacion es : pl.estaciones) {
+                JsonObject x = new JsonObject();
+                x.addProperty("nombre", es.nombre); x.addProperty("item", net.minecraft.registry.Registries.BLOCK.getId(es.bloque).toString());
+                x.addProperty("tiene", c.posDe(es) != null);
+                ests.add(x);
+            }
+            e.add("estaciones", ests);
+            rec.add(e);
+        }
+        for (Especial es : Especial.values()) {
+            boolean sabe = dd.especiales.contains(es.id);
+            if (!sabe) continue;                                             // los de visitantes especiales solo salen cuando ya los enseñaron
+            JsonObject e = new JsonObject();
+            e.addProperty("id", "ev_" + es.id); e.addProperty("item", idItem(es.plato)); e.addProperty("nombre", es.nombrePlato());
+            e.addProperty("precio", es.precio); e.addProperty("coste", 0); e.addProperty("receta", es.receta());
+            e.addProperty("tengo", true); e.addProperty("especial", true); e.addProperty("michi", es.michi);
+            e.addProperty("nivelLocal", 1); e.addProperty("bloqueo", ""); e.add("estaciones", new JsonArray());
+            rec.add(e);
+        }
+        o.add("platos", rec);
+        o.addProperty("nivelLocal", c.nivelLocal());
+        ServerPlayNetworking.send(p, new TextoPayload("libro", o.toString()));
+        Msg.sound(p, SoundEvents.ITEM_BOOK_PAGE_TURN, 1f, 1f);
+    }
+
     static void actualizar(Cafe c, ServerPlayerEntity p) {
         if (!ServerPlayNetworking.canSend(p, TextoPayload.ID)) return;
         ServerPlayNetworking.send(p, new TextoPayload("menu_act", json(c, p, "cafe", false)));
@@ -99,15 +142,17 @@ final class Menus {
         o.addProperty("estPuntos", pts); o.addProperty("estNivel", nEst); o.addProperty("estNombre", Estilo.NOMBRES[nEst]); o.addProperty("estSig", Estilo.siguiente(pts));
         o.addProperty("evento", c.evento == Evento.NINGUNO ? "" : c.evento.nombre + (c.platoDelDia != null ? ": " + c.platoDelDia.nombre() : ""));
         o.addProperty("eventoTexto", c.evento.descripcion);
-        JsonArray cafes = new JsonArray();                                   // los cafes abiertos ahora mismo (para visitar)
-        for (Cafe otro : Cafes.abiertos()) {
-            ServerPlayerEntity du = otro.jugador(otro.duenio);
-            if (du == null || otro == c) continue;
-            Datos.Jugador od = otro.dj();
+        JsonArray cafes = new JsonArray();                                   // todos los vecinos de la ciudad (para ir a su café)
+        for (Ciudad.Vecino v : Ciudad.todos()) {
+            java.util.UUID uid = Ciudad.duenioDe(v.slot);
+            if (uid == null || uid.equals(c.duenio) || uid.equals(p.getUuid())) continue;
+            Datos.Jugador od = EmiCafe.datos.jugador(uid, null);
+            Cafe otro = Cafes.deDuenio(v.nombre);
             JsonObject e = new JsonObject();
-            e.addProperty("nombre", du.getGameProfile().getName()); e.addProperty("megusta", od.megusta);
+            e.addProperty("nombre", v.nombre); e.addProperty("megusta", od.megusta);
             e.addProperty("estilo", Estilo.nivelDe(Estilo.puntos(od.decor, od.estilo))); e.addProperty("rep", Reputacion.nivel(od.rep));
-            e.addProperty("abierto", otro.estado == Cafe.Estado.ABIERTO); e.addProperty("visitas", od.visitas); e.addProperty("gente", otro.visitantes.size());
+            e.addProperty("abierto", otro != null && otro.estado == Cafe.Estado.ABIERTO); e.addProperty("visitas", otro != null && od.visitas); e.addProperty("gente", otro == null ? 0 : otro.visitantes.size());
+            e.addProperty("dentro", otro != null);
             cafes.add(e);
         }
         o.add("cafes", cafes);
@@ -138,8 +183,7 @@ final class Menus {
         o.addProperty("lleno", c.trabajadores() >= Cafes.MAX_JUGADORES);
         JsonArray inv = new JsonArray();
         if (duenio) for (ServerPlayerEntity q : c.server.getPlayerManager().getPlayerList()) {
-            if (q == p || Cafes.de(q.getUuid()) != null || inv.size() >= 6) continue;
-            if (q.getServerWorld().getRegistryKey().getValue().getNamespace().startsWith("emi_")) continue;
+            if (q == p || inv.size() >= 6 || !Cafes.invitable(q)) continue;
             JsonObject e = new JsonObject(); e.addProperty("nombre", q.getGameProfile().getName()); inv.add(e);
         }
         o.add("invitables", inv);
@@ -261,7 +305,7 @@ final class Menus {
                         int parte = Integer.parseInt(a.a()), delta = "-1".equals(a.b()) ? -1 : 1;
                         if (parte >= 0 && parte < Estilo.PARTES.length) {
                             Datos.Jugador dd = c.dj();
-                            if (dd.estilo == null || dd.estilo.length != 4) dd.estilo = Estilo.DEFECTO.clone();
+                            dd.estilo = Estilo.normalizar(dd.estilo);
                             dd.estilo[parte] = ((Estilo.indice(dd.estilo, parte) + delta) % Estilo.total(parte) + Estilo.total(parte)) % Estilo.total(parte);
                             EmiCafe.datos.guardar(c.duenio);
                             c.reconstruir();
@@ -272,16 +316,12 @@ final class Menus {
                 case "guia" -> { if (duenio) { c.iniciarTutorial(true); cerrar(p); } }
                 case "megusta" -> { String err = Cafes.megusta(c, p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "visitas" -> { if (duenio) { Datos.Jugador dd = c.dj(); dd.visitas = !dd.visitas; EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }
-                case "visitar" -> {
-                    String nombre = a.a();
-                    if (duenio && (c.estado != Cafe.Estado.PREPARANDO || c.trabajadores() > 1 || c.construyendo)) { p.sendMessage(Msg.err("Para ir de visita tienes que tener tu café cerrado, sin construir y sin invitados."), false); actualizar(c, p); return; }
-                    Cafe destino = Cafes.deDuenio(nombre);
-                    if (destino == null || destino == c) { p.sendMessage(Msg.err("Ese café ya no está abierto."), false); actualizar(c, p); return; }
+                case "visitar" -> {                                   // ir al café de un vecino: se va andando (aparece en su acera), no cambia nada de lo tuyo
                     cerrar(p);
-                    Cafes.salir(p);
-                    String err = Cafes.visitar(p, nombre);
+                    String err = Cafes.irA(p, a.a());
                     if (err != null) p.sendMessage(Msg.err(err), false);
                 }
+                case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
                 case "salir" -> { cerrar(p); Cafes.salir(p); }

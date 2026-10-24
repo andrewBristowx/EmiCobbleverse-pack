@@ -1125,6 +1125,128 @@ NOMBRES_EN.update({'queso': 'Cheese', 'pizza_cruda': 'Raw Pizza', 'pizza': 'Pizz
 NOMBRES_ES.update({'calabaza': 'Calabaza', 'calabaza_asada': 'Calabaza asada', 'arroz': 'Arroz', 'arroz_cocido': 'Arroz cocido', 'sopa_calabaza': 'Sopa de calabaza', 'calabaza_gratinada': 'Calabaza gratinada', 'helado': 'Helado', 'helado_bayas': 'Helado de bayas', 'waffles': 'Waffles', 'arroz_carne': 'Bol de arroz con carne', 'arroz_leche': 'Arroz con leche', 'sundae': 'Waffle con helado', 'caja_calabaza': 'Caja de calabazas', 'caja_arroz': 'Saco de arroz', 'heladera': 'Heladera', 'waflera': 'Waflera'})
 NOMBRES_EN.update({'calabaza': 'Pumpkin', 'calabaza_asada': 'Roast Pumpkin', 'arroz': 'Rice', 'arroz_cocido': 'Cooked Rice', 'sopa_calabaza': 'Pumpkin Soup', 'calabaza_gratinada': 'Cheesy Pumpkin', 'helado': 'Ice Cream', 'helado_bayas': 'Berry Ice Cream', 'waffles': 'Waffles', 'arroz_carne': 'Rice and Meat Bowl', 'arroz_leche': 'Rice Pudding', 'sundae': 'Waffle Sundae', 'caja_calabaza': 'Pumpkin Crate', 'caja_arroz': 'Rice Sack', 'heladera': 'Ice Cream Maker', 'waflera': 'Waffle Iron'})
 
+
+# ---------------------------------------------------------------- las placas: el letrero de la puerta y el libro de recetas de la pared (imagenes sobre un bloque fino)
+FUENTE5 = {   # letras de 5x7 para los carteles
+    'A': ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'], 'B': ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
+    'C': ['.####', '#....', '#....', '#....', '#....', '#....', '.####'], 'D': ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
+    'E': ['#####', '#....', '#....', '####.', '#....', '#....', '#####'], 'I': ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '#####'],
+    'O': ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'], 'R': ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
+    'S': ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'], 'T': ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+}
+FUENTE3 = {   # letras de 3x5 para el titulo del libro
+    'R': ['##.', '#.#', '##.', '#.#', '#.#'], 'E': ['###', '#..', '##.', '#..', '###'], 'C': ['.##', '#..', '#..', '#..', '.##'],
+    'T': ['###', '.#.', '.#.', '.#.', '.#.'], 'A': ['.#.', '#.#', '###', '#.#', '#.#'], 'S': ['.##', '#..', '.#.', '..#', '##.'],
+}
+
+def _texto_px(im, txt, fuente, cx, y, esc, color, sombra=None, sep=1):
+    ancho_l = len(next(iter(fuente.values()))[0])
+    total = len(txt) * ancho_l * esc + (len(txt) - 1) * sep * esc
+    x0 = cx - total // 2
+    for col, d in (((sombra, 1),) if sombra else ()) + ((color, 0),):
+        for i, ch in enumerate(txt):
+            g = fuente[ch]
+            for fy, fila in enumerate(g):
+                for fx, c in enumerate(fila):
+                    if c != '#': continue
+                    for a in range(esc):
+                        for b in range(esc):
+                            X = x0 + (i * (ancho_l + sep) + fx) * esc + a + d * esc // 2; Y = y + fy * esc + b + d * esc // 2
+                            if 0 <= X < im.width and 0 <= Y < im.height: im.putpixel((X, Y), col)
+
+def _tablon(im, x0, y0, x1, y1, base, oscuro, claro, semilla):
+    rnd = random.Random(semilla)
+    for y in range(y0, y1):
+        veta = ((y - y0) // 4) % 2
+        for x in range(x0, x1):
+            c = base if veta == 0 else mezcla(base, claro, 0.35)
+            if rnd.random() < 0.08: c = oscuro
+            elif rnd.random() < 0.06: c = claro
+            im.putpixel((x, y), c)
+
+def cartel(abierto):
+    """El letrero de la puerta: 128x32 (2 bloques de ancho x medio de alto, 64 px por bloque). Un tablon con borde oscuro y un panel verde (ABIERTO) o rojo (CERRADO)."""
+    im = Image.new('RGBA', (128, 32), (0, 0, 0, 255))
+    _tablon(im, 0, 0, 128, 32, C('c48a52'), C('8f5e36'), C('dba570'), 11)
+    borde = C('4a2c10')
+    for x in range(128):
+        for k in range(3): im.putpixel((x, k), borde); im.putpixel((x, 31 - k), borde)
+    for y in range(32):
+        for k in range(3): im.putpixel((k, y), borde); im.putpixel((127 - k, y), borde)
+    for (cx, cy) in ((6, 6), (121, 6), (6, 25), (121, 25)):                       # clavos
+        im.putpixel((cx, cy), C('2a1a08')); im.putpixel((cx + 1, cy), C('d8d8d8')); im.putpixel((cx, cy + 1), C('9a9a9a'))
+    fondo = C('2f9d54') if abierto else C('b8302c'); oscuro = C('1d6b38') if abierto else C('7e1d1a'); claro = C('5fcf80') if abierto else C('e8605a')
+    for y in range(7, 25):
+        for x in range(12, 116):
+            c = fondo
+            if y == 7 or x == 12: c = claro
+            if y == 24 or x == 115: c = oscuro
+            im.putpixel((x, y), c)
+    txt = 'ABIERTO' if abierto else 'CERRADO'
+    _texto_px(im, txt, FUENTE5, 64, 9, 2, C('ffffff'), oscuro, sep=1)
+    # dos estrellitas a los lados
+    for cx in (18, 109):
+        for dx, dy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1), (-2, 0), (2, 0), (0, -2), (0, 2)): im.putpixel((cx + dx, 16 + dy), C('ffe070'))
+    return im
+
+def libro_pared():
+    """El libro de recetas colgado en la cocina: un cuadro de 64x64 con un libro abierto y «RECETAS» debajo."""
+    im = Image.new('RGBA', (64, 64), (0, 0, 0, 255))
+    _tablon(im, 0, 0, 64, 64, C('8a5a34'), C('5e3a20'), C('a3733f'), 23)
+    marco = C('3a2410')
+    for k in range(3):
+        for i in range(64): im.putpixel((i, k), marco); im.putpixel((i, 63 - k), marco); im.putpixel((k, i), marco); im.putpixel((63 - k, i), marco)
+    for y in range(4, 60):                                                   # pergamino
+        for x in range(4, 60):
+            im.putpixel((x, y), mezcla(C('f6e9c8'), C('e6d2a0'), ((x - 4) + (y - 4)) / 110.0))
+    # el libro abierto (dos paginas) en la mitad de arriba
+    pag, linea, sombra, tapa = C('fffdf2'), C('9aa3b8'), C('d8cfb4'), C('b0282c')
+    for x in range(8, 56):
+        for y in range(8, 38): im.putpixel((x, y), tapa)                     # tapa roja
+    for x in range(10, 54):
+        for y in range(10, 35):
+            im.putpixel((x, y), pag if abs(x - 32) > 1 else sombra)
+    for y in range(10, 35): im.putpixel((32, y), C('b8ad8a')); im.putpixel((31, y), sombra); im.putpixel((33, y), sombra)
+    for y0 in (14, 19, 24, 29):                                               # lineas de texto de la pagina derecha
+        for x in range(37, 51 if y0 != 29 else 45): im.putpixel((x, y0), linea)
+    # un platito con comida en la pagina izquierda
+    for x in range(14, 28):
+        for y in range(22, 30):
+            dx, dy = (x - 21) / 7.0, (y - 26) / 4.0
+            if dx * dx + dy * dy <= 1.0: im.putpixel((x, y), C('e8ecf4') if dy * dy + dx * dx > 0.55 else C('f4b04a'))
+    for x in range(17, 25):
+        for y in range(15, 21):
+            dx, dy = (x - 21) / 4.0, (y - 18) / 3.0
+            if dx * dx + dy * dy <= 1.0: im.putpixel((x, y), C('ffe070'))      # un sol / papa
+    for y in range(34, 42): im.putpixel((44, y), C('d83a3a')); im.putpixel((45, y), C('d83a3a'))        # el marcapaginas
+    _texto_px(im, 'RECETAS', FUENTE3, 32, 46, 2, C('7a1f1f'), C('c9a86a'), sep=1)
+    return im
+
+def escribir_placas():
+    """Escribe las texturas (sueltas, no de 16x16), los modelos y los estados de los dos bloques-placa: «cartel» (abierto/cerrado, mitad izquierda/derecha) y «libro_pared»."""
+    for ab in (True, False):
+        im = cartel(ab); nombre = 'cartel_' + ('abierto' if ab else 'cerrado')
+        im.crop((0, 0, 64, 32)).save(os.path.join(T_BLOQ, nombre + '_l.png')); im.crop((64, 0, 128, 32)).save(os.path.join(T_BLOQ, nombre + '_r.png'))
+        for lado in ('l', 'r'):
+            json.dump({'parent': 'minecraft:block/block', 'textures': {'particle': 'emi_cafe:block/madera_oscura', 'tex': 'emi_cafe:block/%s_%s' % (nombre, lado), 'borde': 'emi_cafe:block/madera_oscura'},
+                       'elements': [{'from': [0, 4, 0], 'to': [16, 12, 1], 'faces': {
+                           'south': {'texture': '#tex', 'uv': [0, 0, 16, 16]}, 'north': {'texture': '#borde'}, 'east': {'texture': '#borde'}, 'west': {'texture': '#borde'},
+                           'up': {'texture': '#borde'}, 'down': {'texture': '#borde'}}}]},
+                      open(os.path.join(M_BLOQ, '%s_%s.json' % (nombre, lado)), 'w'), indent=2)
+    json.dump({'variants': {'abierto=true,der=false': {'model': 'emi_cafe:block/cartel_abierto_l'}, 'abierto=true,der=true': {'model': 'emi_cafe:block/cartel_abierto_r'},
+                            'abierto=false,der=false': {'model': 'emi_cafe:block/cartel_cerrado_l'}, 'abierto=false,der=true': {'model': 'emi_cafe:block/cartel_cerrado_r'}}},
+              open(os.path.join(BS, 'cartel.json'), 'w'), indent=2)
+    libro_pared().save(os.path.join(T_BLOQ, 'libro_pared.png'))
+    json.dump({'parent': 'minecraft:block/block', 'textures': {'particle': 'emi_cafe:block/madera_oscura', 'tex': 'emi_cafe:block/libro_pared', 'borde': 'emi_cafe:block/madera_oscura'},
+               'elements': [{'from': [0, 0, 0], 'to': [16, 16, 1], 'faces': {
+                   'south': {'texture': '#tex', 'uv': [0, 0, 16, 16]}, 'north': {'texture': '#borde'}, 'east': {'texture': '#borde'}, 'west': {'texture': '#borde'},
+                   'up': {'texture': '#borde'}, 'down': {'texture': '#borde'}}}]}, open(os.path.join(M_BLOQ, 'libro_pared.json'), 'w'), indent=2)
+    json.dump({'variants': {'': {'model': 'emi_cafe:block/libro_pared'}}}, open(os.path.join(BS, 'libro_pared.json'), 'w'), indent=2)
+    return [cartel(True), cartel(False), libro_pared()]
+
+NOMBRES_ES.update({'cartel': 'Letrero del café', 'libro_pared': 'Libro de recetas'})
+NOMBRES_EN.update({'cartel': 'Cafe Sign', 'libro_pared': 'Recipe Book'})
+
 def escribir():
     hoja = []
     for n in EXTERNOS:
@@ -1139,6 +1261,7 @@ def escribir():
         json.dump(m, open(os.path.join(M_BLOQ, n + '.json'), 'w'), indent=2)
         json.dump({'variants': {'': {'model': 'emi_cafe:block/' + n}}}, open(os.path.join(BS, n + '.json'), 'w'), indent=2)
         json.dump({'parent': 'emi_cafe:block/' + n}, open(os.path.join(M_ITEM, n + '.json'), 'w'), indent=2)
+    escribir_placas()
     clave = lambda tabla: {('item.emi_cafe.' + n if n in OBJETOS or n in EXTERNOS else 'block.emi_cafe.' + n): v for n, v in tabla.items()}
     json.dump(clave(NOMBRES_ES), open(os.path.join(LANG, 'es_es.json'), 'w'), indent=2, ensure_ascii=False)
     json.dump(clave(NOMBRES_EN), open(os.path.join(LANG, 'en_us.json'), 'w'), indent=2, ensure_ascii=False)

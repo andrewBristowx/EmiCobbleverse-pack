@@ -4,8 +4,8 @@ package emi.cafe;
 final class Estilo {
     private Estilo() {}
 
-    static final int PARED = 0, FRANJA = 1, COCINA = 2, COMEDOR = 3;
-    static final String[] PARTES = {"Paredes", "Franja de la pared", "Suelo de la cocina", "Suelo del comedor"};
+    static final int PARED = 0, FRANJA = 1, COCINA = 2, COMEDOR = 3, TECHO = 4;
+    static final String[] PARTES = {"Paredes", "Franja de la pared", "Suelo de la cocina", "Suelo del comedor", "Techo"};
 
     /** Una opcion: nombre y uno o dos bloques (el suelo es un damero de {@code a} y {@code b}). */
     record Op(String nombre, String a, String b) {}
@@ -31,10 +31,25 @@ final class Estilo {
         new Op("Ladrillos", "stone_bricks", "polished_andesite"), new Op("Oscuro", "gray_concrete", "black_concrete"),
     };
 
-    /** Los valores de siempre (los que tenia el local antes de poder cambiarlos). */
-    static final int[] DEFECTO = {0, 0, 0, 1};
+    /** El techo: {@code a} = el bloque del techo, {@code b} = la luz que se pone cada pocos bloques (los techos de cristal dejan pasar el sol; los demas llevan mas luces). */
+    static final Op[] TECHOS = {
+        new Op("Cristal", "glass", "sea_lantern"), new Op("Cristal rosa", "pink_stained_glass", "sea_lantern"), new Op("Cristal celeste", "light_blue_stained_glass", "sea_lantern"),
+        new Op("Cristal amarillo", "yellow_stained_glass", "glowstone"), new Op("Cristal morado", "purple_stained_glass", "sea_lantern"), new Op("Cristal verde", "lime_stained_glass", "sea_lantern"),
+        new Op("Madera clara", "birch_planks", "sea_lantern"), new Op("Madera oscura", "dark_oak_planks", "glowstone"), new Op("Ladrillo", "bricks", "glowstone"),
+        new Op("Blanco", "white_concrete", "sea_lantern"),
+    };
 
-    static Op[] opciones(int parte) { return parte == PARED ? PAREDES : parte == FRANJA ? FRANJAS : SUELOS; }
+    /** Los valores de siempre (los que tenia el local antes de poder cambiarlos). */
+    static final int[] DEFECTO = {0, 0, 0, 1, 0};
+
+    static Op[] opciones(int parte) { return parte == PARED ? PAREDES : parte == FRANJA ? FRANJAS : parte == TECHO ? TECHOS : SUELOS; }
+
+    /** Una lista de estilo de la longitud de hoy (las de antes de existir el techo tienen 4 valores): lo que falta toma el valor de siempre. */
+    static int[] normalizar(int[] v) {
+        int[] r = DEFECTO.clone();
+        if (v != null) for (int i = 0; i < Math.min(v.length, r.length); i++) r[i] = v[i];
+        return r;
+    }
 
     static int total(int parte) { return opciones(parte).length; }
 
@@ -49,6 +64,11 @@ final class Estilo {
 
     /** El bloque de la pared (y del borde del techo). */
     static String pared(int[] v) { return op(v, PARED).a(); }
+
+    /** El bloque del techo y el de las luces que lleva. Un techo que no es de cristal (opaco) lleva una luz cada 3 bloques en vez de cada 4. */
+    static String techo(int[] v) { return op(v, TECHO).a(); }
+    static String luz(int[] v) { return op(v, TECHO).b(); }
+    static int periodoLuz(int[] v) { return techo(v).contains("glass") ? 4 : 3; }
 
     /** El bloque de la franja a la altura y = 2 (el de la pared si no hay franja). */
     static String franja(int[] v) { String f = op(v, FRANJA).a(); return f == null ? pared(v) : f; }

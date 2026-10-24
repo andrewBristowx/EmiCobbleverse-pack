@@ -42,11 +42,6 @@ final class Cafes {
 
     static boolean tiene(UUID id) { return POR_JUGADOR.containsKey(id); }
 
-    private static int slotLibre() {
-        outer:
-        for (int i = 0; ; i++) { for (Cafe c : DUENIOS.values()) if (c.slot == i) continue outer; return i; }
-    }
-
     /** Si el jugador esta en otro minijuego o mundo del servidor, no puede entrar al cafe (su inventario ya esta guardado alli). */
     private static String ocupado(ServerPlayerEntity p) {
         String ns = p.getServerWorld().getRegistryKey().getValue().getNamespace();
@@ -77,7 +72,7 @@ final class Cafes {
         String oc = ocupado(p);
         if (oc != null) return "Estás en otro minijuego (o mundo del servidor): sal primero de él.";
         if (EmiCafe.datos == null) return "El café aún no está listo.";
-        Cafe c = new Cafe(s, w, p.getUuid(), slotLibre());
+        Cafe c = new Cafe(s, w, p.getUuid(), Ciudad.slotDe(p.getUuid(), p.getGameProfile().getName()));
         DUENIOS.put(p.getUuid(), c);
         c.reconstruir();
         meter(p, c);
@@ -86,10 +81,41 @@ final class Cafes {
             p.sendMessage(Msg.say("¡Bienvenido! Elige al Pokémon que será tu cocinero: te enseña tu primer plato."), false);
             Menus.iniciales(c, p);
         } else {
-            p.sendMessage(Msg.say("Bienvenido a tu café. Clic derecho en la caja registradora (a la derecha, en la barra) para abrir el café, comprar o invitar a un amigo."), false);
+            p.sendMessage(Msg.say("Bienvenido a tu café. Clic derecho en la caja registradora (a la derecha, en la barra) para abrir el café, comprar o invitar a un amigo. En la pared del fondo de la cocina está el LIBRO DE RECETAS (clic derecho). Fuera hay una ciudad: puedes pasear hasta los cafés de los demás; para cocinar con ellos te tienen que invitar."), false);
             c.iniciarTutorial(false);
         }
         return null;
+    }
+
+    /** ¿Se puede invitar a este jugador ahora? Si esta libre (fuera de los minijuegos) o si es el dueño de su cafe con el cafe cerrado y a solas (al aceptar, deja el suyo). */
+    static boolean invitable(ServerPlayerEntity q) {
+        Cafe c = POR_JUGADOR.get(q.getUuid());
+        if (c != null) return c.esDuenio(q) && enCafe(q) && c.estado == Cafe.Estado.PREPARANDO && !c.construyendo && c.trabajadores() <= 1 && c.visitantes.isEmpty();
+        return ocupado(q) == null;
+    }
+
+    /** Va andando (se teletransporta, pero sin cambiar nada de lo tuyo) a la acera de delante del cafe de un vecino de la ciudad. Hay que estar dentro de la ciudad. */
+    static String irA(ServerPlayerEntity p, String nombre) {
+        if (!enCafe(p)) return "Solo se puede ir al café de un vecino estando ya en la ciudad: usa /cafe entrar (o /cafe visitar " + nombre + ").";
+        for (Ciudad.Vecino v : Ciudad.todos()) if (v.nombre.equalsIgnoreCase(nombre)) {
+            p.teleport(mundo(p.getServer()), Ciudad.origen(v.slot) + Local.PUERTA_X, Local.Y + 1, Local.CALLE_Z, 180f, 0f);
+            p.sendMessage(Msg.say("Estás frente al café de " + v.nombre + ". Puedes entrar a mirar; para cocinar con él, tiene que invitarte."), false);
+            return null;
+        }
+        return "No hay ningún café de " + nombre + " en la ciudad.";
+    }
+
+    /** Clic en la caja registradora de un vecino: una linea con lo suyo y, si esta dentro de su café, el boton de «me gusta». */
+    static void infoVecino(ServerPlayerEntity p, int slot) {
+        String nom = Ciudad.nombreDe(slot);
+        UUID uid = Ciudad.duenioDe(slot);
+        if (nom == null || uid == null || EmiCafe.datos == null) return;
+        Datos.Jugador d = EmiCafe.datos.jugador(uid, null);
+        Cafe c = DUENIOS.get(uid);
+        net.minecraft.text.MutableText m = Msg.say("Café de " + nom + " · ♥ " + d.megusta + " · estilo " + Estilo.NOMBRES[Estilo.nivelDe(Estilo.puntos(d.decor, d.estilo))]
+                + " · reputación " + Reputacion.nombre(Reputacion.nivel(d.rep)) + (c == null ? " · cerrado: no está" : c.estado == Cafe.Estado.ABIERTO ? " · ABIERTO" : "") + " ");
+        if (c != null && !c.esDuenio(p)) m.append(Text.literal("[ME GUSTA]").styled(s -> s.withColor(Formatting.LIGHT_PURPLE).withBold(true).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/cafe megusta " + nom))));
+        p.sendMessage(m, false);
     }
 
     static final int MAX_VISITANTES = 8;
@@ -118,15 +144,15 @@ final class Cafes {
         if (c.visitantes.size() >= MAX_VISITANTES) return "Ya hay demasiadas visitas en ese café.";
         meter(p, c);
         c.visitantes.add(p.getUuid());
-        p.teleport(c.w, c.ox + Local.PUERTA_X, Local.Y + 1, Local.CALLE_Z + 0.5, 180f, 0f);
-        p.sendMessage(Msg.say("Estás de visita en el café de " + du.getGameProfile().getName() + ". Mira cómo lo decoró y, si te gusta, toca la caja registradora y dale «me gusta». /cafe salir para irte."), false);
+        p.teleport(c.w, c.ox + Local.PUERTA_X, Local.Y + 1, Local.CALLE_Z, 180f, 0f);
+        p.sendMessage(Msg.say("Estás de visita en el café de " + du.getGameProfile().getName() + ", en la acera de delante de su puerta. Entra a mirar cómo lo decoró y, si te gusta, toca su caja registradora y dale «me gusta». Puedes pasear por toda la ciudad. /cafe salir para irte."), false);
         du.sendMessage(Msg.say(p.getGameProfile().getName() + " está de visita en tu café."), false);
         return null;
     }
 
     /** Un visitante da «me gusta» al cafe (una vez por persona): el dueño gana estrellas y reputacion. */
     static String megusta(Cafe c, ServerPlayerEntity p) {
-        if (!c.visitantes.contains(p.getUuid())) return "Solo se da «me gusta» estando de visita.";
+        if (c.esDuenio(p) || !enCafe(p)) return "Solo se da «me gusta» al café de otro vecino, estando en la ciudad.";
         Datos.Jugador d = c.dj();
         String id = p.getUuid().toString();
         if (d.likesDe.contains(id)) return "Ya le diste «me gusta» a este café.";
@@ -148,10 +174,8 @@ final class Cafes {
         if (!c.esDuenio(host)) return "Solo el dueño del café puede invitar.";
         if (c.construyendo) return "Estás construyendo: termina antes de invitar.";
         if (target == host) return "No puedes invitarte a ti mismo.";
-        if (POR_JUGADOR.containsKey(target.getUuid())) return target.getGameProfile().getName() + " ya está en un café.";
         if (c.trabajadores() >= MAX_JUGADORES) return "Tu café está lleno (máximo " + MAX_JUGADORES + " personas).";
-        String oc = ocupado(target);
-        if (oc != null) return target.getGameProfile().getName() + " " + oc + ".";
+        if (!invitable(target)) return target.getGameProfile().getName() + " no puede venir ahora (está en un café abierto, con invitados o en otro minijuego).";
         INVITACIONES.put(target.getUuid(), new Invitacion(host.getUuid(), reloj + 20 * 60));
         String hn = host.getGameProfile().getName();
         target.sendMessage(Msg.say(hn + " te invita a su Café Michialien. ").append(Text.literal("[ACEPTAR]").styled(s -> s.withColor(Formatting.GREEN).withBold(true)
@@ -168,11 +192,16 @@ final class Cafes {
         ServerPlayerEntity host = c == null ? null : c.jugador(inv.duenio);
         if (c == null || host == null) { INVITACIONES.remove(guest.getUuid()); return "Ese café ya cerró."; }
         if (nombreDuenio != null && !nombreDuenio.isEmpty() && !host.getGameProfile().getName().equalsIgnoreCase(nombreDuenio)) return "Esa invitación no es de " + nombreDuenio + ".";
-        if (POR_JUGADOR.containsKey(guest.getUuid())) return "Ya estás en un café.";
         if (c.trabajadores() >= MAX_JUGADORES) return "El café está lleno.";
-        String oc = ocupado(guest);
-        if (oc != null) return "Estás en otro minijuego (o mundo del servidor): sal primero de él.";
+        if (!invitable(guest)) return "Ahora no puedes aceptar: cierra tu café (y despide a tus invitados) o sal del otro minijuego.";
         INVITACIONES.remove(guest.getUuid());
+        Cafe propio = POR_JUGADOR.get(guest.getUuid());
+        if (propio != null) {                                                       // estaba paseando por la ciudad con su cafe cerrado: lo deja y se va a cocinar al del amigo
+            POR_JUGADOR.remove(guest.getUuid());
+            DUENIOS.remove(guest.getUuid());
+            propio.cerrar();
+            Menus.cerrar(guest);
+        }
         meter(guest, c);
         guest.sendMessage(Msg.say("Estás en el café de " + host.getGameProfile().getName() + ". Ayuda a cocinar y servir: lo que ganes es tuyo. /cafe salir para irte."), false);
         host.sendMessage(Msg.say(guest.getGameProfile().getName() + " se unió a tu café."), false);

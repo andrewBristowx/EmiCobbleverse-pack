@@ -21,6 +21,7 @@ public class EmiCafeClient implements ClientModInitializer {
                     else if (MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), false);
                     else mc.setScreen(new MenuPantalla(p.json()));
                 }
+                case "libro" -> mc.setScreen(new LibroPantalla(p.json()));
                 case "menu_act" -> { if (!p.json().isEmpty() && MenuPantalla.abierta != null && mc.currentScreen == MenuPantalla.abierta) MenuPantalla.abierta.cargar(p.json(), true); }
                 default -> { }
             }
