@@ -97,5 +97,21 @@
   "item.emi_cafe.ev_diablillo": "Hamburguesa infernal",
   "item.emi_cafe.ev_florido": "Ensalada floral",
   "item.emi_cafe.ev_pirata": "Desayuno pirata",
-  "item.emi_cafe.ev_dorado": "Festín dorado"
+  "item.emi_cafe.ev_dorado": "Festín dorado",
+  "item.emi_cafe.calabaza": "Calabaza",
+  "item.emi_cafe.calabaza_asada": "Calabaza asada",
+  "item.emi_cafe.arroz": "Arroz",
+  "item.emi_cafe.arroz_cocido": "Arroz cocido",
+  "item.emi_cafe.sopa_calabaza": "Sopa de calabaza",
+  "item.emi_cafe.calabaza_gratinada": "Calabaza gratinada",
+  "item.emi_cafe.helado": "Helado",
+  "item.emi_cafe.helado_bayas": "Helado de bayas",
+  "item.emi_cafe.waffles": "Waffles",
+  "item.emi_cafe.arroz_carne": "Bol de arroz con carne",
+  "item.emi_cafe.arroz_leche": "Arroz con leche",
+  "item.emi_cafe.sundae": "Waffle con helado",
+  "block.emi_cafe.caja_calabaza": "Caja de calabazas",
+  "block.emi_cafe.caja_arroz": "Saco de arroz",
+  "block.emi_cafe.heladera": "Heladera",
+  "block.emi_cafe.waflera": "Waflera"
 }

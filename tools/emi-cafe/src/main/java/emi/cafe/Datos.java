@@ -33,6 +33,7 @@ final class Datos {
         int rep;                                                                      // puntos de reputacion del cafe (ver Reputacion)
         int megusta;                                                                  // «me gusta» recibidos de otros jugadores
         java.util.List<String> likesDe = new java.util.ArrayList<>();                 // uuid de quienes ya dieron «me gusta» a este cafe (uno por persona)
+        boolean tutorialHecho;                                                       // ya hizo la guia de inicio
         boolean visitas = true;                                                       // ¿se puede visitar su cafe?
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
         int especialesServidos;                                                       // visitantes especiales atendidos en total

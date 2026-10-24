@@ -68,7 +68,25 @@ final class Decor {
             new Articulo("hojas", "minecraft:oak_leaves", 16, 24, "Plantas", "Hojas de roble"),
             new Articulo("azalea", "minecraft:flowering_azalea_leaves", 16, 36, "Plantas", "Hojas de azalea"),
             new Articulo("musgo", "minecraft:moss_block", 8, 30, "Plantas", "Musgo"),
-            new Articulo("paja", "minecraft:hay_block", 4, 24, "Plantas", "Fardos de paja"));
+            new Articulo("paja", "minecraft:hay_block", 4, 24, "Plantas", "Fardos de paja"),
+            new Articulo("calabaza_tallada", "minecraft:carved_pumpkin", 4, 40, "Halloween", "Calabazas talladas"),
+            new Articulo("calabaza_entera", "minecraft:pumpkin", 4, 30, "Halloween", "Calabazas"),
+            new Articulo("telarana", "minecraft:cobweb", 8, 30, "Halloween", "Telarañas"),
+            new Articulo("vela_negra", "minecraft:black_candle", 4, 24, "Halloween", "Velas negras"),
+            new Articulo("vela_morada", "minecraft:purple_candle", 4, 24, "Halloween", "Velas moradas"),
+            new Articulo("vela_naranja", "minecraft:orange_candle", 4, 24, "Halloween", "Velas naranjas"),
+            new Articulo("linterna_alma", "minecraft:soul_lantern", 4, 40, "Halloween", "Linternas de almas"),
+            new Articulo("antorcha_alma", "minecraft:soul_torch", 8, 20, "Halloween", "Antorchas de almas"),
+            new Articulo("hormigon_naranja", "minecraft:orange_concrete", 16, 40, "Halloween", "Hormigón naranja"),
+            new Articulo("hormigon_negro", "minecraft:black_concrete", 16, 40, "Halloween", "Hormigón negro"),
+            new Articulo("hormigon_morado", "minecraft:purple_concrete", 16, 40, "Halloween", "Hormigón morado"),
+            new Articulo("ladrillo_negro", "minecraft:polished_blackstone_bricks", 16, 36, "Halloween", "Ladrillos de piedra negra"),
+            new Articulo("hueso", "minecraft:bone_block", 8, 36, "Halloween", "Bloques de hueso"),
+            new Articulo("obsidiana_llorona", "minecraft:crying_obsidian", 4, 60, "Halloween", "Obsidiana llorona"),
+            new Articulo("fungiluz", "minecraft:shroomlight", 4, 50, "Halloween", "Hongoluz"),
+            new Articulo("alfombra_naranja", "minecraft:orange_carpet", 16, 20, "Halloween", "Alfombras naranjas"),
+            new Articulo("alfombra_negra", "minecraft:black_carpet", 16, 20, "Halloween", "Alfombras negras"),
+            new Articulo("vidrio_morado", "minecraft:purple_stained_glass", 8, 30, "Halloween", "Cristal morado"));
 
     /** El articulo de la tienda que corresponde a un objeto (null si no se vende: asi solo se pueden colocar cosas sin «entidad de bloque»). */
     static Articulo articuloDe(net.minecraft.item.Item it) {

@@ -85,7 +85,10 @@ final class Cafes {
         if (d.inicial == null) {
             p.sendMessage(Msg.say("¡Bienvenido! Elige al Pokémon que será tu cocinero: te enseña tu primer plato."), false);
             Menus.iniciales(c, p);
-        } else p.sendMessage(Msg.say("Bienvenido a tu café. Clic derecho en la caja registradora (a la derecha, en la barra) para abrir el café, comprar o invitar a un amigo."), false);
+        } else {
+            p.sendMessage(Msg.say("Bienvenido a tu café. Clic derecho en la caja registradora (a la derecha, en la barra) para abrir el café, comprar o invitar a un amigo."), false);
+            c.iniciarTutorial(false);
+        }
         return null;
     }
 

@@ -29,6 +29,11 @@ enum Estacion {
     HORNO("Horno", CafeBlocks.HORNO, Tipo.PROCESO, 11, 5, 200, null, false),
     BATIDORA("Batidora", CafeBlocks.BATIDORA, Tipo.PROCESO, 12, 5, 70, null, false),
     CAFETERA("Cafetera", CafeBlocks.CAFETERA, Tipo.PROCESO, 13, 5, 90, null, false),
+    // las cuatro de la 0.11.0 (se ponen en los huecos libres de la fila de atras, que existen desde el local de nivel 1)
+    CAJA_CALABAZA("Caja de calabazas", CafeBlocks.CAJA_CALABAZA, Tipo.CAJA, 2, 1, 0, CafeItems.CALABAZA, false),
+    CAJA_ARROZ("Saco de arroz", CafeBlocks.CAJA_ARROZ, Tipo.CAJA, 6, 1, 0, CafeItems.ARROZ, false),
+    HELADERA("Heladera", CafeBlocks.HELADERA, Tipo.PROCESO, 8, 1, 100, null, false),
+    WAFLERA("Waflera", CafeBlocks.WAFLERA, Tipo.PROCESO, 11, 1, 90, null, false),
     MESA("Mesa", CafeBlocks.MESA, Tipo.MESA, -1, 0, 0, null, true),
     REGISTRADORA("Caja registradora", CafeBlocks.REGISTRADORA, Tipo.REGISTRADORA, -1, 0, 0, null, true);
 

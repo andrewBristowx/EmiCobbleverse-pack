@@ -37,7 +37,7 @@ public final class MenuPantalla extends Lienzo {
     // ------------------------------------------------------------ datos
     private record DecoC(String id, String item, String nombre, int cantidad, int precio, String grupo) {}
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
-    private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi) {}
+    private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi, int nivelLocal, String bloqueo) {}
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
     private record CafeC(String nombre, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente) {}
     private record TopC(String nombre, int megusta, int rep, int estilo) {}
@@ -58,7 +58,7 @@ public final class MenuPantalla extends Lienzo {
     private final List<CafeC> cafesAbiertos = new ArrayList<>();
     private final List<TopC> topCafes = new ArrayList<>();
     private boolean visitante, visitasOn = true, yaMeGusta;
-    private int megusta, nVisitantes, repNivel, repValor, repSig, estPuntos, estNivel, estSig;
+    private int nivelLocal = 1, estUsadas, estMax, megusta, nVisitantes, repNivel, repValor, repSig, estPuntos, estNivel, estSig;
     private String repNombre = "", estNombre = "", evento = "", eventoTexto = "";
     private int estacionesEnMano;
     private final List<GenteC> gente = new ArrayList<>();
@@ -98,7 +98,7 @@ public final class MenuPantalla extends Lienzo {
         platos.clear();
         for (JsonElement e : o.getAsJsonArray("platos")) {
             JsonObject j = e.getAsJsonObject();
-            platos.add(new PlatoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("precio").getAsInt(), j.get("coste").getAsInt(), s(j, "receta"), j.get("tengo").getAsBoolean(), j.has("especial") && j.get("especial").getAsBoolean(), j.has("michi") ? s(j, "michi") : ""));
+            platos.add(new PlatoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("precio").getAsInt(), j.get("coste").getAsInt(), s(j, "receta"), j.get("tengo").getAsBoolean(), j.has("especial") && j.get("especial").getAsBoolean(), j.has("michi") ? s(j, "michi") : "", j.has("nivelLocal") ? j.get("nivelLocal").getAsInt() : 1, j.has("bloqueo") ? s(j, "bloqueo") : ""));
         }
         construyendo = o.has("construyendo") && o.get("construyendo").getAsBoolean();
         mesasUsadas = o.has("mesasUsadas") ? o.get("mesasUsadas").getAsInt() : 0; mesasMax = o.has("mesasMax") ? o.get("mesasMax").getAsInt() : 0;
@@ -106,6 +106,7 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("deco")) for (JsonElement e : o.getAsJsonArray("deco")) { JsonObject j = e.getAsJsonObject(); deco.add(new DecoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("cantidad").getAsInt(), j.get("precio").getAsInt(), s(j, "grupo"))); }
         estilo.clear();
         if (o.has("estilo")) for (JsonElement e : o.getAsJsonArray("estilo")) { JsonObject j = e.getAsJsonObject(); estilo.add(new EstiloC(s(j, "parte"), s(j, "nombre"))); }
+        nivelLocal = o.has("nivelLocal") ? o.get("nivelLocal").getAsInt() : 1; estUsadas = o.has("estUsadas") ? o.get("estUsadas").getAsInt() : 0; estMax = o.has("estMax") ? o.get("estMax").getAsInt() : 0;
         visitante = o.has("visitante") && o.get("visitante").getAsBoolean();
         visitasOn = !o.has("visitas") || o.get("visitas").getAsBoolean();
         yaMeGusta = o.has("yaMeGusta") && o.get("yaMeGusta").getAsBoolean();
@@ -307,6 +308,7 @@ public final class MenuPantalla extends Lienzo {
         }
         // la parte de la derecha: quien esta en el cafe y a quien invitar
         texto(g, "EN EL CAFÉ (" + gente.size() + ")", RX, CY - 7, ORO, 0.95f);
+        if (duenio) boton(g, RX + RW - 170, CY - 11, 54, 14, "GUÍA", 0xFF7A4AC0, true, dentro(mx, my, RX + RW - 170, CY - 11, 54, 14), 0.8f);
         if (duenio && !abierto() && !estado.equals("cerrando")) boton(g, RX + RW - 110, CY - 11, 110, 14, visitasOn ? "VISITAS: SÍ" : "VISITAS: NO", visitasOn ? 0xFF2E8B57 : 0xFF8A3A3A, true, dentro(mx, my, RX + RW - 110, CY - 11, 110, 14), 0.8f);
         for (int i = 0; i < gente.size() && i < 4; i++) {
             GenteC c = gente.get(i);
@@ -335,6 +337,7 @@ public final class MenuPantalla extends Lienzo {
         String est = "Estilo: " + estNombre + " · " + estPuntos + " pts" + (estSig > 0 ? "/" + estSig : "");
         texto(g, rep, LX, y, 0xFFFFD27F, 0.75f);
         texto(g, est, LX, y + 11, 0xFFFF9AD5, 0.75f);
+        texto(g, "Local nivel " + nivelLocal + " · estaciones " + estUsadas + "/" + estMax + " · mesas " + mesasUsadas + "/" + mesasMax, LX, y + 33, 0xFF8AE0A0, 0.75f);
         texto(g, "♥ " + megusta + " me gusta" + (nVisitantes > 0 ? " · " + nVisitantes + " de visita" : ""), LX, y + 22, 0xFFFF7AA8, 0.75f);
     }
 
@@ -438,24 +441,26 @@ public final class MenuPantalla extends Lienzo {
             objeto(g, p.item(), LX + 8, y + 8, 1.5f);
             texto(g, p.nombre(), LX + 40, y + 6, BLANCO, 1f);
             texto(g, "Paga " + p.precio() + " monedas", LX + 40, y + 18, MONEDA, 0.75f);
-            parrafo(g, p.receta(), LX + 8, y + 34, 200, SUAVE, 0.65f);
+            boolean libre = p.bloqueo().isEmpty();
+            parrafo(g, libre || p.tengo() ? p.receta() : p.bloqueo(), LX + 8, y + 34, 200, libre || p.tengo() ? SUAVE : 0xFFFF8A8A, 0.65f);
+            texto(g, "Local " + p.nivelLocal(), LX + PW - 92, y + 6, p.nivelLocal() <= nivelLocal ? 0xFF8AE0A0 : 0xFFFF8A8A, 0.75f);
             int bx = LX + PW - 92, bw = 86;
-            boolean puede = !p.tengo() && puedeComprar() && monedas >= p.coste();
-            boton(g, bx, y + 36, bw, 20, p.tengo() ? "APRENDIDO ✔" : p.coste() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 36, bw, 20), 0.9f);
+            boolean puede = !p.tengo() && libre && puedeComprar() && monedas >= p.coste();
+            boton(g, bx, y + 36, bw, 20, p.tengo() ? "APRENDIDO ✔" : !libre ? "BLOQUEADO" : p.coste() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 36, bw, 20), 0.9f);
         }
         texto(g, "MEJORAS DEL LOCAL", LX + 308, CY + 8, 0xFFC9B3FF, 0.95f);
         for (int i = 0; i < mejoras.size(); i++) {
             MejoraC m = mejoras.get(i);
-            int y = CY + 22 + i * 31, x = LX + 308;
+            int y = CY + 20 + i * 28, x = LX + 308;
             boolean max = m.nivel() >= m.max();
-            caja(g, x, y, PW, 29, FONDO, max ? 0xFF6FE08A : BORDE);
-            objeto(g, m.item(), x + 6, y + 6, 1f);
-            texto(g, m.nombre(), x + 28, y + 2, BLANCO, 0.85f);
-            texto(g, recortar(m.texto(), 56), x + 28, y + 11, GRIS, 0.55f);
-            for (int k = 0; k < m.max(); k++) g.fill(x + 28 + k * 14, y + 21, x + 38 + k * 14, y + 25, k < m.nivel() ? ORO : 0xFF2A2A44);
+            caja(g, x, y, PW, 26, FONDO, max ? 0xFF6FE08A : BORDE);
+            objeto(g, m.item(), x + 6, y + 5, 1f);
+            texto(g, m.nombre(), x + 28, y + 1, BLANCO, 0.85f);
+            texto(g, recortar(m.texto(), 56), x + 28, y + 10, GRIS, 0.55f);
+            for (int k = 0; k < m.max(); k++) g.fill(x + 28 + k * 14, y + 19, x + 38 + k * 14, y + 22, k < m.nivel() ? ORO : 0xFF2A2A44);
             int bx = x + PW - 88, bw = 82;
             boolean puede = !max && puedeComprar() && monedas >= m.precio();
-            boton(g, bx, y + 4, bw, 20, max ? "MÁXIMO" : m.precio() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 4, bw, 20), 0.9f);
+            boton(g, bx, y + 3, bw, 20, max ? "MÁXIMO" : m.precio() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 3, bw, 20), 0.9f);
         }
     }
 
@@ -674,6 +679,7 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         if (duenio && !construyendo && !abierto() && !estado.equals("cerrando") && dentro(mx, my, RX + RW - 110, CY - 11, 110, 14)) { enviar("visitas", "", ""); return; }
+        if (duenio && !construyendo && dentro(mx, my, RX + RW - 170, CY - 11, 54, 14)) { enviar("guia", "", ""); return; }
         if (construyendo) {
             if (!duenio) return;
             if (dentro(mx, my, LX, CY + 100, LW, 28)) { tab = T_DECORAR; enviar("refrescar", "decorar", ""); return; }
@@ -714,12 +720,12 @@ public final class MenuPantalla extends Lienzo {
             if (i >= tiendaPlatos.size()) break;
             PlatoC p = tiendaPlatos.get(i);
             int y = CY + 22 + n * (PH + 4);
-            if (!p.tengo() && monedas >= p.coste() && dentro(mx, my, LX + PW - 92, y + 36, 86, 20)) enviar("comprarPlato", p.id(), "");
+            if (!p.tengo() && p.bloqueo().isEmpty() && monedas >= p.coste() && dentro(mx, my, LX + PW - 92, y + 36, 86, 20)) enviar("comprarPlato", p.id(), "");
         }
         for (int i = 0; i < mejoras.size(); i++) {
             MejoraC m = mejoras.get(i);
-            int y = CY + 22 + i * 31, x = LX + 308;
-            if (m.nivel() < m.max() && monedas >= m.precio() && dentro(mx, my, x + PW - 88, y + 4, 82, 20)) enviar("comprarMejora", m.id(), "");
+            int y = CY + 20 + i * 28, x = LX + 308;
+            if (m.nivel() < m.max() && monedas >= m.precio() && dentro(mx, my, x + PW - 88, y + 3, 82, 20)) enviar("comprarMejora", m.id(), "");
         }
     }
 

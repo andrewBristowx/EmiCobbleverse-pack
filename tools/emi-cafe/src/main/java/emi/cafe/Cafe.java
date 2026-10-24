@@ -63,6 +63,7 @@ final class Cafe {
     Estado estado = Estado.PREPARANDO;
     final Set<Estacion> estEnMano = EnumSet.noneOf(Estacion.class);   // estaciones que el dueño ha recogido en el modo construccion y aun no ha vuelto a poner
     boolean construyendo;                                 // modo construccion: el dueño decora a solas (el cafe esta cerrado)
+    Tutorial tut;                                         // la guia de inicio (solo mientras no se ha terminado)
     final List<Ayudante> ayudantes = new ArrayList<>();
     final Set<UUID> visitantes = new LinkedHashSet<>();   // gente que solo esta de visita (tambien estan en `jugadores`, pero no cocinan ni sirven)
     Evento evento = Evento.NINGUNO;                       // el suceso de la jornada de hoy
@@ -105,6 +106,36 @@ final class Cafe {
         double base = 20 * (16 - 3 * nivel(Recetas.Mejora.PUBLICIDAD)) / (1.0 + 0.5 * (trabajadores() - 1));
         base *= Estilo.multLlegada(nivelEstilo()) * (evento == Evento.HORA_PUNTA ? 0.55 : 1.0);
         return (int) base + rnd.nextInt(60);
+    }
+
+    // ------------------------------------------------------------ nivel del local (1 a 5)
+
+    /** El nivel del local: 1 + los niveles de «Ampliar el local» (tamaño, mesas, estaciones, platos y mejoras que se pueden tener dependen de él). */
+    int nivelLocal() { return 1 + nivel(Recetas.Mejora.AMPLIAR); }
+
+    /** Cuantas estaciones de trabajo cuentan para el limite (sin la basura ni el fregadero, que vienen con el cafe). */
+    static int cuentaEstaciones(Set<Estacion> s) { int n = 0; for (Estacion e : s) if (e.x >= 0 && !e.siempre) n++; return n; }
+
+    int estacionesUsadas() { return cuentaEstaciones(activas()); }
+
+    /** Por que este plato no se puede comprar ahora (null = se puede): el nivel del local o el limite de estaciones. */
+    String bloqueoPlato(Recetas.Plato pl) {
+        int nl = nivelLocal();
+        if (pl.nivelLocal() > nl) return "Hace falta el local de nivel " + pl.nivelLocal() + " (ahora tienes el " + nl + ")";
+        Set<Estacion> despues = activas();
+        despues.addAll(pl.estaciones);
+        int max = Local.maxEstaciones(nl), n = cuentaEstaciones(despues);
+        if (n > max) return "Tu local de nivel " + nl + " solo admite " + max + " estaciones (con este plato tendrías " + n + "): amplíalo";
+        return null;
+    }
+
+    /** El estado de una estacion (null si aun no se ha usado). */
+    Est estDe(Estacion e) { BlockPos p = posDe(e); return p == null ? null : ests.get(p); }
+
+    /** Donde esta ahora una estacion (null si no esta en el local). */
+    BlockPos posDe(Estacion e) {
+        int[] q = posEstaciones().get(e);
+        return q == null ? null : Local.pos(ox, q[0], 1, q[1]);
     }
 
     /** Los que cocinan y sirven (sin contar a los que solo visitan). */
@@ -170,6 +201,29 @@ final class Cafe {
             Recetas.Mejora me = Recetas.Mejora.de(ti.mejora);
             if (me != null && nivel(me) > 0) { Ayudante a = Ayudante.crear(w, ox, ti); if (a != null) ayudantes.add(a); }
         }
+    }
+
+    /** Empieza la guia de inicio si el dueño aun no la ha hecho (y ya tiene cocinero). */
+    void iniciarTutorial(boolean forzar) {
+        Datos.Jugador d = dj();
+        if (tut != null || d.inicial == null) return;
+        if (!forzar) {
+            if (d.clientes > 0 || d.turnos > 0) d.tutorialHecho = true;                 // los que ya juegan no la necesitan
+            if (d.tutorialHecho) return;
+        } else d.tutorialHecho = false;
+        Recetas.Inicial ini = Recetas.Inicial.de(d.inicial);
+        if (ini == null) return;
+        tut = new Tutorial(this, ini);
+        ServerPlayerEntity p = jugador(duenio);
+        if (p != null) {
+            p.sendMessage(Msg.say("GUÍA DE INICIO: arriba hay una barra que te dice qué hacer en cada momento, y verás unas chispas sobre el sitio al que ir. Se mueve con WASD y todo se hace con CLIC DERECHO. Para quitarla: /cafe tutorial saltar."), false);
+            Msg.title(p, Text.literal("Guía de inicio").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), Text.literal("Sigue la barra de arriba").formatted(Formatting.YELLOW), 5, 60, 10);
+        }
+    }
+
+    void quitarTutorial(boolean marcarHecha) {
+        if (tut != null) { tut.quitar(); tut = null; }
+        if (marcarHecha) { dj().tutorialHecho = true; EmiCafe.datos.guardar(duenio); }
     }
 
     private void quitarAyudantes() { for (Ayudante a : ayudantes) a.quitar(); ayudantes.clear(); }
@@ -469,6 +523,9 @@ final class Cafe {
 
     /** El suceso de hoy al azar (con condiciones: el critico pide reputacion y 3 platos, el dia del plato 2 platos, el dia Michialien algun visitante posible). */
     private Evento elegirEvento() {
+        java.time.LocalDate hoy = java.time.LocalDate.now();
+        boolean fechasHalloween = (hoy.getMonthValue() == 10 && hoy.getDayOfMonth() >= 24) || (hoy.getMonthValue() == 11 && hoy.getDayOfMonth() <= 1);
+        if (fechasHalloween && rnd.nextInt(100) < 55) return Evento.HALLOWEEN;
         int r = rnd.nextInt(100);
         Evento e = r < 25 ? Evento.NINGUNO : r < 45 ? Evento.HORA_PUNTA : r < 65 ? Evento.PLATO_DEL_DIA : r < 85 ? Evento.DIA_MICHIALIEN : Evento.CRITICO;
         Datos.Jugador d = dj();
@@ -476,6 +533,21 @@ final class Cafe {
         if (e == Evento.PLATO_DEL_DIA && d.platos.size() < 2) e = Evento.HORA_PUNTA;
         if (e == Evento.DIA_MICHIALIEN && elegibles().isEmpty()) e = Evento.HORA_PUNTA;
         return e;
+    }
+
+    /** La decoracion de la Noche de brujas (telarañas en las esquinas, calabazas en la barra y junto a la puerta); desaparece al cerrar, cuando se reconstruye el local. */
+    private void decorarHalloween() {
+        int W = Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
+        net.minecraft.block.BlockState telarana = net.minecraft.block.Blocks.COBWEB.getDefaultState();
+        net.minecraft.block.BlockState calabaza = net.minecraft.block.Blocks.JACK_O_LANTERN.getDefaultState().with(net.minecraft.block.HorizontalFacingBlock.FACING, net.minecraft.util.math.Direction.SOUTH);
+        for (int x : new int[]{1, W - 1}) for (int z : new int[]{1, 6, 12}) ponerSiLibre(Local.pos(ox, x, 4, z), telarana);
+        for (int x = 3; x < W - 1; x += 8) ponerSiLibre(Local.pos(ox, x, 2, 6), calabaza);
+        ponerSiLibre(Local.pos(ox, 6, 1, 12), calabaza);
+        ponerSiLibre(Local.pos(ox, 9, 1, 12), calabaza);
+    }
+
+    private void ponerSiLibre(BlockPos pos, net.minecraft.block.BlockState st) {
+        if (w.getBlockState(pos).isAir()) w.setBlockState(pos, st, net.minecraft.block.Block.NOTIFY_ALL);
     }
 
     /** Pone el suceso del dia (y lo anuncia a todos). */
@@ -490,6 +562,7 @@ final class Cafe {
             platoDelDia = sabe.get(rnd.nextInt(sabe.size()));
         }
         if (e == Evento.CRITICO) { criticoPendiente = true; criticoEn = 20 * 25; }
+        if (e == Evento.HALLOWEEN) decorarHalloween();
         String texto = e.nombre + (platoDelDia != null ? ": " + platoDelDia.nombre() + " (se paga el doble)" : "") + ". " + e.descripcion;
         aTodos(p -> { p.sendMessage(Msg.say("Hoy: " + texto), false); Sonidos.jugador(p, "evento", 1f, 1f); });
     }
@@ -546,6 +619,7 @@ final class Cafe {
             if (criticoPendiente && --criticoEn <= 0) { if (forzarCritico()) criticoPendiente = false; else criticoEn = 40; }
         }
         tickAyudantes();
+        if (tut != null && t % 10 == 0) { tut.tick(); if (tut.terminada()) tut = null; }
         for (int i = clientes.size() - 1; i >= 0; i--) {
             Cliente c = clientes.get(i);
             boolean fin = c.fuera() || c.tick(this, rnd);
@@ -606,9 +680,14 @@ final class Cafe {
         for (Mesa m : mesas) if (m.libre()) libres.add(m);
         if (libres.isEmpty()) return;
         Mesa m = libres.get(rnd.nextInt(libres.size()));
-        int prob = evento == Evento.DIA_MICHIALIEN ? 40 : PROB_ESPECIAL + Estilo.probEspecialExtra(nivelEstilo());
+        int prob = evento == Evento.DIA_MICHIALIEN ? 40 : evento == Evento.HALLOWEEN ? 45 : PROB_ESPECIAL + Estilo.probEspecialExtra(nivelEstilo());
         if (!hayEspecial() && rnd.nextInt(100) < prob) {
             List<Especial> el = elegibles();
+            if (evento == Evento.HALLOWEEN) {                                    // en la Noche de brujas vienen los disfrazados de miedo (si el dueño ya puede atenderlos)
+                List<Especial> miedo = new ArrayList<>();
+                for (Especial x : el) if (x == Especial.BRUJITA || x == Especial.CALABAZA || x == Especial.DIABLILLO) miedo.add(x);
+                if (!miedo.isEmpty()) el = miedo;
+            }
             if (!el.isEmpty() && forzarEspecial(m, el.get(rnd.nextInt(el.size())))) return;
         }
         forzarCliente(m);
@@ -616,7 +695,7 @@ final class Cafe {
 
     /** Crea ya un visitante especial en esa mesa (tambien lo usa el comando de pruebas). */
     boolean forzarEspecial(Mesa m, Especial e) {
-        Cliente c = Cliente.crear(w, ox, m, rnd, e);
+        Cliente c = Cliente.crear(w, ox, m, rnd, e, false, nivelLocal());
         if (c == null) return false;
         m.cliente = c;
         clientes.add(c);
@@ -640,7 +719,7 @@ final class Cafe {
     /** Crea ya al critico gastronomico en una mesa libre (false si no hay ninguna). */
     boolean forzarCritico() {
         for (Mesa m : mesas) if (m.libre()) {
-            Cliente c = Cliente.crear(w, ox, m, rnd, null, true);
+            Cliente c = Cliente.crear(w, ox, m, rnd, null, true, nivelLocal());
             if (c == null) return false;
             m.cliente = c;
             clientes.add(c);
@@ -661,7 +740,7 @@ final class Cafe {
 
     /** Crea un cliente ya (tambien lo usa el comando de pruebas). false si no hay mesa libre. */
     boolean forzarCliente(Mesa m) {
-        Cliente c = Cliente.crear(w, ox, m, rnd);
+        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal());
         if (c == null) return false;
         m.cliente = c;
         clientes.add(c);
@@ -900,10 +979,10 @@ final class Cafe {
         if (c.critico) base *= 3;
         else if (c.esp == null && platoDelDia != null && pl == platoDelDia) base *= 2;
         double pac = c.pacienciaRestante();
-        int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()));
+        int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()) * (1.0 + 0.10 * nivel(Recetas.Mejora.PROPINAS)));
         boolean fav = c.favorito;
         if (fav) propina += (int) Math.round(base * 0.4);
-        int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)));
+        int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)) * (evento == Evento.HALLOWEEN ? 1.2 : 1.0));
         platos--;
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
@@ -935,6 +1014,7 @@ final class Cafe {
     void cerrar() {
         if (construyendo) { construyendo = false; estEnMano.clear(); if (EmiCafe.datos != null) EmiCafe.datos.guardar(duenio); }
         quitarAyudantes();
+        if (tut != null) { tut.quitar(); tut = null; }
         for (Cliente c : clientes) c.quitar();
         clientes.clear();
         for (Mesa m : mesas) { Disp.quitar(m.plato); Disp.quitar(m.sucio); m.plato = null; m.sucio = null; m.cliente = null; }

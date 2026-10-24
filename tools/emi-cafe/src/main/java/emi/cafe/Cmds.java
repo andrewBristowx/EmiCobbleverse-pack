@@ -42,6 +42,19 @@ final class Cmds {
                     p.sendMessage(Msg.say(j.visitas ? "Tu café acepta visitas." : "Tu café ya no acepta visitas."), false);
                     return null;
                 }))))
+                .then(CommandManager.literal("tutorial").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    if (EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName()).inicial == null) return "Primero elige a tu Pokémon cocinero.";
+                    cf.iniciarTutorial(true);
+                    return null;
+                })).then(CommandManager.literal("saltar").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    cf.quitarTutorial(true);
+                    p.sendMessage(Msg.say("Guía quitada. Con /cafe tutorial la repites."), false);
+                    return null;
+                }))))
                 .then(CommandManager.literal("info").executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null) return "No estás en tu café: entra con /cafe entrar.";
@@ -137,7 +150,7 @@ final class Cmds {
                         })))
                         .then(CommandManager.literal("mejora").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("nivel", IntegerArgumentType.integer(0, 9)).executes(c -> con(c, p -> {
                             Recetas.Mejora m = Recetas.Mejora.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
-                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad, ayud_lava, ayud_mesero";
+                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad, propinas, ayud_lava, ayud_mesero";
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.mejoras.put(m.id, Math.min(m.max(), IntegerArgumentType.getInteger(c, "nivel")));
                             EmiCafe.datos.guardar(p.getUuid());

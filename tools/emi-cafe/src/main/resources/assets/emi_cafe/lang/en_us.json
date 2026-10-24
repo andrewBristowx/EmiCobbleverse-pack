@@ -97,5 +97,21 @@
   "item.emi_cafe.ev_diablillo": "Infernal Burger",
   "item.emi_cafe.ev_florido": "Flower Salad",
   "item.emi_cafe.ev_pirata": "Pirate Breakfast",
-  "item.emi_cafe.ev_dorado": "Golden Feast"
+  "item.emi_cafe.ev_dorado": "Golden Feast",
+  "item.emi_cafe.calabaza": "Pumpkin",
+  "item.emi_cafe.calabaza_asada": "Roast Pumpkin",
+  "item.emi_cafe.arroz": "Rice",
+  "item.emi_cafe.arroz_cocido": "Cooked Rice",
+  "item.emi_cafe.sopa_calabaza": "Pumpkin Soup",
+  "item.emi_cafe.calabaza_gratinada": "Cheesy Pumpkin",
+  "item.emi_cafe.helado": "Ice Cream",
+  "item.emi_cafe.helado_bayas": "Berry Ice Cream",
+  "item.emi_cafe.waffles": "Waffles",
+  "item.emi_cafe.arroz_carne": "Rice and Meat Bowl",
+  "item.emi_cafe.arroz_leche": "Rice Pudding",
+  "item.emi_cafe.sundae": "Waffle Sundae",
+  "block.emi_cafe.caja_calabaza": "Pumpkin Crate",
+  "block.emi_cafe.caja_arroz": "Rice Sack",
+  "block.emi_cafe.heladera": "Ice Cream Maker",
+  "block.emi_cafe.waflera": "Waffle Iron"
 }

@@ -87,6 +87,7 @@ final class Menus {
         }
         o.add("estilo", est);
         o.addProperty("estacionesEnMano", c.estEnMano.size());
+        o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", Local.maxEstaciones(c.nivelLocal()));
         o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
         o.addProperty("visitas", dd.visitas);
         o.addProperty("megusta", dd.megusta);
@@ -150,6 +151,9 @@ final class Menus {
             e.addProperty("id", pl.id); e.addProperty("item", idItem(pl.item)); e.addProperty("nombre", pl.nombre());
             e.addProperty("precio", pl.precio); e.addProperty("coste", pl.coste); e.addProperty("receta", pl.receta);
             e.addProperty("tengo", dd.platos.contains(pl.id));
+            e.addProperty("nivelLocal", pl.nivelLocal());
+            String blq = dd.platos.contains(pl.id) ? null : c.bloqueoPlato(pl);
+            e.addProperty("bloqueo", blq == null ? "" : blq);
             rec.add(e);
         }
         for (Especial es : Especial.values()) {                              // los platos de los visitantes especiales: solo se ven los que ya han enseñado
@@ -166,7 +170,13 @@ final class Menus {
         for (Recetas.Mejora m : Recetas.Mejora.values()) {
             int nv = dd.nivel(m.id);
             JsonObject e = new JsonObject();
-            e.addProperty("id", m.id); e.addProperty("item", idItem(m.icono)); e.addProperty("nombre", m.nombre + (m.reqRep > 0 ? " · reputación " + m.reqRep + (nRep >= m.reqRep ? " ✔" : " ✘") : "")); e.addProperty("texto", m.descripcion);
+            String reqs = "";
+            if (nv < m.max()) {
+                int rl = m.reqLocal(nv), rr = m.reqRep(nv);
+                if (rl > 1) reqs += " · local " + rl + (c.nivelLocal() >= rl ? " ✔" : " ✘");
+                if (rr > 0) reqs += " · rep. " + rr + (nRep >= rr ? " ✔" : " ✘");
+            }
+            e.addProperty("id", m.id); e.addProperty("item", idItem(m.icono)); e.addProperty("nombre", m.nombre + reqs); e.addProperty("texto", m.descripcion);
             e.addProperty("nivel", nv); e.addProperty("max", m.max()); e.addProperty("precio", nv >= m.max() ? 0 : m.precios[nv]);
             mej.add(e);
         }
@@ -259,6 +269,7 @@ final class Menus {
                     }
                     actualizar(c, p);
                 }
+                case "guia" -> { if (duenio) { c.iniciarTutorial(true); cerrar(p); } }
                 case "megusta" -> { String err = Cafes.megusta(c, p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "visitas" -> { if (duenio) { Datos.Jugador dd = c.dj(); dd.visitas = !dd.visitas; EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }
                 case "visitar" -> {
@@ -309,6 +320,7 @@ final class Menus {
         if (!d.platos.contains(ini.plato.id)) d.platos.add(ini.plato.id);
         EmiCafe.datos.guardar(p.getUuid());
         c.reconstruir();
+        c.iniciarTutorial(false);
         Msg.title(p, Text.literal("¡" + ini.nombre + "!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Tu cocinero te enseña: " + ini.plato.nombre()).formatted(Formatting.YELLOW), 5, 50, 10);
         p.sendMessage(Msg.say(ini.nombre + " te enseñó a hacer " + ini.plato.nombre() + ": " + ini.plato.receta + ". Clic derecho en la caja registradora para abrir el café."), false);
     }
@@ -318,6 +330,8 @@ final class Menus {
         Datos.Jugador d = c.dj(p);
         if (c.estado != Cafe.Estado.PREPARANDO) { p.sendMessage(Msg.err("Solo se compra con el café cerrado."), false); return; }
         if (d.platos.contains(pl.id)) return;
+        String blq = c.bloqueoPlato(pl);
+        if (blq != null) { p.sendMessage(Msg.err(blq + "."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         if (d.monedas < pl.coste) { p.sendMessage(Msg.err("Te faltan " + (pl.coste - d.monedas) + " monedas."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         d.monedas -= pl.coste;
         d.platos.add(pl.id);
@@ -345,7 +359,8 @@ final class Menus {
         if (me == null || !c.esDuenio(p)) return;
         Datos.Jugador d = c.dj(p);
         int nv = d.nivel(me.id);
-        if (Reputacion.nivel(d.rep) < me.reqRep) { p.sendMessage(Msg.err("Hace falta reputación de nivel " + me.reqRep + " (" + Reputacion.nombre(me.reqRep) + ") para contratarlo."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
+        if (nv < me.max() && c.nivelLocal() < me.reqLocal(nv)) { p.sendMessage(Msg.err("Hace falta el local de nivel " + me.reqLocal(nv) + " (ahora tienes el " + c.nivelLocal() + "): amplía el local."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
+        if (nv < me.max() && Reputacion.nivel(d.rep) < me.reqRep(nv)) { p.sendMessage(Msg.err("Hace falta reputación de nivel " + me.reqRep(nv) + " (" + Reputacion.nombre(me.reqRep(nv)) + ")."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         if (c.estado != Cafe.Estado.PREPARANDO) { p.sendMessage(Msg.err("Solo se compra con el café cerrado."), false); return; }
         if (nv >= me.max()) return;
         int precio = me.precios[nv];

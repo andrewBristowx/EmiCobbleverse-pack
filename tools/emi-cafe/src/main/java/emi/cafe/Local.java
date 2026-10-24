@@ -16,7 +16,10 @@ final class Local {
     static final int SEPARACION = 64;
     static final double SX = 7.5, SZ = 4.5;                   // donde aparece el jugador
     /** Las mesas (x, z del bloque) en el orden en que se van abriendo; el cliente se pone justo al sur. */
-    static final int[][] MESAS = {{5, 9}, {9, 9}, {2, 9}, {12, 9}, {16, 9}, {20, 9}, {24, 9}, {28, 9}};
+    static final int[][] MESAS = {{5, 9}, {9, 9}, {2, 9}, {12, 9}, {16, 9}, {20, 9}, {24, 9}, {28, 9}, {32, 9}, {36, 9}, {40, 9}, {44, 9}};
+    /** Cuantas estaciones de trabajo (cajas, procesadoras y la mesa de emplatar; sin contar la basura ni el fregadero) caben en cada nivel de local (1 a 5). */
+    static final int[] MAX_ESTACIONES = {5, 8, 12, 17, 22};
+    static int maxEstaciones(int nivelLocal) { return MAX_ESTACIONES[Math.max(1, Math.min(MAX_ESTACIONES.length, nivelLocal)) - 1]; }
     static final int ANCHO_BASE = 14, ANCHO_POR_NIVEL = 8;
     static int ancho(int nivel) { return ANCHO_BASE + ANCHO_POR_NIVEL * nivel; }
     static final int X_REGISTRADORA = 13, Z_REGISTRADORA = 6;

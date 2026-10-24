@@ -20,7 +20,22 @@ import java.util.Random;
 final class Cliente {
     enum Fase { ENTRANDO, ESPERANDO, COMIENDO, SALIENDO }
 
-    static final String[] ESPECIES = {"rattata", "pidgey", "eevee", "pikachu", "slowpoke", "meowth", "psyduck", "jigglypuff", "snubbull", "growlithe"};
+    /** Las especies de clientes por nivel de local: el nivel 1 tiene las de siempre y cada ampliacion trae mas variedad. */
+    static final String[][] POR_NIVEL = {
+            {"rattata", "pidgey", "eevee", "pikachu", "slowpoke", "meowth", "psyduck", "jigglypuff", "snubbull", "growlithe"},
+            {"vulpix", "mareep", "marill"},
+            {"cubone", "teddiursa", "wooper"},
+            {"shinx", "piplup", "buneary"},
+            {"togepi", "skitty", "chikorita"}};
+
+    /** Una especie al azar de las que ya pueden venir a un local de ese nivel. */
+    static String elegirEspecie(Random rnd, int nivelLocal) {
+        int total = 0, n = Math.max(1, Math.min(POR_NIVEL.length, nivelLocal));
+        for (int i = 0; i < n; i++) total += POR_NIVEL[i].length;
+        int k = rnd.nextInt(total);
+        for (int i = 0; i < n; i++) { if (k < POR_NIVEL[i].length) return POR_NIVEL[i][k]; k -= POR_NIVEL[i].length; }
+        return POR_NIVEL[0][0];
+    }
     /** Especies cuyo modelo se ve mucho mas grande que su caja de colision (medido en el juego): se encogen para no pasar por encima de la mesa. */
     static final java.util.Map<String, Float> AJUSTE = java.util.Map.of("rattata", 0.58f, "slowpoke", 0.65f, "gatitoalien", 1.2f);
     static String forzar;                           // solo pruebas: /cafe dev especie <id> hace que todos sean de esa especie
@@ -50,15 +65,11 @@ final class Cliente {
     private Cliente(PokemonEntity e, Mesa mesa, String especie, List<double[]> ruta) { this.e = e; this.mesa = mesa; this.especie = especie; this.ruta = ruta; }
 
     /** Crea el cliente en la calle, delante de la puerta, y lo manda a su mesa; null si Cobblemon no pudo crearlo. */
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd) { return crear(w, ox, mesa, rnd, null, false); }
-
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp) { return crear(w, ox, mesa, rnd, esp, false); }
-
     /** El critico gastronomico (un Persian): pide el plato mas caro, paga el triple y da o quita reputacion. */
     static final String ESPECIE_CRITICO = "persian";
 
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico) {
-        String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : ESPECIES[rnd.nextInt(ESPECIES.length)];
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal) {
+        String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal);
         try {
             PokemonEntity e = PokemonProperties.Companion.parse(especie + (esp != null ? " " + esp.aspecto : "") + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
             e.setAiDisabled(true);
