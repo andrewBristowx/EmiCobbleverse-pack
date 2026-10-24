@@ -24,13 +24,14 @@ final class Ayudante {
     private static final double SEPARACION = 0.8;   // a menos de esto de otro empleado, espera o esquiva
 
     /** Un paso de la tarea: ir a (x, z), esperar {@code espera} ticks mirando a (mx, mz) (si es finito), con {@code mientras} cada 10 ticks, y al final {@code alLlegar}. */
-    record Paso(double x, double z, int espera, Runnable mientras, Runnable alLlegar, double mx, double mz) {}
+    record Paso(double x, double z, double y, int espera, Runnable mientras, Runnable alLlegar, double mx, double mz) {}
 
     final Personal.Rol rol;
     final Datos.Empleado emp;
     final PokemonEntity e;
     final Entity rotulo;
     final double hx, hz;                            // su sitio de descanso (coordenadas del mundo)
+    double hy = Local.Y + 1;                        // y la altura de sus pies alli
     Rutas rutas;                                    // para no salirse de las casillas pisables al esquivar
     private int tick;
     int espera;                                     // ticks que faltan para buscar una tarea nueva (cuenta en su sitio)
@@ -67,8 +68,8 @@ final class Ayudante {
     /** Ticks de espera en un sitio, acortados segun el nivel (con un minimo de 2). */
     int t(int ticks) { return Math.max(2, (int) Math.round(ticks / Personal.trabajo(Personal.nivel(emp)))); }
 
-    /** Crea al empleado en su sitio de descanso (x, z del mundo). */
-    static Ayudante crear(ServerWorld w, Datos.Empleado emp, double x, double z) {
+    /** Crea al empleado en su sitio de descanso (x, y, z del mundo; y = la altura de los pies). */
+    static Ayudante crear(ServerWorld w, Datos.Empleado emp, double x, double y, double z) {
         Personal.Rol rol = Personal.Rol.de(emp.rol);
         if (rol == null) return null;
         String aspecto = Personal.ASPECTOS[Math.floorMod(emp.aspecto, Personal.ASPECTOS.length)][0];
@@ -84,11 +85,13 @@ final class Ayudante {
             e.setCustomNameVisible(false);
             try { e.hideNameRendering(); } catch (Throwable t) { /* version de Cobblemon sin esta funcion */ }
             e.addCommandTag(Disp.TAG);
-            e.refreshPositionAndAngles(x, Local.Y + 1, z, 0f, 0f);
+            e.refreshPositionAndAngles(x, y, z, 0f, 0f);
             w.spawnEntity(e);
             e.getPokemon().setScaleModifier((float) Math.max(0.35, Math.min(3.0, 1.0 / Math.max(0.3, e.getHeight()))));
-            Entity rotulo = Disp.texto(w, json(emp.nombre, rolNivel(rol, emp), ""), x, Local.Y + 2.4, z, 0.9f, false);
-            return new Ayudante(rol, emp, e, rotulo, x, z);
+            Entity rotulo = Disp.texto(w, json(emp.nombre, rolNivel(rol, emp), ""), x, y + 1.4, z, 0.9f, false);
+            Ayudante a = new Ayudante(rol, emp, e, rotulo, x, z);
+            a.hy = y;
+            return a;
         } catch (Throwable t) {
             EmiCafe.LOG.error("No se pudo crear al empleado {}", emp.nombre, t);
             return null;
@@ -98,7 +101,7 @@ final class Ayudante {
     /** Cambia lo que dice el rotulo (el chef pone «cocina: pizza» mientras trabaja). */
     void rotular(String extra) {
         if (rotulo == null || rotulo.isRemoved()) return;
-        Disp.cambiarTexto(rotulo, json(emp.nombre, rolNivel(rol, emp), extra), e.getX(), Local.Y + 2.4, e.getZ(), 0.9f, false);
+        Disp.cambiarTexto(rotulo, json(emp.nombre, rolNivel(rol, emp), extra), e.getX(), e.getY() + 1.4, e.getZ(), 0.9f, false);
     }
 
     void quitar() { Disp.quitar(rotulo); Disp.quitar(llevado); llevado = null; Disp.quitar(paseVisual); paseVisual = null; if (!e.isRemoved()) e.discard(); }
@@ -107,7 +110,7 @@ final class Ayudante {
     void ponerEnPase(ServerWorld w, Item plato, Mesa para) {
         Disp.quitar(paseVisual);
         paseItem = plato; paseMesa = para; paseReserva = null;
-        if (pase != null) paseVisual = Disp.objeto(w, CafeItems.id(plato), pase.getX() + 0.5, Local.Y + 2.3, pase.getZ() + 0.5, 0.55f, true);
+        if (pase != null) paseVisual = Disp.emplatado(w, CafeItems.id(plato), pase.getX() + 0.5, pase.getY() + 1.3, pase.getZ() + 0.5, 0.6f, true);
     }
 
     /** Quita el plato de la ventanilla (lo recogio un mesero o ya no hace falta). */
@@ -120,20 +123,20 @@ final class Ayudante {
     boolean enCasa() { return Math.hypot(e.getX() - hx, e.getZ() - hz) < 0.15; }
 
     /** Añade un paso al final de la tarea. */
-    void paso(double x, double z, int espera, Runnable mientras, Runnable alLlegar, double mx, double mz) { pasos.add(new Paso(x, z, espera, mientras, alLlegar, mx, mz)); }
+    void paso(double x, double z, int espera, Runnable mientras, Runnable alLlegar, double mx, double mz) { pasos.add(new Paso(x, z, Double.NaN, espera, mientras, alLlegar, mx, mz)); }
 
     /** Añade un camino sin parar en cada punto; el ultimo mira hacia (mx, mz) cuando llega. */
     void ruta(List<double[]> r, double mx, double mz) {
         for (int i = 0; i < r.size(); i++) {
             boolean ult = i == r.size() - 1;
-            pasos.add(new Paso(r.get(i)[0], r.get(i)[1], 0, null, null, ult ? mx : Double.NaN, ult ? mz : Double.NaN));
+            pasos.add(new Paso(r.get(i)[0], r.get(i)[1], r.get(i).length > 2 ? r.get(i)[2] : Double.NaN, 0, null, null, ult ? mx : Double.NaN, ult ? mz : Double.NaN));
         }
     }
 
     /** Pone (o cambia) el plato que lleva en las manos; null = lo deja. */
     void llevar(ServerWorld w, String itemId) {
         Disp.quitar(llevado);
-        llevado = itemId == null ? null : Disp.objeto(w, itemId, e.getX(), Local.Y + 1.55, e.getZ(), 0.5f, true);
+        llevado = itemId == null ? null : itemId.equals(CafeItems.id(CafeItems.PILA_PLATOS)) ? Disp.objeto(w, itemId, e.getX(), e.getY() + 0.55, e.getZ(), 0.5f, true) : Disp.emplatado(w, itemId, e.getX(), e.getY() + 0.55, e.getZ(), 0.55f, true);
         colocarLlevado();
     }
 
@@ -149,7 +152,7 @@ final class Ayudante {
     void alSitio() {
         limpiar();
         vaciarPase(); paseReserva = null;
-        e.setPosition(hx, Local.Y + 1, hz);
+        e.setPosition(hx, hy, hz);
         e.setYaw(0f); e.setHeadYaw(0f); e.setBodyYaw(0f);
         ponerPose(PoseType.STAND);
         colocarRotulo();
@@ -168,7 +171,7 @@ final class Ayudante {
             double dx = p.x() - e.getX(), dz = p.z() - e.getZ();
             double d = Math.sqrt(dx * dx + dz * dz);
             if (d < 0.1) { llegado = true; esperaPaso = p.espera(); bloqueo = 0; }
-            else { andar(dx, dz, d, todos); return; }
+            else { andar(dx, dz, d, Double.isFinite(p.y()) ? p.y() : rutas != null ? rutas.alturaCerca(p.x(), p.z(), e.getY(), tick) : e.getY(), todos); return; }
         }
         ponerPose(PoseType.STAND);
         if (Double.isFinite(p.mx())) mirar(p.mx(), p.mz());
@@ -185,7 +188,7 @@ final class Ayudante {
     /** true = la tarea ya no vale (la lee {@link Cafe} para cancelarla y mandarlo a casa). */
     boolean cancelarAviso;
 
-    private void andar(double dx, double dz, double d, List<Ayudante> todos) {
+    private void andar(double dx, double dz, double d, double ty, List<Ayudante> todos) {
         double v = Math.min(VELOCIDAD * Personal.velocidad(Personal.nivel(emp)), d);
         double ux = dx / d, uz = dz / d;
         if (libre > 0) libre--;
@@ -196,7 +199,7 @@ final class Ayudante {
                 double c = Math.cos(ang), s = Math.sin(ang);
                 double vx = ux * c - uz * s, vz = ux * s + uz * c;
                 double qx = e.getX() + vx * v, qz = e.getZ() + vz * v;
-                if (!choca(qx, qz, todos) && (rutas == null || rutas.libre(qx, qz, tick))) { ux = vx; uz = vz; paso = true; break; }
+                if (!choca(qx, qz, todos) && (rutas == null || rutas.libre(qx, qz, e.getY(), tick))) { ux = vx; uz = vz; paso = true; break; }
             }
             if (!paso) {
                 ponerPose(PoseType.STAND);
@@ -207,7 +210,7 @@ final class Ayudante {
         float yaw = (float) Math.toDegrees(Math.atan2(-ux, uz));
         e.setYaw(yaw); e.setHeadYaw(yaw); e.setBodyYaw(yaw);
         e.setVelocity(Vec3d.ZERO);
-        e.setPosition(e.getX() + ux * v, Local.Y + 1, e.getZ() + uz * v);
+        e.setPosition(e.getX() + ux * v, e.getY() + (ty - e.getY()) * Math.min(1.0, v / d), e.getZ() + uz * v);       // sube y baja escaleras poco a poco
         moviendo = true;
         ponerPose(PoseType.WALK);
         colocarRotulo();
@@ -235,14 +238,14 @@ final class Ayudante {
     }
 
     private void colocarRotulo() {
-        if (rotulo != null && !rotulo.isRemoved()) rotulo.setPosition(e.getX(), Local.Y + 2.4, e.getZ());
+        if (rotulo != null && !rotulo.isRemoved()) rotulo.setPosition(e.getX(), e.getY() + 1.4, e.getZ());
     }
 
     /** El plato va delante del Michialien, a la altura del pecho. */
     private void colocarLlevado() {
         if (llevado == null || llevado.isRemoved()) return;
         double rad = Math.toRadians(e.getYaw());
-        llevado.setPosition(e.getX() - Math.sin(rad) * 0.5, Local.Y + 1.55, e.getZ() + Math.cos(rad) * 0.5);
+        Disp.mover(llevado, e.getX() - Math.sin(rad) * 0.5, e.getY() + 0.55, e.getZ() + Math.cos(rad) * 0.5);
     }
 
     private void ponerPose(PoseType nueva) {

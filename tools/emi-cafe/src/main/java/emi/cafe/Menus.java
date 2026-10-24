@@ -117,12 +117,20 @@ final class Menus {
         for (Decor.Articulo a : Decor.CATALOGO) {
             JsonObject e = new JsonObject();
             e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("cantidad", a.cantidad());
-            e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo());
+            e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("tienes", c.obras.stock(a.item()));
             deco.add(e);
         }
         o.add("deco", deco);
+        o.addProperty("libre", dd.libre);
+        StringBuilder guardado = new StringBuilder();                          // lo del cafe que se tiene guardado para poner (caja registradora, estaciones, cartel...)
+        for (java.util.Map.Entry<String, Integer> g : dd.almacen.entrySet()) {
+            if (!g.getKey().startsWith("emi_cafe:") || g.getValue() <= 0) continue;
+            net.minecraft.item.Item it = net.minecraft.registry.Registries.ITEM.get(net.minecraft.util.Identifier.of(g.getKey()));
+            guardado.append(guardado.length() > 0 ? ", " : "").append(it.getName().getString()).append(g.getValue() > 1 ? " x" + g.getValue() : "");
+        }
+        o.addProperty("guardado", guardado.toString());
         JsonArray est = new JsonArray();                                     // los materiales del local (paredes y suelos) que el dueño puede cambiar construyendo
-        for (int i = 0; i < Estilo.PARTES.length; i++) {
+        for (int i = 0; i < Estilo.PARTES.length && !dd.libre; i++) {
             JsonObject e = new JsonObject();
             String pint = Estilo.pintado(dd.pintura, i);
             String nom = pint == null ? Estilo.op(dd.estilo, i).nombre()
@@ -335,7 +343,7 @@ final class Menus {
                 }
                 case "terminarConstruir" -> { if (duenio) c.salirConstruccion(p); actualizar(c, p); }
                 case "estilo" -> {                                    // a = la parte (0-3), b = "+1" o "-1"
-                    if (duenio && c.construyendo) {
+                    if (duenio && c.construyendo && !c.dj().libre) {
                         int parte = Integer.parseInt(a.a()), delta = "-1".equals(a.b()) ? -1 : 1;
                         if (parte >= 0 && parte < Estilo.PARTES.length) {
                             Datos.Jugador dd = c.dj();
@@ -429,16 +437,10 @@ final class Menus {
     }
 
     private static void comprarDeco(Cafe c, ServerPlayerEntity p, Decor.Articulo art) {
-        if (art == null || !c.esDuenio(p) || !c.construyendo) return;
-        Datos.Jugador d = c.dj(p);
-        if (d.monedas < art.precio()) { p.sendMessage(Msg.err("Te faltan " + (art.precio() - d.monedas) + " monedas."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
-        net.minecraft.item.ItemStack st = new net.minecraft.item.ItemStack(art.objeto(), art.cantidad());
-        if (st.isEmpty()) return;
-        if (!p.getInventory().insertStack(st) && !st.isEmpty()) { p.sendMessage(Msg.err("Tu inventario está lleno."), false); return; }
-        d.monedas -= art.precio();
-        EmiCafe.datos.guardar(p.getUuid());
+        String err = c.obras.comprar(p, art);
+        if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f);
-        p.sendMessage(Msg.say("Compraste " + art.nombre() + " (" + art.cantidad() + ")."), false);
+        p.sendMessage(Msg.say("Compraste " + art.nombre() + " (" + art.cantidad() + ")." + (c.construyendo ? "" : " Se queda guardado: lo tendrás en el inventario al entrar en el modo construcción.")), false);
     }
 
     private static void comprarMejora(Cafe c, ServerPlayerEntity p, Recetas.Mejora me) {

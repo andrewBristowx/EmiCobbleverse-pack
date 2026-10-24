@@ -70,7 +70,7 @@ final class Cliente {
     /** El critico gastronomico (un Persian): pide el plato mas caro, paga el triple y da o quita reputacion. */
     static final String ESPECIE_CRITICO = "persian";
 
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora) {
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora, boolean exigirRuta) {
         String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal);
         try {
             PokemonEntity e = PokemonProperties.Companion.parse(especie + (esp != null ? " " + esp.aspecto : "") + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
@@ -89,22 +89,23 @@ final class Cliente {
             w.spawnEntity(e);
             List<double[]> ruta = null;
             if (rutas != null) {                                   // por donde se pueda andar: esquiva paredes, mesas y decoracion y se sienta en una casilla libre junto a su mesa
-                List<double[]> cam = rutas.camino(x0, z0, rutas.adyacentes(mesa.bloque, ahora), ahora);
+                List<double[]> cam = rutas.camino(x0, z0, Local.Y + 1, rutas.adyacentes(mesa.bloque, ahora), ahora);
                 if (cam != null && !cam.isEmpty()) {
                     ruta = new ArrayList<>();
-                    ruta.add(new double[]{x0, z0});
+                    ruta.add(new double[]{x0, z0, Local.Y + 1});
                     ruta.addAll(cam);
                     double[] fin = cam.get(cam.size() - 1);
                     mesa.sx = fin[0]; mesa.sz = fin[1];
                 }
             }
+            if (ruta == null && exigirRuta) { e.discard(); return null; }       // parcela libre: si no se puede llegar a la mesa, no entra nadie
             if (ruta == null) {                                    // sin camino (la puerta tapada...): la ruta de siempre
                 mesa.sx = mesa.bloque.getX() + 0.5; mesa.sz = mesa.bloque.getZ() + 1.5;
                 ruta = new ArrayList<>();
-                ruta.add(new double[]{x0, z0});
-                ruta.add(new double[]{x0, Local.PASILLO_Z});
-                ruta.add(new double[]{mesa.sx, Local.PASILLO_Z});
-                ruta.add(new double[]{mesa.sx, mesa.sz});
+                ruta.add(new double[]{x0, z0, Local.Y + 1});
+                ruta.add(new double[]{x0, Local.PASILLO_Z, Local.Y + 1});
+                ruta.add(new double[]{mesa.sx, Local.PASILLO_Z, Local.Y + 1});
+                ruta.add(new double[]{mesa.sx, mesa.sz, Local.Y + 1});
             }
             Cliente c = new Cliente(e, mesa, especie, ruta);
             float escala = (float) Math.max(0.35, Math.min(3.0, ALTURA / Math.max(0.3, e.getHeight()))) * AJUSTE.getOrDefault(especie, 1f);
@@ -190,7 +191,8 @@ final class Cliente {
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         e.setYaw(yaw); e.setHeadYaw(yaw); e.setBodyYaw(yaw);
         e.setVelocity(Vec3d.ZERO);
-        e.setPosition(e.getX() + dx / d * v, Local.Y + 1, e.getZ() + dz / d * v);
+        double ty = p.length > 2 ? p[2] : Local.Y + 1;
+        e.setPosition(e.getX() + dx / d * v, e.getY() + (ty - e.getY()) * Math.min(1.0, v / d), e.getZ() + dz / d * v);      // sube y baja escaleras poco a poco
         ponerPose(PoseType.WALK);
         return false;
     }

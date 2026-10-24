@@ -210,7 +210,37 @@ final class Disp {
         return n;
     }
 
-    static void quitar(Entity e) { if (e != null) { VIVOS.remove(e.getUuid()); if (!e.isRemoved()) e.discard(); } }
+    private record Plato(Entity plato, double dy) {}
+    /** El plato blanco que hay debajo de una comida emplatada (comida -> plato): quitarla o moverla toca tambien el plato. */
+    private static final java.util.Map<Entity, Plato> PLATOS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /**
+     * Una comida servida «emplatada» (desde 0.18.0): el dibujo de la comida, mas pequeño y un poco más alto, delante de un plato blanco. Devuelve el dibujo de la comida; se usa igual que
+     * {@link #objeto} ({@link #quitar} y {@link #mover} se llevan tambien el plato).
+     */
+    static Entity emplatado(ServerWorld w, String item, double x, double y, double z, float escala, boolean mirar) {
+        double dy = -0.1 * escala;
+        Entity plato = objeto(w, CafeItems.id(CafeItems.PLATO_LIMPIO), x, y + dy, z, escala * 1.2f, mirar, 0f);
+        Entity comida = objeto(w, item, x, y + 0.08 * escala, z, escala * 0.7f, mirar, 0.03f);
+        if (comida != null && plato != null) PLATOS.put(comida, new Plato(plato, dy - 0.08 * escala));
+        return comida;
+    }
+
+    /** Mueve un dibujo (y el plato de debajo si es una comida emplatada). */
+    static void mover(Entity e, double x, double y, double z) {
+        if (e == null || e.isRemoved()) return;
+        e.setPosition(x, y, z);
+        Plato p = PLATOS.get(e);
+        if (p != null && !p.plato().isRemoved()) p.plato().setPosition(x, y + p.dy(), z);
+    }
+
+    static void quitar(Entity e) {
+        if (e == null) return;
+        Plato p = PLATOS.remove(e);
+        if (p != null) quitar(p.plato());
+        VIVOS.remove(e.getUuid());
+        if (!e.isRemoved()) e.discard();
+    }
 
     /** Borra los displays de bloque y de objeto del mod que ya no controla nadie (copias congeladas); deja los carteles de texto. Devuelve cuantos borro. */
     static int barrerHuerfanos(ServerWorld w, double cx, double cz, double radio) {

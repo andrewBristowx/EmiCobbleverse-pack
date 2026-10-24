@@ -86,7 +86,32 @@ final class Decor {
             new Articulo("fungiluz", "minecraft:shroomlight", 4, 50, "Halloween", "Hongoluz"),
             new Articulo("alfombra_naranja", "minecraft:orange_carpet", 16, 20, "Halloween", "Alfombras naranjas"),
             new Articulo("alfombra_negra", "minecraft:black_carpet", 16, 20, "Halloween", "Alfombras negras"),
-            new Articulo("vidrio_morado", "minecraft:purple_stained_glass", 8, 30, "Halloween", "Cristal morado"));
+            new Articulo("vidrio_morado", "minecraft:purple_stained_glass", 8, 30, "Halloween", "Cristal morado"),
+            // para construir de verdad (0.18.0): estructura, escaleras (los clientes y los michis las suben) y losas
+            new Articulo("tronco_roble", "minecraft:oak_log", 8, 26, "Estructura", "Troncos de roble"),
+            new Articulo("tronco_pelado", "minecraft:stripped_oak_log", 8, 28, "Estructura", "Troncos de roble pelados"),
+            new Articulo("tronco_abeto", "minecraft:spruce_log", 8, 26, "Estructura", "Troncos de abeto"),
+            new Articulo("piedra", "minecraft:stone", 16, 24, "Estructura", "Piedra"),
+            new Articulo("adoquin", "minecraft:cobblestone", 16, 20, "Estructura", "Adoquín"),
+            new Articulo("andesita_pulida", "minecraft:polished_andesite", 16, 30, "Estructura", "Andesita pulida"),
+            new Articulo("pizarra_ladrillos", "minecraft:deepslate_bricks", 16, 36, "Estructura", "Ladrillos de pizarra"),
+            new Articulo("barrotes", "minecraft:iron_bars", 8, 28, "Estructura", "Barrotes de hierro"),
+            new Articulo("abeto_escalera", "minecraft:spruce_stairs", 8, 24, "Escaleras", "Escaleras de abeto"),
+            new Articulo("abedul_escalera", "minecraft:birch_stairs", 8, 24, "Escaleras", "Escaleras de abedul"),
+            new Articulo("cerezo_escalera", "minecraft:cherry_stairs", 8, 30, "Escaleras", "Escaleras de cerezo"),
+            new Articulo("roble_oscuro_escalera", "minecraft:dark_oak_stairs", 8, 24, "Escaleras", "Escaleras de roble oscuro"),
+            new Articulo("ladrillo_piedra_escalera", "minecraft:stone_brick_stairs", 8, 26, "Escaleras", "Escaleras de ladrillo de piedra"),
+            new Articulo("ladrillo_escalera", "minecraft:brick_stairs", 8, 30, "Escaleras", "Escaleras de ladrillo"),
+            new Articulo("cuarzo_escalera", "minecraft:quartz_stairs", 8, 44, "Escaleras", "Escaleras de cuarzo"),
+            new Articulo("arenisca_escalera", "minecraft:sandstone_stairs", 8, 24, "Escaleras", "Escaleras de arenisca"),
+            new Articulo("abeto_losa", "minecraft:spruce_slab", 8, 18, "Losas", "Losas de abeto"),
+            new Articulo("abedul_losa", "minecraft:birch_slab", 8, 18, "Losas", "Losas de abedul"),
+            new Articulo("cerezo_losa", "minecraft:cherry_slab", 8, 22, "Losas", "Losas de cerezo"),
+            new Articulo("roble_oscuro_losa", "minecraft:dark_oak_slab", 8, 18, "Losas", "Losas de roble oscuro"),
+            new Articulo("ladrillo_piedra_losa", "minecraft:stone_brick_slab", 8, 20, "Losas", "Losas de ladrillo de piedra"),
+            new Articulo("ladrillo_losa", "minecraft:brick_slab", 8, 22, "Losas", "Losas de ladrillo"),
+            new Articulo("cuarzo_losa", "minecraft:quartz_slab", 8, 32, "Losas", "Losas de cuarzo"),
+            new Articulo("piedra_lisa_losa", "minecraft:smooth_stone_slab", 8, 20, "Losas", "Losas de piedra lisa"));
 
     /** El articulo de la tienda que corresponde a un objeto (null si no se vende: asi solo se pueden colocar cosas sin «entidad de bloque»). */
     static Articulo articuloDe(net.minecraft.item.Item it) {

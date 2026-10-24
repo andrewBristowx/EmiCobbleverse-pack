@@ -22,6 +22,7 @@ final class Datos {
         String nombre = "";
         int aspecto;
         int nivel;                   // 1 a 5 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
+        int[] puesto;                // donde descansa, elegido por el dueño con su peluche en el modo construccion: {x, y de los pies, z} relativos al local (null = automatico)
     }
 
     static final class Jugador {
@@ -35,6 +36,10 @@ final class Datos {
         java.util.Map<String, Integer> mejoras = new java.util.HashMap<>();          // nivel de cada mejora
         int mesasCap;                                                                  // cuantas mesas tenia ya asignadas (para saber cuando una mejora da mesas nuevas)
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
+        boolean libre = true;                                                          // parcela libre (desde 0.18.0): empieza vacia y se construye comprando; los cafes de antes (false) conservan su local ya hecho
+        java.util.Map<String, Integer> almacen = new java.util.LinkedHashMap<>();       // lo que el dueño tiene guardado para construir (bloques comprados, estaciones, mesas...): item -> cantidad
+        java.util.Set<String> estaciones = new java.util.LinkedHashSet<>();            // las estaciones que ya posee (nombres del enum), puestas o guardadas
+        boolean kitDado;                                                               // ya recibio el kit del principio
         java.util.Set<String> quitados = new java.util.LinkedHashSet<>();             // bloques del edificio original que el dueño ha quitado en el modo construccion («x,y,z» relativos al local)
         java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();         // lo que el dueño ha colocado en el modo construccion: «x,y,z» (relativos al local) -> estado del bloque (SNBT)
         String nombreCafe = "";                                                       // el nombre que el dueño le puso a su cafe (vacio = «CAFÉ MICHIALIEN»)
@@ -74,7 +79,13 @@ final class Datos {
     Jugador jugador(UUID id, String nombre) {
         Jugador j = jugadores.get(id);
         if (j == null) {
-            try { if (Files.exists(archivo(id))) j = GSON.fromJson(Files.readString(archivo(id), StandardCharsets.UTF_8), Jugador.class); }
+            try {
+                if (Files.exists(archivo(id))) {
+                    com.google.gson.JsonObject o = com.google.gson.JsonParser.parseString(Files.readString(archivo(id), StandardCharsets.UTF_8)).getAsJsonObject();
+                    j = GSON.fromJson(o, Jugador.class);
+                    if (j != null && !o.has("libre")) j.libre = false;            // un archivo de antes de la parcela libre: conserva su local hecho
+                }
+            }
             catch (Exception e) { EmiCafe.LOG.error("No se pudo leer los datos de {}", id, e); }
             if (j == null) j = new Jugador();
             jugadores.put(id, j);

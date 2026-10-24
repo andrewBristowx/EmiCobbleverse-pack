@@ -48,6 +48,7 @@ public final class CafeBlocks {
     private static Block placa(String id, net.minecraft.util.shape.VoxelShape forma) {
         Block b = new PlacaBlock(forma);
         Registry.register(Registries.BLOCK, Identifier.of("emi_cafe", id), b);
+        Registry.register(Registries.ITEM, Identifier.of("emi_cafe", id), new BlockItem(b, new Item.Settings()));       // desde 0.18.0 se pueden comprar, colocar y quitar
         return b;
     }
 

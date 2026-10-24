@@ -69,6 +69,7 @@ final class Cafe {
     Tutorial tut;                                         // la guia de inicio (solo mientras no se ha terminado)
     final List<Ayudante> ayudantes = new ArrayList<>();
     final Rutas rutas;                                    // caminos por la parcela esquivando lo construido
+    final Obras obras = new Obras(this);                  // construir (parcela libre, almacen, modo construccion)
     final Set<UUID> visitantes = new LinkedHashSet<>();   // gente que solo esta de visita (tambien estan en `jugadores`, pero no cocinan ni sirven)
     Evento evento = Evento.NINGUNO;                       // el suceso de la jornada de hoy
     static Item pedidoForzado;                            // solo pruebas: /cafe dev pedido <plato> hace que todos pidan eso
@@ -141,7 +142,7 @@ final class Cafe {
     /** Donde esta ahora una estacion (null si no esta en el local). */
     BlockPos posDe(Estacion e) {
         int[] q = posEstaciones().get(e);
-        return q == null ? null : Local.pos(ox, q[0], 1, q[1]);
+        return q == null ? null : Local.pos(ox, q[0], q.length > 2 ? q[2] : 1, q[1]);
     }
 
     /** Los que cocinan y sirven (sin contar a los que solo visitan). */
@@ -171,9 +172,18 @@ final class Cafe {
         EmiCafe.datos.guardar(duenio);
     }
 
+    /** Los platos que se pueden cocinar ahora: los que el dueño sabe y, en una parcela libre, cuyas estaciones estan todas puestas. */
+    List<String> idsServibles() {
+        List<String> ids = dj().platos;
+        if (!dj().libre) return ids;
+        List<String> r = new ArrayList<>();
+        for (String id : ids) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null && tieneEstaciones(pl.estaciones)) r.add(id); }
+        return r;
+    }
+
     /** El plato favorito de esa especie (entre los que el dueño sabe hacer); null si no sabe ninguno. */
     Item favoritoDe(String especie) {
-        String id = Gustos.favorito(especie, dj().platos);
+        String id = Gustos.favorito(especie, idsServibles());
         Recetas.Plato pl = id == null ? null : Recetas.Plato.de(id);
         return pl == null ? null : pl.item;
     }
@@ -181,7 +191,7 @@ final class Cafe {
     /** El plato mas caro que sabe hacer el dueño (lo que pide el critico). */
     Item pedidoCritico() {
         Recetas.Plato mejor = null;
-        for (String id : dj().platos) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null && (mejor == null || pl.precio > mejor.precio)) mejor = pl; }
+        for (String id : idsServibles()) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null && (mejor == null || pl.precio > mejor.precio)) mejor = pl; }
         return mejor == null ? CafeItems.PAPAS_FRITAS : mejor.item;
     }
 
@@ -199,10 +209,16 @@ final class Cafe {
         for (Est e : ests.values()) { Disp.quitar(e.icono); Disp.quitar(e.barra); }
         ests.clear();
         quitarAyudantes();
+        Datos.Jugador d = dj();
+        obras.cambio();
+        obras.kit();
+        obras.sincronizar();
+        boolean libre = d.libre;
         List<int[]> pos = mesasPos();
-        Local.construir(w, ox, posEstaciones(), pos, nivel(Recetas.Mejora.AMPLIAR), dj().estilo, dj().pintura, dj().nombreCafe, dj().nombre, Ciudad.hay(slot + 1));
-        for (int[] m : pos) mesas.add(new Mesa(Local.pos(ox, m[0], 1, m[1])));
+        Local.construir(w, ox, libre ? new java.util.EnumMap<>(Estacion.class) : posEstaciones(), libre ? new ArrayList<>() : pos, nivel(Recetas.Mejora.AMPLIAR), d.estilo, d.pintura, d.nombreCafe, d.nombre, Ciudad.hay(slot + 1), libre);
+        for (int[] m : pos) mesas.add(new Mesa(Local.pos(ox, m[0], m.length > 2 ? m[2] : 1, m[1])));
         aplicarDecor();
+        if (libre) { obras.actualizarRotulo(); obras.letrero(estado == Estado.ABIERTO); }
         crearPersonal();
     }
 
@@ -218,6 +234,7 @@ final class Cafe {
         if (ini == null) return;
         tut = new Tutorial(this, ini);
         ServerPlayerEntity p = jugador(duenio);
+        if (p != null && d.libre && !construyendo && estado == Estado.PREPARANDO && !obras.colocado(CafeBlocks.REGISTRADORA)) obras.entrar(p);      // parcela vacia: se empieza construyendo
         if (p != null) {
             p.sendMessage(Msg.say("GUÍA DE INICIO: arriba hay una barra que te dice qué hacer en cada momento, y verás unas chispas sobre el sitio al que ir. Se mueve con WASD y todo se hace con CLIC DERECHO. Para quitarla: /cafe tutorial saltar."), false);
             Msg.title(p, Text.literal("Guía de inicio").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), Text.literal("Sigue la barra de arriba").formatted(Formatting.YELLOW), 5, 60, 10);
@@ -229,7 +246,7 @@ final class Cafe {
         if (marcarHecha) { dj().tutorialHecho = true; EmiCafe.datos.guardar(duenio); }
     }
 
-    private void quitarAyudantes() { for (Ayudante a : ayudantes) a.quitar(); ayudantes.clear(); }
+    void quitarAyudantes() { for (Ayudante a : ayudantes) a.quitar(); ayudantes.clear(); }
 
     // ------------------------------------------------------------ el personal (Michialien contratados)
 
@@ -257,10 +274,12 @@ final class Cafe {
         int ancho = Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
         List<int[]> usadas = new ArrayList<>();
         for (int i = 0; i < d.personal.size() && i < 8; i++) {                     // cada uno descansa en una casilla libre de la cocina, separados
-            int[] c = rutas.casillaCerca(ox + Math.min(ancho - 2, 3 + 2.5 * i), 3.5, usadas, 2.0, t);
+            int[] pu = d.personal.get(i).puesto;                                   // el sitio que le puso el dueño con su peluche, o uno libre de la cocina
+            int[] c = pu != null ? rutas.casillaCerca(ox + pu[0] + 0.5, pu[2] + 0.5, Local.Y + pu[1], usadas, 0.0, t)
+                    : rutas.casillaCerca(ox + Math.min(ancho - 2, 3 + 2.5 * i), 3.5, Local.Y + 1, usadas, 2.0, t);
             if (c == null) continue;
             usadas.add(c);
-            Ayudante a = Ayudante.crear(w, d.personal.get(i), c[0] + 0.5, c[1] + 0.5);
+            Ayudante a = Ayudante.crear(w, d.personal.get(i), c[0] + 0.5, rutas.alturaCerca(c[0] + 0.5, c[1] + 0.5, pu != null ? Local.Y + pu[1] : Local.Y + 1, t), c[1] + 0.5);
             if (a != null) { a.rutas = rutas; ayudantes.add(a); }
         }
         asignarVentanillas();
@@ -269,11 +288,14 @@ final class Cafe {
     /** Cada chef tiene su ventanilla: un trozo de la barra (la encimera de la fila de la barra, o la mas cercana) donde deja el plato para que lo recoja un mesero. */
     private void asignarVentanillas() {
         List<BlockPos> libres = new ArrayList<>();
-        for (int x = ox + 1; x < ox + Local.ancho(nivel(Recetas.Mejora.AMPLIAR)); x++) for (int z = 1; z <= 12; z++) {
-            BlockPos b = new BlockPos(x, Local.Y + 1, z);
+        boolean libre = dj().libre;                                                // en una parcela libre las encimeras pueden estar en cualquier sitio y a cualquier altura
+        int xa = libre ? ox + Ciudad.X0 + 1 : ox + 1, xb = libre ? ox + Ciudad.X1 : ox + Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
+        int za = libre ? Local.Z_ATRAS + 2 : 1, zb = libre ? 15 : 12, ya = 1, yb = libre ? 8 : 1;
+        for (int x = xa; x < xb; x++) for (int z = za; z <= zb; z++) for (int y = ya; y <= yb; y++) {
+            BlockPos b = new BlockPos(x, Local.Y + y, z);
             if (w.getBlockState(b).getBlock() == CafeBlocks.ENCIMERA && !rutas.adyacentes(b, t).isEmpty()) libres.add(b);
         }
-        final double cx = ox + 8.0, cz = 6.5;
+        final double cx = libre ? ox + 8.0 : ox + 8.0, cz = libre ? 8.0 : 6.5;
         libres.sort((p, q) -> Double.compare(Math.hypot(p.getX() + 0.5 - cx, p.getZ() + 0.5 - cz), Math.hypot(q.getX() + 0.5 - cx, q.getZ() + 0.5 - cz)));
         List<BlockPos> dadas = new ArrayList<>();
         for (Ayudante a : ayudantes) {
@@ -378,13 +400,13 @@ final class Cafe {
         Datos.Jugador d = dj();
         d.nombreCafe = n;
         EmiCafe.datos.guardar(duenio);
-        Local.rotulo(w, ox, n, d.nombre);
+        if (d.libre) obras.actualizarRotulo(); else Local.rotulo(w, ox, n, d.nombre);
         p.sendMessage(Msg.say(n.isEmpty() ? "Tu café vuelve a llamarse «Café Michialien»." : "Tu café ahora se llama «" + n + "»."), false);
         return null;
     }
 
     /** ¿Estan en el cafe todas las estaciones que usa este plato? */
-    private boolean tieneEstaciones(List<Estacion> l) {
+    private boolean tieneEstaciones(java.util.Collection<Estacion> l) {
         for (Estacion e : l) if (posDe(e) == null) return false;
         return true;
     }
@@ -398,9 +420,9 @@ final class Cafe {
 
     /**
      * Añade a la tarea el camino hasta quedar pegado a ese bloque (una mesa, una estacion, la ventanilla...), mirandolo, esquivando lo construido. {@code excluir} = casillas que
-     * se prefiere no usar (donde se sienta el cliente). Devuelve el punto final {x, z}, o null si no hay camino (entonces no añade nada).
+     * se prefiere no usar (donde se sienta el cliente). Devuelve el punto final {x, z, y}, o null si no hay camino (entonces no añade nada).
      */
-    private double[] irJunto(Ayudante a, BlockPos bloque, double fx, double fz, List<int[]> excluir) {
+    private double[] irJunto(Ayudante a, BlockPos bloque, double[] desde, List<int[]> excluir) {
         List<int[]> metas = rutas.adyacentes(bloque, t);
         List<int[]> ocupadas = new ArrayList<>();                                  // las casillas donde ya esta parado otro empleado (para no ponerse encima)
         if (excluir != null) ocupadas.addAll(excluir);
@@ -411,11 +433,13 @@ final class Cafe {
             for (int[] m : metas) { boolean fuera = false; for (int[] x : excluir) if (x[0] == m[0] && x[1] == m[1]) fuera = true; if (!fuera) sin.add(m); }
             if (!sin.isEmpty()) metas = sin;
         }
-        List<double[]> cam = rutas.camino(fx, fz, metas, t);
+        List<double[]> cam = rutas.camino(desde[0], desde[1], desde[2], metas, t);
         if (cam == null || cam.isEmpty()) return null;
         a.ruta(cam, bloque.getX() + 0.5, bloque.getZ() + 0.5);
         return cam.get(cam.size() - 1);
     }
+
+    private static double[] pos(Ayudante a) { return new double[]{a.e.getX(), a.e.getZ(), a.e.getY()}; }
 
     /** La casilla donde se sienta el cliente de esa mesa (para no ponerse encima). */
     private static List<int[]> asiento(Mesa m) { return List.of(new int[]{(int) Math.floor(m.sx), (int) Math.floor(m.sz)}); }
@@ -424,8 +448,8 @@ final class Cafe {
     private void mandarACasa(Ayudante a) {
         a.limpiar();
         a.rotular("");
-        List<double[]> cam = rutas.camino(a.e.getX(), a.e.getZ(), List.of(new int[]{(int) Math.floor(a.hx), (int) Math.floor(a.hz)}), t);
-        if (cam == null) cam = List.of(new double[]{a.hx, a.hz});
+        List<double[]> cam = rutas.camino(a.e.getX(), a.e.getZ(), a.e.getY(), List.of(new int[]{(int) Math.floor(a.hx), (int) Math.floor(a.hz)}), t);
+        if (cam == null) cam = List.of(new double[]{a.hx, a.hz, a.hy});
         a.ruta(cam, a.hx, a.hz + 10);
     }
 
@@ -472,7 +496,7 @@ final class Cafe {
             double d = Math.hypot(p.e.getX() - q.e.getX(), p.e.getZ() - q.e.getZ());
             if (d < 0.5) EmiCafe.LOG.info("[personal] CHOQUE {} y {} a {} bloques ({}, {})", p.emp.nombre, q.emp.nombre, String.format("%.2f", d), String.format("%.1f", p.e.getX()), String.format("%.1f", p.e.getZ()));
         }
-        if (DEBUG) for (Ayudante a : ayudantes) if (!a.e.isRemoved() && !rutas.pisable((int) Math.floor(a.e.getX()), (int) Math.floor(a.e.getZ()), t)) EmiCafe.LOG.info("[personal] ATRAVIESA {} esta en una casilla ocupada ({}, {})", a.emp.nombre, String.format("%.1f", a.e.getX()), String.format("%.1f", a.e.getZ()));
+        if (DEBUG) for (Ayudante a : ayudantes) if (!a.e.isRemoved() && !rutas.pisable((int) Math.floor(a.e.getX()), (int) Math.floor(a.e.getZ()), a.e.getY(), t)) EmiCafe.LOG.info("[personal] ATRAVIESA {} esta en una casilla ocupada ({}, {})", a.emp.nombre, String.format("%.1f", a.e.getX()), String.format("%.1f", a.e.getZ()));
         for (Ayudante a : ayudantes) {                            // el plato que un chef dejo en su ventanilla y ya no hace falta se tira
             if (a.paseItem != null && a.paseReserva == null && !esperaPlato(a.paseMesa, a.paseItem)) { dbg(a, "tira el plato de la ventanilla (el cliente se fue)"); a.vaciarPase(); }
         }
@@ -500,7 +524,7 @@ final class Cafe {
             boolean otro = false;
             for (Ayudante b : ayudantes) if (b != a && b.mesaLava == m) otro = true;
             if (otro) continue;
-            double[] aMesa = irJunto(a, m.bloque, a.e.getX(), a.e.getZ(), null);
+            double[] aMesa = irJunto(a, m.bloque, pos(a), null);
             if (aMesa == null) { a.pasos.clear(); continue; }
             a.mesaLava = m;
             dbg(a, "va a recoger el plato sucio de la mesa " + m.bloque.toShortString());
@@ -511,7 +535,7 @@ final class Cafe {
                 dbg(a, "recogio el plato sucio, va al fregadero");
                 a.llevar(w, CafeItems.id(CafeItems.PILA_PLATOS));
                 Runnable lavado = () -> { a.llevar(w, null); platos++; a.mesaLava = null; dbg(a, "plato lavado (limpios: " + platos + ")"); };
-                double[] aFr = fr == null ? null : irJunto(a, fr, a.e.getX(), a.e.getZ(), null);
+                double[] aFr = fr == null ? null : irJunto(a, fr, pos(a), null);
                 if (aFr == null) { a.paso(a.e.getX(), a.e.getZ(), a.t(40), () -> lavando(a), lavado, Double.NaN, Double.NaN); return; }   // sin fregadero (lo lleva el dueño en la mano): lava alli mismo
                 a.paso(aFr[0], aFr[1], a.t(50), () -> lavando(a), lavado, fr.getX() + 0.5, fr.getZ() + 0.5);
             }, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
@@ -548,7 +572,7 @@ final class Cafe {
                 if (ch.paseItem == plato && ch.paseMesa == m && ch.paseReserva == null && ch.pase != null) { chef = ch; origen = ch.pase; break; }
             }
             if (origen == null) continue;
-            double[] aOrigen = irJunto(a, origen, a.e.getX(), a.e.getZ(), null);
+            double[] aOrigen = irJunto(a, origen, pos(a), null);
             if (aOrigen == null) { a.pasos.clear(); continue; }
             a.mesaServ = m;
             final Est estF = est;
@@ -571,7 +595,7 @@ final class Cafe {
                 dbg(a, "tiene el plato, va a la mesa");
                 a.llevar(w, CafeItems.id(plato));
                 a.vigente = () -> esperaPlato(m, plato);
-                double[] aMesa = irJunto(a, m.bloque, a.e.getX(), a.e.getZ(), asiento(m));
+                double[] aMesa = irJunto(a, m.bloque, pos(a), asiento(m));
                 if (aMesa == null) { dbg(a, "no encuentra camino a la mesa"); mandarACasa(a); return; }
                 a.paso(aMesa[0], aMesa[1], a.t(10), null, () -> servir(a, m, plato), m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
             }, origen.getX() + 0.5, origen.getZ() + 0.5);
@@ -609,23 +633,23 @@ final class Cafe {
             if (receta == null || receta.isEmpty() || !tieneEstaciones(receta) || mesaOcupada(m, a, true)) continue;
             Item plato = c.pedido;
             String nombrePlato = CafeItems.nombre(plato);
-            double fx = a.e.getX(), fz = a.e.getZ();
+            double[] f = pos(a);
             boolean ok = true;
             for (int k = 0; k < receta.size(); k++) {
                 Estacion es = receta.get(k);
                 boolean ultima = k == receta.size() - 1;
                 BlockPos b = posDe(es);
-                double[] fin = b == null ? null : irJunto(a, b, fx, fz, null);
+                double[] fin = b == null ? null : irJunto(a, b, f, null);
                 if (fin == null) { ok = false; break; }
                 int espera = es.tipo == Estacion.Tipo.CAJA ? 24 : es.tipo == Estacion.Tipo.EMPLATAR ? 44 : Math.max(44, Math.min(100, es.ticks / 2));
                 boolean proceso = es.tipo != Estacion.Tipo.CAJA;
                 a.paso(fin[0], fin[1], a.t(espera), () -> cocinando(a, proceso), ultima ? () -> a.llevar(w, CafeItems.id(plato)) : null, b.getX() + 0.5, b.getZ() + 0.5);   // al acabar la ultima, el plato queda en sus manos
-                fx = fin[0]; fz = fin[1];
+                f = fin;
             }
             boolean aLaVentanilla = ok && a.pase != null && hayMeseros();
             if (ok) {
                 BlockPos destino = aLaVentanilla ? a.pase : m.bloque;
-                double[] fin = irJunto(a, destino, fx, fz, aLaVentanilla ? null : asiento(m));
+                double[] fin = irJunto(a, destino, f, aLaVentanilla ? null : asiento(m));
                 if (fin == null) ok = false;
                 else {
                     // al llegar a la ultima estacion el chef coge el plato (se ve en sus manos) y va a dejarlo
@@ -695,7 +719,7 @@ final class Cafe {
     // ------------------------------------------------------------ modo construccion
 
     /** ¿Puede ir una estacion en esta casilla ({x, z} del local)? En cualquier sitio donde se pueda construir de tu parcela (con suelo debajo); la puerta y su camino se quedan libres. */
-    private boolean casillaEstacion(int x, int z) {
+    boolean casillaEstacion(int x, int z) {
         BlockPos p = Local.pos(ox, x, 1, z);
         return construible(p) && !w.getBlockState(p.down()).isAir();
     }
@@ -703,6 +727,7 @@ final class Cafe {
     /** Donde va cada estacion del cafe ahora: la que eligio el dueño, o su sitio de siempre, o la primera casilla libre si ese sitio ya esta ocupado. No incluye las que lleva en la mano. */
     Map<Estacion, int[]> posEstaciones() {
         Datos.Jugador d = dj();
+        if (d.libre) return obras.estaciones();                      // parcela libre: las que el dueño ha puesto (x, z, y del local)
         if (d.estPos == null) d.estPos = new java.util.HashMap<>();
         Set<Estacion> act = activas();
         List<Estacion> quedan = new ArrayList<>();
@@ -729,6 +754,7 @@ final class Cafe {
     /** Donde estan las mesas ({x, z} del local): las que el dueño ha movido o, si faltan, los sitios de siempre. */
     List<int[]> mesasPos() {
         Datos.Jugador d = dj();
+        if (d.libre) return obras.mesas();                           // parcela libre: las que el dueño ha puesto (x, z, y del local)
         if (d.mesasPos == null) d.mesasPos = new ArrayList<>();
         int n = numMesas();
         if (d.mesasCap < n) {                                  // se ganaron mesas con una mejora: las nuevas salen en sus sitios de siempre
@@ -746,6 +772,7 @@ final class Cafe {
 
     /** ¿Esta este bloque dentro del edificio de este cafe (paredes incluidas)? */
     boolean contiene(BlockPos pos) {
+        if (dj().libre) return enParcela(pos);
         int rx = pos.getX() - ox;
         return rx >= 0 && rx <= Local.ancho(nivel(Recetas.Mejora.AMPLIAR)) && pos.getZ() >= 0 && pos.getZ() <= 13;
     }
@@ -756,289 +783,21 @@ final class Cafe {
         return rx >= Ciudad.X0 && rx <= Ciudad.X1 && pos.getZ() >= Local.Z_ATRAS && pos.getZ() <= Local.Z_FRENTE;
     }
 
-    /**
-     * ¿Es una casilla donde se puede construir? Casi toda la parcela propia: el edificio entero (paredes, suelo y techo se pueden quitar y cambiar), el jardin de atras, los lados y la
-     * acera de delante, hasta 9 bloques de alto. No la calle ni el parque (son de todos), ni el seto y el muro de la parcela, ni la puerta y el camino que lleva a ella.
-     */
-    boolean construible(BlockPos pos) {
-        int rx = pos.getX() - ox, ry = pos.getY() - Local.Y, rz = pos.getZ();
-        if (ry < 0 || ry > 9) return false;
-        if (rx < Ciudad.X0 + 1 || rx > Ciudad.X1 - 1 || rz < Local.Z_ATRAS + 2 || rz > 15) return false;
-        if (rz >= 14 && rx >= 5 && rx <= 10) return false;                                                    // el camino de la puerta se queda libre
-        if (rz == 13 && rx >= 7 && rx <= 8 && ry >= 1 && ry <= 4) return false;                              // y la puerta
-        if (rz == 14 && rx >= 7 && rx <= 8 && ry >= 5) return false;                                          // y el letrero que hay encima
-        return true;
-    }
+    boolean construible(BlockPos pos) { return obras.construible(pos); }
 
-    private static final java.util.Set<String> PROHIBIDOS = java.util.Set.of("bedrock", "barrier", "light", "spawner", "trial_spawner", "vault", "tnt", "end_portal", "end_portal_frame", "end_gateway", "nether_portal", "reinforced_deepslate",
-            "jigsaw", "structure_void", "hopper", "dropper", "dispenser", "crafter", "observer", "target", "sculk_sensor", "calibrated_sculk_sensor", "sculk_shrieker", "lava", "water", "fire", "soul_fire", "cobweb_dummy");
-
-    /** ¿Se puede colocar este bloque en la parcela? Todo salvo lo que es peligroso o hace cosas raras: bloques de comandos y estructuras, TNT, pistones, redstone, embudos, generadores de monstruos, cofres y hornos, arena y grava (se caen al vacio), fuego y liquidos. */
-    static boolean permitido(net.minecraft.block.Block b) {
-        net.minecraft.util.Identifier id = net.minecraft.registry.Registries.BLOCK.getId(b);
-        String p = id.getPath();
-        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || b == CafeBlocks.MESA || Estacion.de(b) != null;
-        if (PROHIBIDOS.contains(p) || p.contains("command_block") || p.contains("structure") || p.contains("redstone") || p.contains("piston") || p.contains("repeater") || p.contains("comparator") || p.contains("test_")) return false;
-        if (b instanceof net.minecraft.block.FallingBlock || b instanceof net.minecraft.block.FluidBlock || b instanceof net.minecraft.block.AbstractFireBlock || b instanceof net.minecraft.block.TntBlock) return false;
-        if (b instanceof net.minecraft.block.BlockWithEntity) {                                                // con inventario o datos: solo los que son pura decoracion
-            return b instanceof net.minecraft.block.AbstractSignBlock || b instanceof net.minecraft.block.AbstractBannerBlock || b instanceof net.minecraft.block.BedBlock
-                    || b instanceof net.minecraft.block.AbstractSkullBlock || b instanceof net.minecraft.block.CampfireBlock || b instanceof net.minecraft.block.BellBlock || b instanceof net.minecraft.block.EnchantingTableBlock;
-        }
-        return true;
-    }
-
-    /** Los bloques del cafe que no se tocan con el clic normal (la caja registradora, el libro, el letrero). */
-    private static boolean protegido(net.minecraft.block.Block b) {
-        return net.minecraft.registry.Registries.BLOCK.getId(b).getNamespace().equals("emi_cafe") && b != CafeBlocks.ENCIMERA && b != CafeBlocks.MESA && Estacion.de(b) == null;
-    }
-
-    /** Que material del local es este bloque (Estilo.PARED, FRANJA, COCINA, COMEDOR o TECHO), o -1 si no es una pared, suelo o techo que se pueda cambiar. */
-    int parteEstilo(BlockPos pos) {
-        int rx = pos.getX() - ox, ry = pos.getY() - Local.Y, rz = pos.getZ();
-        int ancho = Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
-        if (rx < 0 || rx > ancho || rz < 0 || rz > 13) return -1;
-        net.minecraft.block.Block b = w.getBlockState(pos).getBlock();
-        String id = net.minecraft.registry.Registries.BLOCK.getId(b).getPath();
-        if (id.contains("stripped_oak_log") || id.equals("air")) return -1;
-        boolean borde = rx == 0 || rx == ancho || rz == 0 || rz == 13;
-        if (id.contains("glass_pane") || id.equals("iron_bars")) return ry >= 1 && ry <= 4 && borde ? Estilo.VENTANA : -1;     // las ventanas de las paredes
-        if (ry == 0) return rz <= 6 ? Estilo.COCINA : Estilo.COMEDOR;
-        if (ry == 5) return borde ? Estilo.PARED : Estilo.TECHO;
-        if (ry >= 1 && ry <= 4 && borde) return ry == 2 ? Estilo.FRANJA : Estilo.PARED;
-        return -1;
-    }
-
-    /** Pinta una parte del local (pared, franja, suelo, techo o ventanas) con el bloque que el dueño lleva en la mano (agachado + clic). Devuelve el error, o null. */
-    String pintar(ServerPlayerEntity p, int parte, net.minecraft.block.Block bloque) {
-        String id = net.minecraft.registry.Registries.BLOCK.getId(bloque).toString();
-        String path = net.minecraft.registry.Registries.BLOCK.getId(bloque).getPath();
-        String usar = id;
-        if (parte == Estilo.VENTANA) {
-            String pane = path.endsWith("glass_pane") || path.equals("iron_bars") ? id : path.endsWith("glass") && !path.equals("tinted_glass") ? id + "_pane" : null;
-            if (pane == null || !net.minecraft.registry.Registries.BLOCK.containsId(net.minecraft.util.Identifier.of(pane))) return "Las ventanas llevan cristal: usa un cristal de colores o barrotes.";
-            usar = pane;
-        } else if (!bloque.getDefaultState().isFullCube(net.minecraft.world.EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
-            return "Eso no es un bloque entero: para pintar usa bloques macizos (hormigón, madera, ladrillo, cristal...).";
-        }
-        if (bloque instanceof net.minecraft.block.BlockWithEntity || net.minecraft.registry.Registries.BLOCK.getId(bloque).getNamespace().equals("emi_cafe")) return "Ese bloque no sirve para pintar.";
-        Datos.Jugador dd = dj();
-        dd.pintura = Estilo.normalizarPintura(dd.pintura);
-        dd.pintura[parte] = usar;
-        EmiCafe.datos.guardar(duenio);
-        reconstruir();
-        p.sendMessage(Msg.say("Pintaste «" + Estilo.PARTES[parte].toLowerCase() + "» con " + bloque.getName().getString() + ". (Mano vacía + clic = volver a la lista de materiales.)"), false);
-        sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_WOOD_PLACE, 0.7f, 1.0f);
-        return null;
-    }
-
-    /** Pasa al material siguiente (o al anterior) de una parte del local, lo guarda y reconstruye. */
-    void cambiarEstilo(ServerPlayerEntity p, int parte, int delta) {
-        Datos.Jugador dd = dj();
-        dd.estilo = Estilo.normalizar(dd.estilo);
-        dd.pintura = Estilo.normalizarPintura(dd.pintura);
-        dd.pintura[parte] = null;                                               // elegir de la lista quita lo que se hubiera pintado
-        int n = Estilo.total(parte);
-        dd.estilo[parte] = ((Estilo.indice(dd.estilo, parte) + delta) % n + n) % n;
-        EmiCafe.datos.guardar(duenio);
-        reconstruir();
-        p.sendMessage(Msg.say(Estilo.PARTES[parte] + ": " + Estilo.op(dd.estilo, parte).nombre() + " (" + (Estilo.indice(dd.estilo, parte) + 1) + "/" + n + "). Agachado + clic = el anterior."), false);
-        sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_WOOD_PLACE, 0.7f, 1.3f);
-    }
-
-    private String claveDecor(BlockPos pos) { return Decor.clave(pos.getX() - ox, pos.getY() - Local.Y, pos.getZ()); }
-
-    private boolean datosSucios;                                           // hay cambios de construccion sin guardar en disco (se guardan cada 2 s y al salir del modo construccion)
-
-    private void guardarPronto() { datosSucios = true; rutas.sucia(); }
-
-    /**
-     * Vuelve a poner lo que el dueño hizo en el modo construccion (despues de reconstruir el local): primero quita lo que habia quitado del edificio y luego pone lo que coloco.
-     * Lo que ya no cabe (fuera de lo que se puede construir, encima de una estacion o de la caja registradora) se olvida.
-     */
-    void aplicarDecor() {
-        Datos.Jugador d = dj();
-        if (d.quitados == null) d.quitados = new LinkedHashSet<>();
-        for (java.util.Iterator<String> it = d.quitados.iterator(); it.hasNext(); ) {
-            String[] k = it.next().split(",");
-            BlockPos pos = new BlockPos(ox + Integer.parseInt(k[0]), Local.Y + Integer.parseInt(k[1]), Integer.parseInt(k[2]));
-            if (!construible(pos)) { it.remove(); continue; }
-            net.minecraft.block.Block ahi = w.getBlockState(pos).getBlock();
-            if (protegido(ahi) || Estacion.de(ahi) != null || ahi == CafeBlocks.MESA) continue;
-            w.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS | net.minecraft.block.Block.FORCE_STATE);
-        }
-        if (d.decor == null || d.decor.isEmpty()) return;
-        java.util.Iterator<Map.Entry<String, String>> it = d.decor.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, String> en = it.next();
-            String[] k = en.getKey().split(",");
-            net.minecraft.block.BlockState st = Decor.leer(en.getValue());
-            BlockPos pos = new BlockPos(ox + Integer.parseInt(k[0]), Local.Y + Integer.parseInt(k[1]), Integer.parseInt(k[2]));
-            if (st == null || !construible(pos)) { it.remove(); continue; }
-            net.minecraft.block.Block ahi = w.getBlockState(pos).getBlock();
-            if (protegido(ahi) || Estacion.de(ahi) != null || ahi == CafeBlocks.MESA) { it.remove(); continue; }
-            w.setBlockState(pos, st, net.minecraft.block.Block.NOTIFY_LISTENERS | net.minecraft.block.Block.FORCE_STATE);
-        }
-    }
+    /** Vuelve a poner lo que el dueño construyo (despues de reconstruir la parcela). */
+    void aplicarDecor() { obras.aplicarDecor(); }
 
     /** Entra en el modo construccion (solo el dueño, con el cafe cerrado y sin invitados). Devuelve el error, o null. */
-    String entrarConstruccion(ServerPlayerEntity p) {
-        if (!esDuenio(p)) return "Solo el dueño puede construir.";
-        if (estado != Estado.PREPARANDO) return "Cierra el café antes de construir.";
-        if (trabajadores() > 1) return "Despide primero a tus invitados: solo se construye a solas.";
-        construyendo = true;
-        estEnMano.clear();
-        manos.put(p.getUuid(), null);
-        p.getInventory().clear();
-        p.changeGameMode(net.minecraft.world.GameMode.CREATIVE);
-        rutas.sucia();
-        p.sendMessage(Msg.say("MODO CONSTRUCCIÓN LIBRE: tienes todos los bloques (menú de creativo, E) y puedes vuelar (doble salto). Clic derecho = poner un bloque; clic izquierdo = quitar cualquier bloque de tu parcela (paredes, techo, suelo, encimeras...). Las estaciones y las mesas se recogen con clic izquierdo y se ponen donde quieras con clic derecho. Se puede construir en todo tu terreno hasta 9 bloques de alto (menos la puerta y su camino, la calle y el parque). Atajos: con la MANO VACÍA y clic derecho en una pared, el techo, el suelo o una ventana pasas al material siguiente (agachado = el anterior); AGACHADO + clic con un bloque en la mano lo pinta. No se pueden poner bloques peligrosos (comandos, TNT, pistones, redstone, cofres, arena...)."), false);
-        return null;
-    }
+    String entrarConstruccion(ServerPlayerEntity p) { return obras.entrar(p); }
 
-    void salirConstruccion(ServerPlayerEntity p) {
-        if (!construyendo) return;
-        construyendo = false;
-        p.getInventory().clear();
-        p.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
-        datosSucios = false;
-        rutas.sucia();
-        if (!estEnMano.isEmpty()) { estEnMano.clear(); reconstruir(); msg(p, "Las estaciones que no pusiste vuelven a donde estaban"); }   // lo que llevabas en la mano ya no existe: vuelve a su sitio de antes
-        EmiCafe.datos.guardar(duenio);
-        sincronizarMano(p);
-        p.sendMessage(Msg.say("Terminaste de construir. Se guardó tu decoración."), false);
-    }
+    void salirConstruccion(ServerPlayerEntity p) { obras.salir(p); }
 
     /** Clic derecho del dueño en modo construccion. */
-    ActionResult clicConstruccion(ServerPlayerEntity p, net.minecraft.util.hit.BlockHitResult hit, Hand hand) {
-        if (hand != Hand.MAIN_HAND) return ActionResult.FAIL;
-        BlockPos clic = hit.getBlockPos();
-        if (!enParcela(clic)) { msg(p, "Ese terreno no es tuyo"); return ActionResult.FAIL; }
-        Estacion e = Estacion.de(w.getBlockState(clic).getBlock());
-        if (e != null && e.tipo == Estacion.Tipo.REGISTRADORA) { Menus.principal(this, p); return ActionResult.FAIL; }
-        if (w.getBlockState(clic).getBlock() == CafeBlocks.LIBRO_PARED) { Menus.libro(this, p); return ActionResult.FAIL; }
-        ItemStack st = p.getStackInHand(hand);
-        if (st.isEmpty()) {                                                          // con la mano vacia, un clic en una pared, el techo o el suelo cambia su material
-            int parte = parteEstilo(clic);
-            if (parte >= 0) cambiarEstilo(p, parte, p.isSneaking() ? -1 : 1);
-            return ActionResult.FAIL;
-        }
-        if (!(st.getItem() instanceof net.minecraft.item.BlockItem bi)) return ActionResult.FAIL;
-        if (p.isSneaking()) {                                                        // agachado + clic con un bloque en la mano: pinta la pared, el techo, el suelo o las ventanas con ese bloque
-            int parte = parteEstilo(clic);
-            if (parte >= 0) { String err = pintar(p, parte, bi.getBlock()); if (err != null) msg(p, err); p.playerScreenHandler.syncState(); return ActionResult.FAIL; }
-        }
-        Estacion estacion = Estacion.de(bi.getBlock());
-        if (estacion != null && estacion.x >= 0) return colocarEstacion(p, hit, st, estacion);
-        if (!permitido(bi.getBlock())) { msg(p, "Ese bloque no se puede poner en el café (es peligroso o raro: comandos, TNT, pistones, redstone, cofres, arena...)"); return ActionResult.FAIL; }
-        net.minecraft.item.ItemUsageContext uc = new net.minecraft.item.ItemUsageContext(p, hand, hit);
-        net.minecraft.item.ItemPlacementContext pc = new net.minecraft.item.ItemPlacementContext(uc);
-        BlockPos pos = pc.getBlockPos();
-        if (!construible(pos)) { msg(p, "Ahí no se puede construir (solo en tu terreno hasta 9 bloques de alto; no la puerta y su camino, ni la calle, el parque o el seto)"); return ActionResult.FAIL; }
-        boolean esMesa = bi.getBlock() == CafeBlocks.MESA;
-        if (esMesa && mesasPos().size() >= numMesas()) { msg(p, "No tienes más mesas: mejora el café para tener más"); return ActionResult.FAIL; }
-        Datos.Jugador d = dj();
-        if (d.quitados == null) d.quitados = new LinkedHashSet<>();
-        if (!esMesa && d.decor.size() + d.quitados.size() >= Decor.MAX_BLOQUES) { msg(p, "Has cambiado demasiados bloques (" + Decor.MAX_BLOQUES + ")"); return ActionResult.FAIL; }
-        if (!pc.canPlace()) return ActionResult.FAIL;
-        boolean creativo = p.isCreative();
-        ItemStack antes = st.copy();
-        ActionResult r = st.useOnBlock(uc);
-        if (creativo) { st.setCount(antes.getCount()); }
-        if (r.isAccepted()) {
-            net.minecraft.block.BlockState nuevo = w.getBlockState(pos);
-            if (esMesa) {
-                int rx = pos.getX() - ox, rz = pos.getZ();
-                List<int[]> mp = mesasPos();
-                if (mp.size() < numMesas()) { mp.add(new int[]{rx, rz}); mesas.add(new Mesa(pos)); }
-            } else {
-                String k = claveDecor(pos);
-                d.quitados.remove(k);
-                d.decor.put(k, Decor.guardar(nuevo));
-                // una cama, una puerta o una planta alta ocupan dos bloques: se guarda tambien el de al lado
-                for (BlockPos q : new BlockPos[]{pos.up(), pos.down(), pos.north(), pos.south(), pos.east(), pos.west()}) {
-                    net.minecraft.block.BlockState sq = w.getBlockState(q);
-                    if (sq.getBlock() == nuevo.getBlock() && !q.equals(pos) && construible(q) && !d.decor.containsKey(claveDecor(q))
-                            && (sq.getBlock() instanceof net.minecraft.block.BedBlock || sq.getBlock() instanceof net.minecraft.block.DoorBlock || sq.getBlock() instanceof net.minecraft.block.TallPlantBlock)) {
-                        d.quitados.remove(claveDecor(q));
-                        d.decor.put(claveDecor(q), Decor.guardar(sq));
-                    }
-                }
-            }
-            p.getInventory().markDirty();
-            p.playerScreenHandler.sendContentUpdates();
-            guardarPronto();
-        }
-        return ActionResult.FAIL;
-    }
+    ActionResult clicConstruccion(ServerPlayerEntity p, net.minecraft.util.hit.BlockHitResult hit, Hand hand) { return obras.clic(p, hit, hand); }
 
-    /** Pone una estacion que el dueño llevaba en la mano en una casilla libre de la cocina (sobre una encimera la sustituye). */
-    private ActionResult colocarEstacion(ServerPlayerEntity p, net.minecraft.util.hit.BlockHitResult hit, ItemStack st, Estacion e) {
-        BlockPos clic = hit.getBlockPos();
-        BlockPos t = w.getBlockState(clic).getBlock() == CafeBlocks.ENCIMERA ? clic : clic.offset(hit.getSide());
-        int rx = t.getX() - ox, ry = t.getY() - Local.Y, rz = t.getZ();
-        if (!estEnMano.contains(e)) { msg(p, e.nombre + " ya está colocada: recógela primero (clic izquierdo) para moverla"); return ActionResult.FAIL; }
-        if (ry != 1 || !casillaEstacion(rx, rz)) { msg(p, "Ahí no cabe una estación: ponla en el suelo (o sobre una encimera) de tu terreno, sin tapar la puerta"); return ActionResult.FAIL; }
-        net.minecraft.block.BlockState ahi = w.getBlockState(t);
-        if (!ahi.isAir() && ahi.getBlock() != CafeBlocks.ENCIMERA) { msg(p, "Esa casilla está ocupada"); return ActionResult.FAIL; }
-        w.setBlockState(t, e.bloque.getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
-        st.decrement(1);
-        estEnMano.remove(e);
-        dj().estPos.put(e.name(), new int[]{rx, rz});
-        sonido(t.getX() + 0.5, t.getY() + 0.5, t.getZ() + 0.5, SoundEvents.BLOCK_WOOD_PLACE, 0.8f, 1.0f);
-        p.getInventory().markDirty();
-        p.playerScreenHandler.sendContentUpdates();
-        guardarPronto();
-        return ActionResult.FAIL;
-    }
-
-    /** Clic izquierdo del dueño en modo construccion: quita lo suyo (decoracion, mesas, estaciones) o cualquier bloque del edificio y el terreno que se pueda construir. */
-    ActionResult ataqueConstruccion(ServerPlayerEntity p, BlockPos pos) {
-        net.minecraft.block.BlockState st = w.getBlockState(pos);
-        Datos.Jugador d = dj();
-        if (d.quitados == null) d.quitados = new LinkedHashSet<>();
-        if (st.isAir()) return ActionResult.FAIL;
-        if (st.getBlock() == CafeBlocks.MESA) {
-            int rx = pos.getX() - ox, rz = pos.getZ();
-            List<int[]> mp = mesasPos();
-            for (int i = 0; i < mp.size(); i++) if (mp.get(i)[0] == rx && mp.get(i)[1] == rz) {
-                mp.remove(i);
-                mesas.removeIf(m -> m.bloque.equals(pos));
-                w.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
-                devolver(p, st);
-                guardarPronto();
-                return ActionResult.FAIL;
-            }
-        }
-        Estacion es = Estacion.de(st.getBlock());
-        int rz = pos.getZ(), ry = pos.getY() - Local.Y;
-        if (es != null && es.x >= 0 && ry == 1) {                                         // una estacion: se recoge para moverla
-            if (!estEnMano.isEmpty() && estEnMano.contains(es)) return ActionResult.FAIL;
-            estEnMano.add(es);
-            Est viejo = ests.remove(pos);
-            if (viejo != null) { Disp.quitar(viejo.icono); Disp.quitar(viejo.barra); }
-            // en la fila de atras y en la de la barra el hueco queda de encimera; en cualquier otro sitio, vacio
-            w.setBlockState(pos, (rz == 1 || rz == 5 ? CafeBlocks.ENCIMERA : net.minecraft.block.Blocks.AIR).getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
-            devolver(p, st);
-            msg(p, es.nombre + " en tu mano: clic derecho en otro sitio para ponerla");
-            guardarPronto();
-            return ActionResult.FAIL;
-        }
-        if (protegido(st.getBlock()) || es != null) { msg(p, "Eso es parte del café: no se puede quitar"); return ActionResult.FAIL; }
-        if (!construible(pos)) { msg(p, "Ahí no se puede quitar (la puerta y su camino, la calle, el parque y el seto son fijos)"); return ActionResult.FAIL; }
-        String k = claveDecor(pos);
-        if (d.decor.remove(k) == null) d.quitados.add(k);                               // era del edificio de siempre: se apunta como quitado para que siga asi al reconstruir
-        w.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
-        if (!p.isCreative()) devolver(p, st);
-        guardarPronto();
-        return ActionResult.FAIL;
-    }
-
-    private void devolver(ServerPlayerEntity p, net.minecraft.block.BlockState st) {
-        ItemStack back = new ItemStack(st.getBlock().asItem());
-        if (!back.isEmpty()) p.getInventory().insertStack(back);
-        sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ITEM_PICKUP, 0.5f, 1.1f);
-        p.playerScreenHandler.sendContentUpdates();
-    }
+    /** Clic izquierdo del dueño en modo construccion. */
+    ActionResult ataqueConstruccion(ServerPlayerEntity p, BlockPos pos) { return obras.ataque(p, pos); }
 
     // ------------------------------------------------------------ mensajes a todos
 
@@ -1051,7 +810,7 @@ final class Cafe {
     /** Lo que pide un cliente de esa especie: a menudo su plato favorito, en el dia del plato casi siempre ese, y si no uno cualquiera de los que se saben. */
     Item elegirPedido(Random r, String especie) {
         if (pedidoForzado != null) return pedidoForzado;
-        List<String> ids = dj().platos;
+        List<String> ids = idsServibles();
         if (ids.isEmpty()) return CafeItems.PAPAS_FRITAS;
         if (platoDelDia != null && r.nextInt(100) < 30) return platoDelDia.item;
         Item fav = favoritoDe(especie);
@@ -1074,6 +833,15 @@ final class Cafe {
         if (construyendo) return "Termina de construir antes de abrir el café.";
         if (estado != Estado.PREPARANDO) return "El café ya está abierto.";
         if (dj().inicial == null) return "Primero elige a tu Pokémon cocinero.";
+        if (dj().libre) {
+            if (mesasPos().isEmpty()) return "Pon al menos una MESA para los clientes (modo construcción).";
+            if (idsServibles().isEmpty()) {
+                StringBuilder f = new StringBuilder();
+                Recetas.Plato pl = dj().platos.isEmpty() ? null : Recetas.Plato.de(dj().platos.get(0));
+                if (pl != null) for (Estacion es : pl.estaciones) if (posDe(es) == null) f.append(f.length() > 0 ? ", " : "").append(es.nombre);
+                return "Te faltan estaciones puestas para cocinar" + (pl == null ? "" : " " + pl.nombre()) + (f.length() > 0 ? ": " + f : "") + " (modo construcción).";
+            }
+        }
         estado = Estado.ABIERTO;
         proximoCliente = 40;
         platos = platosMax();
@@ -1085,7 +853,7 @@ final class Cafe {
             Msg.title(p, Text.literal("¡ABRIMOS!").formatted(Formatting.GOLD, Formatting.BOLD), Text.literal("Cierra desde la caja registradora cuando quieras").formatted(Formatting.YELLOW), 5, 50, 10);
             Sonidos.jugador(p, "abrir", 1.0f, 1.0f);
         });
-        Local.letrero(w, ox, true);
+        obras.letrero(true);
         aplicarEvento(ev);
         return null;
     }
@@ -1104,21 +872,6 @@ final class Cafe {
         return e;
     }
 
-    /** La decoracion de la Noche de brujas (telarañas en las esquinas, calabazas en la barra y junto a la puerta); desaparece al cerrar, cuando se reconstruye el local. */
-    private void decorarHalloween() {
-        int W = Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
-        net.minecraft.block.BlockState telarana = net.minecraft.block.Blocks.COBWEB.getDefaultState();
-        net.minecraft.block.BlockState calabaza = net.minecraft.block.Blocks.JACK_O_LANTERN.getDefaultState().with(net.minecraft.block.HorizontalFacingBlock.FACING, net.minecraft.util.math.Direction.SOUTH);
-        for (int x : new int[]{1, W - 1}) for (int z : new int[]{1, 6, 12}) ponerSiLibre(Local.pos(ox, x, 4, z), telarana);
-        for (int x = 3; x < W - 1; x += 8) ponerSiLibre(Local.pos(ox, x, 2, 6), calabaza);
-        ponerSiLibre(Local.pos(ox, 6, 1, 12), calabaza);
-        ponerSiLibre(Local.pos(ox, 9, 1, 12), calabaza);
-    }
-
-    private void ponerSiLibre(BlockPos pos, net.minecraft.block.BlockState st) {
-        if (w.getBlockState(pos).isAir()) w.setBlockState(pos, st, net.minecraft.block.Block.NOTIFY_ALL);
-    }
-
     /** Pone el suceso del dia (y lo anuncia a todos). */
     void aplicarEvento(Evento e) {
         evento = e;
@@ -1126,12 +879,11 @@ final class Cafe {
         if (e == Evento.NINGUNO) return;
         if (e == Evento.PLATO_DEL_DIA) {
             List<Recetas.Plato> sabe = new ArrayList<>();
-            for (String id : dj().platos) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null) sabe.add(pl); }
+            for (String id : idsServibles()) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null) sabe.add(pl); }
             if (sabe.isEmpty()) { evento = Evento.NINGUNO; return; }
             platoDelDia = sabe.get(rnd.nextInt(sabe.size()));
         }
         if (e == Evento.CRITICO) { criticoPendiente = true; criticoEn = 20 * 25; }
-        if (e == Evento.HALLOWEEN) decorarHalloween();
         String texto = e.nombre + (platoDelDia != null ? ": " + platoDelDia.nombre() + " (se paga el doble)" : "") + ". " + e.descripcion;
         aTodos(p -> { p.sendMessage(Msg.say("Hoy: " + texto), false); Sonidos.jugador(p, "evento", 1f, 1f); });
     }
@@ -1142,7 +894,7 @@ final class Cafe {
         estado = Estado.CERRANDO;
         cierre = 0;
         for (Cliente c : clientes) c.despedir();
-        Local.letrero(w, ox, false);
+        obras.letrero(false);
         aTodos(p -> {
             Msg.title(p, Text.literal("¡CERRAMOS!").formatted(Formatting.RED, Formatting.BOLD), Text.literal("Hasta mañana").formatted(Formatting.YELLOW), 5, 40, 10);
             Sonidos.jugador(p, "cerrar", 1.0f, 1.0f);
@@ -1188,7 +940,7 @@ final class Cafe {
             if (criticoPendiente && --criticoEn <= 0) { if (forzarCritico()) criticoPendiente = false; else criticoEn = 40; }
         }
         tickAyudantes();
-        if (datosSucios && t % 40 == 0) { datosSucios = false; EmiCafe.datos.guardar(duenio); }
+        obras.tick(t);
         tickMuestras(ps);
         if (tut != null && t % 10 == 0) { tut.tick(); if (tut.terminada()) tut = null; }
         for (int i = clientes.size() - 1; i >= 0; i--) {
@@ -1229,7 +981,7 @@ final class Cafe {
         Text mano = c == null ? Text.literal("manos vacías").formatted(Formatting.GRAY) : Text.literal(CafeItems.nombre(c)).formatted(Formatting.YELLOW);
         Text r = Text.literal("");
         if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO" + (evento != Evento.NINGUNO ? " · " + evento.nombre : "") + "   ").formatted(Formatting.GREEN, Formatting.BOLD);
-        else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — agachado + clic con un bloque = pintar · caja = terminar   ").formatted(Formatting.GOLD, Formatting.BOLD);
+        else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — clic derecho = poner · clic izquierdo = quitar · caja registradora = menú   ").formatted(Formatting.GOLD, Formatting.BOLD);
         else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
         return Text.empty().append(r).append(Text.literal("Llevas: ").formatted(Formatting.GOLD)).append(mano);       // las monedas, los platos limpios y los pedidos van en el panel del cliente
     }
@@ -1284,6 +1036,7 @@ final class Cafe {
     List<Especial> elegibles() {
         List<Especial> l = new ArrayList<>();
         Set<Estacion> act = activas();
+        if (dj().libre) { act = EnumSet.noneOf(Estacion.class); act.addAll(posEstaciones().keySet()); }
         for (Especial e : Especial.values()) if (act.containsAll(e.requiere)) l.add(e);
         return l;
     }
@@ -1310,7 +1063,7 @@ final class Cafe {
 
     /** Crea ya un visitante especial en esa mesa (tambien lo usa el comando de pruebas). */
     boolean forzarEspecial(Mesa m, Especial e) {
-        Cliente c = Cliente.crear(w, ox, m, rnd, e, false, nivelLocal(), rutas, t);
+        Cliente c = Cliente.crear(w, ox, m, rnd, e, false, nivelLocal(), rutas, t, dj().libre);
         if (c == null) return false;
         m.cliente = c;
         clientes.add(c);
@@ -1334,7 +1087,7 @@ final class Cafe {
     /** Crea ya al critico gastronomico en una mesa libre (false si no hay ninguna). */
     boolean forzarCritico() {
         for (Mesa m : mesas) if (m.libre()) {
-            Cliente c = Cliente.crear(w, ox, m, rnd, null, true, nivelLocal(), rutas, t);
+            Cliente c = Cliente.crear(w, ox, m, rnd, null, true, nivelLocal(), rutas, t, dj().libre);
             if (c == null) return false;
             m.cliente = c;
             clientes.add(c);
@@ -1355,7 +1108,7 @@ final class Cafe {
 
     /** Crea un cliente ya (tambien lo usa el comando de pruebas). false si no hay mesa libre. */
     boolean forzarCliente(Mesa m) {
-        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t);
+        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre);
         if (c == null) return false;
         m.cliente = c;
         clientes.add(c);
@@ -1612,7 +1365,7 @@ final class Cafe {
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
         if (m.plato != null) Disp.quitar(m.plato);
-        m.plato = Disp.objeto(w, CafeItems.id(carga), m.bloque.getX() + 0.5, m.bloque.getY() + 1.35, m.bloque.getZ() + 0.5, 0.5f, true);
+        m.plato = Disp.emplatado(w, CafeItems.id(carga), m.bloque.getX() + 0.5, m.bloque.getY() + 1.3, m.bloque.getZ() + 0.5, 0.6f, true);       // la comida llega emplatada
         Datos.Jugador d = dj(p);
         d.monedas += pago; d.clientes++; d.monedasTotal += pago; d.propinasTotal += propina;
         servidos++; propinas += propina; ganado += pago;
@@ -1637,6 +1390,7 @@ final class Cafe {
 
     /** Quita clientes, objetos y bloques de dibujo. */
     void cerrar() {
+        obras.quitarMarcas();
         if (construyendo) { construyendo = false; estEnMano.clear(); if (EmiCafe.datos != null) EmiCafe.datos.guardar(duenio); }
         quitarAyudantes();
         if (tut != null) { tut.quitar(); tut = null; }

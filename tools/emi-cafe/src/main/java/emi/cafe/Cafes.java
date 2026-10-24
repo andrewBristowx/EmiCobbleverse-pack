@@ -59,7 +59,8 @@ final class Cafes {
         p.clearStatusEffects();
         p.changeGameMode(GameMode.ADVENTURE);
         p.getAbilities().flying = false; p.sendAbilitiesUpdate();
-        p.teleport(c.w, c.ox + Local.SX, Local.Y + 1, Local.SZ, 180f, 0f);
+        if (c.dj().libre) p.teleport(c.w, c.ox + Local.PUERTA_X, Local.Y + 1, Local.CALLE_Z, 180f, 0f);        // parcela libre: la acera de delante siempre esta libre
+        else p.teleport(c.w, c.ox + Local.SX, Local.Y + 1, Local.SZ, 180f, 0f);
         c.sincronizarMano(p);
     }
 

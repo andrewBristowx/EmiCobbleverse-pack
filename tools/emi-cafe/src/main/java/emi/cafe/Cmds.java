@@ -201,11 +201,29 @@ final class Cmds {
                         .then(CommandManager.literal("reiniciar").executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.inicial = null; j.platos.clear(); j.mejoras.clear(); j.monedas = 0;
+                            j.libre = true; j.kitDado = false; j.almacen.clear(); j.decor.clear(); j.quitados.clear(); j.estPos.clear(); j.mesasPos.clear(); j.mesasCap = 0; j.tutorialHecho = false;      // desde 0.18.0: parcela vacia otra vez
                             EmiCafe.datos.guardar(p.getUuid());
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf != null) cf.reconstruir();
                             return null;
                         })))
+                        .then(CommandManager.literal("almacen").then(CommandManager.argument("item", com.mojang.brigadier.arguments.StringArgumentType.string()).then(CommandManager.argument("n", IntegerArgumentType.integer(-1000, 1000)).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero con /cafe entrar.";
+                            cf.obras.sumarStock(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "item"), IntegerArgumentType.getInteger(c, "n"));
+                            EmiCafe.datos.guardar(p.getUuid());
+                            if (cf.construyendo) cf.obras.llenarInventario(p);
+                            return null;
+                        })))))
+                        .then(CommandManager.literal("libre").then(CommandManager.argument("v", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(c -> con(c, p -> {      // solo pruebas: pasa tu cafe a parcela libre o al de antes
+                            Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
+                            j.libre = com.mojang.brigadier.arguments.BoolArgumentType.getBool(c, "v");
+                            EmiCafe.datos.guardar(p.getUuid());
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null) cf.reconstruir();
+                            return null;
+                        }))))
+                        .then(CommandManager.literal("poner").then(CommandManager.argument("x", IntegerArgumentType.integer(-10, 70)).then(CommandManager.argument("y", IntegerArgumentType.integer(0, 9)).then(CommandManager.argument("z", IntegerArgumentType.integer(-12, 16)).then(CommandManager.argument("bloque", com.mojang.brigadier.arguments.StringArgumentType.string()).executes(c -> ponerDev(c, null)).then(CommandManager.argument("dir", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> ponerDev(c, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "dir")))))))))
                         .then(CommandManager.literal("local").executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf == null) return "Entra primero con /cafe entrar.";
@@ -216,6 +234,19 @@ final class Cmds {
     }
 
     private interface Accion { String hacer(ServerPlayerEntity p) throws Exception; }
+
+    /** Solo pruebas: /cafe dev poner x y z bloque [norte|sur|este|oeste] (coordenadas del local; y = 1 es sobre el suelo). */
+    private static int ponerDev(com.mojang.brigadier.context.CommandContext<net.minecraft.server.command.ServerCommandSource> c, String dir) {
+        return con(c, p -> {
+            Cafe cf = Cafes.de(p.getUuid());
+            if (cf == null) return "Entra primero con /cafe entrar.";
+            net.minecraft.block.Block b = net.minecraft.registry.Registries.BLOCK.get(net.minecraft.util.Identifier.of(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "bloque")));
+            net.minecraft.block.BlockState st = b.getDefaultState();
+            if (dir != null && st.contains(net.minecraft.block.HorizontalFacingBlock.FACING))
+                st = st.with(net.minecraft.block.HorizontalFacingBlock.FACING, switch (dir) { case "norte" -> net.minecraft.util.math.Direction.NORTH; case "sur" -> net.minecraft.util.math.Direction.SOUTH; case "oeste" -> net.minecraft.util.math.Direction.WEST; default -> net.minecraft.util.math.Direction.EAST; });
+            return cf.obras.ponerDev(IntegerArgumentType.getInteger(c, "x"), IntegerArgumentType.getInteger(c, "y"), IntegerArgumentType.getInteger(c, "z"), st);
+        });
+    }
 
     private static int con(com.mojang.brigadier.context.CommandContext<ServerCommandSource> c, Accion a) {
         ServerPlayerEntity p = c.getSource().getPlayer();

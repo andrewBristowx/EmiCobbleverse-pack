@@ -20,7 +20,9 @@ import java.util.function.BiPredicate;
  */
 final class Tutorial {
     /** Un paso: lo que hay que hacer, adonde ir (null = ninguna estacion en concreto) y cuando se considera hecho. */
-    private record Paso(String texto, Estacion objetivo, BiPredicate<Cafe, ServerPlayerEntity> hecho) {}
+    private record Paso(String texto, Estacion objetivo, BiPredicate<Cafe, ServerPlayerEntity> hecho, boolean obra) {
+        Paso(String texto, Estacion objetivo, BiPredicate<Cafe, ServerPlayerEntity> hecho) { this(texto, objetivo, hecho, false); }
+    }
 
     private final Cafe c;
     private final List<Paso> pasos = new ArrayList<>();
@@ -30,6 +32,16 @@ final class Tutorial {
 
     Tutorial(Cafe c, Recetas.Inicial ini) {
         this.c = c;
+        if (c.dj().libre) {                                                           // parcela libre: primero se construye lo imprescindible
+            StringBuilder nombres = new StringBuilder();
+            List<Estacion> ests = new ArrayList<>(ini.plato.estaciones);
+            ests.add(Estacion.FREGADERO);
+            for (Estacion e : ests) nombres.append(nombres.length() > 0 ? ", " : "").append(e.nombre);
+            pasos.add(new Paso("Pon la CAJA REGISTRADORA en el suelo: elígela en tu barra (tecla E = inventario) y clic derecho", null, (cf, p) -> cf.obras.colocado(CafeBlocks.REGISTRADORA), true));
+            pasos.add(new Paso("Pon una MESA donde se sentarán los clientes (con espacio para pasar)", null, (cf, p) -> !cf.mesasPos().isEmpty(), true));
+            pasos.add(new Paso("Pon tus estaciones (están en tu inventario): " + nombres, null, (cf, p) -> { for (Estacion e : ests) if (cf.posDe(e) == null) return false; return true; }, true));
+            pasos.add(new Paso("Clic derecho en la CAJA REGISTRADORA → TERMINAR DE CONSTRUIR", null, (cf, p) -> !cf.construyendo, true));
+        }
         pasos.add(new Paso("Abre el café en la CAJA REGISTRADORA (clic derecho)", Estacion.REGISTRADORA, (cf, p) -> cf.estado == Cafe.Estado.ABIERTO));
         pasos.add(new Paso("Espera un cliente: su globo dice lo que pide", null, (cf, p) -> hayClienteEsperando(cf)));
         switch (ini) {
@@ -83,6 +95,9 @@ final class Tutorial {
         };
     }
 
+    /** El primer paso que no es de construir. */
+    private int firstServicio() { int n = 0; while (n < pasos.size() && pasos.get(n).obra()) n++; return n; }
+
     // ------------------------------------------------------------ vida de la guia
 
     boolean terminada() { return fin; }
@@ -93,7 +108,7 @@ final class Tutorial {
     void tick() {
         if (fin) return;
         ServerPlayerEntity p = c.jugador(c.duenio);
-        if (p == null || c.construyendo) { barra.clearPlayers(); return; }
+        if (p == null || (c.construyendo && !(i < pasos.size() && pasos.get(i).obra()))) { barra.clearPlayers(); return; }
         if (!barra.getPlayers().contains(p)) barra.addPlayer(p);
         while (i < pasos.size() && pasos.get(i).hecho().test(c, p)) {
             i++;
@@ -101,18 +116,23 @@ final class Tutorial {
         }
         if (i >= pasos.size()) { terminar(p); return; }
         Paso paso = pasos.get(i);
-        boolean cerrado = i >= 2 && c.estado != Cafe.Estado.ABIERTO;
+        boolean cerrado = i >= firstServicio() + 2 && c.estado != Cafe.Estado.ABIERTO;
         String texto = cerrado ? "Abre el café otra vez en la caja registradora" : paso.texto();
         barra.setName(Text.literal("Guía " + (i + 1) + "/" + pasos.size() + ": " + texto).formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
         barra.setPercent((float) i / pasos.size());
-        BlockPos objetivo = cerrado ? Local.pos(c.ox, Local.X_REGISTRADORA, 1, Local.Z_REGISTRADORA) : destino(paso);
+        BlockPos objetivo = cerrado ? registradora() : destino(paso);
         if (objetivo != null) {
             for (double dy = 1.2; dy <= 2.6; dy += 0.35) c.w.spawnParticles(p, ParticleTypes.END_ROD, true, objetivo.getX() + 0.5, objetivo.getY() + dy, objetivo.getZ() + 0.5, 1, 0.05, 0.0, 0.05, 0.0);
         }
     }
 
+    /** Donde esta la caja registradora: la de siempre, o la que el dueño ha puesto en una parcela libre (null si aun no la puso). */
+    private BlockPos registradora() {
+        return c.dj().libre ? c.obras.posRegistradora() : Local.pos(c.ox, Local.X_REGISTRADORA, 1, Local.Z_REGISTRADORA);
+    }
+
     private BlockPos destino(Paso paso) {
-        if (paso.objetivo() == Estacion.REGISTRADORA) return Local.pos(c.ox, Local.X_REGISTRADORA, 1, Local.Z_REGISTRADORA);
+        if (paso.objetivo() == Estacion.REGISTRADORA) return registradora();
         if (paso.objetivo() != null) return c.posDe(paso.objetivo());
         if (i == pasos.size() - 1) for (Cliente x : c.clientes) if (x.fase == Cliente.Fase.ESPERANDO) return x.mesa.bloque;      // el ultimo paso: la mesa del que espera
         return null;
@@ -129,5 +149,6 @@ final class Tutorial {
         Sonidos.jugador(p, "subir", 1f, 1f);
         p.sendMessage(Msg.say("¡Muy bien! Con las monedas compra platos nuevos y mejoras en la TIENDA de la caja registradora. Cuando el café esté cerrado puedes ampliarlo (más sitio, más estaciones y más platos), contratar ayudantes y decorarlo en el MODO CONSTRUCCIÓN."), false);
         p.sendMessage(Msg.say("Mira también el LIBRO DE RECETAS de la pared de la cocina (clic derecho: te enseña cada plato), las MISIONES y los LOGROS, invita a un amigo a cocinar con /cafe invitar, y visita el café de otros en la pestaña CAFÉS. Para repetir esta guía: /cafe tutorial."), false);
+        if (d.libre) p.sendMessage(Msg.say("Tu parcela es tuya: en el MODO CONSTRUCCIÓN (caja registradora) puedes levantar paredes, techo y varios pisos con escaleras (los clientes y los michis las suben solos), poner el CARTEL con el nombre de tu café pegado a una pared, el LIBRO DE RECETAS donde quieras y colocar a tus empleados donde prefieras con su peluche. Los bloques se compran en DECORAR."), false);
     }
 }

@@ -133,12 +133,13 @@ final class Local {
      * Construye la parcela entera: el local con las estaciones de {@code pos} (cada una en su {x, z}; las demas casillas de la fila quedan de encimera), las mesas de la lista {@code mesas}
      * ({x, z} de cada una) y los materiales de {@code estilo} (ver {@link Estilo}), mas la calle, el parque y el jardin (ver {@link Ciudad}). {@code haySiguiente} = ya hay un vecino a la derecha.
      */
-    static void construir(ServerWorld w, int ox, java.util.Map<Estacion, int[]> pos, java.util.List<int[]> mesas, int ampliar, int[] estilo, String[] pintura, String nombreCafe, String duenio, boolean haySiguiente) {
+    static void construir(ServerWorld w, int ox, java.util.Map<Estacion, int[]> pos, java.util.List<int[]> mesas, int ampliar, int[] estilo, String[] pintura, String nombreCafe, String duenio, boolean haySiguiente, boolean vacia) {
         final int W = ancho(ampliar);
         long t0 = System.nanoTime();
         Disp.barrerParcela(w, ox);
         for (int x = ox + Ciudad.X0; x <= ox + Ciudad.X1; x++) for (int z = Z_ATRAS; z <= Z_FRENTE; z++) for (int y = Y + 1; y <= Y + 9; y++) Obra.poner(w, x, y, z, "air");
         ciudad(w, ox, W, ox == 0, haySiguiente);
+        if (!vacia) {
         // suelo del local: damero (la cocina y el comedor pueden ser de materiales distintos)
         for (int x = 0; x <= W; x++) for (int z = 0; z <= 13; z++) {
             Obra.poner(w, ox + x, Y, z, Estilo.suelo(estilo, pintura, z <= 6 ? Estilo.COCINA : Estilo.COMEDOR, x, z));
@@ -167,16 +168,21 @@ final class Local {
         boolean segunda = false;
         for (int[] q : pos.values()) if (q[1] == 5) segunda = true;
         if (segunda) for (int x = 1; x < W; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 5, CafeBlocks.ENCIMERA);
-        for (java.util.Map.Entry<Estacion, int[]> en : pos.entrySet()) ponerBloque(w, ox, en.getValue()[0], 1, en.getValue()[1], en.getKey().bloque);
-        // la barra que separa la cocina del comedor (con un hueco para pasar) y la caja registradora en su extremo
-        for (int x = 1; x < W; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 6, CafeBlocks.ENCIMERA);
-        ponerBloque(w, ox, X_REGISTRADORA, 1, Z_REGISTRADORA, CafeBlocks.REGISTRADORA);
+        }
+        for (java.util.Map.Entry<Estacion, int[]> en : pos.entrySet()) ponerBloque(w, ox, en.getValue()[0], en.getValue().length > 2 ? en.getValue()[2] : 1, en.getValue()[1], en.getKey().bloque);
+        if (!vacia) {
+            // la barra que separa la cocina del comedor (con un hueco para pasar) y la caja registradora en su extremo
+            for (int x = 1; x < W; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 6, CafeBlocks.ENCIMERA);
+            ponerBloque(w, ox, X_REGISTRADORA, 1, Z_REGISTRADORA, CafeBlocks.REGISTRADORA);
+        }
         // las mesas
-        for (int[] m : mesas) ponerBloque(w, ox, m[0], 1, m[1], CafeBlocks.MESA);
-        // el libro de recetas en la pared del fondo de la cocina (clic = enseña cada plato)
-        ponerBloque(w, ox, X_LIBRO, Y_LIBRO, Z_LIBRO, CafeBlocks.LIBRO_PARED);
-        rotulo(w, ox, nombreCafe, duenio);
-        letrero(w, ox, false);
+        for (int[] m : mesas) ponerBloque(w, ox, m[0], m.length > 2 ? m[2] : 1, m[1], CafeBlocks.MESA);
+        if (!vacia) {
+            // el libro de recetas en la pared del fondo de la cocina (clic = enseña cada plato)
+            ponerBloque(w, ox, X_LIBRO, Y_LIBRO, Z_LIBRO, CafeBlocks.LIBRO_PARED);
+            rotulo(w, ox, nombreCafe, duenio);
+            letrero(w, ox, false);
+        }
         EmiCafe.LOG.info("Parcela del cafe construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
     }
 }
