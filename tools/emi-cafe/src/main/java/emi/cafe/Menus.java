@@ -227,7 +227,7 @@ final class Menus {
             pers.add(e);
         }
         o.add("personal", pers);
-        o.addProperty("personalMax", 8);
+        o.addProperty("personalMax", Personal.maxTotal());
         JsonArray contr = new JsonArray();                                   // a quien se puede contratar
         for (Personal.Rol rol : Personal.Rol.values()) {
             JsonObject e = new JsonObject();

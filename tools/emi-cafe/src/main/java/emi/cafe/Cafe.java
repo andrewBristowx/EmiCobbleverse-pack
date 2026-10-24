@@ -275,7 +275,7 @@ final class Cafe {
         rutas.sucia();
         int ancho = Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
         List<int[]> usadas = new ArrayList<>();
-        for (int i = 0; i < d.personal.size() && i < 8; i++) {                     // cada uno descansa en una casilla libre de la cocina, separados
+        for (int i = 0; i < d.personal.size() && i < Personal.maxTotal(); i++) {                     // cada uno descansa en una casilla libre de la cocina, separados
             int[] pu = d.personal.get(i).puesto;                                   // el sitio que le puso el dueño con su peluche, o uno libre de la cocina
             int[] c = pu != null ? rutas.casillaCerca(ox + pu[0] + 0.5, pu[2] + 0.5, Local.Y + pu[1], usadas, 0.0, t)
                     : rutas.casillaCerca(ox + Math.min(ancho - 2, 3 + 2.5 * i), 3.5, Local.Y + 1, usadas, 2.0, t);

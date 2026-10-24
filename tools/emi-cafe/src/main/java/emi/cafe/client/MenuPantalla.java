@@ -29,6 +29,24 @@ public final class MenuPantalla extends Lienzo {
     private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9, T_PLANOS = 10;
     private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL", "PLANOS"};
     private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul", "planos"};
+    // las 11 pantallas se reparten en 6 pestañas grandes; CONSTRUCCIÓN y PROGRESO llevan una fila de subpestañas debajo (desde 0.23.0)
+    private static final String[] TOP = {"CAFÉ", "RECETARIO", "PERSONAL", "CAFÉS", "CONSTRUCCIÓN", "PROGRESO"};
+    private static final int[] TOP_TAB = {T_CAFE, T_RECETARIO, T_PERSONAL, T_CAFES};
+    private static final int[][] SUBS = {{T_DECORAR, T_BAUL, T_PLANOS}, {T_TIENDA, T_MISIONES, T_LOGROS, T_ESTRELLAS}};
+    private static final String[][] SUBN = {{"DECORAR", "BAÚL", "PLANOS"}, {"MEJORAS Y PLATOS", "MISIONES", "LOGROS", "RECOMPENSAS"}};
+    private static final int TOP_W = 86, SUB_W = 124, SUBY = 20;                    // ancho de cada pestaña grande y de cada subpestaña, y lo que baja el contenido para dejarles sitio
+    private final int[] subActual = {T_DECORAR, T_TIENDA};                           // la ultima subpestaña de cada grupo
+
+    private static int grupoDe(int t) { for (int g = 0; g < SUBS.length; g++) for (int x : SUBS[g]) if (x == t) return g; return -1; }
+    private static int topDe(int t) { for (int i = 0; i < TOP_TAB.length; i++) if (TOP_TAB[i] == t) return i; int g = grupoDe(t); return g < 0 ? 0 : TOP_TAB.length + g; }
+
+    private void irATab(int t) {
+        tab = t;
+        int g = grupoDe(t);
+        if (g >= 0) subActual[g] = t;
+        enviar("refrescar", TABS_ID[t], "");
+    }
+
     private static final int FONDO = 0xFF1B1B30, BORDE = 0xFF55557A, ACTIVO = 0xFF2E2E58, SUAVE = 0xFF8888AA, MONEDA = 0xFFFFD34E, ESTRELLA = 0xFFFFE070;
 
     /** La pantalla abierta ahora (para actualizarla cuando llegan datos nuevos del servidor). */
@@ -110,7 +128,7 @@ public final class MenuPantalla extends Lienzo {
     public void cargar(String json, boolean soloDatos) {
         JsonObject o = JsonParser.parseString(json).getAsJsonObject();
         String t = o.has("tab") ? o.get("tab").getAsString() : "cafe";
-        if (!soloDatos) for (int i = 0; i < TABS_ID.length; i++) if (TABS_ID[i].equals(t)) tab = i;
+        if (!soloDatos) for (int i = 0; i < TABS_ID.length; i++) if (TABS_ID[i].equals(t)) { tab = i; int gg = grupoDe(i); if (gg >= 0) subActual[gg] = i; }
         monedas = o.get("monedas").getAsInt(); estrellas = o.get("estrellas").getAsInt(); clientes = o.get("clientes").getAsInt();
         turnos = o.get("turnos").getAsInt(); mejorTurno = o.get("mejorTurno").getAsInt(); platosLimpios = o.get("platosLimpios").getAsInt();
         duenio = o.get("duenio").getAsBoolean(); lleno = o.get("lleno").getAsBoolean();
@@ -272,14 +290,31 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Clientes: " + clientes + " · Jornadas: " + turnos + " · Mejor jornada: " + mejorTurno, 400, 26, GRIS, 0.8f);
         texto(g, "Las monedas son del café; las estrellas, de la tienda del servidor", 400, 36, LILA, 0.65f);
 
-        for (int i = 0; i < TABS.length; i++) {
-            int x = 20 + i * 47;
-            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 44, 20);
-            caja(g, x, 48, 44, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : FONDO, act ? ORO : BORDE);
-            textoCentrado(g, TABS[i], x + 22, 55, act ? ORO : BLANCO, 0.58f);
+        for (int i = 0; i < TOP.length; i++) {
+            int x = 20 + i * TOP_W;
+            boolean act = i == topDe(tab), sobre = dentro(mx, my, x, 48, TOP_W - 4, 20);
+            caja(g, x, 48, TOP_W - 4, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : FONDO, act ? ORO : BORDE);
+            textoCentrado(g, TOP[i], x + (TOP_W - 4) / 2, 55, act ? ORO : BLANCO, 0.78f);
         }
         boton(g, 546, 48, 74, 20, "SALIR", 0xFF8A3A3A, true, dentro(mx, my, 546, 48, 74, 20), 1f);
+        int gr = grupoDe(tab);
+        if (gr >= 0) {
+            for (int k = 0; k < SUBS[gr].length; k++) {
+                int x = 20 + k * (SUB_W + 4);
+                boolean act = SUBS[gr][k] == tab, sobre = dentro(mx, my, x, 70, SUB_W, 14);
+                caja(g, x, 70, SUB_W, 14, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : 0xFF14142A, act ? ORO : BORDE);
+                textoCentrado(g, SUBN[gr][k], x + SUB_W / 2, 74, act ? ORO : sobre ? BLANCO : GRIS, 0.7f);
+            }
+            var m = g.getMatrices();
+            m.push(); m.translate(0, SUBY, 0);
+            contenido(g, mx, my - SUBY);
+            m.pop();
+        } else contenido(g, mx, my);
+        dibujarTip(g, mx, my);
+        if (resumen != null) resumenCaja(g, mx, my);
+    }
 
+    private void contenido(DrawContext g, int mx, int my) {
         switch (tab) {
             case T_CAFE -> cafe(g, mx, my);
             case T_RECETARIO -> recetario(g, mx, my);
@@ -293,8 +328,6 @@ public final class MenuPantalla extends Lienzo {
             case T_PLANOS -> planosTab(g, mx, my);
             default -> logrosTab(g);
         }
-        dibujarTip(g, mx, my);
-        if (resumen != null) resumenCaja(g, mx, my);
     }
 
     // ------------------------------------------------------------ cafe
@@ -517,8 +550,10 @@ public final class MenuPantalla extends Lienzo {
             String txt = !libre ? c.bloqueo() : "CONTRATAR";
             boton(g, 400 + 220 - 86, y + 5, 80, 16, txt, 0xFF2E8B57, ok, ok && dentro(mx, my, 400 + 220 - 86, y + 5, 80, 16), 0.72f);
         }
-        texto(g, "Hasta 3 meseros, 3 chefs y 2 lavaplatos; el 2.º y el 3.º piden un local más grande.", 400, CY + 8 + 3 * 66 + 2, SUAVE, 0.62f);
-        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 10). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 14, 220, SUAVE, 0.7f);
+        StringBuilder lim = new StringBuilder("Hasta ");
+        for (int k = 0; k < contratos.size(); k++) lim.append(k > 0 ? (k == contratos.size() - 1 ? " y " : ", ") : "").append(contratos.get(k).max()).append(' ').append(contratos.get(k).nombre().toLowerCase()).append(contratos.get(k).max() == 1 ? "" : "s");
+        parrafo(g, lim + "; cada uno de más pide un local un nivel más grande.", 400, CY + 8 + 3 * 66 + 2, 232, SUAVE, 0.7f);
+        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 10). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 26, 232, SUAVE, 0.7f);
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 
@@ -869,7 +904,7 @@ public final class MenuPantalla extends Lienzo {
             int bx = x + TW - 92, bw = 86;
             boton(g, bx, y + 4, bw, 22, tope ? "AGOTADO HOY" : a.precio() + " ★", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 4, bw, 22), 0.9f);
         }
-        texto(g, "Lo que compras llega a tu correo (/correo). Las estrellas se ganan sirviendo, con misiones y con logros.", LX, 336, SUAVE, 0.75f);
+        texto(g, "Lo que compras llega a tu correo (/correo). Las estrellas se ganan sirviendo, con misiones y con logros.", LX, 326, SUAVE, 0.75f);
     }
 
     /** El articulo exclusivo (el Michialien chef): fila ancha dorada, se paga con estrellas y solo se compra una vez. */
@@ -919,15 +954,15 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Escalones que se cobran solos en estrellas al alcanzarlos.", LX + 70, CY - 6, GRIS, 0.8f);
         for (int i = 0; i < logros.size(); i++) {
             LogroC l = logros.get(i);
-            int x = LX + (i % 2) * 308, y = CY + 12 + (i / 2) * 66;
+            int x = LX + (i % 2) * 308, y = CY + 12 + (i / 2) * 48;
             boolean fin = l.nivel() >= l.max();
-            caja(g, x, y, 296, 60, FONDO, fin ? VERDE : BORDE);
-            texto(g, l.nombre(), x + 8, y + 6, fin ? VERDE : BLANCO, 1f);
-            for (int k = 0; k < l.max(); k++) g.fill(x + 150 + k * 14, y + 8, x + 160 + k * 14, y + 14, k < l.nivel() ? ORO : 0xFF2A2A44);
-            texto(g, fin ? "¡Completo!" : "+" + l.premio() + " ★", x + 240, y + 6, fin ? VERDE : ESTRELLA, 0.9f);
-            barra(g, x + 8, y + 26, 200, l.valor(), l.meta(), fin ? VERDE : 0xFF6CC8FF);
-            texto(g, Math.min(l.valor(), l.meta()) + " / " + l.meta(), x + 216, y + 25, GRIS, 0.9f);
-            texto(g, l.texto(), x + 8, y + 40, SUAVE, 0.75f);
+            caja(g, x, y, 296, 44, FONDO, fin ? VERDE : BORDE);
+            texto(g, l.nombre(), x + 8, y + 4, fin ? VERDE : BLANCO, 0.95f);
+            for (int k = 0; k < l.max(); k++) g.fill(x + 150 + k * 14, y + 6, x + 160 + k * 14, y + 12, k < l.nivel() ? ORO : 0xFF2A2A44);
+            texto(g, fin ? "¡Completo!" : "+" + l.premio() + " ★", x + 240, y + 4, fin ? VERDE : ESTRELLA, 0.85f);
+            barra(g, x + 8, y + 17, 200, l.valor(), l.meta(), fin ? VERDE : 0xFF6CC8FF);
+            texto(g, Math.min(l.valor(), l.meta()) + " / " + l.meta(), x + 216, y + 16, GRIS, 0.85f);
+            texto(g, l.texto(), x + 8, y + 31, SUAVE, 0.72f);
         }
     }
 
@@ -977,7 +1012,12 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         if (dentro(mx, my, 546, 48, 74, 20)) { enviar("salir", "", ""); return; }
-        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 47, 48, 44, 20)) { tab = i; enviar("refrescar", TABS_ID[i], ""); return; }
+        for (int i = 0; i < TOP.length; i++) if (dentro(mx, my, 20 + i * TOP_W, 48, TOP_W - 4, 20)) { irATab(i < TOP_TAB.length ? TOP_TAB[i] : subActual[i - TOP_TAB.length]); return; }
+        int gr = grupoDe(tab);
+        if (gr >= 0) {
+            for (int k = 0; k < SUBS[gr].length; k++) if (dentro(mx, my, 20 + k * (SUB_W + 4), 70, SUB_W, 14)) { irATab(SUBS[gr][k]); return; }
+            my -= SUBY;
+        }
         switch (tab) {
             case T_CAFE -> clicCafe(mx, my);
             case T_TIENDA -> clicTienda(mx, my);
