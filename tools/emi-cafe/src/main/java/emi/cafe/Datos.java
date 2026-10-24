@@ -17,6 +17,15 @@ final class Datos {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /** Un Michialien contratado: su rol, el nombre que le puso el dueño y su aspecto (indice en {@code Personal.ASPECTOS}). */
+    /** Un diseño guardado del café: lo construido (bloques, bloques quitados, lo expuesto en las vitrinas) y los materiales; los objetos no se guardan: al restaurar se cuentan. */
+    static final class Plano {
+        String nombre;
+        long fecha;
+        java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();
+        java.util.Set<String> quitados = new java.util.LinkedHashSet<>();
+        java.util.Map<String, String> vitrina = new java.util.LinkedHashMap<>();
+    }
+
     static final class Empleado {
         String rol = "";
         String nombre = "";
@@ -38,6 +47,8 @@ final class Datos {
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
         boolean libre = true;                                                          // parcela libre (desde 0.18.0): empieza vacia y se construye comprando; los cafes de antes (false) conservan su local ya hecho
         java.util.Map<String, Integer> almacen = new java.util.LinkedHashMap<>();       // lo que el dueño tiene guardado para construir (bloques comprados, estaciones, mesas...): item -> cantidad
+        java.util.Set<String> favoritos = new java.util.LinkedHashSet<>();            // objetos de la tienda DECORAR marcados con la estrella (desde 0.22.0)
+        java.util.Map<String, Plano> planos = new java.util.LinkedHashMap<>();         // diseños guardados del café (desde 0.22.0): «auto1..3» = copias automáticas, el resto los pone el dueño
         java.util.Set<String> baul = new java.util.LinkedHashSet<>();                  // objetos del almacen que el dueño ha dejado «solo en el baul»: no se copian al inventario al construir (desde 0.21.0)
         java.util.Set<String> estaciones = new java.util.LinkedHashSet<>();            // las estaciones que ya posee (nombres del enum), puestas o guardadas
         boolean kitDado;                                                               // ya recibio el kit del principio

@@ -40,6 +40,34 @@ final class Cmds {
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.ponerNombreCafe(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
                 }))))
+                .then(CommandManager.literal("deshacer").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    String err = cf.obras.deshacer(p);
+                    if (err == null) p.sendMessage(Msg.say("Deshecho."), false);
+                    return err;
+                })))
+                .then(CommandManager.literal("baul").executes(c -> con(c, p -> buscarBaul(p, ""))).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> buscarBaul(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"))))))
+                .then(CommandManager.literal("plano")
+                        .then(CommandManager.literal("guardar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            String err = cf.obras.guardarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
+                            if (err == null) { p.sendMessage(Msg.say("Plano guardado."), false); Menus.abrir(cf, p, "planos", false); }
+                            return err;
+                        }))))
+                        .then(CommandManager.literal("restaurar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            String err = cf.obras.restaurarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
+                            if (err == null) p.sendMessage(Msg.say("Plano restaurado."), false);
+                            return err;
+                        }))))
+                        .then(CommandManager.literal("borrar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            return cf.obras.borrarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
+                        })))))
                 .then(CommandManager.literal("buscar").executes(c -> con(c, p -> buscar(p, ""))).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> buscar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"))))))
                 .then(CommandManager.literal("personal").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 20)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
@@ -272,6 +300,15 @@ final class Cmds {
         if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
         Menus.vista(p).buscar(texto);
         Menus.abrir(cf, p, "decorar", false);
+        return null;
+    }
+
+    /** {@code /cafe baul <texto>}: filtra el baul por el nombre del objeto; sin texto quita el filtro. */
+    private static String buscarBaul(ServerPlayerEntity p, String texto) {
+        Cafe cf = Cafes.de(p.getUuid());
+        if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+        Menus.vista(p).baulBuscar = texto == null ? "" : texto.trim();
+        Menus.abrir(cf, p, "baul", false);
         return null;
     }
 

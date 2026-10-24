@@ -613,6 +613,7 @@ final class Obras {
         if (c.estado != Cafe.Estado.PREPARANDO) return "Cierra el café antes de construir.";
         if (c.trabajadores() > 1) return "Despide primero a tus invitados: solo se construye a solas.";
         c.construyendo = true;
+        pilaDeshacer.clear();
         c.estEnMano.clear();
         c.manos.put(p.getUuid(), null);
         c.quitarAyudantes();                                                  // los empleados no estorban mientras se construye (vuelven al terminar)
@@ -631,6 +632,8 @@ final class Obras {
     void salir(ServerPlayerEntity p) {
         if (!c.construyendo) return;
         c.construyendo = false;
+        pilaDeshacer.clear();
+        if (d().libre) guardarAuto();
         quitarMarcas();
         p.getInventory().clear();
         p.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
@@ -661,6 +664,14 @@ final class Obras {
 
     /** Clic derecho del dueño en modo construccion. */
     ActionResult clic(ServerPlayerEntity p, BlockHitResult hit, Hand hand) {
+        if (!d().libre) return clicInterno(p, hit, hand);
+        Diseno antes = tomar();
+        ActionResult r = clicInterno(p, hit, hand);
+        if (!igual(antes)) empujar(antes);
+        return r;
+    }
+
+    private ActionResult clicInterno(ServerPlayerEntity p, BlockHitResult hit, Hand hand) {
         if (hand != Hand.MAIN_HAND) return ActionResult.FAIL;
         BlockPos clic = hit.getBlockPos();
         if (!c.enParcela(clic)) { c.msg(p, "Ese terreno no es tuyo"); return ActionResult.FAIL; }
@@ -791,6 +802,14 @@ final class Obras {
 
     /** Clic izquierdo del dueño en modo construccion: quita lo suyo (y se lo devuelve al almacen) o un bloque del terreno que se pueda construir. */
     ActionResult ataque(ServerPlayerEntity p, BlockPos pos) {
+        if (!d().libre) return ataqueInterno(p, pos);
+        Diseno antes = tomar();
+        ActionResult r = ataqueInterno(p, pos);
+        if (!igual(antes)) empujar(antes);
+        return r;
+    }
+
+    private ActionResult ataqueInterno(ServerPlayerEntity p, BlockPos pos) {
         BlockState st = c.w.getBlockState(pos);
         if (st.isAir() || !c.enParcela(pos)) return ActionResult.FAIL;
         Datos.Jugador d = d();
@@ -874,6 +893,194 @@ final class Obras {
             d().decor.put(clave(pos.up()), Decor.guardar(alta));
         }
         guardarPronto();
+        return null;
+    }
+
+    // ------------------------------------------------------------ deshacer y planos (desde 0.22.0)
+
+    /** Una foto de lo construido: sirve para deshacer y para los planos. */
+    record Diseno(Map<String, String> decor, Set<String> quitados, Map<String, String> vitrina) {}
+
+    private final java.util.ArrayDeque<Diseno> pilaDeshacer = new java.util.ArrayDeque<>();
+    static final int MAX_DESHACER = 30;
+    static final int MAX_PLANOS = 6;
+
+    private Diseno tomar() {
+        Datos.Jugador d = d();
+        return new Diseno(new LinkedHashMap<>(d.decor), d.quitados == null ? new LinkedHashSet<>() : new LinkedHashSet<>(d.quitados), d.vitrina == null ? new LinkedHashMap<>() : new LinkedHashMap<>(d.vitrina));
+    }
+
+    private boolean igual(Diseno a) {
+        Datos.Jugador d = d();
+        return d.decor.equals(a.decor()) && (d.quitados == null ? a.quitados().isEmpty() : d.quitados.equals(a.quitados())) && (d.vitrina == null ? a.vitrina().isEmpty() : d.vitrina.equals(a.vitrina()));
+    }
+
+    private void empujar(Diseno antes) {
+        pilaDeshacer.push(antes);
+        while (pilaDeshacer.size() > MAX_DESHACER) pilaDeshacer.removeLast();
+    }
+
+    int deshacerDisponibles() { return pilaDeshacer.size(); }
+
+    /** Deshace lo ultimo que se puso o se quito (hasta 30 cosas atras; se olvida al terminar de construir). */
+    String deshacer(ServerPlayerEntity p) {
+        if (!c.esDuenio(p)) return "Solo el dueño construye.";
+        if (!c.construyendo) return "Solo se deshace dentro del modo construcción.";
+        if (!d().libre) return "Deshacer solo funciona en los cafés de parcela libre.";
+        if (pilaDeshacer.isEmpty()) return "No hay nada que deshacer.";
+        Diseno prev = pilaDeshacer.pop();
+        String err = reemplazar(prev, p);
+        if (err != null) { pilaDeshacer.push(prev); return err; }
+        c.sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.8f);
+        return null;
+    }
+
+    private static final Map<String, Object[]> CACHE_PIEZAS = new HashMap<>();
+
+    /** Cuantos objetos «cuesta» un bloque puesto: 0 si es la segunda mitad de algo (cama, puerta, mueble alto), 2 en una losa doble, N en velas/huevos/nieve. */
+    static int piezas(BlockState st) {
+        int n = 1;
+        boolean vanilla = Registries.BLOCK.getId(st.getBlock()).getNamespace().equals("minecraft");
+        for (net.minecraft.state.property.Property<?> pr : st.getProperties()) {
+            Object val = st.get(pr);
+            String v = val instanceof net.minecraft.util.StringIdentifiable si ? si.asString() : String.valueOf(val);
+            switch (pr.getName()) {
+                case "half" -> { if (v.equals("upper")) return 0; }
+                case "part" -> { if (v.equals("head") || v.equals("top") || v.equals("middle")) return 0; }
+                case "der" -> { if (v.equals("true")) return 0; }
+                case "type" -> { if (v.equals("double")) n = 2; }
+                case "candles", "pickles", "eggs", "layers" -> { if (vanilla && val instanceof Integer i) n = i; }
+                default -> { }
+            }
+        }
+        return n;
+    }
+
+    /** Cuantos objetos de cada tipo hay puestos en un diseño. */
+    static Map<String, Integer> contar(Map<String, String> decor) {
+        Map<String, Integer> m = new HashMap<>();
+        if (CACHE_PIEZAS.size() > 6000) CACHE_PIEZAS.clear();
+        for (String v : decor.values()) {
+            Object[] r = CACHE_PIEZAS.get(v);
+            if (r == null) {
+                BlockState st = Decor.leer(v);
+                if (st == null || st.getBlock().asItem() == net.minecraft.item.Items.AIR) r = new Object[]{"", 0};
+                else r = new Object[]{Registries.ITEM.getId(st.getBlock().asItem()).toString(), piezas(st)};
+                CACHE_PIEZAS.put(v, r);
+            }
+            if ((Integer) r[1] > 0) m.merge((String) r[0], (Integer) r[1], Integer::sum);
+        }
+        return m;
+    }
+
+    /**
+     * Cambia lo construido por otro diseño: lo que hay puesto ahora vuelve al baul y se gasta lo que pida el nuevo (si no te llega, no se hace nada y te dice lo que falta). Despues se
+     * reconstruye la parcela. Devuelve el error, o null.
+     */
+    private String reemplazar(Diseno nuevo, ServerPlayerEntity p) {
+        Datos.Jugador d = d();
+        Map<String, Integer> act = contar(d.decor), nue = contar(nuevo.decor());
+        Set<String> claves = new LinkedHashSet<>(act.keySet());
+        claves.addAll(nue.keySet());
+        StringBuilder falta = new StringBuilder();
+        for (String k : claves) {
+            int delta = act.getOrDefault(k, 0) - nue.getOrDefault(k, 0);
+            if (stock(k) + delta >= 0 || esBasico(k)) continue;                              // lo basico del cafe (caja, cartel, libro, estaciones) se repone solo al reconstruir
+            Item it = Registries.ITEM.get(Identifier.of(k));
+            falta.append(falta.length() > 0 ? ", " : "").append(-(stock(k) + delta)).append(" × ").append(it == null ? k : it.getName().getString());
+        }
+        if (falta.length() > 0) return "No te llegan los objetos para ese diseño. Te faltan: " + falta + ". Cómpralos en DECORAR.";
+        for (String k : claves) sumarStock(k, act.getOrDefault(k, 0) - nue.getOrDefault(k, 0));
+        d.decor.clear(); d.decor.putAll(nuevo.decor());
+        if (d.quitados == null) d.quitados = new LinkedHashSet<>();
+        d.quitados.clear(); d.quitados.addAll(nuevo.quitados());
+        if (d.vitrina == null) d.vitrina = new LinkedHashMap<>();
+        d.vitrina.clear(); d.vitrina.putAll(nuevo.vitrina());
+        c.reconstruir();
+        if (c.construyendo) { c.quitarAyudantes(); llenarInventario(p); }
+        guardarPronto();
+        return null;
+    }
+
+    /** La caja registradora, el cartel, el libro y las estaciones de cocina: `sincronizar` los da gratis si faltan (no las mesas, encimeras, vitrinas ni puertas, que se compran). */
+    private static boolean esBasico(String item) {
+        if (!item.startsWith("emi_cafe:")) return false;
+        Block b = Registries.BLOCK.get(Identifier.of(item));
+        if (b == CafeBlocks.REGISTRADORA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED) return true;
+        return Estacion.de(b) != null && !CafeBlocks.esMesa(b);
+    }
+
+    private static String clavePlano(String nombre) { return nombre.trim().toLowerCase(java.util.Locale.ROOT); }
+
+    private Datos.Plano fotoPlano(String nombre) {
+        Datos.Plano pl = new Datos.Plano();
+        Diseno f = tomar();
+        pl.nombre = nombre; pl.fecha = System.currentTimeMillis();
+        pl.decor = f.decor(); pl.quitados = f.quitados(); pl.vitrina = f.vitrina();
+        return pl;
+    }
+
+    /** Guarda el diseño de ahora con un nombre (si ya existe uno igual, lo sustituye). Devuelve el error, o null. */
+    String guardarPlano(ServerPlayerEntity p, String nombre) {
+        if (!c.esDuenio(p)) return "Solo el dueño guarda planos.";
+        if (!d().libre) return "Los planos solo funcionan en los cafés de parcela libre.";
+        String n = nombre == null ? "" : nombre.trim();
+        if (n.isEmpty() || n.length() > 24) return "Ponle un nombre de 1 a 24 letras.";
+        if (n.toLowerCase(java.util.Locale.ROOT).startsWith("auto")) return "Ese nombre está reservado para las copias automáticas.";
+        Datos.Jugador d = d();
+        String k = clavePlano(n);
+        if (!d.planos.containsKey(k)) {
+            long manuales = d.planos.keySet().stream().filter(x -> !x.startsWith("auto")).count();
+            if (manuales >= MAX_PLANOS) return "Ya tienes " + MAX_PLANOS + " planos: borra alguno o sobrescribe uno.";
+        }
+        d.planos.put(k, fotoPlano(n));
+        EmiCafe.datos.guardar(c.duenio);
+        return null;
+    }
+
+    /** Copia automatica (al terminar de construir y antes de restaurar un plano): se guardan las 3 ultimas distintas. */
+    void guardarAuto() {
+        Datos.Jugador d = d();
+        if (!d.libre || d.decor == null || d.decor.isEmpty()) return;
+        guardarAuto(tomar());
+    }
+
+    private void guardarAuto(Diseno f) {
+        Datos.Jugador d = d();
+        if (f.decor().isEmpty()) return;
+        Datos.Plano a1 = d.planos.get("auto1");
+        if (a1 != null && a1.decor.equals(f.decor()) && a1.quitados.equals(f.quitados())) return;
+        Datos.Plano a2 = d.planos.get("auto2");
+        if (a2 != null) d.planos.put("auto3", a2);
+        if (a1 != null) d.planos.put("auto2", a1);
+        Datos.Plano nuevo = new Datos.Plano();
+        nuevo.nombre = "Copia automática"; nuevo.fecha = System.currentTimeMillis();
+        nuevo.decor = new LinkedHashMap<>(f.decor()); nuevo.quitados = new LinkedHashSet<>(f.quitados()); nuevo.vitrina = new LinkedHashMap<>(f.vitrina());
+        d.planos.put("auto1", nuevo);
+        EmiCafe.datos.guardar(c.duenio);
+    }
+
+    /** Pone un plano guardado (solo con el cafe cerrado). Antes se hace una copia automatica del diseño de ahora. Devuelve el error, o null. */
+    String restaurarPlano(ServerPlayerEntity p, String clave) {
+        if (!c.esDuenio(p)) return "Solo el dueño restaura planos.";
+        if (!d().libre) return "Los planos solo funcionan en los cafés de parcela libre.";
+        if (c.estado != Cafe.Estado.PREPARANDO) return "Cierra el café antes de restaurar un plano.";
+        if (c.trabajadores() > 1) return "Despide primero a tus invitados.";
+        Datos.Plano pl = d().planos.get(clavePlano(clave));
+        if (pl == null) return "Ese plano no existe.";
+        Diseno nuevo = new Diseno(new LinkedHashMap<>(pl.decor), new LinkedHashSet<>(pl.quitados), new LinkedHashMap<>(pl.vitrina));
+        Diseno ahora = tomar();
+        String err = reemplazar(nuevo, p);
+        if (err != null) return err;
+        guardarAuto(ahora);                                                       // la copia de lo de antes (si no es igual a la ultima)
+        pilaDeshacer.clear();
+        return null;
+    }
+
+    String borrarPlano(ServerPlayerEntity p, String clave) {
+        if (!c.esDuenio(p)) return "Solo el dueño borra planos.";
+        if (d().planos.remove(clavePlano(clave)) == null) return "Ese plano no existe.";
+        EmiCafe.datos.guardar(c.duenio);
         return null;
     }
 

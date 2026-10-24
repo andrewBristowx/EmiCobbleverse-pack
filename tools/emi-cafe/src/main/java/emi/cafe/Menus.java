@@ -118,6 +118,7 @@ final class Menus {
         o.addProperty("construyendo", c.construyendo);
         o.addProperty("mesasUsadas", c.mesasPos().size()); o.addProperty("mesasMax", c.numMesas());
         Decor.Vista vista = vista(p);
+        vista.ponerFavoritos(dd.favoritos);
         java.util.List<Decor.Articulo> lista = vista.lista();
         JsonArray deco = new JsonArray();
         for (int i = vista.pag * Decor.POR_PAG; i < Math.min(lista.size(), (vista.pag + 1) * Decor.POR_PAG); i++) {
@@ -125,6 +126,7 @@ final class Menus {
             JsonObject e = new JsonObject();
             e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("cantidad", a.cantidad());
             e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("tienes", c.obras.stock(a.item()));
+            e.addProperty("fav", dd.favoritos.contains(a.item()));
             deco.add(e);
         }
         o.add("deco", deco);
@@ -136,14 +138,28 @@ final class Menus {
         o.add("decoFuentes", fs); o.add("decoGrupos", gs);
         o.addProperty("decoFuente", vista.fuente); o.addProperty("decoGrupo", vista.grupo);
         o.addProperty("decoPag", vista.pag); o.addProperty("decoPags", vista.paginas());
-        o.addProperty("decoTotal", lista.size()); o.addProperty("decoBuscar", vista.buscar);
-        JsonArray baul = new JsonArray();                                      // el baul: todo lo que tiene guardado el dueño (desde 0.21.0)
+        o.addProperty("decoTotal", lista.size()); o.addProperty("decoBuscar", vista.buscar); o.addProperty("decoFav", vista.verFav); o.addProperty("nFav", dd.favoritos.size());
+        JsonArray baul = new JsonArray();                                      // el baul: todo lo que tiene guardado el dueño (desde 0.21.0), con filtro por fuente y busqueda (0.22.0)
+        JsonArray bfs = new JsonArray();
+        bfs.add("Todo");
+        int bTotal = 0;
         if (duenio) {
             java.util.List<String> claves = new java.util.ArrayList<>(dd.almacen.keySet());
             claves.sort((x, y) -> Integer.compare(Obras.prioridad(x), Obras.prioridad(y)));
+            java.util.List<String> fuentesBaul = new java.util.ArrayList<>();
+            for (String k : claves) if (dd.almacen.get(k) > 0) { String f = fuenteDe(k); if (!fuentesBaul.contains(f)) fuentesBaul.add(f); }
+            for (String f : fuentesBaul) bfs.add(f);
+            vista.baulFuente = Math.max(0, Math.min(fuentesBaul.size(), vista.baulFuente));
+            String filtro = vista.baulFuente == 0 ? null : fuentesBaul.get(vista.baulFuente - 1);
+            String[] toks = vista.baulBuscar.isEmpty() ? new String[0] : vista.baulBuscar.toLowerCase(java.util.Locale.ROOT).split("\\s+");
             for (String k : claves) {
                 int n = dd.almacen.get(k);
-                if (n <= 0 || baul.size() >= 600) continue;
+                if (n <= 0) continue;
+                bTotal++;
+                if (filtro != null && !filtro.equals(fuenteDe(k))) continue;
+                boolean ok = true;
+                for (String t : toks) if (!k.toLowerCase(java.util.Locale.ROOT).contains(t)) { ok = false; break; }
+                if (!ok || baul.size() >= 600) continue;
                 JsonObject e = new JsonObject();
                 e.addProperty("item", k); e.addProperty("n", n);
                 e.addProperty("fuera", dd.baul != null && dd.baul.contains(k));
@@ -152,6 +168,29 @@ final class Menus {
             }
         }
         o.add("baul", baul);
+        o.add("baulFuentes", bfs);
+        o.addProperty("baulFuente", vista.baulFuente); o.addProperty("baulBuscar", vista.baulBuscar); o.addProperty("baulTotal", bTotal);
+        o.addProperty("deshacer", c.obras.deshacerDisponibles());
+        JsonArray planos = new JsonArray();                                    // los planos guardados (0.22.0)
+        if (duenio && dd.libre) {
+            java.util.List<java.util.Map.Entry<String, Datos.Plano>> ps = new java.util.ArrayList<>(dd.planos.entrySet());
+            ps.sort((x, y) -> {
+                boolean ax = x.getKey().startsWith("auto"), ay = y.getKey().startsWith("auto");
+                if (ax != ay) return ax ? 1 : -1;
+                return ax ? x.getKey().compareTo(y.getKey()) : Long.compare(y.getValue().fecha, x.getValue().fecha);
+            });
+            java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm");
+            for (var en : ps) {
+                JsonObject e = new JsonObject();
+                e.addProperty("clave", en.getKey()); e.addProperty("nombre", en.getValue().nombre);
+                e.addProperty("auto", en.getKey().startsWith("auto"));
+                e.addProperty("fecha", java.time.Instant.ofEpochMilli(en.getValue().fecha).atZone(ZoneId.systemDefault()).format(fmt));
+                e.addProperty("bloques", en.getValue().decor.size());
+                planos.add(e);
+            }
+        }
+        o.add("planos", planos);
+        o.addProperty("planosMax", Obras.MAX_PLANOS);
         o.addProperty("libre", dd.libre);
         StringBuilder guardado = new StringBuilder();                          // lo del cafe que se tiene guardado para poner (caja registradora, estaciones, cartel...)
         for (java.util.Map.Entry<String, Integer> g : dd.almacen.entrySet()) {
@@ -406,7 +445,14 @@ final class Menus {
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
-                case "decoMover" -> { vista(p).mover(a.a(), parseIdx(a.b())); actualizar(c, p); }
+                case "decoFav" -> { if (duenio) { Datos.Jugador dj = c.dj(); if (!dj.favoritos.remove(a.a())) { if (Decor.articulo(a.a()) != null && dj.favoritos.size() < 300) dj.favoritos.add(a.a()); } EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }
+                case "baulFiltro" -> { Decor.Vista v = vista(p); v.baulFuente = Math.max(0, v.baulFuente + parseIdx(a.a())); actualizar(c, p); }
+                case "baulBuscar" -> { vista(p).baulBuscar = a.a().trim(); actualizar(c, p); }
+                case "deshacer" -> { String err = duenio ? c.obras.deshacer(p) : "Solo el dueño construye."; if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else p.sendMessage(Msg.say("Deshecho."), false); actualizar(c, p); }
+                case "planoRestaurar" -> { String err = c.obras.restaurarPlano(p, a.a()); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else { p.sendMessage(Msg.say("Plano restaurado. Lo que tenías antes quedó en una copia automática."), false); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.2f); } actualizar(c, p); }
+                case "planoSobrescribir" -> { Datos.Plano pl = c.dj().planos.get(a.a().toLowerCase(java.util.Locale.ROOT)); String err = pl == null || a.a().startsWith("auto") ? "Ese plano no se puede sobrescribir." : c.obras.guardarPlano(p, pl.nombre); if (err != null) p.sendMessage(Msg.err(err), false); else p.sendMessage(Msg.say("Plano «" + pl.nombre + "» actualizado con el diseño de ahora."), false); actualizar(c, p); }
+                case "planoBorrar" -> { String err = c.obras.borrarPlano(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "decoMover" -> { Decor.Vista v = vista(p); v.ponerFavoritos(c.dj().favoritos); v.mover(a.a(), parseIdx(a.b())); actualizar(c, p); }
                 case "decoBuscar" -> { vista(p).buscar(a.a()); actualizar(c, p); }
                 case "baulSacar" -> { if (duenio) { String err = c.obras.sacarDelBaul(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); } actualizar(c, p); }
                 case "baulGuardar" -> { if (duenio) { String err = c.obras.guardarEnBaul(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); } actualizar(c, p); }
@@ -439,6 +485,15 @@ final class Menus {
         } catch (Throwable t) {
             EmiCafe.LOG.error("Error en una accion del menu del cafe", t);
         }
+    }
+
+    /** De donde viene un objeto del baul, para el filtro: Café, Minecraft o el nombre del mod. */
+    static String fuenteDe(String item) {
+        int i = item.indexOf(':');
+        String ns = i < 0 ? "minecraft" : item.substring(0, i);
+        if (ns.equals("emi_cafe")) return "Café";
+        if (ns.equals("minecraft")) return "Minecraft";
+        return Decor.MODS.getOrDefault(ns, ns);
     }
 
     private static int parseIdx(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return -1; } }

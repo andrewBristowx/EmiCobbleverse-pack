@@ -382,11 +382,22 @@ final class Decor {
     static final class Vista {
         int fuente, grupo, pag;
         String buscar = "";
+        boolean verFav;                                   // la lista de favoritos (las estrellas) en vez de una fuente
         List<Articulo> resultados = List.of();
+        List<Articulo> favs = List.of();                  // los favoritos del dueño, puestos por Menus antes de usar la vista
+        int baulFuente;                                   // filtro del baul: 0 = todo, 1.. = una fuente (ver Menus)
+        String baulBuscar = "";
+
+        void ponerFavoritos(java.util.Collection<String> ids) {
+            List<Articulo> r = new java.util.ArrayList<>();
+            for (String id : ids) { Articulo a = articulo(id); if (a != null) r.add(a); }
+            favs = r;
+        }
 
         List<Articulo> lista() {
             List<Fuente> fs = fuentes();
             if (!buscar.isEmpty()) return resultados;
+            if (verFav) return favs;
             fuente = Math.max(0, Math.min(fs.size() - 1, fuente));
             Fuente f = fs.get(fuente);
             grupo = Math.max(0, Math.min(f.grupos().size() - 1, grupo));
@@ -398,6 +409,7 @@ final class Decor {
         void buscar(String texto) {
             buscar = texto == null ? "" : texto.trim();
             pag = 0;
+            if (!buscar.isEmpty()) verFav = false;
             if (buscar.isEmpty()) { resultados = List.of(); return; }
             fuentes();
             String[] toks = sinAcentos(buscar).split("\\s+");
@@ -416,8 +428,9 @@ final class Decor {
             List<Fuente> fs = fuentes();
             switch (que) {
                 case "pag" -> pag = Math.max(0, Math.min(paginas() - 1, pag + delta));
-                case "fuente" -> { buscar = ""; resultados = List.of(); fuente = Math.floorMod(fuente + delta, fs.size()); grupo = 0; pag = 0; }
-                case "grupo" -> { buscar = ""; resultados = List.of(); int n = fs.get(Math.max(0, Math.min(fs.size() - 1, fuente))).grupos().size(); grupo = Math.floorMod(grupo + delta, n); pag = 0; }
+                case "fav" -> { verFav = !verFav; buscar = ""; resultados = List.of(); pag = 0; }
+                case "fuente" -> { verFav = false; buscar = ""; resultados = List.of(); fuente = Math.floorMod(fuente + delta, fs.size()); grupo = 0; pag = 0; }
+                case "grupo" -> { verFav = false; buscar = ""; resultados = List.of(); int n = fs.get(Math.max(0, Math.min(fs.size() - 1, fuente))).grupos().size(); grupo = Math.floorMod(grupo + delta, n); pag = 0; }
                 default -> { }
             }
             pag = Math.min(pag, paginas() - 1);

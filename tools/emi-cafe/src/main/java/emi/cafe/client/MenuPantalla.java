@@ -26,16 +26,17 @@ import java.util.Map;
  */
 @Environment(EnvType.CLIENT)
 public final class MenuPantalla extends Lienzo {
-    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9;
-    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL"};
-    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul"};
+    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9, T_PLANOS = 10;
+    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL", "PLANOS"};
+    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul", "planos"};
     private static final int FONDO = 0xFF1B1B30, BORDE = 0xFF55557A, ACTIVO = 0xFF2E2E58, SUAVE = 0xFF8888AA, MONEDA = 0xFFFFD34E, ESTRELLA = 0xFFFFE070;
 
     /** La pantalla abierta ahora (para actualizarla cuando llegan datos nuevos del servidor). */
     public static MenuPantalla abierta;
 
     // ------------------------------------------------------------ datos
-    private record DecoC(String id, String item, String nombre, int cantidad, int precio, String grupo, int tienes) {}
+    private record DecoC(String id, String item, String nombre, int cantidad, int precio, String grupo, int tienes, boolean fav) {}
+    private record PlanoC(String clave, String nombre, boolean auto, String fecha, int bloques) {}
     private record BaulC(String item, int n, boolean fuera, int mano) {}
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
     private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi, int nivelLocal, String bloqueo) {}
@@ -60,6 +61,13 @@ public final class MenuPantalla extends Lienzo {
     private String decoBuscar = "";
     private final List<BaulC> baul = new ArrayList<>();
     private int pagBaul;
+    private boolean decoFav;                                                  // se ve la lista de favoritos
+    private int nFav, baulFuente, baulTotal, deshacerN, planosMax = 6;
+    private String baulBuscar = "";
+    private final List<String> baulFuentes = new ArrayList<>();
+    private final List<PlanoC> planos = new ArrayList<>();
+    private String confirmaBorrar = "";                                       // clave del plano que se va a borrar (segundo clic para confirmar)
+    private String tipItem = "", tipNombre = "", tipExtra = "";               // el objeto sobre el que esta el raton (vista ampliada)
     private boolean construyendo;
     private boolean libre;                                                      // parcela libre (desde 0.18.0): se construye comprando, sin materiales que cambiar
     private String guardado = "";                                           // lo del cafe que tiene guardado para poner
@@ -118,13 +126,21 @@ public final class MenuPantalla extends Lienzo {
         construyendo = o.has("construyendo") && o.get("construyendo").getAsBoolean();
         mesasUsadas = o.has("mesasUsadas") ? o.get("mesasUsadas").getAsInt() : 0; mesasMax = o.has("mesasMax") ? o.get("mesasMax").getAsInt() : 0;
         deco.clear();
-        if (o.has("deco")) for (JsonElement e : o.getAsJsonArray("deco")) { JsonObject j = e.getAsJsonObject(); deco.add(new DecoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("cantidad").getAsInt(), j.get("precio").getAsInt(), s(j, "grupo"), j.has("tienes") ? j.get("tienes").getAsInt() : 0)); }
+        if (o.has("deco")) for (JsonElement e : o.getAsJsonArray("deco")) { JsonObject j = e.getAsJsonObject(); deco.add(new DecoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("cantidad").getAsInt(), j.get("precio").getAsInt(), s(j, "grupo"), j.has("tienes") ? j.get("tienes").getAsInt() : 0, j.has("fav") && j.get("fav").getAsBoolean())); }
         decoFuentes.clear(); decoGrupos.clear();
         if (o.has("decoFuentes")) for (JsonElement e : o.getAsJsonArray("decoFuentes")) decoFuentes.add(e.getAsString());
         if (o.has("decoGrupos")) for (JsonElement e : o.getAsJsonArray("decoGrupos")) decoGrupos.add(e.getAsString());
         decoFuente = o.has("decoFuente") ? o.get("decoFuente").getAsInt() : 0; decoGrupo = o.has("decoGrupo") ? o.get("decoGrupo").getAsInt() : 0;
         decoPag = o.has("decoPag") ? o.get("decoPag").getAsInt() : 0; decoPags = o.has("decoPags") ? o.get("decoPags").getAsInt() : 1;
         decoTotal = o.has("decoTotal") ? o.get("decoTotal").getAsInt() : deco.size(); decoBuscar = o.has("decoBuscar") ? o.get("decoBuscar").getAsString() : "";
+        decoFav = o.has("decoFav") && o.get("decoFav").getAsBoolean(); nFav = o.has("nFav") ? o.get("nFav").getAsInt() : 0;
+        baulFuentes.clear();
+        if (o.has("baulFuentes")) for (JsonElement e : o.getAsJsonArray("baulFuentes")) baulFuentes.add(e.getAsString());
+        baulFuente = o.has("baulFuente") ? o.get("baulFuente").getAsInt() : 0; baulBuscar = o.has("baulBuscar") ? o.get("baulBuscar").getAsString() : "";
+        baulTotal = o.has("baulTotal") ? o.get("baulTotal").getAsInt() : 0; deshacerN = o.has("deshacer") ? o.get("deshacer").getAsInt() : 0;
+        planos.clear();
+        if (o.has("planos")) for (JsonElement e : o.getAsJsonArray("planos")) { JsonObject j = e.getAsJsonObject(); planos.add(new PlanoC(s(j, "clave"), s(j, "nombre"), j.get("auto").getAsBoolean(), s(j, "fecha"), j.get("bloques").getAsInt())); }
+        planosMax = o.has("planosMax") ? o.get("planosMax").getAsInt() : 6;
         baul.clear();
         if (o.has("baul")) for (JsonElement e : o.getAsJsonArray("baul")) { JsonObject j = e.getAsJsonObject(); baul.add(new BaulC(s(j, "item"), j.get("n").getAsInt(), j.get("fuera").getAsBoolean(), j.get("mano").getAsInt())); }
         libre = o.has("libre") && o.get("libre").getAsBoolean();
@@ -224,12 +240,29 @@ public final class MenuPantalla extends Lienzo {
 
     private boolean abierto() { return estado.equals("abierto"); }
 
+    private void ponerTip(String item, String nombre, String extra) { tipItem = item; tipNombre = nombre; tipExtra = extra; }
+
+    /** La vista ampliada del objeto sobre el que esta el raton (se dibuja encima de todo). */
+    private void dibujarTip(DrawContext g, int mx, int my) {
+        if (tipItem.isEmpty()) return;
+        int w = 150, h = 108;
+        int x = Math.min(mx + 10, 640 - w - 4), y = Math.min(my + 10, 360 - h - 4);
+        var m = g.getMatrices();
+        m.push(); m.translate(0, 0, 450);                                    // por encima de todo lo demas (los textos de debajo no se ven a traves)
+        caja(g, x, y, w, h, 0xFF101022, ORO);
+        objeto(g, tipItem, x + (w - 64) / 2, y + 6, 4f);
+        textoCentrado(g, recortar(tipNombre, 30), x + w / 2, y + 74, BLANCO, 0.85f);
+        textoCentrado(g, recortar(tipExtra, 38), x + w / 2, y + 90, SUAVE, 0.6f);
+        m.pop();
+    }
+
     // ------------------------------------------------------------ dibujo
 
     private static final int LX = 20, LW = 226, RX = 258, RW = 362, CY = 78;
 
     @Override
     protected void dibujar(DrawContext g, int mx, int my, float delta) {
+        tipItem = "";
         long ahora = System.currentTimeMillis();
         if (ahora - ultimoRefresco > 1500) { ultimoRefresco = ahora; enviar("refrescar", TABS_ID[tab], ""); }
         String titulo = nombreCafe.isEmpty() ? "CAFÉ MICHIALIEN" : nombreCafe.toUpperCase();
@@ -240,10 +273,10 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Las monedas son del café; las estrellas, de la tienda del servidor", 400, 36, LILA, 0.65f);
 
         for (int i = 0; i < TABS.length; i++) {
-            int x = 20 + i * 52;
-            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 49, 20);
-            caja(g, x, 48, 49, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : FONDO, act ? ORO : BORDE);
-            textoCentrado(g, TABS[i], x + 24, 55, act ? ORO : BLANCO, 0.64f);
+            int x = 20 + i * 47;
+            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 44, 20);
+            caja(g, x, 48, 44, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : FONDO, act ? ORO : BORDE);
+            textoCentrado(g, TABS[i], x + 22, 55, act ? ORO : BLANCO, 0.58f);
         }
         boton(g, 546, 48, 74, 20, "SALIR", 0xFF8A3A3A, true, dentro(mx, my, 546, 48, 74, 20), 1f);
 
@@ -257,8 +290,10 @@ public final class MenuPantalla extends Lienzo {
             case T_CAFES -> cafesTab(g, mx, my);
             case T_PERSONAL -> personalTab(g, mx, my);
             case T_BAUL -> baulTab(g, mx, my);
+            case T_PLANOS -> planosTab(g, mx, my);
             default -> logrosTab(g);
         }
+        dibujarTip(g, mx, my);
         if (resumen != null) resumenCaja(g, mx, my);
     }
 
@@ -300,6 +335,7 @@ public final class MenuPantalla extends Lienzo {
             texto(g, "Mesas: " + mesasUsadas + "/" + mesasMax + " colocadas", LX, CY + 82, BLANCO, 0.9f);
             boton(g, LX, CY + 100, LW, 28, "IR A DECORAR (tienda)", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 100, LW, 28), 1f);
             boton(g, LX, CY + 134, LW, 28, "TERMINAR DE CONSTRUIR", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 134, LW, 28), 1f);
+            if (libre) boton(g, LX, CY + 166, LW, 24, deshacerN > 0 ? "↶ DESHACER (" + deshacerN + ")" : "↶ DESHACER", 0xFFB08A20, deshacerN > 0, deshacerN > 0 && dentro(mx, my, LX, CY + 166, LW, 24), 0.9f);
         } else switch (estado) {
             case "abierto" -> {
                 texto(g, "CAFÉ ABIERTO", LX, CY - 7, VERDE, 1.1f);
@@ -626,7 +662,7 @@ public final class MenuPantalla extends Lienzo {
         return 0;
     }
 
-    private static final int SEL_F = LX, SEL_FW = 236, SEL_G = LX + 244, SEL_GW = 262, BUSCAR_X = LX + 514, PAG_DX = LX + 500;
+    private static final int SEL_F = LX, SEL_FW = 196, SEL_G = LX + 202, SEL_GW = 216, BUSCAR_X = LX + 424, BUSCAR_W = 82, FAV_X = LX + 512, FAV_W = 88, PAG_DX = LX + 500;
 
     private void decorar(DrawContext g, int mx, int my) {
         texto(g, "DECORAR", LX, CY - 8, ORO, 1.2f);
@@ -645,13 +681,14 @@ public final class MenuPantalla extends Lienzo {
         if (decoBuscar.isEmpty()) {
             selector(g, mx, my, SEL_F, CY + 6, SEL_FW, decoFuente < decoFuentes.size() ? decoFuentes.get(decoFuente) : "");
             selector(g, mx, my, SEL_G, CY + 6, SEL_GW, decoGrupo < decoGrupos.size() ? decoGrupos.get(decoGrupo) : "");
-            boton(g, BUSCAR_X, CY + 6, 86, 16, "BUSCAR…", 0xFF3A7A5A, true, dentro(mx, my, BUSCAR_X, CY + 6, 86, 16), 0.85f);
+            boton(g, BUSCAR_X, CY + 6, BUSCAR_W, 16, "BUSCAR…", 0xFF3A7A5A, true, dentro(mx, my, BUSCAR_X, CY + 6, BUSCAR_W, 16), 0.85f);
+            boton(g, FAV_X, CY + 6, FAV_W, 16, decoFav ? "★ VOLVER" : "★ FAVORITOS (" + nFav + ")", decoFav ? 0xFF8A3A3A : 0xFFB08A20, true, dentro(mx, my, FAV_X, CY + 6, FAV_W, 16), 0.72f);
         } else {
             texto(g, "Búsqueda: «" + recortar(decoBuscar, 40) + "» · " + decoTotal + " resultados" + (decoTotal >= 600 ? " (los primeros)" : ""), LX, CY + 10, BLANCO, 0.85f);
-            boton(g, BUSCAR_X - 90, CY + 6, 86, 16, "BUSCAR OTRA…", 0xFF3A7A5A, true, dentro(mx, my, BUSCAR_X - 90, CY + 6, 86, 16), 0.8f);
-            boton(g, BUSCAR_X, CY + 6, 86, 16, "VOLVER", 0xFF8A3A3A, true, dentro(mx, my, BUSCAR_X, CY + 6, 86, 16), 0.85f);
+            boton(g, BUSCAR_X, CY + 6, BUSCAR_W + 2, 16, "BUSCAR OTRA…", 0xFF3A7A5A, true, dentro(mx, my, BUSCAR_X, CY + 6, BUSCAR_W + 2, 16), 0.8f);
+            boton(g, FAV_X, CY + 6, FAV_W, 16, "VOLVER", 0xFF8A3A3A, true, dentro(mx, my, FAV_X, CY + 6, FAV_W, 16), 0.85f);
         }
-        if (deco.isEmpty()) parrafo(g, decoBuscar.isEmpty() ? "No hay nada en este grupo." : "No hay nada con ese nombre. Prueba con el nombre en inglés (por ejemplo «chair», «lamp», «sofa», «oak table»).", LX, DY + 10, 400, GRIS, 0.9f);
+        if (deco.isEmpty()) parrafo(g, decoFav && decoBuscar.isEmpty() ? "Aún no tienes favoritos: pulsa la estrella ☆ de cualquier artículo para guardarlo aquí." : decoBuscar.isEmpty() ? "No hay nada en este grupo." : "No hay nada con ese nombre. Prueba con el nombre en inglés (por ejemplo «chair», «lamp», «sofa», «oak table»).", LX, DY + 10, 400, GRIS, 0.9f);
         for (int n = 0; n < deco.size() && n < DPOR_PAG; n++) {
             DecoC a = deco.get(n);
             int x = LX + (n % DCOLS) * (DW + 6), y = DY + (n / DCOLS) * (DH + 3);
@@ -661,6 +698,9 @@ public final class MenuPantalla extends Lienzo {
             texto(g, (decoBuscar.isEmpty() ? "" : recortar(a.grupo(), 14) + " · ") + "x" + a.cantidad() + (a.tienes() > 0 ? " · tienes " + a.tienes() : ""), x + 32, y + 16, SUAVE, 0.68f);
             boolean puede = monedas >= a.precio() && estado.equals("preparando");
             boton(g, x + DW - 76, y + DH - 19, 70, 15, a.precio() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, x + DW - 76, y + DH - 19, 70, 15), 0.85f);
+            boolean sobreEstrella = dentro(mx, my, x + DW - 18, y + 3, 14, 14);
+            texto(g, a.fav() ? "★" : "☆", x + DW - 17, y + 4, a.fav() ? MONEDA : sobreEstrella ? BLANCO : SUAVE, 1.1f);
+            if (dentro(mx, my, x, y, DW, DH) && !dentro(mx, my, x + DW - 76, y + DH - 19, 70, 15) && !sobreEstrella) ponerTip(a.item(), nombreDe(a.nombre(), a.item()), a.grupo() + " · " + a.item());
         }
     }
 
@@ -679,23 +719,28 @@ public final class MenuPantalla extends Lienzo {
             if (f != 0) { enviar("decoMover", "fuente", String.valueOf(f)); return; }
             int gr = clicSelector(mx, my, SEL_G, CY + 6, SEL_GW);
             if (gr != 0) { enviar("decoMover", "grupo", String.valueOf(gr)); return; }
-            if (dentro(mx, my, BUSCAR_X, CY + 6, 86, 16)) { pedirTexto("/cafe buscar "); return; }
+            if (dentro(mx, my, BUSCAR_X, CY + 6, BUSCAR_W, 16)) { pedirTexto("/cafe buscar "); return; }
+            if (dentro(mx, my, FAV_X, CY + 6, FAV_W, 16)) { enviar("decoMover", "fav", "0"); return; }
         } else {
-            if (dentro(mx, my, BUSCAR_X - 90, CY + 6, 86, 16)) { pedirTexto("/cafe buscar "); return; }
-            if (dentro(mx, my, BUSCAR_X, CY + 6, 86, 16)) { enviar("decoBuscar", "", ""); return; }
+            if (dentro(mx, my, BUSCAR_X, CY + 6, BUSCAR_W + 2, 16)) { pedirTexto("/cafe buscar "); return; }
+            if (dentro(mx, my, FAV_X, CY + 6, FAV_W, 16)) { enviar("decoBuscar", "", ""); return; }
         }
         for (int n = 0; n < deco.size() && n < DPOR_PAG; n++) {
             DecoC a = deco.get(n);
             int x = LX + (n % DCOLS) * (DW + 6), y = DY + (n / DCOLS) * (DH + 3);
+            if (dentro(mx, my, x + DW - 18, y + 3, 14, 14)) { enviar("decoFav", a.item(), ""); return; }
             if (monedas >= a.precio() && estado.equals("preparando") && dentro(mx, my, x + DW - 76, y + DH - 19, 70, 15)) enviar("comprarDeco", a.id(), "");
         }
     }
 
     // ------------------------------------------------------------ el baul (todo lo que tienes guardado para construir, sin limite)
 
+    private int baulSelX() { return construyendo ? LX + 282 : LX; }
+
     private void baulTab(DrawContext g, int mx, int my) {
         texto(g, "BAÚL", LX, CY - 8, ORO, 1.2f);
-        texto(g, "Todo lo que compras para decorar se guarda aquí, sin límite, aunque no te quepa en el inventario.", LX + 60, CY - 5, GRIS, 0.75f);
+        texto(g, construyendo ? "Todo lo que compras para decorar se guarda aquí, sin límite, aunque no te quepa en el inventario."
+                : "Para sacar o guardar cosas entra en el MODO CONSTRUCCIÓN (pestaña CAFÉ).", LX + 60, CY - 5, GRIS, 0.75f);
         if (!duenio) { parrafo(g, "Solo el dueño tiene baúl.", LX, CY + 14, 400, GRIS, 0.9f); return; }
         int total = paginas(baul.size(), DPOR_PAG);
         pagBaul = Math.max(0, Math.min(pagBaul, total - 1));
@@ -703,11 +748,11 @@ public final class MenuPantalla extends Lienzo {
         if (construyendo) {
             boton(g, LX, CY + 6, 120, 16, "SACAR TODO", 0xFF3A7A5A, true, dentro(mx, my, LX, CY + 6, 120, 16), 0.85f);
             boton(g, LX + 126, CY + 6, 150, 16, "GUARDAR TODO EN EL BAÚL", 0xFF7A4AC0, true, dentro(mx, my, LX + 126, CY + 6, 150, 16), 0.8f);
-            texto(g, baul.size() + " tipos de objeto", LX + 290, CY + 10, SUAVE, 0.75f);
-        } else {
-            texto(g, baul.size() + " tipos de objeto · para sacar o guardar cosas entra en el MODO CONSTRUCCIÓN (pestaña CAFÉ)", LX, CY + 10, SUAVE, 0.75f);
         }
-        if (baul.isEmpty()) { parrafo(g, "Tu baúl está vacío. Compra bloques y muebles en la pestaña DECORAR: se guardan aquí.", LX, DY + 10, 400, GRIS, 0.9f); return; }
+        selector(g, mx, my, baulSelX(), CY + 6, 150, baulFuente < baulFuentes.size() ? baulFuentes.get(baulFuente) : "Todo");
+        boolean filtrando = !baulBuscar.isEmpty();
+        boton(g, baulSelX() + 156, CY + 6, 80, 16, filtrando ? "✖ «" + recortar(baulBuscar, 8) + "»" : "BUSCAR…", filtrando ? 0xFF8A3A3A : 0xFF3A7A5A, true, dentro(mx, my, baulSelX() + 156, CY + 6, 80, 16), 0.75f);
+        if (baul.isEmpty()) { parrafo(g, baulTotal > 0 ? "Nada coincide con el filtro." : "Tu baúl está vacío. Compra bloques y muebles en la pestaña DECORAR: se guardan aquí.", LX, DY + 10, 400, GRIS, 0.9f); return; }
         for (int n = 0; n < DPOR_PAG; n++) {
             int i = pagBaul * DPOR_PAG + n;
             if (i >= baul.size()) break;
@@ -719,6 +764,7 @@ public final class MenuPantalla extends Lienzo {
             texto(g, "x" + b.n() + (construyendo ? (b.mano() > 0 ? " · llevas " + b.mano() : b.fuera() ? " · solo en el baúl" : " · sin sitio") : ""), x + 32, y + 16, SUAVE, 0.68f);
             boolean guardar = b.mano() > 0;
             boton(g, x + DW - 76, y + DH - 19, 70, 15, guardar ? "GUARDAR" : "SACAR", guardar ? 0xFF7A4AC0 : 0xFF3A7A5A, construyendo, construyendo && dentro(mx, my, x + DW - 76, y + DH - 19, 70, 15), 0.8f);
+            if (dentro(mx, my, x, y, DW, DH) && !dentro(mx, my, x + DW - 76, y + DH - 19, 70, 15)) ponerTip(b.item(), nombreDe("", b.item()), "x" + b.n() + " · " + b.item());
         }
     }
 
@@ -727,6 +773,12 @@ public final class MenuPantalla extends Lienzo {
         int total = paginas(baul.size(), DPOR_PAG);
         int d = clicPaginador(mx, my, LX + 528, CY + 4);
         if (d != 0) { pagBaul = Math.max(0, Math.min(total - 1, pagBaul + d)); return; }
+        int f = clicSelector(mx, my, baulSelX(), CY + 6, 150);
+        if (f != 0) { pagBaul = 0; enviar("baulFiltro", String.valueOf(f), ""); return; }
+        if (dentro(mx, my, baulSelX() + 156, CY + 6, 80, 16)) {
+            if (baulBuscar.isEmpty()) pedirTexto("/cafe baul "); else { pagBaul = 0; enviar("baulBuscar", "", ""); }
+            return;
+        }
         if (!construyendo) return;
         if (dentro(mx, my, LX, CY + 6, 120, 16)) { enviar("baulSacarTodo", "", ""); return; }
         if (dentro(mx, my, LX + 126, CY + 6, 150, 16)) { enviar("baulGuardarTodo", "", ""); return; }
@@ -737,6 +789,51 @@ public final class MenuPantalla extends Lienzo {
             int x = LX + (n % DCOLS) * (DW + 6), y = DY + (n / DCOLS) * (DH + 3);
             if (dentro(mx, my, x + DW - 76, y + DH - 19, 70, 15)) enviar(b.mano() > 0 ? "baulGuardar" : "baulSacar", b.item(), "");
         }
+    }
+
+    // ------------------------------------------------------------ planos (diseños guardados del café)
+
+    private static final int PL_H = 22;
+
+    private void planosTab(DrawContext g, int mx, int my) {
+        texto(g, "PLANOS", LX, CY - 8, ORO, 1.2f);
+        texto(g, "Guarda cómo tienes decorado el café para recuperarlo, probar otro diseño o volver atrás.", LX + 70, CY - 5, GRIS, 0.75f);
+        if (!duenio) { parrafo(g, "Solo el dueño tiene planos.", LX, CY + 14, 400, GRIS, 0.9f); return; }
+        if (!libre) { parrafo(g, "Los planos solo funcionan en los cafés de parcela libre (los nuevos).", LX, CY + 14, 400, GRIS, 0.9f); return; }
+        long manuales = planos.stream().filter(pl -> !pl.auto()).count();
+        boolean cerrado = estado.equals("preparando");
+        boton(g, LX, CY + 6, 170, 16, "GUARDAR PLANO NUEVO… (" + manuales + "/" + planosMax + ")", 0xFF3A7A5A, manuales < planosMax, manuales < planosMax && dentro(mx, my, LX, CY + 6, 170, 16), 0.78f);
+        texto(g, cerrado ? "Restaurar cambia lo construido y deja una copia automática de lo de antes." : "Para restaurar un plano cierra el café.", LX + 178, CY + 10, SUAVE, 0.7f);
+        if (planos.isEmpty()) { parrafo(g, "Todavía no hay ningún plano. Al terminar de construir se guarda sola una copia automática (las 3 últimas).", LX, CY + 40, 450, GRIS, 0.9f); return; }
+        for (int i = 0; i < planos.size() && i < 9; i++) {
+            PlanoC pl = planos.get(i);
+            int y = CY + 28 + i * (PL_H + 2);
+            caja(g, LX, y, 600, PL_H, FONDO, pl.auto() ? BORDE : 0xFF6A8A5A);
+            texto(g, pl.auto() ? "⟲ " + pl.nombre() : "▣ " + pl.nombre(), LX + 8, y + 7, BLANCO, 0.9f);
+            texto(g, pl.fecha() + " · " + pl.bloques() + " bloques", LX + 170, y + 8, SUAVE, 0.7f);
+            boton(g, LX + 330, y + 3, 90, 16, "RESTAURAR", 0xFF3A7A5A, cerrado, cerrado && dentro(mx, my, LX + 330, y + 3, 90, 16), 0.8f);
+            if (!pl.auto()) boton(g, LX + 426, y + 3, 100, 16, "SOBRESCRIBIR", 0xFF7A4AC0, true, dentro(mx, my, LX + 426, y + 3, 100, 16), 0.75f);
+            boolean conf = confirmaBorrar.equals(pl.clave());
+            boton(g, LX + 532, y + 3, 62, 16, conf ? "¿SEGURO?" : "BORRAR", 0xFF8A3A3A, true, dentro(mx, my, LX + 532, y + 3, 62, 16), 0.75f);
+        }
+    }
+
+    private void clicPlanos(int mx, int my) {
+        if (!duenio || !libre) return;
+        long manuales = planos.stream().filter(pl -> !pl.auto()).count();
+        if (manuales < planosMax && dentro(mx, my, LX, CY + 6, 170, 16)) { pedirTexto("/cafe plano guardar "); return; }
+        for (int i = 0; i < planos.size() && i < 9; i++) {
+            PlanoC pl = planos.get(i);
+            int y = CY + 28 + i * (PL_H + 2);
+            if (estado.equals("preparando") && dentro(mx, my, LX + 330, y + 3, 90, 16)) { confirmaBorrar = ""; enviar("planoRestaurar", pl.clave(), ""); return; }
+            if (!pl.auto() && dentro(mx, my, LX + 426, y + 3, 100, 16)) { confirmaBorrar = ""; enviar("planoSobrescribir", pl.clave(), ""); return; }
+            if (dentro(mx, my, LX + 532, y + 3, 62, 16)) {
+                if (confirmaBorrar.equals(pl.clave())) { confirmaBorrar = ""; enviar("planoBorrar", pl.clave(), ""); }
+                else confirmaBorrar = pl.clave();
+                return;
+            }
+        }
+        confirmaBorrar = "";
     }
 
     // ------------------------------------------------------------ tienda de estrellas
@@ -880,7 +977,7 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         if (dentro(mx, my, 546, 48, 74, 20)) { enviar("salir", "", ""); return; }
-        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 52, 48, 49, 20)) { tab = i; enviar("refrescar", TABS_ID[i], ""); return; }
+        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 47, 48, 44, 20)) { tab = i; enviar("refrescar", TABS_ID[i], ""); return; }
         switch (tab) {
             case T_CAFE -> clicCafe(mx, my);
             case T_TIENDA -> clicTienda(mx, my);
@@ -890,6 +987,7 @@ public final class MenuPantalla extends Lienzo {
             case T_CAFES -> clicCafes(mx, my);
             case T_PERSONAL -> clicPersonal(mx, my);
             case T_BAUL -> clicBaul(mx, my);
+            case T_PLANOS -> clicPlanos(mx, my);
             default -> { }
         }
     }
@@ -915,6 +1013,7 @@ public final class MenuPantalla extends Lienzo {
             if (!duenio) return;
             if (dentro(mx, my, LX, CY + 100, LW, 28)) { tab = T_DECORAR; enviar("refrescar", "decorar", ""); return; }
             if (dentro(mx, my, LX, CY + 134, LW, 28)) { enviar("terminarConstruir", "", ""); return; }
+            if (libre && deshacerN > 0 && dentro(mx, my, LX, CY + 166, LW, 24)) { enviar("deshacer", "", ""); return; }
             for (int i = 0; i < estilo.size(); i++) {
                 int y = CY + 4 + i * 36;
                 if (dentro(mx, my, RX, y + 11, 24, 20)) { enviar("estilo", String.valueOf(i), "-1"); return; }
