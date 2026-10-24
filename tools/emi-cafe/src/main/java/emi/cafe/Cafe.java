@@ -41,6 +41,7 @@ final class Cafe {
         Item resultado;                       // lo que saldra (null = no esta trabajando)
         int ticks, total;
         Item listo;                           // terminado y esperando
+        Ayudante reserva;                     // el mesero que va a recogerlo
         int listoTicks;                       // desde cuando espera (la freidora quema)
         final List<Item> dentro = new ArrayList<>();      // en la mesa de emplatar: lo que se ha puesto
         int cola;                             // en el fregadero: platos sucios esperando
@@ -67,6 +68,7 @@ final class Cafe {
     final List<Ayudante> ayudantes = new ArrayList<>();
     final Set<UUID> visitantes = new LinkedHashSet<>();   // gente que solo esta de visita (tambien estan en `jugadores`, pero no cocinan ni sirven)
     Evento evento = Evento.NINGUNO;                       // el suceso de la jornada de hoy
+    static Item pedidoForzado;                            // solo pruebas: /cafe dev pedido <plato> hace que todos pidan eso
     static Evento eventoForzado;                          // solo pruebas: /cafe dev evento <nombre> lo pone para la proxima vez que se abra
     Recetas.Plato platoDelDia;
     boolean criticoPendiente;
@@ -331,72 +333,194 @@ final class Cafe {
         return true;
     }
 
-    /** Las tareas de los empleados (solo con el cafe abierto). */
+    // ------------------------------------------------------------ las tareas de los empleados (andan por el local)
+
+    /** Los puntos por donde anda un empleado de (fx, fz) a (tx, tz): dentro de la cocina o del comedor en linea recta y, para pasar de uno a otro, por el hueco de la barra (x = 7-8). */
+    private List<double[]> ruta(double fx, double fz, double tx, double tz) {
+        List<double[]> r = new ArrayList<>();
+        double paso = 7.0;
+        boolean fCocina = fz < 6.0, tCocina = tz < 6.0;
+        if (fCocina != tCocina) {                                         // el hueco mide 2 de ancho: se baja por la mitad de la izquierda y se sube por la de la derecha
+            if (fCocina) { double h = ox + 7.55; r.add(new double[]{h, fz}); r.add(new double[]{h, paso}); r.add(new double[]{tx, paso}); }
+            else { double h = ox + 8.45, vuelta = 7.9; r.add(new double[]{fx, vuelta}); r.add(new double[]{h, vuelta}); r.add(new double[]{h, tz}); }   // en el comedor tambien van por pasillos distintos (ida z = 7,0; vuelta z = 7,9)
+        }
+        r.add(new double[]{tx, tz});
+        return r;
+    }
+
+    /** Donde se pone el empleado para trabajar en una estacion (en su carril de la cocina, a la altura de la estacion) y a donde mira. */
+    private double[] puestoEstacion(Ayudante a, Estacion es) {
+        BlockPos b = posDe(es);
+        return b == null ? null : new double[]{b.getX() + 0.5, a.carril, b.getX() + 0.5, b.getZ() + 0.5};
+    }
+
+    /** Donde se pone para servir o recoger en una mesa: al norte de la mesa (los clientes se sientan al sur) y mirando a ella. */
+    private double[] puestoMesa(Mesa m) { return new double[]{m.sx, m.bloque.getZ() - 0.55, m.sx, m.bloque.getZ() + 0.5}; }
+
+    /** Manda a un empleado a camino de su sitio (borrando lo que tuviera que hacer). */
+    private void mandarACasa(Ayudante a) {
+        a.limpiar();
+        a.rotular("");
+        a.ruta(ruta(a.e.getX(), a.e.getZ(), a.hx, a.hz), a.hx, a.hz + 10);
+    }
+
+    private static final boolean DEBUG = Boolean.getBoolean("emi.cafe.debug");
+
+    /** Solo pruebas ({@code -Demi.cafe.debug=true}): escribe en el log lo que hace cada empleado. */
+    private void dbg(Ayudante a, String que) { if (DEBUG) EmiCafe.LOG.info("[personal] {} ({}): {}", a.emp.nombre, a.rol.id, que); }
+
+    /** ¿Ya va otro empleado a servir esa mesa? ({@code contarChefs}: el chef cuenta, el mesero no: si el dueño dejo un plato listo, el mesero lo lleva aunque el chef ya estuviera cocinando eso.) */
+    private boolean mesaOcupada(Mesa m, Ayudante yo, boolean contarChefs) {
+        for (Ayudante b : ayudantes) if (b != yo && (b.mesaServ == m || (contarChefs && b.mesaChef == m))) return true;
+        return false;
+    }
+
+    /** Pone en marcha lo que mueve a los empleados: cada tick andan y, los que estan en su sitio sin nada que hacer, buscan una tarea (solo con el cafe abierto). */
     private void tickAyudantes() {
-        if (estado != Estado.ABIERTO) return;
-        ServerPlayerEntity duenioP = jugador(duenio);
-        if (duenioP == null) return;
+        if (ayudantes.isEmpty()) return;
+        ServerPlayerEntity duenioP = estado == Estado.ABIERTO ? jugador(duenio) : null;
+        if (duenioP == null) {                                    // cerrado (o el dueño no esta): todos a su sitio
+            for (Ayudante a : ayudantes) if (!a.e.isRemoved() && (a.ocupado() || a.llevado != null || !a.enCasa())) { dbg(a, "cafe cerrado: vuelve a su sitio"); a.alSitio(); a.rotular(""); }
+            return;
+        }
+        if (DEBUG) for (int i = 0; i < ayudantes.size(); i++) for (int j = i + 1; j < ayudantes.size(); j++) {      // pruebas: ¿se pisan dos empleados?
+            Ayudante p = ayudantes.get(i), q = ayudantes.get(j);
+            double d = Math.hypot(p.e.getX() - q.e.getX(), p.e.getZ() - q.e.getZ());
+            if (d < 0.5) EmiCafe.LOG.info("[personal] CHOQUE {} y {} a {} bloques ({}, {})", p.emp.nombre, q.emp.nombre, String.format("%.2f", d), String.format("%.1f", p.e.getX()), String.format("%.1f", p.e.getZ()));
+        }
         for (Ayudante a : ayudantes) {
-            if (a.e.isRemoved() || --a.espera > 0) continue;
-            a.espera = a.rol.cada;
+            if (a.e.isRemoved()) continue;
+            a.mover(ayudantes);
+            if (a.cancelarAviso) { a.cancelarAviso = false; dbg(a, "tarea cancelada (el cliente se fue o se llevaron el plato)"); mandarACasa(a); continue; }
+            if (a.ocupado()) continue;
+            if (!a.enCasa()) { mandarACasa(a); continue; }
+            if (--a.espera > 0) continue;
             switch (a.rol) {
-                case LAVAPLATOS -> {
-                    for (Mesa m : mesas) if (m.sucio != null) {
-                        Disp.quitar(m.sucio); m.sucio = null; platos++;
-                        Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "lavar", 0.7f, 1.0f);
-                        w.spawnParticles(ParticleTypes.SPLASH, a.e.getX(), a.e.getY() + 0.8, a.e.getZ(), 8, 0.3, 0.2, 0.3, 0.0);
-                        break;
-                    }
-                }
-                case MESERO -> {
-                    if (platos <= 0) break;
-                    search:
-                    for (Map.Entry<BlockPos, Est> en : ests.entrySet()) {
-                        Est est = en.getValue();
-                        if (est.listo == null) continue;
-                        for (Mesa m : mesas) {
-                            Cliente c = m.cliente;
-                            if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.pedido != est.listo) continue;
-                            Item plato = est.listo;
-                            est.listo = null; est.listoTicks = 0;
-                            Estacion e = Estacion.de(w.getBlockState(en.getKey()).getBlock());
-                            if (e != null) dibujar(en.getKey(), e, est);
-                            w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 0.9, a.e.getZ(), 6, 0.3, 0.3, 0.3, 0.0);
-                            cobrar(duenioP, m, plato, true);
-                            break search;
-                        }
-                    }
-                }
-                case CHEF -> {
-                    if (a.platoChef != null) {
-                        Cliente c = a.mesaChef.cliente;
-                        if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.pedido != a.platoChef.item) { a.platoChef = null; a.mesaChef = null; a.rotular(""); break; }
-                        a.restante -= a.rol.cada;
-                        w.spawnParticles(ParticleTypes.CLOUD, a.e.getX(), a.e.getY() + 1.1, a.e.getZ(), 3, 0.25, 0.1, 0.25, 0.01);
-                        Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "chisporroteo", 0.3f, 1.4f);
-                        if (a.restante <= 0) {
-                            Item plato = a.platoChef.item;
-                            Mesa m = a.mesaChef;
-                            a.platoChef = null; a.mesaChef = null; a.rotular("");
-                            if (platos > 0) { w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 0.9, a.e.getZ(), 8, 0.3, 0.3, 0.3, 0.0); cobrar(duenioP, m, plato, true); }
-                        }
-                        break;
-                    }
-                    for (Mesa m : mesas) {
-                        Cliente c = m.cliente;
-                        if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.esp != null || c.critico) continue;
-                        Recetas.Plato pl = Recetas.Plato.de(c.pedido);
-                        if (pl == null || !tieneEstaciones(pl)) continue;
-                        boolean otro = false;
-                        for (Ayudante b : ayudantes) if (b != a && b.mesaChef == m) otro = true;
-                        if (otro) continue;
-                        a.mesaChef = m; a.platoChef = pl; a.restante = 20 * (10 + 6 * pl.estaciones.size());
-                        a.rotular("cocina: " + pl.nombre());
-                        break;
-                    }
-                }
+                case LAVAPLATOS -> tareaLavaplatos(a);
+                case MESERO -> tareaMesero(a);
+                case CHEF -> tareaChef(a);
+            }
+            a.espera = a.ocupado() ? 0 : 20;                       // sin tarea: vuelve a mirar dentro de 1 s
+        }
+    }
+
+    private void tareaLavaplatos(Ayudante a) {
+        for (Mesa m : mesas) {
+            if (m.sucio == null) continue;
+            boolean otro = false;
+            for (Ayudante b : ayudantes) if (b != a && b.mesaLava == m) otro = true;
+            if (otro) continue;
+            double[] pm = puestoMesa(m);
+            double[] pf = puestoEstacion(a, Estacion.FREGADERO);
+            a.mesaLava = m;
+            dbg(a, "va a recoger el plato sucio de la mesa " + m.bloque.toShortString());
+            a.ruta(ruta(a.e.getX(), a.e.getZ(), pm[0], pm[1]), pm[2], pm[3]);
+            a.paso(pm[0], pm[1], 14, null, () -> {
+                if (m.sucio == null) { mandarACasa(a); return; }
+                Disp.quitar(m.sucio); m.sucio = null;
+                dbg(a, "recogio el plato sucio, va al fregadero");
+                a.llevar(w, CafeItems.id(CafeItems.PILA_PLATOS));
+                Runnable lavado = () -> { a.llevar(w, null); platos++; a.mesaLava = null; dbg(a, "plato lavado (limpios: " + platos + ")"); };
+                if (pf == null) { a.paso(pm[0], pm[1], 40, () -> lavando(a), lavado, pm[2], pm[3]); return; }   // sin fregadero (lo lleva el dueño en la mano): lava alli mismo
+                a.ruta(ruta(a.e.getX(), a.e.getZ(), pf[0], pf[1]), pf[2], pf[3]);
+                a.paso(pf[0], pf[1], 50, () -> lavando(a), lavado, pf[2], pf[3]);
+            }, pm[2], pm[3]);
+            a.vigente = () -> m.sucio != null || a.llevado != null;
+            return;
+        }
+    }
+
+    private void lavando(Ayudante a) {
+        Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "lavar", 0.6f, 1.0f);
+        w.spawnParticles(ParticleTypes.SPLASH, a.e.getX(), a.e.getY() + 0.8, a.e.getZ(), 6, 0.3, 0.2, 0.3, 0.0);
+    }
+
+    private void tareaMesero(Ayudante a) {
+        if (platos <= 0) return;
+        for (Map.Entry<BlockPos, Est> en : ests.entrySet()) {
+            Est est = en.getValue();
+            if (est.listo == null || est.reserva != null) continue;
+            Estacion es = Estacion.de(w.getBlockState(en.getKey()).getBlock());
+            if (es == null) continue;
+            for (Mesa m : mesas) {
+                Cliente c = m.cliente;
+                if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.pedido != est.listo || mesaOcupada(m, a, false)) continue;
+                Item plato = est.listo;
+                BlockPos pos = en.getKey();
+                double[] pe = {pos.getX() + 0.5, a.carril, pos.getX() + 0.5, pos.getZ() + 0.5};
+                double[] pm = puestoMesa(m);
+                a.mesaServ = m; a.estReserva = est; est.reserva = a;
+                dbg(a, "va por " + es.nombre + " para servir en la mesa " + m.bloque.toShortString());
+                a.ruta(ruta(a.e.getX(), a.e.getZ(), pe[0], pe[1]), pe[2], pe[3]);
+                a.paso(pe[0], pe[1], 10, null, () -> {
+                    if (est.listo != plato) { mandarACasa(a); return; }             // alguien (el dueño) se lo llevo
+                    est.listo = null; est.listoTicks = 0;
+                    dibujar(pos, es, est);
+                    est.reserva = null; a.estReserva = null;
+                    dbg(a, "tiene el plato, va a la mesa");
+                    a.llevar(w, CafeItems.id(plato));
+                    a.vigente = () -> esperaPlato(m, plato);
+                    a.ruta(ruta(a.e.getX(), a.e.getZ(), pm[0], pm[1]), pm[2], pm[3]);
+                    a.paso(pm[0], pm[1], 10, null, () -> servir(a, m, plato), pm[2], pm[3]);
+                }, pe[2], pe[3]);
+                a.vigente = () -> (est.listo == plato || a.llevado != null) && esperaPlato(m, plato);
+                return;
             }
         }
+    }
+
+    /** ¿Sigue esperando el cliente de esa mesa ese plato? */
+    private static boolean esperaPlato(Mesa m, Item plato) {
+        Cliente c = m.cliente;
+        return c != null && c.fase == Cliente.Fase.ESPERANDO && c.pedido == plato;
+    }
+
+    /** El empleado llega a la mesa con el plato: si el cliente sigue esperando eso, se lo da (y el dueño cobra). */
+    private void servir(Ayudante a, Mesa m, Item plato) {
+        a.llevar(w, null);
+        a.vigente = null;
+        ServerPlayerEntity d = jugador(duenio);
+        if (d != null && platos > 0 && esperaPlato(m, plato)) {
+            w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 0.9, a.e.getZ(), 8, 0.3, 0.3, 0.3, 0.0);
+            cobrar(d, m, plato, true);
+            dbg(a, "sirvio y cobro");
+        } else dbg(a, "llego a la mesa pero ya no hacia falta");
+        a.mesaServ = null; a.mesaChef = null; a.platoChef = null;
+        a.rotular("");
+    }
+
+    private void tareaChef(Ayudante a) {
+        if (platos <= 0) return;
+        for (Mesa m : mesas) {
+            Cliente c = m.cliente;
+            if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.esp != null || c.critico) continue;
+            Recetas.Plato pl = Recetas.Plato.de(c.pedido);
+            if (pl == null || !tieneEstaciones(pl) || mesaOcupada(m, a, true)) continue;
+            a.mesaChef = m; a.platoChef = pl;
+            dbg(a, "cocina " + pl.nombre() + " para la mesa " + m.bloque.toShortString());
+            a.rotular("cocina: " + pl.nombre());
+            double fx = a.e.getX(), fz = a.e.getZ();
+            for (Estacion es : pl.estaciones) {
+                double[] pe = puestoEstacion(a, es);
+                a.ruta(ruta(fx, fz, pe[0], pe[1]), pe[2], pe[3]);
+                int espera = es.tipo == Estacion.Tipo.CAJA ? 24 : es.tipo == Estacion.Tipo.EMPLATAR ? 44 : Math.max(44, Math.min(100, es.ticks / 2));
+                boolean proceso = es.tipo != Estacion.Tipo.CAJA;
+                a.paso(pe[0], pe[1], espera, () -> cocinando(a, proceso), null, pe[2], pe[3]);
+                fx = pe[0]; fz = pe[1];
+            }
+            double[] pm = puestoMesa(m);
+            a.pasos.add(new Ayudante.Paso(fx, fz, 0, null, () -> a.llevar(w, CafeItems.id(pl.item)), Double.NaN, Double.NaN));
+            a.ruta(ruta(fx, fz, pm[0], pm[1]), pm[2], pm[3]);
+            a.paso(pm[0], pm[1], 10, null, () -> servir(a, m, pl.item), pm[2], pm[3]);
+            a.vigente = () -> esperaPlato(m, pl.item) && !mesaOcupada(m, a, false);          // si un mesero ya lleva a esa mesa el plato del dueño, el chef lo deja
+            return;
+        }
+    }
+
+    private void cocinando(Ayudante a, boolean proceso) {
+        if (DEBUG && t % 20 < 10) dbg(a, "trabajando en x=" + String.format("%.1f", a.e.getX()));
+        w.spawnParticles(proceso ? ParticleTypes.CLOUD : ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 1.1, a.e.getZ(), 3, 0.25, 0.1, 0.25, 0.01);
+        if (proceso) Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "chisporroteo", 0.3f, 1.4f);
     }
 
     // ------------------------------------------------------------ el libro de recetas: «muestrame como»
@@ -732,6 +856,7 @@ final class Cafe {
 
     /** Lo que pide un cliente de esa especie: a menudo su plato favorito, en el dia del plato casi siempre ese, y si no uno cualquiera de los que se saben. */
     Item elegirPedido(Random r, String especie) {
+        if (pedidoForzado != null) return pedidoForzado;
         List<String> ids = dj().platos;
         if (ids.isEmpty()) return CafeItems.PAPAS_FRITAS;
         if (platoDelDia != null && r.nextInt(100) < 30) return platoDelDia.item;

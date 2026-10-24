@@ -109,6 +109,13 @@ final class Cmds {
                             for (Mesa m : cf.mesas) if (m.libre()) return cf.forzarEspecial(m, e) ? null : "No se pudo crear.";
                             return "No hay mesa libre.";
                         }))))
+                        .then(CommandManager.literal("pedido").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
+                            Recetas.Plato pl = Recetas.Plato.de(id);
+                            if (!id.equals("azar") && pl == null) return "Un id de plato (limonada, papas_fritas...) o «azar».";
+                            Cafe.pedidoForzado = pl == null ? null : pl.item;
+                            return null;
+                        }))))
                         .then(CommandManager.literal("especie").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                             String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
                             Cliente.forzar = id.equals("azar") ? null : id;
