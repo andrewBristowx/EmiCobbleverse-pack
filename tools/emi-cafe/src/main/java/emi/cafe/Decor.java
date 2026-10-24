@@ -25,6 +25,14 @@ final class Decor {
 
     static final List<Articulo> CATALOGO = List.of(
             new Articulo("mesa", "emi_cafe:mesa", 1, 60, "Café", "Mesa del café"),
+            new Articulo("mesa_azul", "emi_cafe:mesa_azul", 1, 70, "Mesas", "Mesa azul"),
+            new Articulo("mesa_verde", "emi_cafe:mesa_verde", 1, 70, "Mesas", "Mesa verde"),
+            new Articulo("mesa_rosa", "emi_cafe:mesa_rosa", 1, 70, "Mesas", "Mesa rosa"),
+            new Articulo("mesa_negra", "emi_cafe:mesa_negra", 1, 110, "Mesas", "Mesa elegante negra"),
+            new Articulo("mesa_blanca", "emi_cafe:mesa_blanca", 1, 80, "Mesas", "Mesa blanca"),
+            new Articulo("mesa_madera", "emi_cafe:mesa_madera", 1, 70, "Mesas", "Mesa de madera"),
+            new Articulo("mesa_piedra", "emi_cafe:mesa_piedra", 1, 90, "Mesas", "Mesa de piedra"),
+            new Articulo("mesa_dorada", "emi_cafe:mesa_dorada", 1, 150, "Mesas", "Mesa dorada"),
             new Articulo("encimera", "emi_cafe:encimera", 8, 40, "Café", "Encimeras"),
             new Articulo("roble", "minecraft:oak_planks", 16, 30, "Madera", "Tablones de roble"),
             new Articulo("abeto", "minecraft:spruce_planks", 16, 30, "Madera", "Tablones de abeto"),
@@ -136,7 +144,20 @@ final class Decor {
             new Articulo("puerta_blanca_yellow", "emi_cafe:puerta_blanca_yellow", 1, 70, "Puertas", "Puerta amarilla con marco blanco"),
             new Articulo("puerta_blanca_orange", "emi_cafe:puerta_blanca_orange", 1, 70, "Puertas", "Puerta naranja con marco blanco"),
             new Articulo("puerta_blanca_red", "emi_cafe:puerta_blanca_red", 1, 70, "Puertas", "Puerta roja con marco blanco"),
-            new Articulo("puerta_blanca_black", "emi_cafe:puerta_blanca_black", 1, 70, "Puertas", "Puerta negra con marco blanco"));
+            new Articulo("puerta_blanca_black", "emi_cafe:puerta_blanca_black", 1, 70, "Puertas", "Puerta negra con marco blanco"),
+            // vitrinas de cristal de colores (0.19.0): se pone en ellas un ingrediente o un plato para lucirlo
+            new Articulo("vitrina_white", "emi_cafe:vitrina_white", 1, 60, "Vitrinas", "Vitrina de cristal blanca"),
+            new Articulo("vitrina_pink", "emi_cafe:vitrina_pink", 1, 60, "Vitrinas", "Vitrina de cristal rosa"),
+            new Articulo("vitrina_magenta", "emi_cafe:vitrina_magenta", 1, 60, "Vitrinas", "Vitrina de cristal magenta"),
+            new Articulo("vitrina_purple", "emi_cafe:vitrina_purple", 1, 60, "Vitrinas", "Vitrina de cristal morada"),
+            new Articulo("vitrina_blue", "emi_cafe:vitrina_blue", 1, 60, "Vitrinas", "Vitrina de cristal azul"),
+            new Articulo("vitrina_light_blue", "emi_cafe:vitrina_light_blue", 1, 60, "Vitrinas", "Vitrina de cristal celeste"),
+            new Articulo("vitrina_cyan", "emi_cafe:vitrina_cyan", 1, 60, "Vitrinas", "Vitrina de cristal cian"),
+            new Articulo("vitrina_lime", "emi_cafe:vitrina_lime", 1, 60, "Vitrinas", "Vitrina de cristal lima"),
+            new Articulo("vitrina_yellow", "emi_cafe:vitrina_yellow", 1, 60, "Vitrinas", "Vitrina de cristal amarilla"),
+            new Articulo("vitrina_orange", "emi_cafe:vitrina_orange", 1, 60, "Vitrinas", "Vitrina de cristal naranja"),
+            new Articulo("vitrina_red", "emi_cafe:vitrina_red", 1, 60, "Vitrinas", "Vitrina de cristal roja"),
+            new Articulo("vitrina_black", "emi_cafe:vitrina_black", 1, 60, "Vitrinas", "Vitrina de cristal negra"));
 
     /** El articulo de la tienda que corresponde a un objeto (null si no se vende: asi solo se pueden colocar cosas sin «entidad de bloque»). */
     static Articulo articuloDe(net.minecraft.item.Item it) {

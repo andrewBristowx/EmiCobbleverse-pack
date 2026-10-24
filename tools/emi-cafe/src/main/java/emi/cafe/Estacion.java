@@ -53,6 +53,7 @@ enum Estacion {
 
     /** Que estacion es un bloque (null si no es ninguna). */
     static Estacion de(Block b) {
+        if (CafeBlocks.esMesa(b)) return MESA;                          // los diseños de mesa (0.19.0) son mesas
         for (Estacion e : values()) if (e.bloque == b) return e;
         return null;
     }

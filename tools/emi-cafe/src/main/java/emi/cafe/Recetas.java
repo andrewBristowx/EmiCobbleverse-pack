@@ -156,7 +156,9 @@ final class Recetas {
      * y {@code reqRep[k]} el nivel de reputacion (0 = ninguno). Cuanto mas grande es el local, mas mejoras (y mas niveles de cada una) se pueden comprar.
      */
     enum Mejora {
-        MESAS("mesas", "Más mesas", CafeItems.MESAS_ICONO, n(100, 200), "Una mesa más: más clientes a la vez.", n(1, 2), n(0, 0)),
+        MESAS("mesas", "Más mesas", CafeItems.MESAS_ICONO, n(100, 200, 350, 550, 800), "Una mesa más: más clientes a la vez.", n(1, 2, 3, 4, 5), n(0, 0, 0, 0, 0)),
+        LUJO("lujo", "Mesas elegantes", CafeItems.MESA_LUJO_ICONO, n(150, 300, 600), "Mesas más cuidadas: los clientes pagan un 6 % más por nivel.", n(1, 2, 3), n(0, 0, 0)),
+        ESTACIONES("estaciones", "Más estaciones", CafeItems.ESTACIONES_ICONO, n(200, 400, 700, 1100, 1600), "Dos estaciones de cocina más por nivel (se suman al límite de tu local).", n(1, 2, 3, 4, 5), n(0, 0, 0, 0, 0)),
         VELOCIDAD("velocidad", "Estaciones más rápidas", CafeItems.RELOJ, n(150, 300, 600), "Las estaciones tardan un 20 % menos por nivel.", n(1, 2, 4), n(0, 0, 0)),
         PACIENCIA("paciencia", "Clientes más pacientes", CafeItems.CORAZON, n(120, 240), "Esperan un 25 % más por nivel antes de irse.", n(1, 3), n(0, 0)),
         VAJILLA("vajilla", "Más vajilla", CafeItems.PILA_PLATOS, n(100, 200, 400), "Dos platos limpios más en la pila por nivel.", n(1, 2, 4), n(0, 0, 0)),

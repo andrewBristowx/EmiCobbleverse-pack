@@ -15,6 +15,7 @@ public class EmiCafeClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         for (net.minecraft.block.Block b : emi.cafe.CafeBlocks.PUERTAS) BlockRenderLayerMap.INSTANCE.putBlock(b, RenderLayer.getTranslucent());      // el cristal de las puertas se ve a traves
+        for (net.minecraft.block.Block b : emi.cafe.CafeBlocks.VITRINAS) BlockRenderLayerMap.INSTANCE.putBlock(b, RenderLayer.getTranslucent());     // y el de las vitrinas
         ClientPlayNetworking.registerGlobalReceiver(TextoPayload.ID, (p, ctx) -> ctx.client().execute(() -> menu(p)));
         HudRenderCallback.EVENT.register((g, tick) -> PanelCafe.dibujar(g));
         // dentro del cafe se esconden el equipo Pokemon, el minimapa y los otros cuadros (hay un panel propio); al salir se devuelven

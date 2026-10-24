@@ -13,6 +13,7 @@ public final class CafeItems {
     private CafeItems() {}
 
     private static final Map<Item, String> NOMBRES = new HashMap<>();
+    private static final java.util.List<Item> ORDEN = new java.util.ArrayList<>();          // en el orden en que se registran
 
     public static final Item PAPA = reg("papa", "Papa");
     public static final Item PAPA_TIRAS = reg("papa_tiras", "Papa en tiras");
@@ -95,6 +96,8 @@ public final class CafeItems {
     public static final Item RELOJ = reg("reloj", "Reloj");
     public static final Item CORAZON = reg("corazon", "Corazón");
     public static final Item MESAS_ICONO = reg("mesas_icono", "Mesas");
+    public static final Item ESTACIONES_ICONO = reg("estaciones_icono", "Más estaciones");
+    public static final Item MESA_LUJO_ICONO = reg("mesa_lujo_icono", "Mesas elegantes");
     public static final Item PILA_PLATOS = reg("pila_platos", "Pila de platos");
     public static final Item MEGAFONO = reg("megafono", "Megáfono");
     public static final Item LIBRO = reg("libro", "Recetario");
@@ -107,10 +110,19 @@ public final class CafeItems {
     private static Item reg(String id, String nombre) {
         Item i = Registry.register(Registries.ITEM, Identifier.of("emi_cafe", id), new Item(new Item.Settings().maxCount(1)));
         NOMBRES.put(i, nombre);
+        ORDEN.add(i);
         return i;
     }
 
     static void init() { }
+
+    /** Todo lo que se puede exponer en una vitrina: el plato limpio, los ingredientes y los platos (en el orden en que se registraron; sin lo quemado ni los iconos). */
+    static java.util.List<Item> comidas() {
+        java.util.List<Item> l = new java.util.ArrayList<>();
+        l.add(PLATO_LIMPIO);
+        for (Item i : ORDEN) { if (i == PLATO_SUCIO) break; if (i != PAPAS_QUEMADAS && i != COMIDA_QUEMADA) l.add(i); }
+        return l;
+    }
 
     /** El identificador de un objeto en texto (para los displays), p. ej. {@code emi_cafe:papa}. */
     static String id(Item i) { return Registries.ITEM.getId(i).toString(); }

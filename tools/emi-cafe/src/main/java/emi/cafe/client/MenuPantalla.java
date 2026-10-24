@@ -81,7 +81,7 @@ public final class MenuPantalla extends Lienzo {
     private boolean duenio, lleno;
     private int monedas, estrellas, clientes, turnos, mejorTurno, platosLimpios, limiteTienda = 10;
     private int tab;
-    private int pagRec, pagTienda, pagCafes;                    // pagina del recetario (6 platos) y de los platos de la tienda (3)
+    private int pagRec, pagTienda, pagCafes, pagMejoras;                    // pagina del recetario (6 platos) y de los platos de la tienda (3)
     private long ultimoRefresco = System.currentTimeMillis();
 
     public MenuPantalla(String json) {
@@ -494,7 +494,7 @@ public final class MenuPantalla extends Lienzo {
 
     // ------------------------------------------------------------ recetario
 
-    private static final int REC_POR_PAG = 6, REC_W = 296, REC_H = 62, TIENDA_POR_PAG = 3;
+    private static final int REC_POR_PAG = 6, REC_W = 296, REC_H = 62, TIENDA_POR_PAG = 3, MEJ_POR_PAG = 7;
 
     private static int paginas(int total, int porPag) { return Math.max(1, (total + porPag - 1) / porPag); }
 
@@ -565,9 +565,14 @@ public final class MenuPantalla extends Lienzo {
             boton(g, bx, y + 36, bw, 20, p.tengo() ? "APRENDIDO ✔" : !libre ? "BLOQUEADO" : p.coste() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 36, bw, 20), 0.9f);
         }
         texto(g, "MEJORAS DEL LOCAL", LX + 308, CY + 8, 0xFFC9B3FF, 0.95f);
-        for (int i = 0; i < mejoras.size(); i++) {
+        int totalMej = paginas(mejoras.size(), MEJ_POR_PAG);
+        pagMejoras = Math.min(pagMejoras, totalMej - 1);
+        if (totalMej > 1) paginador(g, mx, my, LX + 308 + PW - 72, CY + 5, pagMejoras, totalMej);
+        for (int n = 0; n < MEJ_POR_PAG; n++) {
+            int i = pagMejoras * MEJ_POR_PAG + n;
+            if (i >= mejoras.size()) break;
             MejoraC m = mejoras.get(i);
-            int y = CY + 20 + i * 28, x = LX + 308;
+            int y = CY + 20 + n * 28, x = LX + 308;
             boolean max = m.nivel() >= m.max();
             caja(g, x, y, PW, 26, FONDO, max ? 0xFF6FE08A : BORDE);
             objeto(g, m.item(), x + 6, y + 5, 1f);
@@ -834,6 +839,8 @@ public final class MenuPantalla extends Lienzo {
     private void clicTienda(int mx, int my) {
         int d = clicPaginador(mx, my, LX + PW - 72, CY + 5);
         if (d != 0) { pagTienda = Math.max(0, Math.min(paginas(tiendaPlatos.size(), TIENDA_POR_PAG) - 1, pagTienda + d)); return; }
+        int dm = paginas(mejoras.size(), MEJ_POR_PAG) > 1 ? clicPaginador(mx, my, LX + 308 + PW - 72, CY + 5) : 0;
+        if (dm != 0) { pagMejoras = Math.max(0, Math.min(paginas(mejoras.size(), MEJ_POR_PAG) - 1, pagMejoras + dm)); return; }
         if (!puedeComprar()) return;
         for (int n = 0; n < TIENDA_POR_PAG; n++) {
             int i = pagTienda * TIENDA_POR_PAG + n;
@@ -842,9 +849,11 @@ public final class MenuPantalla extends Lienzo {
             int y = CY + 22 + n * (PH + 4);
             if (!p.tengo() && p.bloqueo().isEmpty() && monedas >= p.coste() && dentro(mx, my, LX + PW - 92, y + 36, 86, 20)) enviar("comprarPlato", p.id(), "");
         }
-        for (int i = 0; i < mejoras.size(); i++) {
+        for (int n = 0; n < MEJ_POR_PAG; n++) {
+            int i = pagMejoras * MEJ_POR_PAG + n;
+            if (i >= mejoras.size()) break;
             MejoraC m = mejoras.get(i);
-            int y = CY + 20 + i * 28, x = LX + 308;
+            int y = CY + 20 + n * 28, x = LX + 308;
             if (m.nivel() < m.max() && monedas >= m.precio() && dentro(mx, my, x + PW - 88, y + 3, 82, 20)) enviar("comprarMejora", m.id(), "");
         }
     }

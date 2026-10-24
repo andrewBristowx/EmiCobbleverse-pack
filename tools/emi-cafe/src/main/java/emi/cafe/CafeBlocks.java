@@ -59,6 +59,25 @@ public final class CafeBlocks {
         }
     }
 
+    /** Los 8 diseños de mesa (0.19.0): mesas de verdad, que cuentan igual que la mesa de siempre ({@link #esMesa}). */
+    public static final String[] DISENOS_MESA = {"azul", "verde", "rosa", "negra", "blanca", "madera", "piedra", "dorada"};
+    public static final java.util.List<Block> MESAS_DISENO = new java.util.ArrayList<>();
+    /** Las vitrinas de cristal de colores (0.19.0), una por color. */
+    public static final java.util.List<Block> VITRINAS = new java.util.ArrayList<>();
+    static {
+        for (String d : DISENOS_MESA) MESAS_DISENO.add(reg("mesa_" + d));
+        for (String c : COLORES_PUERTA) {
+            Block b = new VitrinaBlock();
+            Identifier i = Identifier.of("emi_cafe", "vitrina_" + c);
+            Registry.register(Registries.BLOCK, i, b);
+            Registry.register(Registries.ITEM, i, new BlockItem(b, new Item.Settings()));
+            VITRINAS.add(b);
+        }
+    }
+
+    /** ¿Es una mesa del cafe (la de siempre o uno de los diseños)? */
+    public static boolean esMesa(Block b) { return b == MESA || MESAS_DISENO.contains(b); }
+
     private static Block placa(String id, net.minecraft.util.shape.VoxelShape forma) {
         Block b = new PlacaBlock(forma);
         Registry.register(Registries.BLOCK, Identifier.of("emi_cafe", id), b);

@@ -56,6 +56,7 @@ final class Obras {
         if (porBloque == null) {
             Map<String, Estacion> m = new HashMap<>();
             for (Estacion e : Estacion.values()) m.put(Registries.BLOCK.getId(e.bloque).toString(), e);
+            for (Block b : CafeBlocks.MESAS_DISENO) m.put(Registries.BLOCK.getId(b).toString(), Estacion.MESA);
             porBloque = m;
         }
         return porBloque;
@@ -236,8 +237,15 @@ final class Obras {
 
     private static int prioridad(String k) {
         if (k.equals(idItem(CafeBlocks.REGISTRADORA))) return 0;
-        if (k.equals(idItem(CafeBlocks.MESA))) return 1;
+        if (k.equals(idItem(CafeBlocks.MESA)) || k.startsWith("emi_cafe:mesa_")) return 1;
         return k.startsWith("emi_cafe:") ? 2 : 3;
+    }
+
+    /** Las mesas guardadas en el almacen (de cualquier diseño). */
+    int stockMesas() {
+        int n = stock(idItem(CafeBlocks.MESA));
+        for (Block b : CafeBlocks.MESAS_DISENO) n += stock(idItem(b));
+        return n;
     }
 
     /** Devuelve un objeto al almacen (y al inventario si se esta construyendo). */
@@ -307,7 +315,7 @@ final class Obras {
     static boolean permitido(Block b) {
         Identifier id = Registries.BLOCK.getId(b);
         String p = id.getPath();
-        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || b == CafeBlocks.MESA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || b instanceof PuertaCristalBlock || Estacion.de(b) != null;
+        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || CafeBlocks.esMesa(b) || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || b instanceof PuertaCristalBlock || b instanceof VitrinaBlock || Estacion.de(b) != null;
         if (PROHIBIDOS.contains(p) || p.contains("command_block") || p.contains("structure") || p.contains("redstone") || p.contains("piston") || p.contains("repeater") || p.contains("comparator") || p.contains("test_")) return false;
         if (b instanceof net.minecraft.block.FallingBlock || b instanceof net.minecraft.block.FluidBlock || b instanceof net.minecraft.block.AbstractFireBlock || b instanceof net.minecraft.block.TntBlock) return false;
         if (b instanceof net.minecraft.block.BlockWithEntity) {
@@ -319,7 +327,7 @@ final class Obras {
 
     /** En un cafe de antes, los bloques del cafe que no se quitan con el clic normal (la caja registradora, el libro, el letrero). */
     private static boolean protegido(Block b) {
-        return Registries.BLOCK.getId(b).getNamespace().equals("emi_cafe") && b != CafeBlocks.ENCIMERA && b != CafeBlocks.MESA && !(b instanceof PuertaCristalBlock) && Estacion.de(b) == null;
+        return Registries.BLOCK.getId(b).getNamespace().equals("emi_cafe") && b != CafeBlocks.ENCIMERA && !CafeBlocks.esMesa(b) && !(b instanceof PuertaCristalBlock) && !(b instanceof VitrinaBlock) && Estacion.de(b) == null;
     }
 
     String clave(BlockPos pos) { return Decor.clave(pos.getX() - c.ox, pos.getY() - Local.Y, pos.getZ()); }
@@ -358,7 +366,25 @@ final class Obras {
             if (!d.libre && (protegido(ahi) || Estacion.de(ahi) != null || ahi == CafeBlocks.MESA)) { it.remove(); continue; }
             c.w.setBlockState(pos, st, Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
         }
+        reconectar();
         cambio();
+    }
+
+    /**
+     * Los paneles de cristal, vallas, muros y escaleras guardan en su estado con quien se conectan, y lo que se guardo al colocarlos puede estar desfasado (el vecino se puso despues).
+     * Al volver a poner todo, cada bloque vuelve a mirar a sus vecinos y se reconecta (sin esto los vidrios salian sueltos, cada uno con su marco).
+     */
+    private void reconectar() {
+        Datos.Jugador d = d();
+        if (d.decor == null) return;
+        for (String clave : d.decor.keySet()) {
+            String[] k = clave.split(",");
+            BlockPos pos = new BlockPos(c.ox + Integer.parseInt(k[0]), Local.Y + Integer.parseInt(k[1]), Integer.parseInt(k[2]));
+            BlockState st = c.w.getBlockState(pos);
+            if (st.isAir() || st.getBlock() instanceof DoorBlock) continue;
+            BlockState nuevo = Block.postProcessState(st, c.w, pos);
+            if (nuevo != st) c.w.setBlockState(pos, nuevo, Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
+        }
     }
 
     // ------------------------------------------------------------ las puertas de cristal
@@ -410,6 +436,69 @@ final class Obras {
             BlockState s = c.w.getBlockState(q);
             if (s.getBlock() instanceof PuertaCristalBlock) c.w.setBlockState(q, s.with(DoorBlock.OPEN, si), Block.NOTIFY_ALL | Block.FORCE_STATE);
         }
+    }
+
+    // ------------------------------------------------------------ las vitrinas (desde 0.19.0)
+
+    private final List<Entity> vitEnts = new ArrayList<>();
+
+    /** Dibuja lo que hay expuesto en cada vitrina (un objeto que mira a quien pasa) y borra lo de las vitrinas que ya no existen. */
+    void actualizarVitrinas() {
+        for (Entity e : vitEnts) Disp.quitar(e);
+        vitEnts.clear();
+        Datos.Jugador d = d();
+        if (!d.libre || d.vitrina == null || d.vitrina.isEmpty()) return;
+        for (java.util.Iterator<Map.Entry<String, String>> it = d.vitrina.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, String> en = it.next();
+            String[] k = en.getKey().split(",");
+            BlockPos pos = new BlockPos(c.ox + Integer.parseInt(k[0]), Local.Y + Integer.parseInt(k[1]), Integer.parseInt(k[2]));
+            if (!(c.w.getBlockState(pos).getBlock() instanceof VitrinaBlock)) { it.remove(); continue; }
+            Entity e = Disp.objeto(c.w, en.getValue(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 0.6f, true);
+            if (e != null) vitEnts.add(e);
+        }
+    }
+
+    /**
+     * Clic derecho del dueño en una vitrina (con el cafe cerrado). Fuera del modo construccion: con un ingrediente o un plato en las manos lo expone (y si ya habia algo, lo recoge);
+     * con las manos vacias recoge lo que hay. En el modo construccion (sin nada en la mano) va pasando por todos los ingredientes y platos (agachado = hacia atras).
+     */
+    void usarVitrina(ServerPlayerEntity p, BlockPos pos) {
+        Datos.Jugador d = d();
+        if (!c.esDuenio(p)) { c.msg(p, "Solo el dueño cambia lo que hay en las vitrinas"); return; }
+        if (c.estado != Cafe.Estado.PREPARANDO) { c.msg(p, "Las vitrinas se cambian con el café cerrado"); return; }
+        if (d.vitrina == null) d.vitrina = new java.util.LinkedHashMap<>();
+        String k = clave(pos);
+        String actual = d.vitrina.get(k);
+        if (c.construyendo) {
+            List<Item> l = CafeItems.comidas();
+            int i = -1;
+            if (actual != null) for (int n = 0; n < l.size(); n++) if (CafeItems.id(l.get(n)).equals(actual)) { i = n; break; }
+            int sig = p.isSneaking() ? i - 1 : i + 1;
+            if (sig >= l.size()) sig = -1;
+            if (sig < -1) sig = l.size() - 1;
+            if (sig < 0) { d.vitrina.remove(k); c.msg(p, "Vitrina vacía"); }
+            else { d.vitrina.put(k, CafeItems.id(l.get(sig))); c.msg(p, "Vitrina: " + CafeItems.nombre(l.get(sig)) + " (clic = el siguiente · agachado = el anterior)"); }
+        } else {
+            Item carga = c.manos.get(p.getUuid());
+            Item previo = actual == null ? null : Registries.ITEM.get(Identifier.of(actual));
+            if (previo == net.minecraft.item.Items.AIR) previo = null;
+            if (carga != null) {
+                d.vitrina.put(k, CafeItems.id(carga));
+                c.manos.put(p.getUuid(), previo);
+                c.msg(p, "Expones «" + CafeItems.nombre(carga) + "» en la vitrina" + (previo != null ? " y recoges «" + CafeItems.nombre(previo) + "»" : ""));
+            } else if (previo != null) {
+                d.vitrina.remove(k);
+                c.manos.put(p.getUuid(), previo);
+                c.msg(p, "Recoges «" + CafeItems.nombre(previo) + "» de la vitrina");
+            } else {
+                c.msg(p, "Vitrina vacía: lleva un ingrediente o un plato en las manos y haz clic para exponerlo");
+                return;
+            }
+            c.sincronizarMano(p);
+        }
+        c.sonido(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.BLOCK_GLASS_PLACE, 0.8f, 1.2f);
+        EmiCafe.datos.guardar(c.duenio);
+        actualizarVitrinas();
     }
 
     // ------------------------------------------------------------ el cartel con el nombre y el letrero abierto/cerrado
@@ -491,6 +580,7 @@ final class Obras {
         c.ests.clear();
         c.recargarPersonal();
         actualizarRotulo();
+        actualizarVitrinas();
         letrero(false);
     }
 
@@ -504,6 +594,7 @@ final class Obras {
         Block bq = c.w.getBlockState(clic).getBlock();
         Estacion eq = Estacion.de(bq);
         if (eq != null && eq.tipo == Estacion.Tipo.REGISTRADORA) { Menus.principal(c, p); return ActionResult.FAIL; }
+        if (bq instanceof VitrinaBlock && mano(p).isEmpty()) { usarVitrina(p, clic); return ActionResult.FAIL; }          // con un bloque en la mano se sigue construyendo junto a la vitrina
         if (bq == CafeBlocks.LIBRO_PARED) { Menus.libro(c, p); return ActionResult.FAIL; }
         ItemStack st = mano(p);
         Integer emp = empleadoDe(st);
@@ -513,7 +604,7 @@ final class Obras {
         Datos.Jugador d = d();
         String itemId = Registries.ITEM.getId(bi).toString();
         Estacion est = Estacion.de(bloque);
-        boolean esMesa = bloque == CafeBlocks.MESA;
+        boolean esMesa = CafeBlocks.esMesa(bloque);
         boolean antigua = !d.libre && ((est != null && est.x >= 0) || esMesa);          // los cafes de antes mueven sus estaciones y mesas recogiendolas (sin almacen)
         if (antigua && est != null) return colocarEstacionAntigua(p, hit, st, est);
         if (!antigua && stock(itemId) <= 0) {
@@ -534,7 +625,7 @@ final class Obras {
         if (d.libre && est != null && est.x >= 0 && !est.siempre) {
             int puestas = 0;
             for (Estacion e : estaciones().keySet()) if (!e.siempre) puestas++;
-            if (puestas >= Local.maxEstaciones(c.nivelLocal())) { c.msg(p, "Tu local de nivel " + c.nivelLocal() + " solo admite " + Local.maxEstaciones(c.nivelLocal()) + " estaciones: amplíalo (mejora «Ampliar el local»)"); return ActionResult.FAIL; }
+            if (puestas >= c.maxEstaciones()) { c.msg(p, "Tu local de nivel " + c.nivelLocal() + " solo admite " + c.maxEstaciones() + " estaciones: amplíalo o compra «Más estaciones» en la tienda → MEJORAS"); return ActionResult.FAIL; }
         }
         if (d.quitados == null) d.quitados = new LinkedHashSet<>();
         if (!esMesa && d.decor.size() + d.quitados.size() >= Decor.MAX_BLOQUES) { c.msg(p, "Has cambiado demasiados bloques (" + Decor.MAX_BLOQUES + ")"); return ActionResult.FAIL; }
@@ -678,6 +769,7 @@ final class Obras {
         guardarPronto();
         completar(p);
         if (b == CafeBlocks.CARTEL) actualizarRotulo();
+        if (b instanceof VitrinaBlock && d.vitrina != null && d.vitrina.remove(k) != null) actualizarVitrinas();
         return ActionResult.FAIL;
     }
 
@@ -712,8 +804,8 @@ final class Obras {
         if (art == null || !c.esDuenio(p)) return "Solo el dueño compra.";
         if (c.estado != Cafe.Estado.PREPARANDO) return "Solo se compra con el café cerrado.";
         Datos.Jugador d = c.dj(p);
-        if (art.item().equals(idItem(CafeBlocks.MESA))) {
-            int tiene = (d.libre ? mesas().size() : c.mesasPos().size()) + stock(art.item());
+        if (art.item().equals(idItem(CafeBlocks.MESA)) || art.item().startsWith("emi_cafe:mesa_")) {
+            int tiene = (d.libre ? mesas().size() : c.mesasPos().size()) + stockMesas();
             if (tiene >= c.numMesas()) return "No caben más mesas en tu café (" + c.numMesas() + "): mejora «Mesas» o amplía el local.";
         }
         if (d.monedas < art.precio()) return "Te faltan " + (art.precio() - d.monedas) + " monedas.";

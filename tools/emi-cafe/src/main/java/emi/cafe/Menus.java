@@ -172,7 +172,7 @@ final class Menus {
         }
         o.add("contratos", contr);
         o.addProperty("estacionesEnMano", c.estEnMano.size());
-        o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", Local.maxEstaciones(c.nivelLocal()));
+        o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", c.maxEstaciones());
         o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
         o.addProperty("visitas", dd.visitas);
         o.addProperty("megusta", dd.megusta);
