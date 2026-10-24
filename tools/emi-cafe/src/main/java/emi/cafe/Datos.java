@@ -16,6 +16,13 @@ import java.util.UUID;
 final class Datos {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    /** Un Michialien contratado: su rol, el nombre que le puso el dueño y su aspecto (indice en {@code Personal.ASPECTOS}). */
+    static final class Empleado {
+        String rol = "";
+        String nombre = "";
+        int aspecto;
+    }
+
     static final class Jugador {
         String nombre = "";
         int monedas;                 // el dinero del cafe: se gana sirviendo y se gasta en platos y mejoras
@@ -28,6 +35,9 @@ final class Datos {
         int mesasCap;                                                                  // cuantas mesas tenia ya asignadas (para saber cuando una mejora da mesas nuevas)
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
         java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();         // lo que el dueño ha colocado en el modo construccion: «x,y,z» (relativos al local) -> estado del bloque (SNBT)
+        String nombreCafe = "";                                                       // el nombre que el dueño le puso a su cafe (vacio = «CAFÉ MICHIALIEN»)
+        java.util.List<Empleado> personal = new java.util.ArrayList<>();             // los Michialien contratados (mesero, lavaplatos, chef)
+        String[] pintura = new String[6];                                             // bloque con el que el dueño pinto cada parte del local (Estilo.PARED... VENTANA); null = el material elegido en la lista
         int[] estilo = {0, 0, 0, 1};                                                  // materiales del local (ver Estilo): paredes, franja, suelo de la cocina y suelo del comedor
         java.util.Map<String, int[]> estPos = new java.util.HashMap<>();              // donde el dueño ha puesto cada estacion ({x, z} del local; nombre del enum -> posicion); las que no estan aqui van en su sitio de siempre
         int rep;                                                                      // puntos de reputacion del cafe (ver Reputacion)
@@ -101,7 +111,7 @@ final class Datos {
 
     private static void añadir(java.util.List<Fila> l, Jugador j) {
         if (j == null || j.nombre == null || j.nombre.isEmpty() || j.inicial == null) return;
-        l.add(new Fila(j.nombre, j.megusta, j.rep, Estilo.puntos(j.decor, j.estilo)));
+        l.add(new Fila(j.nombre, j.megusta, j.rep, Estilo.puntos(j.decor, j.estilo, j.pintura)));
     }
 
     void guardar(UUID id) {

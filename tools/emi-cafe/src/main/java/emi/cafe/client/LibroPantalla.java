@@ -83,6 +83,12 @@ public final class LibroPantalla extends Lienzo {
         m.pop();
     }
 
+    /** Texto en negrita (dos pasadas, una al lado de la otra) centrado en cx: para los numeros, que se leen mal pequeños. */
+    private void negrita(DrawContext g, String s, int cx, int y, int color, float tam) {
+        int x = cx - (int) (tr().getWidth(s) * tam / 2);
+        tinta(g, s, x, y, color, tam); tinta(g, s, x + 1, y, color, tam);
+    }
+
     private int parrafoTinta(DrawContext g, String s, int x, int y, int ancho, int color, float tam) {
         List<net.minecraft.text.OrderedText> l = tr().wrapLines(Text.literal(s), (int) (ancho / tam));
         var m = g.getMatrices();
@@ -151,7 +157,7 @@ public final class LibroPantalla extends Lienzo {
         pag = Math.min(pag, total - 1);
         if (total > 1) {
             boton(g, PX + PW - 94, PY - 1, 20, 16, "◀", 0xFF7A4AC0, pag > 0 && dentro(mx, my, PX + PW - 94, PY - 1, 20, 16));
-            tinta(g, (pag + 1) + "/" + total, PX + PW - 68, PY + 3, TINTA, 1.1f);
+            negrita(g, (pag + 1) + "/" + total, PX + PW - 56, PY + 2, TINTA, 1.3f);
             boton(g, PX + PW - 36, PY - 1, 20, 16, "▶", 0xFF7A4AC0, pag < total - 1 && dentro(mx, my, PX + PW - 36, PY - 1, 20, 16));
         }
         for (int n = 0; n < POR_PAG; n++) {
@@ -185,10 +191,10 @@ public final class LibroPantalla extends Lienzo {
         for (String gr : p.receta().split(";\\s*")) {
             for (String paso : gr.split("\\s*→\\s*")) {
                 if (paso.isBlank()) continue;
-                disco(g, PX2 + 22, y + 5, 6, DORADO2); disco(g, PX2 + 22, y + 5, 5, DORADO);
-                textoCentrado(g, String.valueOf(n), PX2 + 22, y + 1, TINTA, 1.0f);
-                int lineas = parrafoTinta(g, paso.trim(), PX2 + 36, y, PW - 52, TINTA, 1.0f);
-                y += Math.max(1, lineas) * 10 + 4;
+                disco(g, PX2 + 24, y + 7, 8, DORADO2); disco(g, PX2 + 24, y + 7, 7, DORADO);
+                negrita(g, String.valueOf(n), PX2 + 24, y + 2, TINTA, 1.3f);
+                int lineas = parrafoTinta(g, paso.trim(), PX2 + 40, y + 2, PW - 56, TINTA, 1.0f);
+                y += Math.max(16, lineas * 10 + 6);
                 n++;
             }
         }
@@ -197,7 +203,7 @@ public final class LibroPantalla extends Lienzo {
             tinta(g, "ESTACIONES", PX2 + 16, yb, TINTA2, 1.1f);
             for (int k = 0; k < p.estaciones().size() && k < 8; k++) {
                 Est e = p.estaciones().get(k);
-                int x = PX2 + 16 + (k % 2) * 136, yy = yb + 13 + (k / 2) * 20;
+                int x = PX2 + 16 + (k % 2) * 136, yy = yb + 13 + (k / 2) * 19;
                 g.fill(x, yy, x + 18, yy + 18, PAPEL3); g.fill(x + 1, yy + 1, x + 17, yy + 17, 0xFFFFFBEA);
                 objeto(g, e.item(), x + 1, yy + 1, 1.0f);
                 tinta(g, e.nombre(), x + 22, yy + 5, e.tiene() ? TINTA : 0xFFA02020, 0.95f);

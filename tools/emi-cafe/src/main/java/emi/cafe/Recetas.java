@@ -162,9 +162,7 @@ final class Recetas {
         VAJILLA("vajilla", "Más vajilla", CafeItems.PILA_PLATOS, n(100, 200, 400), "Dos platos limpios más en la pila por nivel.", n(1, 2, 4), n(0, 0, 0)),
         AMPLIAR("ampliar", "Ampliar el local", CafeItems.PUERTA, n(300, 600, 1000, 1600), "8 bloques más de ancho, 2 mesas y más estaciones por nivel.", n(1, 2, 3, 4), n(2, 3, 4, 5)),
         PUBLICIDAD("publicidad", "Publicidad", CafeItems.MEGAFONO, n(120, 240, 480), "Llegan clientes más seguido.", n(1, 2, 4), n(0, 0, 0)),
-        PROPINAS("propinas", "Buen servicio", CafeItems.MONEDA, n(300, 600, 1200), "Un 10 % más de propina por nivel.", n(2, 3, 5), n(0, 0, 0)),
-        AYUD_LAVA("ayud_lava", "Ayudante: lavaplatos", CafeItems.PILA_PLATOS, n(400), "Un Squirtle lava solo los platos sucios de las mesas.", n(2), n(2)),
-        AYUD_MESERO("ayud_mesero", "Ayudante: camarero", CafeItems.MEGAFONO, n(800), "Un Chansey sirve los platos que quedan listos.", n(3), n(4));
+        PROPINAS("propinas", "Buen servicio", CafeItems.MONEDA, n(300, 600, 1200), "Un 10 % más de propina por nivel.", n(2, 3, 5), n(0, 0, 0));
 
         final String id, nombre, descripcion;
         final Item icono;

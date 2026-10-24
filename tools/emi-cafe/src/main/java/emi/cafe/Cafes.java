@@ -74,6 +74,7 @@ final class Cafes {
         if (EmiCafe.datos == null) return "El café aún no está listo.";
         Cafe c = new Cafe(s, w, p.getUuid(), Ciudad.slotDe(p.getUuid(), p.getGameProfile().getName()));
         DUENIOS.put(p.getUuid(), c);
+        c.migrarAyudantes();
         c.reconstruir();
         meter(p, c);
         Datos.Jugador d = c.dj();
@@ -112,7 +113,7 @@ final class Cafes {
         if (nom == null || uid == null || EmiCafe.datos == null) return;
         Datos.Jugador d = EmiCafe.datos.jugador(uid, null);
         Cafe c = DUENIOS.get(uid);
-        net.minecraft.text.MutableText m = Msg.say("Café de " + nom + " · ♥ " + d.megusta + " · estilo " + Estilo.NOMBRES[Estilo.nivelDe(Estilo.puntos(d.decor, d.estilo))]
+        net.minecraft.text.MutableText m = Msg.say((d.nombreCafe == null || d.nombreCafe.isEmpty() ? "Café" : "«" + d.nombreCafe + "»") + " de " + nom + " · ♥ " + d.megusta + " · estilo " + Estilo.NOMBRES[Estilo.nivelDe(Estilo.puntos(d.decor, d.estilo, d.pintura))]
                 + " · reputación " + Reputacion.nombre(Reputacion.nivel(d.rep)) + (c == null ? " · cerrado: no está" : c.estado == Cafe.Estado.ABIERTO ? " · ABIERTO" : "") + " ");
         if (c != null && !c.esDuenio(p)) m.append(Text.literal("[ME GUSTA]").styled(s -> s.withColor(Formatting.LIGHT_PURPLE).withBold(true).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/cafe megusta " + nom))));
         p.sendMessage(m, false);

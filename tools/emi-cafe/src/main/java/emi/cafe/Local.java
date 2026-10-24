@@ -39,6 +39,16 @@ final class Local {
             w.setBlockState(new BlockPos(ox + X_CARTEL + k, Y + Y_CARTEL, Z_CARTEL), CafeBlocks.CARTEL.getDefaultState().with(PlacaBlock.ABIERTO, abierto).with(PlacaBlock.DER, k == 1), Obra.BANDERAS);
     }
 
+    /** Los textos del tejado: el nombre del cafe (el que le puso el dueño, o «CAFÉ MICHIALIEN») y «de <dueño>». Se puede cambiar sin reconstruir. */
+    static void rotulo(ServerWorld w, int ox, String nombreCafe, String duenio) {
+        net.minecraft.util.math.Box caja = new net.minecraft.util.math.Box(ox + 0, Y + 5, 13, ox + 17, Y + 10, 15);
+        for (net.minecraft.entity.Entity e : w.getEntitiesByType(net.minecraft.entity.EntityType.TEXT_DISPLAY, caja, x -> x.getCommandTags().contains(Disp.TAG))) e.discard();
+        String nombre = nombreCafe == null || nombreCafe.isEmpty() ? "CAFÉ MICHIALIEN" : nombreCafe;
+        float escala = nombre.length() > 16 ? 1.3f : nombre.length() > 12 ? 1.6f : 1.8f;
+        Disp.texto(w, "{\"text\":\"" + nombre.replace("\\", "").replace("\"", "") + "\",\"color\":\"light_purple\",\"bold\":true}", ox + 8.0, Y + 6.5, 13.6, escala, false);
+        if (duenio != null && !duenio.isEmpty()) Disp.texto(w, "{\"text\":\"de " + duenio.replace("\\", "").replace("\"", "") + "\",\"color\":\"yellow\"}", ox + 8.0, Y + 7.3, 13.6, 1.0f, false);
+    }
+
     /** El bloque del suelo exterior (a la altura Y) en la columna relativa {@code rx} y la fila {@code z}: acera, avenida, jardines y parque. */
     static String sueloExterior(int rx, int z) {
         if (z == Z_ATRAS || z == Z_FRENTE) return "stone_bricks";
@@ -123,7 +133,7 @@ final class Local {
      * Construye la parcela entera: el local con las estaciones de {@code pos} (cada una en su {x, z}; las demas casillas de la fila quedan de encimera), las mesas de la lista {@code mesas}
      * ({x, z} de cada una) y los materiales de {@code estilo} (ver {@link Estilo}), mas la calle, el parque y el jardin (ver {@link Ciudad}). {@code haySiguiente} = ya hay un vecino a la derecha.
      */
-    static void construir(ServerWorld w, int ox, java.util.Map<Estacion, int[]> pos, java.util.List<int[]> mesas, int ampliar, int[] estilo, String duenio, boolean haySiguiente) {
+    static void construir(ServerWorld w, int ox, java.util.Map<Estacion, int[]> pos, java.util.List<int[]> mesas, int ampliar, int[] estilo, String[] pintura, String nombreCafe, String duenio, boolean haySiguiente) {
         final int W = ancho(ampliar);
         long t0 = System.nanoTime();
         Disp.barrerParcela(w, ox);
@@ -131,23 +141,23 @@ final class Local {
         ciudad(w, ox, W, ox == 0, haySiguiente);
         // suelo del local: damero (la cocina y el comedor pueden ser de materiales distintos)
         for (int x = 0; x <= W; x++) for (int z = 0; z <= 13; z++) {
-            Obra.poner(w, ox + x, Y, z, Estilo.suelo(estilo, z <= 6 ? Estilo.COCINA : Estilo.COMEDOR, x, z));
+            Obra.poner(w, ox + x, Y, z, Estilo.suelo(estilo, pintura, z <= 6 ? Estilo.COCINA : Estilo.COMEDOR, x, z));
         }
         // paredes de 4 de alto (con una franja a la altura de los ojos) y el techo de cristal para que entre la luz
-        final String pared = Estilo.pared(estilo), franja = Estilo.franja(estilo);
+        final String pared = Estilo.pared(estilo, pintura), franja = Estilo.franja(estilo, pintura), ventana = Estilo.ventana(estilo, pintura);
         for (int y = 1; y <= 4; y++) {
             String mat = y == 2 ? franja : pared;
             for (int x = 0; x <= W; x++) { Obra.poner(w, ox + x, Y + y, 0, mat); Obra.poner(w, ox + x, Y + y, 13, mat); }
             for (int z = 0; z <= 13; z++) { Obra.poner(w, ox + 0, Y + y, z, mat); Obra.poner(w, ox + W, Y + y, z, mat); }
         }
         // ventanas al sur (y 2-3) y la puerta (x 7-8): un marco de roble
-        for (int x : new int[]{2, 3, 4, 5, 10, 11, 12}) for (int y = 2; y <= 3; y++) Obra.poner(w, ox + x, Y + y, 13, "glass_pane");
-        for (int x = 14; x < W; x++) if ((x - 14) % 8 >= 1 && (x - 14) % 8 <= 4) for (int y = 2; y <= 3; y++) Obra.poner(w, ox + x, Y + y, 13, "glass_pane");      // las ventanas de la parte ampliada
+        for (int x : new int[]{2, 3, 4, 5, 10, 11, 12}) for (int y = 2; y <= 3; y++) Obra.poner(w, ox + x, Y + y, 13, ventana);
+        for (int x = 14; x < W; x++) if ((x - 14) % 8 >= 1 && (x - 14) % 8 <= 4) for (int y = 2; y <= 3; y++) Obra.poner(w, ox + x, Y + y, 13, ventana);      // las ventanas de la parte ampliada
         for (int y = 1; y <= 3; y++) { Obra.poner(w, ox + 7, Y + y, 13, "air"); Obra.poner(w, ox + 8, Y + y, 13, "air"); }
         for (int y = 1; y <= 4; y++) { Obra.poner(w, ox + 6, Y + y, 13, "stripped_oak_log"); Obra.poner(w, ox + 9, Y + y, 13, "stripped_oak_log"); }
         for (int x = 6; x <= 9; x++) Obra.poner(w, ox + x, Y + 4, 13, "stripped_oak_log");
-        final String techo = Estilo.techo(estilo), luz = Estilo.luz(estilo);
-        final int per = Estilo.periodoLuz(estilo);
+        final String techo = Estilo.techo(estilo, pintura), luz = Estilo.luz(estilo, pintura);
+        final int per = Estilo.periodoLuz(estilo, pintura);
         for (int x = 1; x < W; x++) for (int z = 1; z <= 12; z++) Obra.poner(w, ox + x, Y + 5, z, (x % per == 1 && z % per == 1) ? luz : techo);
         for (int x = 0; x <= W; x++) { Obra.poner(w, ox + x, Y + 5, 0, pared); Obra.poner(w, ox + x, Y + 5, 13, pared); }
         for (int z = 0; z <= 13; z++) { Obra.poner(w, ox, Y + 5, z, pared); Obra.poner(w, ox + W, Y + 5, z, pared); }
@@ -165,9 +175,7 @@ final class Local {
         for (int[] m : mesas) ponerBloque(w, ox, m[0], 1, m[1], CafeBlocks.MESA);
         // el libro de recetas en la pared del fondo de la cocina (clic = enseña cada plato)
         ponerBloque(w, ox, X_LIBRO, Y_LIBRO, Z_LIBRO, CafeBlocks.LIBRO_PARED);
-        // el nombre sobre el tejado y el letrero de la puerta
-        Disp.texto(w, "{\"text\":\"CAFÉ MICHIALIEN\",\"color\":\"light_purple\",\"bold\":true}", ox + 8.0, Y + 6.5, 13.6, 1.8f, false);
-        if (duenio != null && !duenio.isEmpty()) Disp.texto(w, "{\"text\":\"de " + duenio.replace("\\", "").replace("\"", "") + "\",\"color\":\"yellow\"}", ox + 8.0, Y + 7.3, 13.6, 1.0f, false);
+        rotulo(w, ox, nombreCafe, duenio);
         letrero(w, ox, false);
         EmiCafe.LOG.info("Parcela del cafe construida en {} ms", (System.nanoTime() - t0) / 1_000_000);
     }

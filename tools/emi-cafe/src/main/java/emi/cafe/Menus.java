@@ -124,11 +124,39 @@ final class Menus {
         JsonArray est = new JsonArray();                                     // los materiales del local (paredes y suelos) que el dueño puede cambiar construyendo
         for (int i = 0; i < Estilo.PARTES.length; i++) {
             JsonObject e = new JsonObject();
-            e.addProperty("parte", Estilo.PARTES[i]); e.addProperty("nombre", Estilo.op(dd.estilo, i).nombre());
+            String pint = Estilo.pintado(dd.pintura, i);
+            String nom = pint == null ? Estilo.op(dd.estilo, i).nombre()
+                    : "Pintado: " + net.minecraft.registry.Registries.BLOCK.get(net.minecraft.util.Identifier.of(pint.contains(":") ? pint : "minecraft:" + pint)).getName().getString();
+            e.addProperty("parte", Estilo.PARTES[i]); e.addProperty("nombre", nom);
             e.addProperty("idx", Estilo.indice(dd.estilo, i)); e.addProperty("total", Estilo.total(i));
             est.add(e);
         }
         o.add("estilo", est);
+        o.addProperty("nombreCafe", dd.nombreCafe == null ? "" : dd.nombreCafe);
+        JsonArray pers = new JsonArray();                                    // los Michialien contratados
+        if (dd.personal != null) for (int i = 0; i < dd.personal.size(); i++) {
+            Datos.Empleado em = dd.personal.get(i);
+            Personal.Rol rol = Personal.Rol.de(em.rol);
+            if (rol == null) continue;
+            JsonObject e = new JsonObject();
+            e.addProperty("idx", i); e.addProperty("nombre", em.nombre); e.addProperty("rol", rol.nombre); e.addProperty("icono", rol.icono);
+            e.addProperty("aspecto", Personal.ASPECTOS[Math.floorMod(em.aspecto, Personal.ASPECTOS.length)][1]);
+            pers.add(e);
+        }
+        o.add("personal", pers);
+        o.addProperty("personalMax", Personal.maximo(c.nivelLocal()));
+        JsonArray contr = new JsonArray();                                   // a quien se puede contratar
+        for (Personal.Rol rol : Personal.Rol.values()) {
+            JsonObject e = new JsonObject();
+            e.addProperty("rol", rol.id); e.addProperty("nombre", rol.nombre); e.addProperty("texto", rol.descripcion); e.addProperty("icono", rol.icono);
+            e.addProperty("precio", rol.precio); e.addProperty("reqLocal", rol.reqLocal); e.addProperty("reqRep", rol.reqRep);
+            String blq = "";
+            if (c.nivelLocal() < rol.reqLocal) blq = "Local nivel " + rol.reqLocal;
+            else if (c.nivelRep() < rol.reqRep) blq = "Reputación nivel " + rol.reqRep;
+            e.addProperty("bloqueo", blq);
+            contr.add(e);
+        }
+        o.add("contratos", contr);
         o.addProperty("estacionesEnMano", c.estEnMano.size());
         o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", Local.maxEstaciones(c.nivelLocal()));
         o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
@@ -138,7 +166,7 @@ final class Menus {
         o.addProperty("nVisitantes", c.visitantes.size());
         int nRep = Reputacion.nivel(dd.rep);
         o.addProperty("repValor", dd.rep); o.addProperty("repNivel", nRep); o.addProperty("repNombre", Reputacion.nombre(nRep)); o.addProperty("repSig", Reputacion.siguiente(dd.rep));
-        int pts = Estilo.puntos(dd.decor, dd.estilo), nEst = Estilo.nivelDe(pts);
+        int pts = Estilo.puntos(dd.decor, dd.estilo, dd.pintura), nEst = Estilo.nivelDe(pts);
         o.addProperty("estPuntos", pts); o.addProperty("estNivel", nEst); o.addProperty("estNombre", Estilo.NOMBRES[nEst]); o.addProperty("estSig", Estilo.siguiente(pts));
         o.addProperty("evento", c.evento == Evento.NINGUNO ? "" : c.evento.nombre + (c.platoDelDia != null ? ": " + c.platoDelDia.nombre() : ""));
         o.addProperty("eventoTexto", c.evento.descripcion);
@@ -149,8 +177,8 @@ final class Menus {
             Datos.Jugador od = EmiCafe.datos.jugador(uid, null);
             Cafe otro = Cafes.deDuenio(v.nombre);
             JsonObject e = new JsonObject();
-            e.addProperty("nombre", v.nombre); e.addProperty("megusta", od.megusta);
-            e.addProperty("estilo", Estilo.nivelDe(Estilo.puntos(od.decor, od.estilo))); e.addProperty("rep", Reputacion.nivel(od.rep));
+            e.addProperty("nombre", v.nombre); e.addProperty("titulo", od.nombreCafe == null ? "" : od.nombreCafe); e.addProperty("megusta", od.megusta);
+            e.addProperty("estilo", Estilo.nivelDe(Estilo.puntos(od.decor, od.estilo, od.pintura))); e.addProperty("rep", Reputacion.nivel(od.rep));
             e.addProperty("abierto", otro != null && otro.estado == Cafe.Estado.ABIERTO); e.addProperty("visitas", otro != null && od.visitas); e.addProperty("gente", otro == null ? 0 : otro.visitantes.size());
             e.addProperty("dentro", otro != null);
             cafes.add(e);
@@ -306,6 +334,7 @@ final class Menus {
                         if (parte >= 0 && parte < Estilo.PARTES.length) {
                             Datos.Jugador dd = c.dj();
                             dd.estilo = Estilo.normalizar(dd.estilo);
+                            dd.pintura = Estilo.normalizarPintura(dd.pintura); dd.pintura[parte] = null;
                             dd.estilo[parte] = ((Estilo.indice(dd.estilo, parte) + delta) % Estilo.total(parte) + Estilo.total(parte)) % Estilo.total(parte);
                             EmiCafe.datos.guardar(c.duenio);
                             c.reconstruir();
@@ -321,6 +350,14 @@ final class Menus {
                     String err = Cafes.irA(p, a.a());
                     if (err != null) p.sendMessage(Msg.err(err), false);
                 }
+                case "contratar" -> {
+                    Personal.Rol rol = Personal.Rol.de(a.a());
+                    String err = rol == null ? "Ese puesto no existe." : c.contratar(p, rol);
+                    if (err != null) p.sendMessage(Msg.err(err), false);
+                    actualizar(c, p);
+                }
+                case "despedir" -> { String err = c.despedir(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
@@ -351,6 +388,8 @@ final class Menus {
             EmiCafe.LOG.error("Error en una accion del menu del cafe", t);
         }
     }
+
+    private static int parseIdx(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return -1; } }
 
     private static void elegirInicial(Cafe c, ServerPlayerEntity p, Recetas.Inicial ini) {
         if (ini == null) return;

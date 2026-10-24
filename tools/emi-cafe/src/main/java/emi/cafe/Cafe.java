@@ -143,7 +143,7 @@ final class Cafe {
 
     // ------------------------------------------------------------ estilo, reputacion y gustos
 
-    int puntosEstilo() { Datos.Jugador d = dj(); return Estilo.puntos(d.decor, d.estilo); }
+    int puntosEstilo() { Datos.Jugador d = dj(); return Estilo.puntos(d.decor, d.estilo, d.pintura); }
     int nivelEstilo() { return Estilo.nivelDe(puntosEstilo()); }
     int nivelRep() { return Reputacion.nivel(dj().rep); }
 
@@ -194,13 +194,10 @@ final class Cafe {
         ests.clear();
         quitarAyudantes();
         List<int[]> pos = mesasPos();
-        Local.construir(w, ox, posEstaciones(), pos, nivel(Recetas.Mejora.AMPLIAR), dj().estilo, dj().nombre, Ciudad.hay(slot + 1));
+        Local.construir(w, ox, posEstaciones(), pos, nivel(Recetas.Mejora.AMPLIAR), dj().estilo, dj().pintura, dj().nombreCafe, dj().nombre, Ciudad.hay(slot + 1));
         for (int[] m : pos) mesas.add(new Mesa(Local.pos(ox, m[0], 1, m[1])));
         aplicarDecor();
-        for (Ayudante.Tipo ti : Ayudante.Tipo.values()) {
-            Recetas.Mejora me = Recetas.Mejora.de(ti.mejora);
-            if (me != null && nivel(me) > 0) { Ayudante a = Ayudante.crear(w, ox, ti); if (a != null) ayudantes.add(a); }
-        }
+        crearPersonal();
     }
 
     /** Empieza la guia de inicio si el dueño aun no la ha hecho (y ya tiene cocinero). */
@@ -228,16 +225,122 @@ final class Cafe {
 
     private void quitarAyudantes() { for (Ayudante a : ayudantes) a.quitar(); ayudantes.clear(); }
 
-    /** Las tareas de los ayudantes (solo con el cafe abierto). */
+    // ------------------------------------------------------------ el personal (Michialien contratados)
+
+    /** Pasa las mejoras de ayudante de las versiones viejas (un Squirtle lavaplatos, un Chansey camarero) a empleados Michialien. */
+    void migrarAyudantes() {
+        Datos.Jugador d = dj();
+        if (d.personal == null) d.personal = new ArrayList<>();
+        boolean cambio = false;
+        for (String[] m : new String[][]{{"ayud_lava", "lavaplatos"}, {"ayud_mesero", "mesero"}}) {
+            if (d.nivel(m[0]) > 0) {
+                Datos.Empleado e = new Datos.Empleado();
+                e.rol = m[1]; e.nombre = Personal.nombreNuevo(d.personal); e.aspecto = Personal.Rol.de(m[1]).aspectoDefecto;
+                d.personal.add(e);
+                d.mejoras.remove(m[0]);
+                cambio = true;
+            }
+        }
+        if (cambio) EmiCafe.datos.guardar(duenio);
+    }
+
+    private void crearPersonal() {
+        Datos.Jugador d = dj();
+        if (d.personal == null) d.personal = new ArrayList<>();
+        int ancho = Local.ancho(nivel(Recetas.Mejora.AMPLIAR));
+        int n = Math.min(d.personal.size(), Personal.maximo(nivelLocal()));
+        for (int i = 0; i < n; i++) { Ayudante a = Ayudante.crear(w, ox, d.personal.get(i), i, ancho); if (a != null) ayudantes.add(a); }
+    }
+
+    /** Vuelve a poner a los empleados (despues de contratar, despedir, renombrar o cambiar un aspecto). */
+    void recargarPersonal() { quitarAyudantes(); crearPersonal(); }
+
+    /** El dueño contrata a un Michialien. Devuelve el error, o null. */
+    String contratar(ServerPlayerEntity p, Personal.Rol rol) {
+        if (!esDuenio(p)) return "Solo el dueño contrata.";
+        if (estado != Estado.PREPARANDO || construyendo) return "Contrata con el café cerrado y sin construir.";
+        Datos.Jugador d = dj();
+        if (d.personal == null) d.personal = new ArrayList<>();
+        if (d.personal.size() >= Personal.maximo(nivelLocal())) return "Tu local solo tiene sitio para " + Personal.maximo(nivelLocal()) + " empleado(s): amplíalo para contratar a más.";
+        if (nivelLocal() < rol.reqLocal) return "Para contratar a un " + rol.nombre.toLowerCase() + " hace falta un local de nivel " + rol.reqLocal + ".";
+        if (nivelRep() < rol.reqRep) return "Para contratar a un " + rol.nombre.toLowerCase() + " hace falta reputación nivel " + rol.reqRep + ".";
+        if (d.monedas < rol.precio) return "Te faltan monedas (" + rol.precio + ").";
+        d.monedas -= rol.precio;
+        Datos.Empleado e = new Datos.Empleado();
+        e.rol = rol.id; e.nombre = Personal.nombreNuevo(d.personal); e.aspecto = rol.aspectoDefecto;
+        d.personal.add(e);
+        EmiCafe.datos.guardar(duenio);
+        recargarPersonal();
+        p.sendMessage(Msg.say("¡Contrataste a " + e.nombre + " como " + rol.nombre.toLowerCase() + "! Para cambiarle el nombre: pestaña PERSONAL → NOMBRE (o /cafe personal nombre " + d.personal.size() + " <nombre>)."), false);
+        Sonidos.jugador(p, "subir", 1f, 1.1f);
+        return null;
+    }
+
+    String despedir(ServerPlayerEntity p, int idx) {
+        if (!esDuenio(p)) return "Solo el dueño despide.";
+        if (estado != Estado.PREPARANDO || construyendo) return "Despide con el café cerrado y sin construir.";
+        Datos.Jugador d = dj();
+        if (idx < 0 || idx >= d.personal.size()) return "Ese empleado no existe.";
+        Datos.Empleado e = d.personal.remove(idx);
+        EmiCafe.datos.guardar(duenio);
+        recargarPersonal();
+        p.sendMessage(Msg.say("Despediste a " + e.nombre + "."), false);
+        return null;
+    }
+
+    /** Cambia el nombre de un empleado (1 = el primero). */
+    String renombrar(ServerPlayerEntity p, int num, String nombre) {
+        if (!esDuenio(p)) return "Solo el dueño puede poner nombres.";
+        Datos.Jugador d = dj();
+        if (num < 1 || num > d.personal.size()) return "No tienes un empleado número " + num + ".";
+        String n = Personal.limpiar(nombre, 16);
+        if (n.isEmpty()) return "Escribe un nombre.";
+        d.personal.get(num - 1).nombre = n;
+        EmiCafe.datos.guardar(duenio);
+        recargarPersonal();
+        p.sendMessage(Msg.say("Ahora se llama " + n + "."), false);
+        return null;
+    }
+
+    String cambiarAspecto(ServerPlayerEntity p, int idx) {
+        if (!esDuenio(p)) return "Solo el dueño puede cambiar aspectos.";
+        Datos.Jugador d = dj();
+        if (idx < 0 || idx >= d.personal.size()) return "Ese empleado no existe.";
+        Datos.Empleado e = d.personal.get(idx);
+        e.aspecto = (e.aspecto + 1) % Personal.ASPECTOS.length;
+        EmiCafe.datos.guardar(duenio);
+        recargarPersonal();
+        return null;
+    }
+
+    /** Le pone nombre al cafe (el rotulo del tejado). Devuelve el error, o null. */
+    String ponerNombreCafe(ServerPlayerEntity p, String nombre) {
+        if (!esDuenio(p)) return "Solo el dueño puede ponerle nombre al café.";
+        String n = Personal.limpiar(nombre, 24);
+        Datos.Jugador d = dj();
+        d.nombreCafe = n;
+        EmiCafe.datos.guardar(duenio);
+        Local.rotulo(w, ox, n, d.nombre);
+        p.sendMessage(Msg.say(n.isEmpty() ? "Tu café vuelve a llamarse «Café Michialien»." : "Tu café ahora se llama «" + n + "»."), false);
+        return null;
+    }
+
+    /** ¿Estan en el cafe todas las estaciones que usa este plato? */
+    private boolean tieneEstaciones(Recetas.Plato pl) {
+        for (Estacion e : pl.estaciones) if (posDe(e) == null) return false;
+        return true;
+    }
+
+    /** Las tareas de los empleados (solo con el cafe abierto). */
     private void tickAyudantes() {
         if (estado != Estado.ABIERTO) return;
         ServerPlayerEntity duenioP = jugador(duenio);
         if (duenioP == null) return;
         for (Ayudante a : ayudantes) {
             if (a.e.isRemoved() || --a.espera > 0) continue;
-            a.espera = a.tipo.cada;
-            switch (a.tipo) {
-                case LAVA -> {
+            a.espera = a.rol.cada;
+            switch (a.rol) {
+                case LAVAPLATOS -> {
                     for (Mesa m : mesas) if (m.sucio != null) {
                         Disp.quitar(m.sucio); m.sucio = null; platos++;
                         Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "lavar", 0.7f, 1.0f);
@@ -262,6 +365,34 @@ final class Cafe {
                             cobrar(duenioP, m, plato, true);
                             break search;
                         }
+                    }
+                }
+                case CHEF -> {
+                    if (a.platoChef != null) {
+                        Cliente c = a.mesaChef.cliente;
+                        if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.pedido != a.platoChef.item) { a.platoChef = null; a.mesaChef = null; a.rotular(""); break; }
+                        a.restante -= a.rol.cada;
+                        w.spawnParticles(ParticleTypes.CLOUD, a.e.getX(), a.e.getY() + 1.1, a.e.getZ(), 3, 0.25, 0.1, 0.25, 0.01);
+                        Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "chisporroteo", 0.3f, 1.4f);
+                        if (a.restante <= 0) {
+                            Item plato = a.platoChef.item;
+                            Mesa m = a.mesaChef;
+                            a.platoChef = null; a.mesaChef = null; a.rotular("");
+                            if (platos > 0) { w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 0.9, a.e.getZ(), 8, 0.3, 0.3, 0.3, 0.0); cobrar(duenioP, m, plato, true); }
+                        }
+                        break;
+                    }
+                    for (Mesa m : mesas) {
+                        Cliente c = m.cliente;
+                        if (c == null || c.fase != Cliente.Fase.ESPERANDO || c.esp != null || c.critico) continue;
+                        Recetas.Plato pl = Recetas.Plato.de(c.pedido);
+                        if (pl == null || !tieneEstaciones(pl)) continue;
+                        boolean otro = false;
+                        for (Ayudante b : ayudantes) if (b != a && b.mesaChef == m) otro = true;
+                        if (otro) continue;
+                        a.mesaChef = m; a.platoChef = pl; a.restante = 20 * (10 + 6 * pl.estaciones.size());
+                        a.rotular("cocina: " + pl.nombre());
+                        break;
                     }
                 }
             }
@@ -385,18 +516,44 @@ final class Cafe {
         if (rx < 0 || rx > ancho || rz < 0 || rz > 13) return -1;
         net.minecraft.block.Block b = w.getBlockState(pos).getBlock();
         String id = net.minecraft.registry.Registries.BLOCK.getId(b).getPath();
-        if (id.contains("stripped_oak_log") || id.contains("glass_pane") || id.equals("air")) return -1;
+        if (id.contains("stripped_oak_log") || id.equals("air")) return -1;
         boolean borde = rx == 0 || rx == ancho || rz == 0 || rz == 13;
+        if (id.contains("glass_pane") || id.equals("iron_bars")) return ry >= 1 && ry <= 4 && borde ? Estilo.VENTANA : -1;     // las ventanas de las paredes
         if (ry == 0) return rz <= 6 ? Estilo.COCINA : Estilo.COMEDOR;
         if (ry == 5) return borde ? Estilo.PARED : Estilo.TECHO;
         if (ry >= 1 && ry <= 4 && borde) return ry == 2 ? Estilo.FRANJA : Estilo.PARED;
         return -1;
     }
 
+    /** Pinta una parte del local (pared, franja, suelo, techo o ventanas) con el bloque que el dueño lleva en la mano (agachado + clic). Devuelve el error, o null. */
+    String pintar(ServerPlayerEntity p, int parte, net.minecraft.block.Block bloque) {
+        String id = net.minecraft.registry.Registries.BLOCK.getId(bloque).toString();
+        String path = net.minecraft.registry.Registries.BLOCK.getId(bloque).getPath();
+        String usar = id;
+        if (parte == Estilo.VENTANA) {
+            String pane = path.endsWith("glass_pane") || path.equals("iron_bars") ? id : path.endsWith("glass") && !path.equals("tinted_glass") ? id + "_pane" : null;
+            if (pane == null || !net.minecraft.registry.Registries.BLOCK.containsId(net.minecraft.util.Identifier.of(pane))) return "Las ventanas llevan cristal: usa un cristal de colores o barrotes.";
+            usar = pane;
+        } else if (!bloque.getDefaultState().isFullCube(net.minecraft.world.EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
+            return "Eso no es un bloque entero: para pintar usa bloques macizos (hormigón, madera, ladrillo, cristal...).";
+        }
+        if (bloque instanceof net.minecraft.block.BlockWithEntity || net.minecraft.registry.Registries.BLOCK.getId(bloque).getNamespace().equals("emi_cafe")) return "Ese bloque no sirve para pintar.";
+        Datos.Jugador dd = dj();
+        dd.pintura = Estilo.normalizarPintura(dd.pintura);
+        dd.pintura[parte] = usar;
+        EmiCafe.datos.guardar(duenio);
+        reconstruir();
+        p.sendMessage(Msg.say("Pintaste «" + Estilo.PARTES[parte].toLowerCase() + "» con " + bloque.getName().getString() + ". (Mano vacía + clic = volver a la lista de materiales.)"), false);
+        sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_WOOD_PLACE, 0.7f, 1.0f);
+        return null;
+    }
+
     /** Pasa al material siguiente (o al anterior) de una parte del local, lo guarda y reconstruye. */
     void cambiarEstilo(ServerPlayerEntity p, int parte, int delta) {
         Datos.Jugador dd = dj();
         dd.estilo = Estilo.normalizar(dd.estilo);
+        dd.pintura = Estilo.normalizarPintura(dd.pintura);
+        dd.pintura[parte] = null;                                               // elegir de la lista quita lo que se hubiera pintado
         int n = Estilo.total(parte);
         dd.estilo[parte] = ((Estilo.indice(dd.estilo, parte) + delta) % n + n) % n;
         EmiCafe.datos.guardar(duenio);
@@ -432,7 +589,7 @@ final class Cafe {
         manos.put(p.getUuid(), null);
         p.getInventory().clear();
         p.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
-        p.sendMessage(Msg.say("MODO CONSTRUCCIÓN: compra bloques en la pestaña DECORAR de la caja registradora. Clic derecho = poner; clic izquierdo = recoger lo tuyo o una estación (para moverla: recógela y ponla en otra casilla de la cocina). Puedes decorar dentro y también fuera: el jardín de atrás, los lados y la acera. Con la MANO VACÍA, clic derecho en una pared, el techo o el suelo cambia su material (agachado = el anterior)."), false);
+        p.sendMessage(Msg.say("MODO CONSTRUCCIÓN: compra bloques en la pestaña DECORAR de la caja registradora. Clic derecho = poner; clic izquierdo = recoger lo tuyo o una estación (para moverla: recógela y ponla en otra casilla de la cocina). Puedes decorar dentro y también fuera: el jardín de atrás, los lados y la acera. Para cambiar una pared, el techo, el suelo o las ventanas: con la MANO VACÍA y clic derecho pasas al material siguiente (agachado = el anterior); AGACHADO + clic con un bloque en la mano lo pinta con ese bloque."), false);
         return null;
     }
 
@@ -462,6 +619,10 @@ final class Cafe {
             return ActionResult.FAIL;
         }
         if (!(st.getItem() instanceof net.minecraft.item.BlockItem bi)) return ActionResult.FAIL;
+        if (p.isSneaking()) {                                                        // agachado + clic con un bloque en la mano: pinta la pared, el techo, el suelo o las ventanas con ese bloque
+            int parte = parteEstilo(clic);
+            if (parte >= 0) { String err = pintar(p, parte, bi.getBlock()); if (err != null) msg(p, err); p.playerScreenHandler.syncState(); return ActionResult.FAIL; }
+        }
         Estacion estacion = Estacion.de(bi.getBlock());
         if (estacion != null && estacion.x >= 0) return colocarEstacion(p, hit, st, estacion);
         net.minecraft.item.ItemUsageContext uc = new net.minecraft.item.ItemUsageContext(p, hand, hit);
@@ -745,7 +906,7 @@ final class Cafe {
         Text mano = c == null ? Text.literal("manos vacías").formatted(Formatting.GRAY) : Text.literal(CafeItems.nombre(c)).formatted(Formatting.YELLOW);
         Text r = Text.literal("");
         if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO" + (evento != Evento.NINGUNO ? " · " + evento.nombre : "") + "   ").formatted(Formatting.GREEN, Formatting.BOLD);
-        else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — caja registradora para terminar   ").formatted(Formatting.GOLD, Formatting.BOLD);
+        else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — agachado + clic con un bloque = pintar · caja = terminar   ").formatted(Formatting.GOLD, Formatting.BOLD);
         else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
         return Text.empty().append(r).append(Text.literal("Monedas: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(dj(p).monedas)).formatted(Formatting.WHITE, Formatting.BOLD))
                 .append(Text.literal("   Platos limpios: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(platos)).formatted(platos == 0 ? Formatting.RED : Formatting.WHITE, Formatting.BOLD))

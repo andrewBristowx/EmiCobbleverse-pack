@@ -35,6 +35,16 @@ final class Cmds {
                 .then(CommandManager.literal("aceptar").executes(c -> con(c, p -> Cafes.aceptar(p, null)))
                         .then(CommandManager.argument("duenio", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.aceptar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "duenio"))))))
                 .then(CommandManager.literal("visitar").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.visitar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
+                .then(CommandManager.literal("nombre").then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    return cf.ponerNombreCafe(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
+                }))))
+                .then(CommandManager.literal("personal").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 20)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    return cf.renombrar(p, IntegerArgumentType.getInteger(c, "numero"), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
+                }))))))
                 .then(CommandManager.literal("ir").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.irA(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
                 .then(CommandManager.literal("megusta").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                     Cafe otro = Cafes.deDuenio(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"));
@@ -173,7 +183,7 @@ final class Cmds {
                         })))
                         .then(CommandManager.literal("mejora").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("nivel", IntegerArgumentType.integer(0, 9)).executes(c -> con(c, p -> {
                             Recetas.Mejora m = Recetas.Mejora.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
-                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad, propinas, ayud_lava, ayud_mesero";
+                            if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad, propinas";
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.mejoras.put(m.id, Math.min(m.max(), IntegerArgumentType.getInteger(c, "nivel")));
                             EmiCafe.datos.guardar(p.getUuid());
