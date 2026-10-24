@@ -12,7 +12,9 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 
@@ -59,6 +61,7 @@ final class Cafe {
     final List<Cliente> clientes = new ArrayList<>();
     final Map<BlockPos, Est> ests = new HashMap<>();
     Estado estado = Estado.PREPARANDO;
+    boolean construyendo;                                 // modo construccion: el dueño decora a solas (el cafe esta cerrado)
     int t;
     int cierre;
     int proximoCliente;
@@ -103,8 +106,148 @@ final class Cafe {
         mesas.clear();
         for (Est e : ests.values()) { Disp.quitar(e.icono); Disp.quitar(e.barra); }
         ests.clear();
-        Local.construir(w, ox, activas(), numMesas(), nivel(Recetas.Mejora.AMPLIAR));
-        for (int i = 0; i < numMesas(); i++) mesas.add(new Mesa(Local.pos(ox, Local.MESAS[i][0], 1, Local.MESAS[i][1])));
+        List<int[]> pos = mesasPos();
+        Local.construir(w, ox, activas(), pos, nivel(Recetas.Mejora.AMPLIAR));
+        for (int[] m : pos) mesas.add(new Mesa(Local.pos(ox, m[0], 1, m[1])));
+        aplicarDecor();
+    }
+
+    // ------------------------------------------------------------ modo construccion
+
+    /** Donde estan las mesas ({x, z} del local): las que el dueño ha movido o, si faltan, los sitios de siempre. */
+    List<int[]> mesasPos() {
+        Datos.Jugador d = dj();
+        if (d.mesasPos == null) d.mesasPos = new ArrayList<>();
+        int n = numMesas();
+        if (d.mesasCap < n) {                                  // se ganaron mesas con una mejora: las nuevas salen en sus sitios de siempre
+            int faltan = n - d.mesasCap;
+            for (int[] def : Local.MESAS) {
+                if (faltan <= 0) break;
+                boolean usado = false;
+                for (int[] q : d.mesasPos) if (q[0] == def[0] && q[1] == def[1]) usado = true;
+                if (!usado) { d.mesasPos.add(def.clone()); faltan--; }
+            }
+            d.mesasCap = n;
+        }
+        return d.mesasPos;
+    }
+
+    /** ¿Es una casilla donde se puede construir? (dentro del local, sin tocar paredes, suelo ni techo) */
+    boolean construible(BlockPos pos) {
+        int rx = pos.getX() - ox, ry = pos.getY() - Local.Y, rz = pos.getZ();
+        return rx >= 1 && rx < Local.ancho(nivel(Recetas.Mejora.AMPLIAR)) && rz >= 1 && rz <= 12 && ry >= 1 && ry <= 4;
+    }
+
+    private String claveDecor(BlockPos pos) { return Decor.clave(pos.getX() - ox, pos.getY() - Local.Y, pos.getZ()); }
+
+    /** Vuelve a poner lo que el dueño habia colocado (despues de reconstruir el local); lo que ya no cabe (una estacion nueva encima, un bloque que ya no existe) se olvida. */
+    void aplicarDecor() {
+        Datos.Jugador d = dj();
+        if (d.decor == null || d.decor.isEmpty()) return;
+        java.util.Iterator<Map.Entry<String, String>> it = d.decor.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, String> en = it.next();
+            String[] k = en.getKey().split(",");
+            net.minecraft.block.BlockState st = Decor.leer(en.getValue());
+            BlockPos pos = new BlockPos(ox + Integer.parseInt(k[0]), Local.Y + Integer.parseInt(k[1]), Integer.parseInt(k[2]));
+            if (st == null || !construible(pos) || !w.getBlockState(pos).isAir()) { it.remove(); continue; }
+            w.setBlockState(pos, st, net.minecraft.block.Block.NOTIFY_ALL);
+        }
+    }
+
+    /** Entra en el modo construccion (solo el dueño, con el cafe cerrado y sin invitados). Devuelve el error, o null. */
+    String entrarConstruccion(ServerPlayerEntity p) {
+        if (!esDuenio(p)) return "Solo el dueño puede construir.";
+        if (estado != Estado.PREPARANDO) return "Cierra el café antes de construir.";
+        if (jugadores.size() > 1) return "Despide primero a tus invitados: solo se construye a solas.";
+        construyendo = true;
+        manos.put(p.getUuid(), null);
+        p.getInventory().clear();
+        p.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        p.sendMessage(Msg.say("MODO CONSTRUCCIÓN: compra bloques en la pestaña DECORAR de la caja registradora. Clic derecho = poner; clic izquierdo = recoger lo tuyo (vuelve a tu inventario). Las paredes, las estaciones y el suelo no se tocan."), false);
+        return null;
+    }
+
+    void salirConstruccion(ServerPlayerEntity p) {
+        if (!construyendo) return;
+        construyendo = false;
+        p.getInventory().clear();
+        p.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
+        EmiCafe.datos.guardar(duenio);
+        sincronizarMano(p);
+        p.sendMessage(Msg.say("Terminaste de construir. Se guardó tu decoración."), false);
+    }
+
+    /** Clic derecho del dueño en modo construccion. */
+    ActionResult clicConstruccion(ServerPlayerEntity p, net.minecraft.util.hit.BlockHitResult hit, Hand hand) {
+        if (hand != Hand.MAIN_HAND) return ActionResult.FAIL;
+        BlockPos clic = hit.getBlockPos();
+        Estacion e = Estacion.de(w.getBlockState(clic).getBlock());
+        if (e != null && e.tipo == Estacion.Tipo.REGISTRADORA) { Menus.principal(this, p); return ActionResult.FAIL; }
+        ItemStack st = p.getStackInHand(hand);
+        if (st.isEmpty() || !(st.getItem() instanceof net.minecraft.item.BlockItem bi)) return ActionResult.FAIL;
+        net.minecraft.item.ItemUsageContext uc = new net.minecraft.item.ItemUsageContext(p, hand, hit);
+        net.minecraft.item.ItemPlacementContext pc = new net.minecraft.item.ItemPlacementContext(uc);
+        BlockPos pos = pc.getBlockPos();
+        if (!construible(pos)) { msg(p, "Ahí no se puede construir (solo dentro del local, sin paredes ni techo)"); return ActionResult.FAIL; }
+        boolean esMesa = bi.getBlock() == CafeBlocks.MESA;
+        if (esMesa) {
+            List<int[]> mp = mesasPos();
+            int rx = pos.getX() - ox, rz = pos.getZ();
+            if (mp.size() >= numMesas()) { msg(p, "No tienes más mesas: mejora el café para tener más"); return ActionResult.FAIL; }
+            if (rz < 7 || rz > 10) { msg(p, "Las mesas van en el comedor (la parte de abajo, junto a la puerta)"); return ActionResult.FAIL; }
+        } else if (Decor.articuloDe(bi) == null) { msg(p, "Eso no se puede colocar aquí"); return ActionResult.FAIL; }
+        Datos.Jugador d = dj();
+        if (!esMesa && d.decor.size() >= Decor.MAX_BLOQUES) { msg(p, "Ya hay demasiados bloques colocados"); return ActionResult.FAIL; }
+        if (!pc.canPlace()) return ActionResult.FAIL;
+        ActionResult r = st.useOnBlock(uc);
+        if (r.isAccepted()) {
+            net.minecraft.block.BlockState nuevo = w.getBlockState(pos);
+            if (esMesa) {
+                int rx = pos.getX() - ox, rz = pos.getZ();
+                List<int[]> mp = mesasPos();
+                if (mp.size() < numMesas()) { mp.add(new int[]{rx, rz}); mesas.add(new Mesa(pos)); }
+            } else d.decor.put(claveDecor(pos), Decor.guardar(nuevo));
+            p.getInventory().markDirty();
+            p.playerScreenHandler.sendContentUpdates();
+            EmiCafe.datos.guardar(duenio);
+        }
+        return ActionResult.FAIL;
+    }
+
+    /** Clic izquierdo del dueño en modo construccion: recoge lo suyo (decoracion y mesas) y lo devuelve al inventario. */
+    ActionResult ataqueConstruccion(ServerPlayerEntity p, BlockPos pos) {
+        net.minecraft.block.BlockState st = w.getBlockState(pos);
+        Datos.Jugador d = dj();
+        String k = claveDecor(pos);
+        if (d.decor.containsKey(k)) {
+            d.decor.remove(k);
+            w.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
+            devolver(p, st);
+            EmiCafe.datos.guardar(duenio);
+            return ActionResult.FAIL;
+        }
+        if (st.getBlock() == CafeBlocks.MESA) {
+            int rx = pos.getX() - ox, rz = pos.getZ();
+            List<int[]> mp = mesasPos();
+            for (int i = 0; i < mp.size(); i++) if (mp.get(i)[0] == rx && mp.get(i)[1] == rz) {
+                mp.remove(i);
+                mesas.removeIf(m -> m.bloque.equals(pos));
+                w.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
+                devolver(p, st);
+                EmiCafe.datos.guardar(duenio);
+                return ActionResult.FAIL;
+            }
+        }
+        msg(p, "Eso es parte del café: no se puede quitar");
+        return ActionResult.FAIL;
+    }
+
+    private void devolver(ServerPlayerEntity p, net.minecraft.block.BlockState st) {
+        ItemStack back = new ItemStack(st.getBlock().asItem());
+        if (!back.isEmpty()) p.getInventory().insertStack(back);
+        sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ITEM_PICKUP, 0.5f, 1.1f);
+        p.playerScreenHandler.sendContentUpdates();
     }
 
     // ------------------------------------------------------------ mensajes a todos
@@ -132,6 +275,7 @@ final class Cafe {
 
     /** Abre el cafe (solo el dueño, y solo si ya eligio cocinero). No hay reloj: se cierra desde la caja registradora cuando se quiera. */
     String abrirTurno() {
+        if (construyendo) return "Termina de construir antes de abrir el café.";
         if (estado != Estado.PREPARANDO) return "El café ya está abierto.";
         if (dj().inicial == null) return "Primero elige a tu Pokémon cocinero.";
         estado = Estado.ABIERTO;
@@ -226,6 +370,7 @@ final class Cafe {
         Text mano = c == null ? Text.literal("manos vacías").formatted(Formatting.GRAY) : Text.literal(CafeItems.nombre(c)).formatted(Formatting.YELLOW);
         Text r = Text.literal("");
         if (estado == Estado.ABIERTO) r = Text.literal("● ABIERTO   ").formatted(Formatting.GREEN, Formatting.BOLD);
+        else if (construyendo) r = Text.literal("🔨 CONSTRUYENDO — caja registradora para terminar   ").formatted(Formatting.GOLD, Formatting.BOLD);
         else if (estado == Estado.PREPARANDO) r = Text.literal("Café cerrado — usa la caja registradora   ").formatted(Formatting.AQUA);
         return Text.empty().append(r).append(Text.literal("Monedas: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(dj(p).monedas)).formatted(Formatting.WHITE, Formatting.BOLD))
                 .append(Text.literal("   Platos limpios: ").formatted(Formatting.GOLD)).append(Text.literal(String.valueOf(platos)).formatted(platos == 0 ? Formatting.RED : Formatting.WHITE, Formatting.BOLD))
@@ -303,6 +448,7 @@ final class Cafe {
 
     /** El objeto de la mano del jugador tiene que ser lo que dice {@code manos}; el resto del inventario, vacio, y el hueco 1 elegido. */
     void sincronizarMano(ServerPlayerEntity p) {
+        if (construyendo) return;                              // construyendo, el inventario es de verdad (los bloques que ha comprado)
         var inv = p.getInventory();
         boolean cambio = false;
         Item c = manos.get(p.getUuid());
@@ -536,6 +682,7 @@ final class Cafe {
 
     /** Quita clientes, objetos y bloques de dibujo. */
     void cerrar() {
+        if (construyendo) { construyendo = false; if (EmiCafe.datos != null) EmiCafe.datos.guardar(duenio); }
         for (Cliente c : clientes) c.quitar();
         clientes.clear();
         for (Mesa m : mesas) { Disp.quitar(m.plato); Disp.quitar(m.sucio); m.plato = null; m.sucio = null; m.cliente = null; }

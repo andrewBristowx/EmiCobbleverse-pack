@@ -53,6 +53,7 @@ public class EmiCafe implements ModInitializer {
             if (w.isClient || !encerrado(p)) return ActionResult.PASS;
             if (hand == Hand.MAIN_HAND && p instanceof ServerPlayerEntity sp) {
                 Cafe c = Cafes.de(sp.getUuid());
+                if (c != null && c.construyendo && c.esDuenio(sp)) return c.clicConstruccion(sp, hit, hand);
                 if (c != null) c.usarBloque(sp, hit.getBlockPos());
             }
             return ActionResult.FAIL;
@@ -66,7 +67,14 @@ public class EmiCafe implements ModInitializer {
             return ActionResult.FAIL;
         });
         AttackEntityCallback.EVENT.register((p, w, hand, e, hit) -> !w.isClient && encerrado(p) ? ActionResult.FAIL : ActionResult.PASS);
-        AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> !w.isClient && encerrado(p) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackBlockCallback.EVENT.register((p, w, hand, pos, dir) -> {
+            if (w.isClient || !encerrado(p)) return ActionResult.PASS;
+            if (p instanceof ServerPlayerEntity sp) {
+                Cafe c = Cafes.de(sp.getUuid());
+                if (c != null && c.construyendo && c.esDuenio(sp)) return c.ataqueConstruccion(sp, pos);
+            }
+            return ActionResult.FAIL;
+        });
         PlayerBlockBreakEvents.BEFORE.register((w, p, pos, st, be) -> !encerrado(p));
     }
 }

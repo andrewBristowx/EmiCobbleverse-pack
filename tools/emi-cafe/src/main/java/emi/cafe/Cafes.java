@@ -92,6 +92,7 @@ final class Cafes {
     /** Invita a otro jugador conectado a tu café (solo el dueño). */
     static String invitar(Cafe c, ServerPlayerEntity host, ServerPlayerEntity target) {
         if (!c.esDuenio(host)) return "Solo el dueño del café puede invitar.";
+        if (c.construyendo) return "Estás construyendo: termina antes de invitar.";
         if (target == host) return "No puedes invitarte a ti mismo.";
         if (POR_JUGADOR.containsKey(target.getUuid())) return target.getGameProfile().getName() + " ya está en un café.";
         if (c.jugadores.size() >= MAX_JUGADORES) return "Tu café está lleno (máximo " + MAX_JUGADORES + " personas).";

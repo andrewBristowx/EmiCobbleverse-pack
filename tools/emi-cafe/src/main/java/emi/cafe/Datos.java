@@ -25,6 +25,9 @@ final class Datos {
         String inicial;              // el Pokemon cocinero elegido (null = aun no ha elegido)
         java.util.List<String> platos = new java.util.ArrayList<>();                 // platos que sabe hacer
         java.util.Map<String, Integer> mejoras = new java.util.HashMap<>();          // nivel de cada mejora
+        int mesasCap;                                                                  // cuantas mesas tenia ya asignadas (para saber cuando una mejora da mesas nuevas)
+        java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
+        java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();         // lo que el dueño ha colocado en el modo construccion: «x,y,z» (relativos al local) -> estado del bloque (SNBT)
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
         int especialesServidos;                                                       // visitantes especiales atendidos en total
 

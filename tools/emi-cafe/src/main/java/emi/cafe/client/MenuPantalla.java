@@ -26,15 +26,16 @@ import java.util.Map;
  */
 @Environment(EnvType.CLIENT)
 public final class MenuPantalla extends Lienzo {
-    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5;
-    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS"};
-    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros"};
+    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6;
+    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR"};
+    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar"};
     private static final int FONDO = 0xFF1B1B30, BORDE = 0xFF55557A, ACTIVO = 0xFF2E2E58, SUAVE = 0xFF8888AA, MONEDA = 0xFFFFD34E, ESTRELLA = 0xFFFFE070;
 
     /** La pantalla abierta ahora (para actualizarla cuando llegan datos nuevos del servidor). */
     public static MenuPantalla abierta;
 
     // ------------------------------------------------------------ datos
+    private record DecoC(String id, String item, String nombre, int cantidad, int precio, String grupo) {}
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
     private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi) {}
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
@@ -47,6 +48,9 @@ public final class MenuPantalla extends Lienzo {
     private final List<PlatoC> platos = new ArrayList<>();            // todos, para el recetario
     private final List<PlatoC> tiendaPlatos = new ArrayList<>();      // los que se compran (sin los de visitantes especiales)
     private final List<MejoraC> mejoras = new ArrayList<>();
+    private final List<DecoC> deco = new ArrayList<>();
+    private boolean construyendo;
+    private int mesasUsadas, mesasMax, pagDeco;
     private final List<GenteC> gente = new ArrayList<>();
     private final List<String> invitables = new ArrayList<>();
     private final List<MisionC> dia = new ArrayList<>(), semana = new ArrayList<>();
@@ -86,6 +90,10 @@ public final class MenuPantalla extends Lienzo {
             JsonObject j = e.getAsJsonObject();
             platos.add(new PlatoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("precio").getAsInt(), j.get("coste").getAsInt(), s(j, "receta"), j.get("tengo").getAsBoolean(), j.has("especial") && j.get("especial").getAsBoolean(), j.has("michi") ? s(j, "michi") : ""));
         }
+        construyendo = o.has("construyendo") && o.get("construyendo").getAsBoolean();
+        mesasUsadas = o.has("mesasUsadas") ? o.get("mesasUsadas").getAsInt() : 0; mesasMax = o.has("mesasMax") ? o.get("mesasMax").getAsInt() : 0;
+        deco.clear();
+        if (o.has("deco")) for (JsonElement e : o.getAsJsonArray("deco")) { JsonObject j = e.getAsJsonObject(); deco.add(new DecoC(s(j, "id"), s(j, "item"), s(j, "nombre"), j.get("cantidad").getAsInt(), j.get("precio").getAsInt(), s(j, "grupo"))); }
         tiendaPlatos.clear();
         for (PlatoC p : platos) if (!p.especial()) tiendaPlatos.add(p);
         mejoras.clear();
@@ -173,10 +181,10 @@ public final class MenuPantalla extends Lienzo {
         texto(g, "Las monedas son del café; las estrellas, de la tienda del servidor", 400, 36, LILA, 0.65f);
 
         for (int i = 0; i < TABS.length; i++) {
-            int x = 20 + i * 82;
-            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 78, 20);
-            caja(g, x, 48, 78, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : FONDO, act ? ORO : BORDE);
-            textoCentrado(g, TABS[i], x + 39, 54, act ? ORO : BLANCO, 1f);
+            int x = 20 + i * 72;
+            boolean act = i == tab, sobre = dentro(mx, my, x, 48, 68, 20);
+            caja(g, x, 48, 68, 20, act ? 0xFF3A3A66 : sobre ? 0xFF2A2A4A : FONDO, act ? ORO : BORDE);
+            textoCentrado(g, TABS[i], x + 34, 54, act ? ORO : BLANCO, 0.9f);
         }
         boton(g, 538, 48, 82, 20, "SALIR", 0xFF8A3A3A, true, dentro(mx, my, 538, 48, 82, 20), 1f);
 
@@ -186,6 +194,7 @@ public final class MenuPantalla extends Lienzo {
             case T_TIENDA -> tienda(g, mx, my);
             case T_ESTRELLAS -> estrellasTab(g, mx, my);
             case T_MISIONES -> misionesTab(g);
+            case T_DECORAR -> decorar(g, mx, my);
             default -> logrosTab(g);
         }
         if (resumen != null) resumenCaja(g, mx, my);
@@ -215,7 +224,13 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         // la parte de la izquierda: el estado del cafe y sus botones
-        switch (estado) {
+        if (construyendo) {
+            texto(g, "MODO CONSTRUCCIÓN", LX, CY - 7, ORO, 1.1f);
+            parrafo(g, "Decora tu café a tu gusto. Compra bloques y decoración en la pestaña DECORAR. Clic derecho = colocar; clic izquierdo = recoger lo que pusiste (vuelve a tu inventario). Las paredes, las estaciones y el suelo no se tocan; las mesas se pueden mover.", LX, CY + 10, LW, GRIS, 0.8f);
+            texto(g, "Mesas: " + mesasUsadas + "/" + mesasMax + " colocadas", LX, CY + 82, BLANCO, 0.9f);
+            boton(g, LX, CY + 100, LW, 28, "IR A DECORAR (tienda)", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 100, LW, 28), 1f);
+            boton(g, LX, CY + 134, LW, 28, "TERMINAR DE CONSTRUIR", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 134, LW, 28), 1f);
+        } else switch (estado) {
             case "abierto" -> {
                 texto(g, "CAFÉ ABIERTO", LX, CY - 7, VERDE, 1.1f);
                 parrafo(g, "El café está abierto y no hay reloj: cierra cuando quieras desde aquí. Cocina llevando los ingredientes en las manos y sirve con clic derecho al cliente o a su mesa.", LX, CY + 10, LW, GRIS, 0.85f);
@@ -236,9 +251,10 @@ public final class MenuPantalla extends Lienzo {
                 if (duenio) {
                     boton(g, LX, CY + 66, LW, 30, "ABRIR EL CAFÉ", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 66, LW, 30), 0.95f);
                     boton(g, LX, CY + 102, LW, 26, "PARAR POR AHORA (salir)", 0xFF8A3A3A, true, dentro(mx, my, LX, CY + 102, LW, 26), 0.95f);
+                    boton(g, LX, CY + 132, LW, 24, "MODO CONSTRUCCIÓN (decorar)", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 132, LW, 24), 0.9f);
                 } else boton(g, LX, CY + 66, LW, 28, "SALIR DEL CAFÉ", 0xFF8A3A3A, true, dentro(mx, my, LX, CY + 66, LW, 28), 1f);
-                texto(g, "Estrellas: +2 por cliente, +5 por jornada", LX, CY + 140, SUAVE, 0.7f);
-                texto(g, "con 3 o más clientes, +5 sin enfados y +5 por récord.", LX, CY + 150, SUAVE, 0.7f);
+                texto(g, "Estrellas: +2 por cliente, +5 por jornada", LX, CY + 164, SUAVE, 0.7f);
+                texto(g, "con 3 o más clientes, +5 sin enfados y +5 por récord.", LX, CY + 174, SUAVE, 0.7f);
             }
         }
         // la parte de la derecha: quien esta en el cafe y a quien invitar
@@ -347,6 +363,53 @@ public final class MenuPantalla extends Lienzo {
             int bx = x + PW - 88, bw = 82;
             boolean puede = !max && puedeComprar() && monedas >= m.precio();
             boton(g, bx, y + 9, bw, 20, max ? "MÁXIMO" : m.precio() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, bx, y + 9, bw, 20), 0.9f);
+        }
+    }
+
+    // ------------------------------------------------------------ decorar (tienda del modo construccion)
+
+    private static final int DW = 196, DH = 52, DCOLS = 3, DFILAS = 4, DPOR_PAG = DCOLS * DFILAS;
+
+    private void decorar(DrawContext g, int mx, int my) {
+        texto(g, "DECORAR", LX, CY - 8, ORO, 1.2f);
+        texto(g, "Tus monedas: " + monedas, LX + 70, CY - 5, MONEDA, 0.9f);
+        if (!construyendo) {
+            parrafo(g, duenio ? "Aquí compras bloques y decoración para tu café, pero solo en el MODO CONSTRUCCIÓN: ciérralo si está abierto y pulsa el botón de la pestaña CAFÉ."
+                    : "Solo el dueño decora el café.", LX, CY + 14, 400, GRIS, 0.9f);
+            if (duenio && estado.equals("preparando")) boton(g, LX, CY + 60, 250, 30, "ENTRAR EN MODO CONSTRUCCIÓN", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 60, 250, 30), 1f);
+            return;
+        }
+        texto(g, "Mesas colocadas: " + mesasUsadas + "/" + mesasMax, LX + 190, CY - 5, SUAVE, 0.8f);
+        int total = paginas(deco.size(), DPOR_PAG);
+        pagDeco = Math.min(pagDeco, total - 1);
+        paginador(g, mx, my, LX + 528, CY - 12, pagDeco, total);
+        for (int n = 0; n < DPOR_PAG; n++) {
+            int i = pagDeco * DPOR_PAG + n;
+            if (i >= deco.size()) break;
+            DecoC a = deco.get(i);
+            int x = LX + (n % DCOLS) * (DW + 6), y = CY + 10 + (n / DCOLS) * (DH + 4);
+            caja(g, x, y, DW, DH, FONDO, BORDE);
+            objeto(g, a.item(), x + 6, y + 8, 1.5f);
+            texto(g, recortar(a.nombre(), 22), x + 32, y + 5, BLANCO, 0.85f);
+            texto(g, a.grupo() + " · x" + a.cantidad(), x + 32, y + 17, SUAVE, 0.7f);
+            boolean puede = monedas >= a.precio();
+            boton(g, x + DW - 76, y + DH - 20, 70, 16, a.precio() + " ●", 0xFF7A4AC0, puede, puede && dentro(mx, my, x + DW - 76, y + DH - 20, 70, 16), 0.85f);
+        }
+    }
+
+    private void clicDecorar(int mx, int my) {
+        if (!construyendo) {
+            if (duenio && estado.equals("preparando") && dentro(mx, my, LX, CY + 60, 250, 30)) enviar("construir", "", "");
+            return;
+        }
+        int d = clicPaginador(mx, my, LX + 528, CY - 12);
+        if (d != 0) { pagDeco = Math.max(0, Math.min(paginas(deco.size(), DPOR_PAG) - 1, pagDeco + d)); return; }
+        for (int n = 0; n < DPOR_PAG; n++) {
+            int i = pagDeco * DPOR_PAG + n;
+            if (i >= deco.size()) break;
+            DecoC a = deco.get(i);
+            int x = LX + (n % DCOLS) * (DW + 6), y = CY + 10 + (n / DCOLS) * (DH + 4);
+            if (monedas >= a.precio() && dentro(mx, my, x + DW - 76, y + DH - 20, 70, 16)) enviar("comprarDeco", a.id(), "");
         }
     }
 
@@ -491,12 +554,13 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         if (dentro(mx, my, 538, 48, 82, 20)) { enviar("salir", "", ""); return; }
-        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 82, 48, 78, 20)) { tab = i; enviar("refrescar", TABS_ID[i], ""); return; }
+        for (int i = 0; i < TABS.length; i++) if (dentro(mx, my, 20 + i * 72, 48, 68, 20)) { tab = i; enviar("refrescar", TABS_ID[i], ""); return; }
         switch (tab) {
             case T_CAFE -> clicCafe(mx, my);
             case T_TIENDA -> clicTienda(mx, my);
             case T_RECETARIO -> { int d = clicPaginador(mx, my, LX + 528, CY - 12); if (d != 0) pagRec = Math.max(0, Math.min(paginas(platos.size(), REC_POR_PAG) - 1, pagRec + d)); }
             case T_ESTRELLAS -> clicEstrellas(mx, my);
+            case T_DECORAR -> clicDecorar(mx, my);
             default -> { }
         }
     }
@@ -510,6 +574,12 @@ public final class MenuPantalla extends Lienzo {
             }
             return;
         }
+        if (construyendo) {
+            if (!duenio) return;
+            if (dentro(mx, my, LX, CY + 100, LW, 28)) { tab = T_DECORAR; enviar("refrescar", "decorar", ""); return; }
+            if (dentro(mx, my, LX, CY + 134, LW, 28)) enviar("terminarConstruir", "", "");
+            return;
+        }
         switch (estado) {
             case "abierto" -> {
                 if (dentro(mx, my, LX, CY + 84, LW, 28)) { net.minecraft.client.MinecraftClient.getInstance().setScreen(null); return; }
@@ -520,6 +590,7 @@ public final class MenuPantalla extends Lienzo {
                 if (duenio) {
                     if (dentro(mx, my, LX, CY + 66, LW, 30)) { enviar("abrir", "", ""); return; }
                     if (dentro(mx, my, LX, CY + 102, LW, 26)) { enviar("salir", "", ""); return; }
+                    if (dentro(mx, my, LX, CY + 132, LW, 24)) { enviar("construir", "", ""); return; }
                     if (!lleno) for (int i = 0; i < invitables.size(); i++) {
                         int y = CY + 98 + 8 + i * 22;
                         if (dentro(mx, my, RX + RW - 92, y + 2, 86, 16)) { enviar("invitar", invitables.get(i), ""); return; }

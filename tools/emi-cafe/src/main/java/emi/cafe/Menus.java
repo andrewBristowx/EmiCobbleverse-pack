@@ -68,6 +68,16 @@ final class Menus {
         o.addProperty("estado", c.estado.name().toLowerCase());
         o.addProperty("inicial", dd.inicial == null ? "" : dd.inicial);
         o.addProperty("platosLimpios", c.platos);
+        o.addProperty("construyendo", c.construyendo);
+        o.addProperty("mesasUsadas", c.mesasPos().size()); o.addProperty("mesasMax", c.numMesas());
+        JsonArray deco = new JsonArray();
+        for (Decor.Articulo a : Decor.CATALOGO) {
+            JsonObject e = new JsonObject();
+            e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("cantidad", a.cantidad());
+            e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo());
+            deco.add(e);
+        }
+        o.add("deco", deco);
 
         JsonArray ini = new JsonArray();
         for (Recetas.Inicial i : Recetas.Inicial.values()) {
@@ -191,6 +201,13 @@ final class Menus {
                     String err = duenio ? c.abrirTurno() : "Solo el dueño del café abre el turno.";
                     if (err != null) { p.sendMessage(Msg.err(err), false); actualizar(c, p); } else cerrar(p);
                 }
+                case "construir" -> {
+                    String err = duenio ? c.entrarConstruccion(p) : "Solo el dueño construye.";
+                    if (err != null) p.sendMessage(Msg.err(err), false);
+                    actualizar(c, p);
+                }
+                case "terminarConstruir" -> { if (duenio) c.salirConstruccion(p); actualizar(c, p); }
+                case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
                 case "salir" -> { cerrar(p); Cafes.salir(p); }
                 case "invitar" -> {
@@ -245,6 +262,19 @@ final class Menus {
         c.reconstruir();
         Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.2f);
         p.sendMessage(Msg.say("Aprendiste " + pl.nombre() + ": " + pl.receta + ". Sus estaciones ya están en la cocina."), false);
+    }
+
+    private static void comprarDeco(Cafe c, ServerPlayerEntity p, Decor.Articulo art) {
+        if (art == null || !c.esDuenio(p) || !c.construyendo) return;
+        Datos.Jugador d = c.dj(p);
+        if (d.monedas < art.precio()) { p.sendMessage(Msg.err("Te faltan " + (art.precio() - d.monedas) + " monedas."), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
+        net.minecraft.item.ItemStack st = new net.minecraft.item.ItemStack(art.objeto(), art.cantidad());
+        if (st.isEmpty()) return;
+        if (!p.getInventory().insertStack(st) && !st.isEmpty()) { p.sendMessage(Msg.err("Tu inventario está lleno."), false); return; }
+        d.monedas -= art.precio();
+        EmiCafe.datos.guardar(p.getUuid());
+        Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f);
+        p.sendMessage(Msg.say("Compraste " + art.nombre() + " (" + art.cantidad() + ")."), false);
     }
 
     private static void comprarMejora(Cafe c, ServerPlayerEntity p, Recetas.Mejora me) {

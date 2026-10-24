@@ -37,8 +37,8 @@ final class Local {
         Disp.texto(w, abierto ? "{\"text\":\"ABIERTO\",\"color\":\"white\",\"bold\":true}" : "{\"text\":\"CERRADO\",\"color\":\"white\",\"bold\":true}", ox + 11.5, Y + 3.0, 15.06, 1.6f, false);
     }
 
-    /** Construye el local con solo las estaciones {@code activas} (las demas casillas de la fila quedan de encimera) y las primeras {@code mesas} mesas. */
-    static void construir(ServerWorld w, int ox, java.util.Set<Estacion> activas, int mesas, int ampliar) {
+    /** Construye el local con solo las estaciones {@code activas} (las demas casillas de la fila quedan de encimera) y las mesas de la lista {@code mesas} ({x, z} de cada una). */
+    static void construir(ServerWorld w, int ox, java.util.Set<Estacion> activas, java.util.List<int[]> mesas, int ampliar) {
         final int W = ancho(ampliar);
         long t0 = System.nanoTime();
         Disp.barrer(w, ox + 7, 9, 30);
@@ -76,7 +76,7 @@ final class Local {
         for (int x = 1; x < W; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 6, CafeBlocks.ENCIMERA);
         ponerBloque(w, ox, X_REGISTRADORA, 1, Z_REGISTRADORA, CafeBlocks.REGISTRADORA);
         // las mesas
-        for (int i = 0; i < Math.min(mesas, MESAS.length); i++) ponerBloque(w, ox, MESAS[i][0], 1, MESAS[i][1], CafeBlocks.MESA);
+        for (int[] m : mesas) ponerBloque(w, ox, m[0], 1, m[1], CafeBlocks.MESA);
         // el letrero sobre la puerta y farolas en la calle
         Disp.texto(w, "{\"text\":\"CAFÉ MICHIALIEN\",\"color\":\"light_purple\",\"bold\":true}", ox + 8.0, Y + 6.6, 13.6, 3.0f, false);
         Disp.texto(w, "{\"text\":\"Sirve lo que piden los Pokémon\",\"color\":\"yellow\"}", ox + 8.0, Y + 5.9, 13.6, 0.9f, false);
