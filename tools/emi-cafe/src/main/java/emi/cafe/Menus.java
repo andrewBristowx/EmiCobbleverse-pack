@@ -20,6 +20,10 @@ final class Menus {
     private Menus() {}
 
     private static final java.util.Map<java.util.UUID, Long> ULTIMO_REFRESCO = new java.util.HashMap<>();
+    private static final java.util.Map<java.util.UUID, Decor.Vista> VISTAS = new java.util.HashMap<>();
+
+    /** Lo que ve este jugador en la tienda DECORAR (fuente, grupo, pagina y busqueda). */
+    static Decor.Vista vista(ServerPlayerEntity p) { return VISTAS.computeIfAbsent(p.getUuid(), k -> new Decor.Vista()); }
 
     // ------------------------------------------------------------ abrir, refrescar, cerrar
 
@@ -113,14 +117,41 @@ final class Menus {
         o.addProperty("platosLimpios", c.platos);
         o.addProperty("construyendo", c.construyendo);
         o.addProperty("mesasUsadas", c.mesasPos().size()); o.addProperty("mesasMax", c.numMesas());
+        Decor.Vista vista = vista(p);
+        java.util.List<Decor.Articulo> lista = vista.lista();
         JsonArray deco = new JsonArray();
-        for (Decor.Articulo a : Decor.CATALOGO) {
+        for (int i = vista.pag * Decor.POR_PAG; i < Math.min(lista.size(), (vista.pag + 1) * Decor.POR_PAG); i++) {
+            Decor.Articulo a = lista.get(i);
             JsonObject e = new JsonObject();
             e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("cantidad", a.cantidad());
             e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("tienes", c.obras.stock(a.item()));
             deco.add(e);
         }
         o.add("deco", deco);
+        java.util.List<Decor.Fuente> fuentes = Decor.fuentes();
+        JsonArray fs = new JsonArray(), gs = new JsonArray();
+        for (Decor.Fuente f : fuentes) fs.add(f.nombre());
+        Decor.Fuente fAct = fuentes.get(Math.max(0, Math.min(fuentes.size() - 1, vista.fuente)));
+        for (Decor.Grupo g : fAct.grupos()) gs.add(g.nombre() + " (" + g.arts().size() + ")");
+        o.add("decoFuentes", fs); o.add("decoGrupos", gs);
+        o.addProperty("decoFuente", vista.fuente); o.addProperty("decoGrupo", vista.grupo);
+        o.addProperty("decoPag", vista.pag); o.addProperty("decoPags", vista.paginas());
+        o.addProperty("decoTotal", lista.size()); o.addProperty("decoBuscar", vista.buscar);
+        JsonArray baul = new JsonArray();                                      // el baul: todo lo que tiene guardado el dueño (desde 0.21.0)
+        if (duenio) {
+            java.util.List<String> claves = new java.util.ArrayList<>(dd.almacen.keySet());
+            claves.sort((x, y) -> Integer.compare(Obras.prioridad(x), Obras.prioridad(y)));
+            for (String k : claves) {
+                int n = dd.almacen.get(k);
+                if (n <= 0 || baul.size() >= 600) continue;
+                JsonObject e = new JsonObject();
+                e.addProperty("item", k); e.addProperty("n", n);
+                e.addProperty("fuera", dd.baul != null && dd.baul.contains(k));
+                e.addProperty("mano", c.construyendo ? c.obras.enInventario(p, k) : 0);
+                baul.add(e);
+            }
+        }
+        o.add("baul", baul);
         o.addProperty("libre", dd.libre);
         StringBuilder guardado = new StringBuilder();                          // lo del cafe que se tiene guardado para poner (caja registradora, estaciones, cartel...)
         for (java.util.Map.Entry<String, Integer> g : dd.almacen.entrySet()) {
@@ -375,6 +406,12 @@ final class Menus {
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
+                case "decoMover" -> { vista(p).mover(a.a(), parseIdx(a.b())); actualizar(c, p); }
+                case "decoBuscar" -> { vista(p).buscar(a.a()); actualizar(c, p); }
+                case "baulSacar" -> { if (duenio) { String err = c.obras.sacarDelBaul(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); } actualizar(c, p); }
+                case "baulGuardar" -> { if (duenio) { String err = c.obras.guardarEnBaul(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); } actualizar(c, p); }
+                case "baulSacarTodo" -> { if (duenio) c.obras.sacarTodoDelBaul(p); actualizar(c, p); }
+                case "baulGuardarTodo" -> { if (duenio) c.obras.guardarTodoEnBaul(p); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
                 case "salir" -> { cerrar(p); Cafes.salir(p); }
                 case "invitar" -> {
@@ -440,7 +477,10 @@ final class Menus {
         String err = c.obras.comprar(p, art);
         if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f);
-        p.sendMessage(Msg.say("Compraste " + art.nombre() + " (" + art.cantidad() + ")." + (c.construyendo ? "" : " Se queda guardado: lo tendrás en el inventario al entrar en el modo construcción.")), false);
+        String nom = art.nombre().isEmpty() ? art.objeto().getName().getString() : art.nombre();
+        String resto = !c.construyendo ? " Se queda guardado en tu baúl: lo tendrás en el inventario al entrar en el modo construcción."
+                : c.obras.sobrante > 0 ? " Tu inventario está lleno: " + c.obras.sobrante + " se quedan en tu baúl (pestaña BAÚL) y entran solos cuando liberes sitio." : "";
+        p.sendMessage(Msg.say("Compraste " + nom + " (" + art.cantidad() + ")." + resto), false);
     }
 
     private static void comprarMejora(Cafe c, ServerPlayerEntity p, Recetas.Mejora me) {

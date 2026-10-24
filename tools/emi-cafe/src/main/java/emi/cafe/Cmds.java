@@ -40,6 +40,7 @@ final class Cmds {
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.ponerNombreCafe(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
                 }))))
+                .then(CommandManager.literal("buscar").executes(c -> con(c, p -> buscar(p, ""))).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> buscar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"))))))
                 .then(CommandManager.literal("personal").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 20)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
@@ -207,7 +208,7 @@ final class Cmds {
                         .then(CommandManager.literal("reiniciar").executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.inicial = null; j.platos.clear(); j.mejoras.clear(); j.monedas = 0;
-                            j.libre = true; j.kitDado = false; j.almacen.clear(); j.decor.clear(); j.quitados.clear(); j.estPos.clear(); j.mesasPos.clear(); j.mesasCap = 0; j.tutorialHecho = false;      // desde 0.18.0: parcela vacia otra vez
+                            j.libre = true; j.kitDado = false; j.almacen.clear(); if (j.baul != null) j.baul.clear(); j.decor.clear(); j.quitados.clear(); j.estPos.clear(); j.mesasPos.clear(); j.mesasCap = 0; j.tutorialHecho = false;      // desde 0.18.0: parcela vacia otra vez
                             EmiCafe.datos.guardar(p.getUuid());
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf != null) cf.reconstruir();
@@ -221,6 +222,17 @@ final class Cmds {
                             if (cf.construyendo) cf.obras.llenarInventario(p);
                             return null;
                         })))))
+                        .then(CommandManager.literal("catalogo").executes(c -> {                                // solo pruebas: escribe en el registro cuantos articulos tiene cada fuente y grupo de la tienda DECORAR
+                            StringBuilder sb = new StringBuilder("Catálogo de DECORAR:");
+                            for (Decor.Fuente f : Decor.fuentes()) {
+                                int n = 0; StringBuilder gs = new StringBuilder();
+                                for (Decor.Grupo g : f.grupos()) { n += g.arts().size(); gs.append(" [").append(g.nombre()).append(' ').append(g.arts().size()).append(']'); }
+                                sb.append("\n  ").append(f.nombre()).append(" = ").append(n).append(':').append(gs);
+                            }
+                            EmiCafe.LOG.info(sb.toString());
+                            c.getSource().sendFeedback(() -> Text.literal("Catálogo escrito en el registro."), false);
+                            return 1;
+                        }))
                         .then(CommandManager.literal("libre").then(CommandManager.argument("v", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(c -> con(c, p -> {      // solo pruebas: pasa tu cafe a parcela libre o al de antes
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.libre = com.mojang.brigadier.arguments.BoolArgumentType.getBool(c, "v");
@@ -252,6 +264,15 @@ final class Cmds {
                 st = st.with(net.minecraft.block.HorizontalFacingBlock.FACING, switch (dir) { case "norte" -> net.minecraft.util.math.Direction.NORTH; case "sur" -> net.minecraft.util.math.Direction.SOUTH; case "oeste" -> net.minecraft.util.math.Direction.WEST; default -> net.minecraft.util.math.Direction.EAST; });
             return cf.obras.ponerDev(IntegerArgumentType.getInteger(c, "x"), IntegerArgumentType.getInteger(c, "y"), IntegerArgumentType.getInteger(c, "z"), st);
         });
+    }
+
+    /** {@code /cafe buscar <texto>}: busca en la tienda DECORAR (por el nombre en ingles del objeto, por ejemplo «oak chair»); sin texto borra la busqueda. */
+    private static String buscar(ServerPlayerEntity p, String texto) {
+        Cafe cf = Cafes.de(p.getUuid());
+        if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+        Menus.vista(p).buscar(texto);
+        Menus.abrir(cf, p, "decorar", false);
+        return null;
     }
 
     private static int con(com.mojang.brigadier.context.CommandContext<ServerCommandSource> c, Accion a) {

@@ -38,6 +38,7 @@ final class Datos {
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
         boolean libre = true;                                                          // parcela libre (desde 0.18.0): empieza vacia y se construye comprando; los cafes de antes (false) conservan su local ya hecho
         java.util.Map<String, Integer> almacen = new java.util.LinkedHashMap<>();       // lo que el dueño tiene guardado para construir (bloques comprados, estaciones, mesas...): item -> cantidad
+        java.util.Set<String> baul = new java.util.LinkedHashSet<>();                  // objetos del almacen que el dueño ha dejado «solo en el baul»: no se copian al inventario al construir (desde 0.21.0)
         java.util.Set<String> estaciones = new java.util.LinkedHashSet<>();            // las estaciones que ya posee (nombres del enum), puestas o guardadas
         boolean kitDado;                                                               // ya recibio el kit del principio
         java.util.Set<String> quitados = new java.util.LinkedHashSet<>();             // bloques del edificio original que el dueño ha quitado en el modo construccion («x,y,z» relativos al local)

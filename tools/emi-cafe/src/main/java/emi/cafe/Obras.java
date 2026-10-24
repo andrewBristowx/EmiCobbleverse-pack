@@ -117,11 +117,81 @@ final class Obras {
     void sumarStock(String item, int delta) {
         Map<String, Integer> a = d().almacen;
         int n = Math.max(0, stock(item) + delta);
-        if (n == 0) a.remove(item); else a.put(item, n);
+        if (n == 0) { a.remove(item); if (d().baul != null) d().baul.remove(item); } else a.put(item, n);
         datosSucios = true;                                                 // se guarda en disco en 2 s
     }
 
     static String idItem(Block b) { return Registries.ITEM.getId(b.asItem()).toString(); }
+
+    // ------------------------------------------------------------ el baul (desde 0.21.0): el almacen visto como un cofre sin fondo
+
+    /** Los objetos que el dueño ha dejado «solo en el baul»: se tienen, pero no se copian al inventario al construir. */
+    Set<String> baulSet() {
+        Datos.Jugador d = d();
+        if (d.baul == null) d.baul = new LinkedHashSet<>();
+        return d.baul;
+    }
+
+    /** Cuantos de ese objeto lleva el jugador en el inventario ahora mismo. */
+    int enInventario(ServerPlayerEntity p, String item) {
+        int n = 0;
+        for (ItemStack s : p.getInventory().main) if (!s.isEmpty() && empleadoDe(s) == null && Registries.ITEM.getId(s.getItem()).toString().equals(item)) n += s.getCount();
+        return n;
+    }
+
+    private void quitarDelInventario(ServerPlayerEntity p, String item) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.main.size(); i++) {
+            ItemStack s = inv.main.get(i);
+            if (!s.isEmpty() && empleadoDe(s) == null && Registries.ITEM.getId(s.getItem()).toString().equals(item)) inv.main.set(i, ItemStack.EMPTY);
+        }
+    }
+
+    /** Guarda un objeto en el baul: lo quita del inventario (sigue siendo tuyo, solo que no ocupa sitio). Devuelve el error, o null. */
+    String guardarEnBaul(ServerPlayerEntity p, String item) {
+        if (!c.construyendo) return "Solo puedes guardar y sacar cosas del baúl dentro del modo construcción.";
+        if (stock(item) <= 0) return "Eso no está en tu baúl.";
+        baulSet().add(item);
+        quitarDelInventario(p, item);
+        datosSucios = true;
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+        return null;
+    }
+
+    /** Saca un objeto del baul al inventario (lo que quepa; el resto se queda en el baul y entra solo cuando haya sitio). Devuelve el error, o null. */
+    String sacarDelBaul(ServerPlayerEntity p, String item) {
+        if (!c.construyendo) return "Solo puedes guardar y sacar cosas del baúl dentro del modo construcción.";
+        int n = stock(item);
+        if (n <= 0) return "Eso no está en tu baúl.";
+        Item it = Registries.ITEM.get(Identifier.of(item));
+        if (it == null || it == net.minecraft.item.Items.AIR) return "Ese objeto ya no existe.";
+        baulSet().remove(item);
+        int falta = n - enInventario(p, item);
+        boolean cupo = true;
+        while (falta > 0 && cupo) {
+            int q = Math.min(falta, it.getMaxCount());
+            if (!p.getInventory().insertStack(new ItemStack(it, q))) cupo = false; else falta -= q;
+        }
+        datosSucios = true;
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+        return cupo ? null : "Tu inventario se ha llenado: lo que no cabe sigue en el baúl y entrará cuando liberes sitio.";
+    }
+
+    /** Guarda en el baul todo lo que llevas para construir (deja el inventario vacio de bloques; los peluches de los empleados se quedan). */
+    void guardarTodoEnBaul(ServerPlayerEntity p) {
+        if (!c.construyendo) return;
+        for (String k : new ArrayList<>(d().almacen.keySet())) { baulSet().add(k); quitarDelInventario(p, k); }
+        datosSucios = true;
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+    }
+
+    /** Saca del baul todo lo que quepa (el orden es el de siempre: primero lo del cafe). */
+    void sacarTodoDelBaul(ServerPlayerEntity p) {
+        if (!c.construyendo) return;
+        baulSet().clear();
+        datosSucios = true;
+        completar(p);
+    }
 
     /** Pone en el inventario todo lo que hay en el almacen (primero lo del cafe: caja registradora, mesas y estaciones). */
     void llenarInventario(ServerPlayerEntity p) {
@@ -130,6 +200,7 @@ final class Obras {
         claves.sort((a, b) -> Integer.compare(prioridad(a), prioridad(b)));
         boolean lleno = false;
         for (String k : claves) {
+            if (baulSet().contains(k)) continue;                               // lo que el dueño dejo solo en el baul no se copia al inventario
             Item it = Registries.ITEM.get(Identifier.of(k));
             if (it == null || it == net.minecraft.item.Items.AIR) continue;
             int n = stock(k);
@@ -218,6 +289,7 @@ final class Obras {
             tengo.merge(Registries.ITEM.getId(s.getItem()).toString(), s.getCount(), Integer::sum);
         }
         for (Map.Entry<String, Integer> en : new ArrayList<>(d().almacen.entrySet())) {
+            if (baulSet().contains(en.getKey())) continue;
             Item it = Registries.ITEM.get(Identifier.of(en.getKey()));
             if (it == null || it == net.minecraft.item.Items.AIR) continue;
             int falta = en.getValue() - tengo.getOrDefault(en.getKey(), 0);
@@ -235,7 +307,7 @@ final class Obras {
         p.playerScreenHandler.sendContentUpdates();
     }
 
-    private static int prioridad(String k) {
+    static int prioridad(String k) {
         if (k.equals(idItem(CafeBlocks.REGISTRADORA))) return 0;
         if (k.equals(idItem(CafeBlocks.MESA)) || k.startsWith("emi_cafe:mesa_")) return 1;
         return k.startsWith("emi_cafe:") ? 2 : 3;
@@ -319,6 +391,7 @@ final class Obras {
         if (PROHIBIDOS.contains(p) || p.contains("command_block") || p.contains("structure") || p.contains("redstone") || p.contains("piston") || p.contains("repeater") || p.contains("comparator") || p.contains("test_")) return false;
         if (b instanceof net.minecraft.block.FallingBlock || b instanceof net.minecraft.block.FluidBlock || b instanceof net.minecraft.block.AbstractFireBlock || b instanceof net.minecraft.block.TntBlock) return false;
         if (b instanceof net.minecraft.block.BlockWithEntity) {
+            if (Decor.MODS.containsKey(id.getNamespace())) return true;                // los muebles de los mods de decoracion (cajones, estantes, vajilla...) son adorno: dentro del cafe no se pueden abrir
             return b instanceof net.minecraft.block.AbstractSignBlock || b instanceof net.minecraft.block.AbstractBannerBlock || b instanceof net.minecraft.block.BedBlock
                     || b instanceof net.minecraft.block.AbstractSkullBlock || b instanceof net.minecraft.block.CampfireBlock || b instanceof net.minecraft.block.BellBlock || b instanceof net.minecraft.block.EnchantingTableBlock;
         }
@@ -646,11 +719,15 @@ final class Obras {
                     c.w.setBlockState(pos2, der, Block.NOTIFY_ALL);
                     d.decor.put(clave(pos2), Decor.guardar(der));
                 }
-                // una cama, una puerta o una planta alta ocupan dos bloques: se guarda tambien el de al lado
-                for (BlockPos q : new BlockPos[]{pos.up(), pos.down(), pos.north(), pos.south(), pos.east(), pos.west()}) {
+                // una cama, una puerta o una planta alta ocupan dos bloques (y el reloj de pie de un mod, tres): se guardan tambien los de al lado
+                boolean mod = Decor.MODS.containsKey(Registries.BLOCK.getId(nuevo.getBlock()).getNamespace());
+                int rad = mod ? 3 : 1;
+                for (int dx = -rad; dx <= rad; dx++) for (int dy = -rad; dy <= rad; dy++) for (int dz = -rad; dz <= rad; dz++) {
+                    if ((dx == 0 && dy == 0 && dz == 0) || (!mod && Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1)) continue;
+                    BlockPos q = pos.add(dx, dy, dz);
                     BlockState sq = c.w.getBlockState(q);
-                    if (sq.getBlock() == nuevo.getBlock() && !q.equals(pos) && construible(q) && !d.decor.containsKey(clave(q))
-                            && (sq.getBlock() instanceof net.minecraft.block.BedBlock || sq.getBlock() instanceof net.minecraft.block.DoorBlock || sq.getBlock() instanceof net.minecraft.block.TallPlantBlock)) {
+                    if (sq.getBlock() == nuevo.getBlock() && construible(q) && !d.decor.containsKey(clave(q))
+                            && (mod || sq.getBlock() instanceof net.minecraft.block.BedBlock || sq.getBlock() instanceof net.minecraft.block.DoorBlock || sq.getBlock() instanceof net.minecraft.block.TallPlantBlock)) {
                         d.quitados.remove(clave(q));
                         d.decor.put(clave(q), Decor.guardar(sq));
                     }
@@ -761,7 +838,10 @@ final class Obras {
                 BlockPos otra = st.get(PlacaBlock.DER) ? pos.west() : pos.east();
                 if (c.w.getBlockState(otra).getBlock() == CafeBlocks.CARTEL) { c.w.setBlockState(otra, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL); d.decor.remove(clave(otra)); }
             }
-            for (BlockPos q : new BlockPos[]{pos.up(), pos.down(), pos.north(), pos.south(), pos.east(), pos.west()}) {          // la otra mitad de una puerta o una cama que se ha ido sola
+            int rr = Decor.MODS.containsKey(Registries.BLOCK.getId(b).getNamespace()) ? 3 : 1;
+            for (int dx = -rr; dx <= rr; dx++) for (int dy = -rr; dy <= rr; dy++) for (int dz = -rr; dz <= rr; dz++) {          // las otras mitades de una puerta, una cama o un mueble alto que se han ido solas
+                if ((dx == 0 && dy == 0 && dz == 0) || (rr == 1 && Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1)) continue;
+                BlockPos q = pos.add(dx, dy, dz);
                 if (c.w.getBlockState(q).isAir() && d.decor.remove(clave(q)) != null) { /* ya no existe */ }
             }
         }
@@ -799,8 +879,12 @@ final class Obras {
 
     // ------------------------------------------------------------ comprar para construir
 
+    /** Cuantos objetos de la ultima compra no cupieron en el inventario y se quedaron en el baul (para avisar al jugador). */
+    int sobrante;
+
     /** Compra un articulo de la tienda de bloques: va al almacen (y al inventario si se esta construyendo). Devuelve el error, o null. */
     String comprar(ServerPlayerEntity p, Decor.Articulo art) {
+        sobrante = 0;
         if (art == null || !c.esDuenio(p)) return "Solo el dueño compra.";
         if (c.estado != Cafe.Estado.PREPARANDO) return "Solo se compra con el café cerrado.";
         Datos.Jugador d = c.dj(p);
@@ -811,12 +895,13 @@ final class Obras {
         if (d.monedas < art.precio()) return "Te faltan " + (art.precio() - d.monedas) + " monedas.";
         Item it = art.objeto();
         if (it == null || it == net.minecraft.item.Items.AIR) return "Ese artículo ya no existe.";
-        if (c.construyendo) {
-            ItemStack st = new ItemStack(it, art.cantidad());
-            if (!p.getInventory().insertStack(st) && !st.isEmpty()) return "Tu inventario está lleno.";
-        }
         d.monedas -= art.precio();
         sumarStock(art.item(), art.cantidad());
+        if (c.construyendo && !baulSet().contains(art.item())) {
+            ItemStack st = new ItemStack(it, art.cantidad());
+            p.getInventory().insertStack(st);                                          // si el inventario esta lleno lo que sobra se queda en el baul (el almacen) y entra solo cuando haya sitio
+            sobrante = st.getCount();
+        }
         EmiCafe.datos.guardar(p.getUuid());
         return null;
     }
