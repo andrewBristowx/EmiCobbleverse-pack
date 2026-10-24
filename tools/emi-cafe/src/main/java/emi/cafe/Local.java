@@ -37,22 +37,24 @@ final class Local {
         Disp.texto(w, abierto ? "{\"text\":\"ABIERTO\",\"color\":\"white\",\"bold\":true}" : "{\"text\":\"CERRADO\",\"color\":\"white\",\"bold\":true}", ox + 11.5, Y + 3.0, 15.06, 1.6f, false);
     }
 
-    /** Construye el local con solo las estaciones {@code activas} (las demas casillas de la fila quedan de encimera) y las mesas de la lista {@code mesas} ({x, z} de cada una). */
-    static void construir(ServerWorld w, int ox, java.util.Set<Estacion> activas, java.util.List<int[]> mesas, int ampliar) {
+    /**
+     * Construye el local con las estaciones de {@code pos} (cada una en su {x, z}; las demas casillas de la fila quedan de encimera), las mesas de la lista {@code mesas} ({x, z} de cada una)
+     * y los materiales de {@code estilo} (ver {@link Estilo}).
+     */
+    static void construir(ServerWorld w, int ox, java.util.Map<Estacion, int[]> pos, java.util.List<int[]> mesas, int ampliar, int[] estilo) {
         final int W = ancho(ampliar);
         long t0 = System.nanoTime();
         Disp.barrer(w, ox + 7, 9, 30);
         for (int x = -3; x <= W + 3; x++) for (int z = -3; z <= 20; z++) for (int y = Y - 1; y <= Y + 8; y++) Obra.poner(w, ox + x, y, z, "air");
-        // suelo: cocina gris claro y blanco, comedor rosa y blanco, calle de piedra
+        // suelo: damero (la cocina y el comedor pueden ser de materiales distintos), calle de piedra
         for (int x = 0; x <= W; x++) for (int z = 0; z <= 13; z++) {
-            boolean damero = ((x + z) & 1) == 0;
-            String piso = z <= 6 ? (damero ? "light_gray_concrete" : "white_concrete") : (damero ? "pink_concrete" : "white_concrete");
-            Obra.poner(w, ox + x, Y, z, piso);
+            Obra.poner(w, ox + x, Y, z, Estilo.suelo(estilo, z <= 6 ? Estilo.COCINA : Estilo.COMEDOR, x, z));
         }
         for (int x = -2; x <= W + 2; x++) for (int z = 14; z <= 19; z++) Obra.poner(w, ox + x, Y, z, ((x + z) & 3) == 0 ? "stone_bricks" : "smooth_stone");
-        // paredes de 4 de alto (blancas con una franja rosa) y el techo de cristal para que entre la luz
+        // paredes de 4 de alto (con una franja a la altura de los ojos) y el techo de cristal para que entre la luz
+        final String pared = Estilo.pared(estilo), franja = Estilo.franja(estilo);
         for (int y = 1; y <= 4; y++) {
-            String mat = y == 2 ? "pink_concrete" : "white_concrete";
+            String mat = y == 2 ? franja : pared;
             for (int x = 0; x <= W; x++) { Obra.poner(w, ox + x, Y + y, 0, mat); Obra.poner(w, ox + x, Y + y, 13, mat); }
             for (int z = 0; z <= 13; z++) { Obra.poner(w, ox + 0, Y + y, z, mat); Obra.poner(w, ox + W, Y + y, z, mat); }
         }
@@ -63,15 +65,15 @@ final class Local {
         for (int y = 1; y <= 4; y++) { Obra.poner(w, ox + 6, Y + y, 13, "stripped_oak_log"); Obra.poner(w, ox + 9, Y + y, 13, "stripped_oak_log"); }
         for (int x = 6; x <= 9; x++) Obra.poner(w, ox + x, Y + 4, 13, "stripped_oak_log");
         for (int x = 1; x < W; x++) for (int z = 1; z <= 12; z++) Obra.poner(w, ox + x, Y + 5, z, (x % 4 == 1 && z % 4 == 1) ? "sea_lantern" : "glass");
-        for (int x = 0; x <= W; x++) { Obra.poner(w, ox + x, Y + 5, 0, "white_concrete"); Obra.poner(w, ox + x, Y + 5, 13, "white_concrete"); }
-        for (int z = 0; z <= 13; z++) { Obra.poner(w, ox, Y + 5, z, "white_concrete"); Obra.poner(w, ox + W, Y + 5, z, "white_concrete"); }
+        for (int x = 0; x <= W; x++) { Obra.poner(w, ox + x, Y + 5, 0, pared); Obra.poner(w, ox + x, Y + 5, 13, pared); }
+        for (int z = 0; z <= 13; z++) { Obra.poner(w, ox, Y + 5, z, pared); Obra.poner(w, ox + W, Y + 5, z, pared); }
         // la fila de encimeras y estaciones al fondo (z = 1)
         for (int x = 1; x < W; x++) ponerBloque(w, ox, x, 1, 1, CafeBlocks.ENCIMERA);
         // la segunda fila (z = 5) solo se monta si hace falta alguna de sus estaciones; se deja libre el paso del comedor (x = 7-8)
         boolean segunda = false;
-        for (Estacion e : activas) if (e.x >= 0 && e.z == 5) segunda = true;
-        if (segunda) for (int x = 1; x <= 13; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 5, CafeBlocks.ENCIMERA);
-        for (Estacion e : Estacion.values()) if (e.x >= 0 && (e.siempre || activas.contains(e))) ponerBloque(w, ox, e.x, 1, e.z, e.bloque);
+        for (int[] q : pos.values()) if (q[1] == 5) segunda = true;
+        if (segunda) for (int x = 1; x < W; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 5, CafeBlocks.ENCIMERA);
+        for (java.util.Map.Entry<Estacion, int[]> en : pos.entrySet()) ponerBloque(w, ox, en.getValue()[0], 1, en.getValue()[1], en.getKey().bloque);
         // la barra que separa la cocina del comedor (con un hueco para pasar) y la caja registradora en su extremo
         for (int x = 1; x < W; x++) if (x != 7 && x != 8) ponerBloque(w, ox, x, 1, 6, CafeBlocks.ENCIMERA);
         ponerBloque(w, ox, X_REGISTRADORA, 1, Z_REGISTRADORA, CafeBlocks.REGISTRADORA);

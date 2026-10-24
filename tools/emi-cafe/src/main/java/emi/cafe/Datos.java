@@ -28,6 +28,8 @@ final class Datos {
         int mesasCap;                                                                  // cuantas mesas tenia ya asignadas (para saber cuando una mejora da mesas nuevas)
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
         java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();         // lo que el dueño ha colocado en el modo construccion: «x,y,z» (relativos al local) -> estado del bloque (SNBT)
+        int[] estilo = {0, 0, 0, 1};                                                  // materiales del local (ver Estilo): paredes, franja, suelo de la cocina y suelo del comedor
+        java.util.Map<String, int[]> estPos = new java.util.HashMap<>();              // donde el dueño ha puesto cada estacion ({x, z} del local; nombre del enum -> posicion); las que no estan aqui van en su sitio de siempre
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
         int especialesServidos;                                                       // visitantes especiales atendidos en total
 

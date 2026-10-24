@@ -78,6 +78,15 @@ final class Menus {
             deco.add(e);
         }
         o.add("deco", deco);
+        JsonArray est = new JsonArray();                                     // los materiales del local (paredes y suelos) que el dueño puede cambiar construyendo
+        for (int i = 0; i < Estilo.PARTES.length; i++) {
+            JsonObject e = new JsonObject();
+            e.addProperty("parte", Estilo.PARTES[i]); e.addProperty("nombre", Estilo.op(dd.estilo, i).nombre());
+            e.addProperty("idx", Estilo.indice(dd.estilo, i)); e.addProperty("total", Estilo.total(i));
+            est.add(e);
+        }
+        o.add("estilo", est);
+        o.addProperty("estacionesEnMano", c.estEnMano.size());
 
         JsonArray ini = new JsonArray();
         for (Recetas.Inicial i : Recetas.Inicial.values()) {
@@ -207,6 +216,19 @@ final class Menus {
                     actualizar(c, p);
                 }
                 case "terminarConstruir" -> { if (duenio) c.salirConstruccion(p); actualizar(c, p); }
+                case "estilo" -> {                                    // a = la parte (0-3), b = "+1" o "-1"
+                    if (duenio && c.construyendo) {
+                        int parte = Integer.parseInt(a.a()), delta = "-1".equals(a.b()) ? -1 : 1;
+                        if (parte >= 0 && parte < Estilo.PARTES.length) {
+                            Datos.Jugador dd = c.dj();
+                            if (dd.estilo == null || dd.estilo.length != 4) dd.estilo = Estilo.DEFECTO.clone();
+                            dd.estilo[parte] = ((Estilo.indice(dd.estilo, parte) + delta) % Estilo.total(parte) + Estilo.total(parte)) % Estilo.total(parte);
+                            EmiCafe.datos.guardar(c.duenio);
+                            c.reconstruir();
+                        }
+                    }
+                    actualizar(c, p);
+                }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
                 case "salir" -> { cerrar(p); Cafes.salir(p); }
