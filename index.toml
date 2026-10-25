@@ -1840,8 +1840,8 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-cafe-0.26.0.jar"
-hash = "329a76e9110167ae50b16bbab6fb0ea5ff8e24f28408c209796b84f370492f3c"
+file = "mods/emi-cafe-0.26.1.jar"
+hash = "a36d76a37e6df33c170fa292c212cddfa020f2852095218371e74fa77662f6c5"
 
 [[files]]
 file = "mods/emi-carreras-0.8.0.jar"

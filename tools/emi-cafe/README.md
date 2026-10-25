@@ -9,6 +9,10 @@ y **todos los objetos y estaciones con textura propia**».
 **puede invitar a su grupo** (los que estén conectados); los **3 Pokémon iniciales** (Charmander, Squirtle, Bulbasaur) y su plato; **la tienda y el Michialien chef** (peluche) más adelante;
 nombre «Café Michialien», comando `/cafe`, y **un botón para unirse en Ms. President**.
 
+## 0zd. Arreglo 0.26.1: el menú ya no cierra el juego con empleados de nivel 6 a 10
+Un jugador subió rápido a un empleado a nivel 6 con el menú abierto en la pestaña PERSONAL y el juego se cerró («Rendering screen … `count is negative: -1` en `MenuPantalla.personalTab`»). Causa: la fila de estrellas se dibujaba con `"☆".repeat(5 - nivel)`, pero los empleados llegan a nivel 10 desde la 0.20.0, así que con nivel 6 salía `repeat(-1)`. Ahora `MenuPantalla.estrellas(nivel, max)` acota el nivel y la fila de empleados muestra 10 estrellas (las fincas siguen con 5). Lo que se vio en el registro después (muchos «Error loading plugin» de Jade y el cierre final) es secundario: Not Enough Crashes intentó reabrir el juego tras el primer fallo y Jade no soporta registrarse dos veces.
+- **Probado**: compila; revisado el registro del jugador. **No probado en el juego** (no se abrió el menú con un empleado de nivel 6-10).
+
 ## 0zc. Novedades de la 0.26.0: la granja pasa detrás del muro del fondo
 
 Pedido del dueño con dos capturas («que las granjas estén más atrás»): el huerto salía pegado a la casa que había construido en el jardín. Ahora **las fincas ya no ocupan el jardín**:
