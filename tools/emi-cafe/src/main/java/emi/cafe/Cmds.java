@@ -74,6 +74,11 @@ final class Cmds {
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.renombrar(p, IntegerArgumentType.getInteger(c, "numero"), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
                 }))))))
+                .then(CommandManager.literal("granja").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 6)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    return cf.granja.renombrar(p, IntegerArgumentType.getInteger(c, "numero") - 1, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
+                }))))))
                 .then(CommandManager.literal("ir").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.irA(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
                 .then(CommandManager.literal("megusta").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                     Cafe otro = Cafes.deDuenio(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"));
@@ -138,6 +143,47 @@ final class Cmds {
                             for (Mesa m : cf.mesas) if (m.libre()) return cf.forzarEspecial(m, e) ? null : "No se pudo crear.";
                             return "No hay mesa libre.";
                         }))))
+                        .then(CommandManager.literal("granja")
+                                .then(CommandManager.literal("comprar").then(CommandManager.argument("tipo", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    return cf.granja.comprar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "tipo"));
+                                }))))
+                                .then(CommandManager.literal("dar").then(CommandManager.argument("tipo", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    return cf.granja.darGratis(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "tipo"));
+                                }))))
+                                .then(CommandManager.literal("mejorar").then(CommandManager.argument("slot", IntegerArgumentType.integer(0, 5)).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    return cf.granja.mejorar(p, IntegerArgumentType.getInteger(c, "slot"));
+                                }))))
+                                .then(CommandManager.literal("listo").executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    cf.granja.listaYa(null);
+                                    return null;
+                                })))
+                                .then(CommandManager.literal("probar").then(CommandManager.argument("plato", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    Recetas.Plato pl = Recetas.Plato.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "plato"));
+                                    if (pl == null) return "Un id de plato.";
+                                    Granja.Uso u = Granja.usar(cf.dj(), pl);
+                                    p.sendMessage(Msg.say(pl.nombre() + ": extra " + Math.round(u.extra() * 1000) / 10.0 + " % (" + u.usados() + " de " + u.total() + " ingredientes de la granja, mejor calidad " + u.mejor() + ")"), false);
+                                    return null;
+                                }))))
+                                .then(CommandManager.literal("estado").executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    Datos.Jugador dd = cf.dj();
+                                    StringBuilder b = new StringBuilder(cf.granja.estado()).append(" · despensa:");
+                                    for (java.util.Map.Entry<String, Integer> en : dd.despensa.entrySet()) b.append(' ').append(en.getKey().replace("emi_cafe:", "")).append('=').append(en.getValue());
+                                    b.append(" · extra ganado ").append(dd.granjaBonus);
+                                    p.sendMessage(Msg.say(b.toString()), false);
+                                    return null;
+                                }))))
                         .then(CommandManager.literal("pedido").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                             String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
                             Recetas.Plato pl = Recetas.Plato.de(id);

@@ -104,6 +104,13 @@ public final class CafeItems {
     public static final Item PASTEL_CHOCOLATE = reg("pastel_chocolate", "Pastel de chocolate");
     public static final Item HELADO_CHOCOLATE = reg("helado_chocolate", "Copa de helado de chocolate");
     public static final Item MENU_GRAN_CHEF = reg("menu_gran_chef", "Menú del gran chef");
+    // la granja (0.24.0)
+    public static final Item CEBOLLA = reg("cebolla", "Cebolla");
+    public static final Item CEBOLLA_PICADA = reg("cebolla_picada", "Cebolla picada");
+    public static final Item SOPA_CEBOLLA = reg("sopa_cebolla", "Sopa de cebolla");
+    public static final Item AROS_CEBOLLA = reg("aros_cebolla", "Aros de cebolla");
+    public static final Item SOPA_CEBOLLA_GRATINADA = reg("sopa_cebolla_gratinada", "Sopa de cebolla gratinada");
+    public static final Item ENSALADA_COMPLETA = reg("ensalada_completa", "Ensalada completa");
     public static final Item PLATO_SUCIO = reg("plato_sucio", "Plato sucio");
     public static final Item PLATO_LIMPIO = reg("plato_limpio", "Plato limpio");
     /** Solo se usan como dibujo (el globo de los pedidos y los iconos de los menus). */
@@ -127,6 +134,10 @@ public final class CafeItems {
     public static final Item ESTRELLA = reg("estrella", "Estrella del Café");
     public static final Item TROFEO = reg("trofeo", "Trofeo");
     public static final Item MISION = reg("mision", "Misión");
+    public static final Item ICONO_HUERTO = reg("icono_huerto", "Huerto");
+    public static final Item ICONO_CORRAL = reg("icono_corral", "Corral");
+    public static final Item ICONO_DESPENSA = reg("icono_despensa", "Despensa");
+    public static final Item ICONO_GRANJERO = reg("icono_granjero", "Michigranjero");
 
     private static Item reg(String id, String nombre) {
         Item i = Registry.register(Registries.ITEM, Identifier.of("emi_cafe", id), new Item(new Item.Settings().maxCount(1)));

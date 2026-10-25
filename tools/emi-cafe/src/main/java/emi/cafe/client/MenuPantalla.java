@@ -26,19 +26,19 @@ import java.util.Map;
  */
 @Environment(EnvType.CLIENT)
 public final class MenuPantalla extends Lienzo {
-    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9, T_PLANOS = 10;
-    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL", "PLANOS"};
-    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul", "planos"};
+    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9, T_PLANOS = 10, T_HUERTOS = 11, T_GANADO = 12, T_DESPENSA = 13;
+    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL", "PLANOS", "HUERTOS", "GANADO", "DESPENSA"};
+    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul", "planos", "huertos", "ganado", "despensa"};
     // las 11 pantallas se reparten en 6 pestañas grandes; CONSTRUCCIÓN y PROGRESO llevan una fila de subpestañas debajo (desde 0.23.0)
-    private static final String[] TOP = {"CAFÉ", "RECETARIO", "PERSONAL", "CAFÉS", "CONSTRUCCIÓN", "PROGRESO"};
-    private static final int[] TOP_TAB = {T_CAFE, T_RECETARIO, T_PERSONAL, T_CAFES};
-    private static final int[][] SUBS = {{T_DECORAR, T_BAUL, T_PLANOS}, {T_TIENDA, T_MISIONES, T_LOGROS, T_ESTRELLAS}};
-    private static final String[][] SUBN = {{"DECORAR", "BAÚL", "PLANOS"}, {"MEJORAS Y PLATOS", "MISIONES", "LOGROS", "RECOMPENSAS"}};
-    private static final int TOP_W = 86, SUB_W = 124, SUBY = 20;                    // ancho de cada pestaña grande y de cada subpestaña, y lo que baja el contenido para dejarles sitio
-    private final int[] subActual = {T_DECORAR, T_TIENDA};                           // la ultima subpestaña de cada grupo
+    private static final String[] TOP = {"CAFÉ", "RECETARIO", "PERSONAL", "GRANJA", "CAFÉS", "CONSTRUCCIÓN", "PROGRESO"};
+    private static final int[] TOP_REF = {T_CAFE, T_RECETARIO, T_PERSONAL, 102, T_CAFES, 100, 101};          // >= 100: un grupo de subpestañas (SUBS[ref - 100])
+    private static final int[][] SUBS = {{T_DECORAR, T_BAUL, T_PLANOS}, {T_TIENDA, T_MISIONES, T_LOGROS, T_ESTRELLAS}, {T_HUERTOS, T_GANADO, T_DESPENSA}};
+    private static final String[][] SUBN = {{"DECORAR", "BAÚL", "PLANOS"}, {"MEJORAS Y PLATOS", "MISIONES", "LOGROS", "RECOMPENSAS"}, {"HUERTOS", "GANADO", "DESPENSA"}};
+    private static final int TOP_W = 72, SUB_W = 124, SUBY = 20;                    // ancho de cada pestaña grande y de cada subpestaña, y lo que baja el contenido para dejarles sitio
+    private final int[] subActual = {T_DECORAR, T_TIENDA, T_HUERTOS};                           // la ultima subpestaña de cada grupo
 
     private static int grupoDe(int t) { for (int g = 0; g < SUBS.length; g++) for (int x : SUBS[g]) if (x == t) return g; return -1; }
-    private static int topDe(int t) { for (int i = 0; i < TOP_TAB.length; i++) if (TOP_TAB[i] == t) return i; int g = grupoDe(t); return g < 0 ? 0 : TOP_TAB.length + g; }
+    private static int topDe(int t) { for (int i = 0; i < TOP_REF.length; i++) if (TOP_REF[i] == t || (TOP_REF[i] >= 100 && grupoDe(t) == TOP_REF[i] - 100)) return i; return 0; }
 
     private void irATab(int t) {
         tab = t;
@@ -69,7 +69,18 @@ public final class MenuPantalla extends Lienzo {
     private record LogroC(String nombre, String texto, int nivel, int max, long valor, long meta, int premio) {}
     private record ArticuloC(String id, String item, String nombre, String texto, int precio, String grupo, int hoy, boolean unico, boolean comprado) {}
 
+    private record FincaC(int slot, String tipo, String nombre, String kind, String icono, String fuente, int nivel, int prog, long resta, String granjero, String aspecto, int coste, String tope, int rend, int bonus, String calidad, int animales, long cosechas) {}
+    private record CatC(String id, String nombre, String kind, String icono, int precio, int ciclo, String fuente, String texto, String bloqueo) {}
+    private record DespC(String item, String nombre, int total, int[] q) {}
+
     private final List<InicialC> iniciales = new ArrayList<>();
+    private final List<FincaC> fincas = new ArrayList<>();
+    private final List<CatC> catalogoGranja = new ArrayList<>();
+    private final List<DespC> despensa = new ArrayList<>();
+    private final List<String> calidadesGranja = new ArrayList<>();
+    private final List<Integer> calidadesPct = new ArrayList<>();
+    private int granjaMax, granjaTienes, granjaMinLocal = 5, granjaCap = 120, pagCatGranja;
+    private long granjaCosechado, granjaExtra;
     private final List<PlatoC> platos = new ArrayList<>();            // todos, para el recetario
     private final List<PlatoC> tiendaPlatos = new ArrayList<>();      // los que se compran (sin los de visitantes especiales)
     private final List<MejoraC> mejoras = new ArrayList<>();
@@ -185,6 +196,28 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("cafes")) for (JsonElement e : o.getAsJsonArray("cafes")) { JsonObject j = e.getAsJsonObject(); cafesAbiertos.add(new CafeC(s(j, "nombre"), j.has("titulo") ? s(j, "titulo") : "", j.get("megusta").getAsInt(), j.get("estilo").getAsInt(), j.get("rep").getAsInt(), j.get("abierto").getAsBoolean(), j.get("visitas").getAsBoolean(), j.get("gente").getAsInt(), j.has("dentro") && j.get("dentro").getAsBoolean())); }
         topCafes.clear();
         if (o.has("top")) for (JsonElement e : o.getAsJsonArray("top")) { JsonObject j = e.getAsJsonObject(); topCafes.add(new TopC(s(j, "nombre"), j.get("megusta").getAsInt(), j.get("rep").getAsInt(), j.get("estilo").getAsInt())); }
+        fincas.clear(); catalogoGranja.clear(); despensa.clear(); calidadesGranja.clear(); calidadesPct.clear();
+        if (o.has("granja")) {
+            JsonObject gj = o.getAsJsonObject("granja");
+            granjaMax = gj.get("max").getAsInt(); granjaTienes = gj.get("tienes").getAsInt(); granjaMinLocal = gj.get("minLocal").getAsInt(); granjaCap = gj.get("capacidad").getAsInt();
+            granjaCosechado = gj.get("cosechado").getAsLong(); granjaExtra = gj.get("extra").getAsLong();
+            for (JsonElement e : gj.getAsJsonArray("calidades")) { JsonObject j = e.getAsJsonObject(); calidadesGranja.add(s(j, "nombre")); calidadesPct.add(j.get("pct").getAsInt()); }
+            for (JsonElement e : gj.getAsJsonArray("fincas")) {
+                JsonObject j = e.getAsJsonObject();
+                fincas.add(new FincaC(j.get("slot").getAsInt(), s(j, "tipo"), s(j, "nombre"), s(j, "kind"), s(j, "icono"), s(j, "fuente"), j.get("nivel").getAsInt(), j.get("prog").getAsInt(), j.get("resta").getAsLong(),
+                        s(j, "granjero"), s(j, "aspecto"), j.get("coste").getAsInt(), s(j, "tope"), j.get("rend").getAsInt(), j.get("bonus").getAsInt(), s(j, "calidad"), j.get("animales").getAsInt(), j.get("cosechas").getAsLong()));
+            }
+            for (JsonElement e : gj.getAsJsonArray("catalogo")) {
+                JsonObject j = e.getAsJsonObject();
+                catalogoGranja.add(new CatC(s(j, "id"), s(j, "nombre"), s(j, "kind"), s(j, "icono"), j.get("precio").getAsInt(), j.get("ciclo").getAsInt(), s(j, "fuente"), s(j, "texto"), s(j, "bloqueo")));
+            }
+            for (JsonElement e : gj.getAsJsonArray("despensa")) {
+                JsonObject j = e.getAsJsonObject();
+                int[] q = new int[5];
+                for (int i = 0; i < 5 && i < j.getAsJsonArray("q").size(); i++) q[i] = j.getAsJsonArray("q").get(i).getAsInt();
+                despensa.add(new DespC(s(j, "item"), s(j, "nombre"), j.get("total").getAsInt(), q));
+            }
+        }
         estacionesEnMano = o.has("estacionesEnMano") ? o.get("estacionesEnMano").getAsInt() : 0;
         tiendaPlatos.clear();
         for (PlatoC p : platos) if (!p.especial()) tiendaPlatos.add(p);
@@ -326,6 +359,9 @@ public final class MenuPantalla extends Lienzo {
             case T_PERSONAL -> personalTab(g, mx, my);
             case T_BAUL -> baulTab(g, mx, my);
             case T_PLANOS -> planosTab(g, mx, my);
+            case T_HUERTOS -> granjaTab(g, mx, my, "huerto");
+            case T_GANADO -> granjaTab(g, mx, my, "corral");
+            case T_DESPENSA -> despensaTab(g, mx, my);
             default -> logrosTab(g);
         }
     }
@@ -966,6 +1002,115 @@ public final class MenuPantalla extends Lienzo {
         }
     }
 
+
+    // ------------------------------------------------------------ granja (0.24.0): huertos, ganado y despensa
+
+    private static final int FH = 46;                                   // alto de cada huerto o corral en la lista
+
+    private List<FincaC> fincasDe(String kind) { List<FincaC> l = new ArrayList<>(); for (FincaC f : fincas) if (f.kind().equals(kind)) l.add(f); return l; }
+
+    private static String tiempo(long seg) { return (seg / 60) + ":" + (seg % 60 < 10 ? "0" : "") + (seg % 60); }
+
+    private void granjaTab(DrawContext g, int mx, int my, String kind) {
+        boolean huerto = kind.equals("huerto");
+        List<FincaC> mias = fincasDe(kind);
+        texto(g, huerto ? "TUS HUERTOS" : "TU GANADO", LX, CY - 8, ORO, 1.1f);
+        texto(g, "Huertos y corrales: " + granjaTienes + "/" + granjaMax + (granjaMax < 6 ? " (uno más por cada nivel de local)" : ""), LX + 100, CY - 6, SUAVE, 0.75f);
+        if (nivelLocal < granjaMinLocal) {
+            parrafo(g, "La granja se desbloquea con un local de nivel " + granjaMinLocal + " (ahora tienes el " + nivelLocal + "). Cada huerto o corral viene con su michigranjero, que cosecha solo y lleva todo a la despensa.", LX, CY + 14, 340, GRIS, 0.9f);
+        } else if (mias.isEmpty()) {
+            parrafo(g, huerto ? "Todavía no tienes huertos. Compra uno a la derecha: viene con su michigranjero, que cosecha cuando está listo y deja los ingredientes en la despensa."
+                    : "Todavía no tienes corrales. Compra uno a la derecha: viene con su michigranjero y sus Pokémon, y da leche, huevos, carne o miel.", LX, CY + 14, 340, GRIS, 0.9f);
+        }
+        boolean puede = duenio && !construyendo;
+        for (int i = 0; i < mias.size() && i < 5; i++) {
+            FincaC f = mias.get(i);
+            int y = CY + 8 + i * (FH + 3);
+            caja(g, LX, y, 360, FH, FONDO, f.prog() >= 100 ? VERDE : BORDE);
+            objeto(g, f.icono(), LX + 6, y + 6, 1.4f);
+            texto(g, f.nombre(), LX + 34, y + 3, ORO, 0.95f);
+            texto(g, "★".repeat(f.nivel()) + "☆".repeat(5 - f.nivel()) + " " + f.calidad() + " · +" + f.bonus() + " % al plato", LX + 34, y + 14, ESTRELLA, 0.68f);
+            barra(g, LX + 34, y + 25, 96, f.prog(), 100, f.prog() >= 100 ? VERDE : AZUL);
+            texto(g, f.prog() >= 100 ? "¡Lista!" : f.prog() + " % · " + tiempo(f.resta()), LX + 134, y + 24, f.prog() >= 100 ? VERDE : GRIS, 0.62f);
+            texto(g, "Michigranjero: " + recortar(f.granjero(), 12) + " (" + recortar(f.aspecto(), 14) + ") · da " + f.rend() + " por cosecha" + (f.animales() > 0 ? " · " + f.animales() + " animales" : ""), LX + 34, y + 35, SUAVE, 0.62f);
+            int bx = LX + 360 - 3 * 58;
+            boton(g, bx, y + 3, 54, 14, "✎ NOMBRE", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, bx, y + 3, 54, 14), 0.62f);
+            boton(g, bx + 58, y + 3, 54, 14, "ASPECTO ▶", 0xFF4A7AC0, duenio, duenio && dentro(mx, my, bx + 58, y + 3, 54, 14), 0.62f);
+            boolean sube = puede && f.tope().isEmpty() && monedas >= f.coste();
+            String txt = !f.tope().isEmpty() ? f.tope() : "▲ NIVEL " + (f.nivel() + 1) + " · " + f.coste();
+            boton(g, bx, y + 21, 170, 14, txt, 0xFF2E8B57, sube, sube && dentro(mx, my, bx, y + 21, 170, 14), 0.66f);
+        }
+        texto(g, "«NOMBRE»: escribe el nombre en el chat y pulsa Enter.", LX, CY + 8 + 5 * (FH + 3) + 2, SUAVE, 0.7f);
+        // a la derecha, lo que se puede comprar
+        texto(g, huerto ? "COMPRAR UN HUERTO" : "COMPRAR UN CORRAL", 400, CY - 8, ORO, 1.1f);
+        List<CatC> cat = new ArrayList<>();
+        for (CatC c : catalogoGranja) if (c.kind().equals(kind)) cat.add(c);
+        int pags = paginas(cat.size(), 3);
+        pagCatGranja = Math.max(0, Math.min(pags - 1, pagCatGranja));
+        if (pags > 1) paginador(g, mx, my, 548, CY - 12, pagCatGranja, pags);
+        for (int k = 0; k < 3 && pagCatGranja * 3 + k < cat.size(); k++) {
+            CatC c = cat.get(pagCatGranja * 3 + k);
+            int y = CY + 8 + k * 66;
+            boolean libre = c.bloqueo().isEmpty();
+            caja(g, 400, y, 220, 62, FONDO, libre ? VERDE : BORDE);
+            objeto(g, c.icono(), 406, y + 6, 1.4f);
+            texto(g, c.nombre(), 432, y + 4, BLANCO, 0.92f);
+            texto(g, c.precio() + " monedas · cada " + (c.ciclo() / 60) + " min", 432, y + 15, MONEDA, 0.68f);
+            texto(g, "Equivale a: " + c.fuente(), 432, y + 25, LILA, 0.62f);
+            parrafo(g, c.texto(), 406, y + 37, 208, SUAVE, 0.66f);
+            boolean ok = puede && libre && monedas >= c.precio();
+            boton(g, 400 + 220 - 88, y + 4, 84, 15, libre ? "COMPRAR" : c.bloqueo(), 0xFF2E8B57, ok, ok && dentro(mx, my, 400 + 220 - 88, y + 4, 84, 15), 0.66f);
+        }
+        parrafo(g, "Cada nivel mejora la calidad de lo que dan (y, en los corrales, suma un animal). Los ingredientes de calidad hacen que el plato que los lleva pague más.", 400, CY + 8 + 3 * 66 + 2, 220, SUAVE, 0.66f);
+    }
+
+    private void clicGranja(int mx, int my, String kind) {
+        List<FincaC> mias = fincasDe(kind);
+        boolean puede = duenio && !construyendo;
+        for (int i = 0; i < mias.size() && i < 5; i++) {
+            FincaC f = mias.get(i);
+            int y = CY + 8 + i * (FH + 3), bx = LX + 360 - 3 * 58;
+            if (duenio && dentro(mx, my, bx, y + 3, 54, 14)) { pedirTexto("/cafe granja nombre " + (f.slot() + 1) + " "); return; }
+            if (duenio && dentro(mx, my, bx + 58, y + 3, 54, 14)) { enviar("granjaAspecto", String.valueOf(f.slot()), ""); return; }
+            if (puede && dentro(mx, my, bx, y + 21, 170, 14)) { enviar("granjaMejorar", String.valueOf(f.slot()), ""); return; }
+        }
+        List<CatC> cat = new ArrayList<>();
+        for (CatC c : catalogoGranja) if (c.kind().equals(kind)) cat.add(c);
+        int d = clicPaginador(mx, my, 548, CY - 12);
+        if (d != 0) { pagCatGranja = Math.max(0, Math.min(paginas(cat.size(), 3) - 1, pagCatGranja + d)); return; }
+        for (int k = 0; k < 3 && pagCatGranja * 3 + k < cat.size(); k++) {
+            int y = CY + 8 + k * 66;
+            if (puede && dentro(mx, my, 400 + 220 - 88, y + 4, 84, 15)) { enviar("granjaComprar", cat.get(pagCatGranja * 3 + k).id(), ""); return; }
+        }
+    }
+
+    private void despensaTab(DrawContext g, int mx, int my) {
+        texto(g, "DESPENSA", LX, CY - 8, ORO, 1.1f);
+        texto(g, "Lo que cosechan tus michigranjeros. Al servir un plato se gasta un poco de cada ingrediente (el mejor) y el plato paga más.", LX + 70, CY - 6, SUAVE, 0.68f);
+        if (despensa.isEmpty()) {
+            parrafo(g, "La despensa está vacía. Compra un huerto o un corral en las pestañas HUERTOS y GANADO: cuando esté listo, su michigranjero traerá la cosecha aquí.", LX, CY + 14, 340, GRIS, 0.9f);
+        }
+        for (int i = 0; i < despensa.size() && i < 12; i++) {
+            DespC d = despensa.get(i);
+            int x = LX + (i % 2) * 308, y = CY + 8 + (i / 2) * 36;
+            caja(g, x, y, 296, 33, FONDO, BORDE);
+            objeto(g, d.item(), x + 5, y + 8, 1.0f);
+            texto(g, d.nombre() + " · " + d.total() + "/" + granjaCap, x + 26, y + 3, BLANCO, 0.8f);
+            for (int q = 0; q < 5; q++) {
+                int cx = x + 26 + q * 54;
+                int n = d.q()[q];
+                g.fill(cx, y + 15, cx + 50, y + 29, n > 0 ? 0xFF2E2E58 : 0xFF1E1E34);
+                texto(g, (q < calidadesGranja.size() ? calidadesGranja.get(q) : "") + (q < calidadesPct.size() ? "" : ""), cx + 2, y + 16, n > 0 ? ESTRELLA : 0xFF66667A, 0.5f);
+                texto(g, n + " × +" + (q < calidadesPct.size() ? calidadesPct.get(q) : 0) + " %", cx + 2, y + 22, n > 0 ? BLANCO : 0xFF66667A, 0.55f);
+            }
+        }
+        int ty = CY + 8 + 6 * 36 + 4;
+        texto(g, "Cosechado en total: " + granjaCosechado + " · Extra ganado con la granja: " + granjaExtra + " monedas", LX, ty, MONEDA, 0.8f);
+        StringBuilder sb = new StringBuilder("Calidad (nivel del huerto o corral): ");
+        for (int q = 0; q < calidadesGranja.size(); q++) sb.append(q > 0 ? " · " : "").append(calidadesGranja.get(q)).append(" +").append(calidadesPct.get(q)).append(" %");
+        texto(g, sb.toString(), LX, ty + 11, SUAVE, 0.62f);
+    }
+
     // ------------------------------------------------------------ resumen del turno
 
     private static final int RXB = 130, RYB = 80, RWB = 380, RHB = 220;
@@ -1012,7 +1157,7 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         if (dentro(mx, my, 546, 48, 74, 20)) { enviar("salir", "", ""); return; }
-        for (int i = 0; i < TOP.length; i++) if (dentro(mx, my, 20 + i * TOP_W, 48, TOP_W - 4, 20)) { irATab(i < TOP_TAB.length ? TOP_TAB[i] : subActual[i - TOP_TAB.length]); return; }
+        for (int i = 0; i < TOP.length; i++) if (dentro(mx, my, 20 + i * TOP_W, 48, TOP_W - 4, 20)) { irATab(TOP_REF[i] < 100 ? TOP_REF[i] : subActual[TOP_REF[i] - 100]); return; }
         int gr = grupoDe(tab);
         if (gr >= 0) {
             for (int k = 0; k < SUBS[gr].length; k++) if (dentro(mx, my, 20 + k * (SUB_W + 4), 70, SUB_W, 14)) { irATab(SUBS[gr][k]); return; }
@@ -1028,6 +1173,8 @@ public final class MenuPantalla extends Lienzo {
             case T_PERSONAL -> clicPersonal(mx, my);
             case T_BAUL -> clicBaul(mx, my);
             case T_PLANOS -> clicPlanos(mx, my);
+            case T_HUERTOS -> clicGranja(mx, my, "huerto");
+            case T_GANADO -> clicGranja(mx, my, "corral");
             default -> { }
         }
     }

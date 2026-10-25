@@ -11,11 +11,11 @@ final class Recetas {
     /** Lo que sale de procesar {@code entra} en una estacion de proceso (null si no lo acepta). */
     static Item procesa(Estacion e, Item entra) {
         switch (e) {
-            case TABLA -> { if (entra == CafeItems.PAPA) return CafeItems.PAPA_TIRAS; if (entra == CafeItems.LECHUGA) return CafeItems.LECHUGA_PICADA; }
-            case FREIDORA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.PAPAS_FRITAS; if (entra == CafeItems.HUEVO) return CafeItems.HUEVOS_FRITOS; if (entra == CafeItems.MASA) return CafeItems.DONAS; }
+            case TABLA -> { if (entra == CafeItems.PAPA) return CafeItems.PAPA_TIRAS; if (entra == CafeItems.LECHUGA) return CafeItems.LECHUGA_PICADA; if (entra == CafeItems.CEBOLLA) return CafeItems.CEBOLLA_PICADA; }
+            case FREIDORA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.PAPAS_FRITAS; if (entra == CafeItems.HUEVO) return CafeItems.HUEVOS_FRITOS; if (entra == CafeItems.MASA) return CafeItems.DONAS; if (entra == CafeItems.CEBOLLA_PICADA) return CafeItems.AROS_CEBOLLA; }
             case EXPRIMIDOR -> { if (entra == CafeItems.BAYA) return CafeItems.LIMONADA; }
             case PLANCHA -> { if (entra == CafeItems.PAN) return CafeItems.TOSTADAS; if (entra == CafeItems.HUEVO) return CafeItems.TORTILLA; if (entra == CafeItems.MASA) return CafeItems.PANQUEQUES; if (entra == CafeItems.CARNE) return CafeItems.CARNE_ASADA; }
-            case OLLA -> { if (entra == CafeItems.TOMATE) return CafeItems.SOPA_TOMATE; if (entra == CafeItems.PAPA_TIRAS) return CafeItems.SOPA; if (entra == CafeItems.BAYA) return CafeItems.TE; if (entra == CafeItems.CARNE) return CafeItems.ESTOFADO; if (entra == CafeItems.CALABAZA) return CafeItems.SOPA_CALABAZA; if (entra == CafeItems.ARROZ) return CafeItems.ARROZ_COCIDO; }
+            case OLLA -> { if (entra == CafeItems.CEBOLLA_PICADA) return CafeItems.SOPA_CEBOLLA; if (entra == CafeItems.TOMATE) return CafeItems.SOPA_TOMATE; if (entra == CafeItems.PAPA_TIRAS) return CafeItems.SOPA; if (entra == CafeItems.BAYA) return CafeItems.TE; if (entra == CafeItems.CARNE) return CafeItems.ESTOFADO; if (entra == CafeItems.CALABAZA) return CafeItems.SOPA_CALABAZA; if (entra == CafeItems.ARROZ) return CafeItems.ARROZ_COCIDO; }
             case HORNO -> { if (entra == CafeItems.PIZZA_CRUDA) return CafeItems.PIZZA; if (entra == CafeItems.MASA) return CafeItems.PASTEL; if (entra == CafeItems.HARINA) return CafeItems.PAN; if (entra == CafeItems.CALABAZA) return CafeItems.CALABAZA_ASADA; }
             case HELADERA -> { if (entra == CafeItems.LECHE) return CafeItems.HELADO; if (entra == CafeItems.BAYAS_LECHE) return CafeItems.HELADO_BAYAS; }
             case PARRILLA -> { if (entra == CafeItems.PESCADO) return CafeItems.PESCADO_ASADO; if (entra == CafeItems.CARNE) return CafeItems.BISTEC; }
@@ -53,7 +53,10 @@ final class Recetas {
             {CafeItems.BISTEC, CafeItems.PAPAS_FRITAS, CafeItems.BISTEC_PAPAS},
             {CafeItems.PASTEL, CafeItems.CHOCOLATE_FUNDIDO, CafeItems.PASTEL_CHOCOLATE},
             {CafeItems.HELADO, CafeItems.CHOCOLATE_FUNDIDO, CafeItems.HELADO_CHOCOLATE},
-            {CafeItems.BISTEC_PAPAS, CafeItems.SOPA_TOMATE, CafeItems.MENU_GRAN_CHEF}};
+            {CafeItems.BISTEC_PAPAS, CafeItems.SOPA_TOMATE, CafeItems.MENU_GRAN_CHEF},
+            // la granja (0.24.0): con la cebolla de Farmer's Delight y lo que ya habia
+            {CafeItems.SOPA_CEBOLLA, CafeItems.QUESO, CafeItems.SOPA_CEBOLLA_GRATINADA},
+            {CafeItems.ENSALADA, CafeItems.TOMATE, CafeItems.ENSALADA_COMPLETA}};
     /** Las de arriba mas una por cada visitante especial. */
     private static final Item[][] COMBINACIONES;
     static {
@@ -146,7 +149,14 @@ final class Recetas {
         HELADO_CHOCOLATE("helado_chocolate", CafeItems.HELADO_CHOCOLATE, 64, 800, List.of(Estacion.CAJA_LECHE, Estacion.HELADERA, Estacion.CAJA_CACAO, Estacion.FUENTE_CHOCOLATE, Estacion.EMPLATAR),
                 "Helado (leche → Heladera) + chocolate fundido (cacao → Fuente) en la Mesa de emplatar"),
         MENU_GRAN_CHEF("menu_gran_chef", CafeItems.MENU_GRAN_CHEF, 110, 1400, List.of(Estacion.CAJA_CARNE, Estacion.PARRILLA, Estacion.CAJA_PAPAS, Estacion.TABLA, Estacion.FREIDORA, Estacion.CAJA_TOMATE, Estacion.OLLA, Estacion.EMPLATAR),
-                "Bistec con papas + sopa de tomate en la Mesa de emplatar");
+                "Bistec con papas + sopa de tomate en la Mesa de emplatar"),
+        // la granja (0.24.0): ingredientes de Farmer's Delight y platos nuevos con ellos
+        SOPA_CEBOLLA("sopa_cebolla", CafeItems.SOPA_CEBOLLA, 30, 360, List.of(Estacion.CAJA_CEBOLLA, Estacion.TABLA, Estacion.OLLA), "Caja de cebollas → Tabla de cortar → Olla"),
+        AROS_CEBOLLA("aros_cebolla", CafeItems.AROS_CEBOLLA, 34, 420, List.of(Estacion.CAJA_CEBOLLA, Estacion.TABLA, Estacion.FREIDORA), "Caja de cebollas → Tabla de cortar → Freidora (¡se quema!)"),
+        ENSALADA_COMPLETA("ensalada_completa", CafeItems.ENSALADA_COMPLETA, 36, 440, List.of(Estacion.CAJA_LECHUGA, Estacion.CAJA_BAYAS, Estacion.TABLA, Estacion.CAJA_TOMATE, Estacion.EMPLATAR),
+                "Lechuga → Tabla de cortar → Mesa de emplatar (con una baya) → ensalada; ensalada + tomate en la Mesa de emplatar"),
+        SOPA_CEBOLLA_GRATINADA("sopa_cebolla_gratinada", CafeItems.SOPA_CEBOLLA_GRATINADA, 56, 640, List.of(Estacion.CAJA_CEBOLLA, Estacion.TABLA, Estacion.OLLA, Estacion.CAJA_QUESO, Estacion.EMPLATAR),
+                "Sopa de cebolla (cebolla → Tabla → Olla) + queso en la Mesa de emplatar");
 
         final String id;
         final Item item;
@@ -168,9 +178,10 @@ final class Recetas {
                 case BATIDO, PANQUEQUES, TOSTADAS, ESTOFADO, DONAS, CAPUCHINO, SOPA_CALABAZA, WAFFLES -> 3;
                 case HAMBURGUESA, PASTEL, PAPAS_QUESO, SANDWICH, HELADO_BAYAS, ARROZ_LECHE, CALABAZA_GRATINADA -> 4;
                 case PIZZA, ARROZ_CARNE, SUNDAE -> 5;
-                case SOPA_TOMATE, PESCADO_PARRILLA, CREPES -> 6;
+                case SOPA_CEBOLLA -> 5;
+                case SOPA_TOMATE, PESCADO_PARRILLA, CREPES, AROS_CEBOLLA, ENSALADA_COMPLETA -> 6;
                 case BISTEC, ONIGIRI, BAYAS_CHOCOLATE -> 7;
-                case PIZZA_MARGARITA, CREPES_MIEL, PAN_MIEL -> 8;
+                case PIZZA_MARGARITA, CREPES_MIEL, PAN_MIEL, SOPA_CEBOLLA_GRATINADA -> 8;
                 case BISTEC_PAPAS, PESCADO_VAPOR, BOLLOS_VAPOR -> 9;
                 case PASTEL_CHOCOLATE, HELADO_CHOCOLATE, MENU_GRAN_CHEF -> 10;
             };

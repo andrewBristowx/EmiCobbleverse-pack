@@ -230,6 +230,7 @@ final class Menus {
         o.addProperty("personalMax", Personal.maxTotal());
         JsonArray contr = new JsonArray();                                   // a quien se puede contratar
         for (Personal.Rol rol : Personal.Rol.values()) {
+            if (rol.max == 0) continue;                                    // el michigranjero viene con la finca
             JsonObject e = new JsonObject();
             e.addProperty("rol", rol.id); e.addProperty("nombre", rol.nombre); e.addProperty("texto", rol.descripcion); e.addProperty("icono", rol.icono);
             e.addProperty("precio", rol.precio); e.addProperty("reqLocal", rol.reqLocal); e.addProperty("reqRep", rol.reqRep);
@@ -241,6 +242,7 @@ final class Menus {
             contr.add(e);
         }
         o.add("contratos", contr);
+        o.add("granja", jsonGranja(c, dd));
         o.addProperty("estacionesEnMano", c.estEnMano.size());
         o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", c.maxEstaciones());
         o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
@@ -386,6 +388,65 @@ final class Menus {
         return a;
     }
 
+    /** La granja para el menu: las fincas del dueño, lo que se puede comprar y lo que hay en la despensa. */
+    private static JsonObject jsonGranja(Cafe c, Datos.Jugador dd) {
+        JsonObject g = new JsonObject();
+        long ahora = System.currentTimeMillis();
+        int max = Granja.fincasMax(c.nivelLocal());
+        g.addProperty("nivelLocal", c.nivelLocal()); g.addProperty("minLocal", Granja.NIVEL_LOCAL); g.addProperty("max", max); g.addProperty("tienes", dd.granja.size());
+        g.addProperty("cosechado", dd.granjaCosechado); g.addProperty("extra", dd.granjaBonus); g.addProperty("capacidad", Granja.CAPACIDAD);
+        JsonArray bonus = new JsonArray();
+        for (int q = 1; q <= Granja.NIVEL_MAX; q++) { JsonObject b = new JsonObject(); b.addProperty("nombre", Granja.CALIDAD[q]); b.addProperty("pct", Granja.bonusPct(q)); bonus.add(b); }
+        g.add("calidades", bonus);
+        JsonArray fs = new JsonArray();
+        for (Datos.Finca f : dd.granja) {
+            Granja.Cultivo cult = Granja.Cultivo.de(f.tipo);
+            if (cult == null) continue;
+            JsonObject e = new JsonObject();
+            e.addProperty("slot", f.slot); e.addProperty("tipo", cult.id); e.addProperty("nombre", cult.nombre); e.addProperty("kind", cult.tipo == Granja.Tipo.HUERTO ? "huerto" : "corral");
+            e.addProperty("icono", idItem(cult.ingrediente)); e.addProperty("fuente", cult.fuente); e.addProperty("nivel", f.nivel);
+            double prog = Granja.progreso(f, ahora);
+            e.addProperty("prog", (int) Math.round(prog * 100)); e.addProperty("resta", Granja.restanteSeg(f, ahora));
+            e.addProperty("granjero", f.granjero.nombre); e.addProperty("aspecto", Personal.ASPECTOS[Math.floorMod(f.granjero.aspecto, Personal.ASPECTOS.length)][1]);
+            int coste = Granja.costeMejora(cult, f.nivel);
+            e.addProperty("coste", coste);
+            e.addProperty("tope", f.nivel >= Granja.NIVEL_MAX ? "NIVEL MÁXIMO" : "");
+            e.addProperty("rend", Granja.rendimiento(cult, f.nivel)); e.addProperty("bonus", Granja.bonusPct(f.nivel)); e.addProperty("calidad", Granja.CALIDAD[f.nivel]);
+            e.addProperty("animales", cult.tipo == Granja.Tipo.CORRAL ? Granja.animales(f.nivel) : 0);
+            e.addProperty("cosechas", f.cosechas);
+            fs.add(e);
+        }
+        g.add("fincas", fs);
+        JsonArray cat = new JsonArray();
+        for (Granja.Cultivo cult : Granja.Cultivo.values()) {
+            JsonObject e = new JsonObject();
+            e.addProperty("id", cult.id); e.addProperty("nombre", cult.nombre); e.addProperty("kind", cult.tipo == Granja.Tipo.HUERTO ? "huerto" : "corral");
+            e.addProperty("icono", idItem(cult.ingrediente)); e.addProperty("precio", cult.precio); e.addProperty("ciclo", cult.ciclo); e.addProperty("fuente", cult.fuente); e.addProperty("texto", cult.texto);
+            String blq = "";
+            boolean tiene = false;
+            for (Datos.Finca f : dd.granja) if (f.tipo.equals(cult.id)) tiene = true;
+            if (c.nivelLocal() < Granja.NIVEL_LOCAL) blq = "Local nivel " + Granja.NIVEL_LOCAL;
+            else if (tiene) blq = "YA LO TIENES";
+            else if (dd.granja.size() >= max) blq = max >= Granja.MAX_FINCAS ? "SIN SITIO" : "Local nivel " + (c.nivelLocal() + 1);
+            e.addProperty("bloqueo", blq);
+            cat.add(e);
+        }
+        g.add("catalogo", cat);
+        JsonArray desp = new JsonArray();
+        for (Granja.Cultivo cult : Granja.Cultivo.values()) {
+            int total = Granja.cantidad(dd, cult.ingrediente);
+            if (total <= 0) continue;
+            JsonObject e = new JsonObject();
+            e.addProperty("item", idItem(cult.ingrediente)); e.addProperty("nombre", CafeItems.nombre(cult.ingrediente)); e.addProperty("total", total);
+            JsonArray q = new JsonArray();
+            for (int i = 1; i <= Granja.NIVEL_MAX; i++) q.add(Granja.cantidad(dd, cult.ingrediente, i));
+            e.add("q", q);
+            desp.add(e);
+        }
+        g.add("despensa", desp);
+        return g;
+    }
+
     // ------------------------------------------------------------ las acciones del cliente
 
     static void recibir(ServerPlayerEntity p, AccionPayload a) {
@@ -443,6 +504,9 @@ final class Menus {
                 case "despedir" -> { String err = c.despedir(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "mejorar_emp" -> { String err = c.mejorarEmpleado(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "granjaComprar" -> { String err = duenio ? c.granja.comprar(p, a.a()) : "Solo el dueño maneja la granja."; if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "granjaMejorar" -> { String err = duenio ? c.granja.mejorar(p, parseIdx(a.a())) : "Solo el dueño maneja la granja."; if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "granjaAspecto" -> { String err = c.granja.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "decoFav" -> { if (duenio) { Datos.Jugador dj = c.dj(); if (!dj.favoritos.remove(a.a())) { if (Decor.articulo(a.a()) != null && dj.favoritos.size() < 300) dj.favoritos.add(a.a()); } EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }

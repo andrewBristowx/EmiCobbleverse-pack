@@ -189,5 +189,16 @@
   "block.emi_cafe.parrilla": "Grill",
   "block.emi_cafe.crepera": "Crepe Maker",
   "block.emi_cafe.vaporera": "Steamer",
-  "block.emi_cafe.fuente_chocolate": "Chocolate Fountain"
+  "block.emi_cafe.fuente_chocolate": "Chocolate Fountain",
+  "item.emi_cafe.cebolla": "Onion",
+  "item.emi_cafe.sopa_cebolla": "Onion Soup",
+  "item.emi_cafe.aros_cebolla": "Onion Rings",
+  "item.emi_cafe.sopa_cebolla_gratinada": "French Onion Soup",
+  "item.emi_cafe.ensalada_completa": "Full Salad",
+  "item.emi_cafe.icono_huerto": "Garden",
+  "item.emi_cafe.icono_corral": "Pen",
+  "item.emi_cafe.icono_despensa": "Pantry",
+  "item.emi_cafe.icono_granjero": "Farmer Michi",
+  "block.emi_cafe.caja_cebolla": "Onion Crate",
+  "item.emi_cafe.cebolla_picada": "Chopped Onion"
 }

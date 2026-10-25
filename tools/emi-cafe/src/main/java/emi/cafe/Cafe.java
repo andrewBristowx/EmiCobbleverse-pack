@@ -70,6 +70,7 @@ final class Cafe {
     final List<Ayudante> ayudantes = new ArrayList<>();
     final Rutas rutas;                                    // caminos por la parcela esquivando lo construido
     final Obras obras = new Obras(this);                  // construir (parcela libre, almacen, modo construccion)
+    final Fincas granja = new Fincas(this);               // huertos, corrales y michigranjeros (0.24.0)
     final Set<UUID> visitantes = new LinkedHashSet<>();   // gente que solo esta de visita (tambien estan en `jugadores`, pero no cocinan ni sirven)
     Evento evento = Evento.NINGUNO;                       // el suceso de la jornada de hoy
     static Item pedidoForzado;                            // solo pruebas: /cafe dev pedido <plato> hace que todos pidan eso
@@ -222,6 +223,7 @@ final class Cafe {
         aplicarDecor();
         if (libre) { obras.actualizarRotulo(); obras.actualizarVitrinas(); obras.letrero(estado == Estado.ABIERTO); }
         crearPersonal();
+        granja.construir();
     }
 
     /** Empieza la guia de inicio si el dueño aun no la ha hecho (y ya tiene cocinero). */
@@ -513,6 +515,7 @@ final class Cafe {
                 case LAVAPLATOS -> tareaLavaplatos(a);
                 case MESERO -> tareaMesero(a);
                 case CHEF -> tareaChef(a);
+                default -> { }
             }
             a.espera = a.ocupado() ? 0 : a.t(20);                  // sin tarea: vuelve a mirar dentro de 1 s
         }
@@ -942,6 +945,7 @@ final class Cafe {
             if (criticoPendiente && --criticoEn <= 0) { if (forzarCritico()) criticoPendiente = false; else criticoEn = 40; }
         }
         tickAyudantes();
+        granja.tick(t);
         obras.tick(t);
         obras.tickPuertas(t);
         tickMuestras(ps);
@@ -1359,6 +1363,11 @@ final class Cafe {
         Recetas.Plato pl = Recetas.Plato.de(carga);
         int base = c.esp != null ? c.esp.precio : pl == null ? 10 : pl.precio;
         base = (int) Math.round(base * (1.0 + 0.06 * nivel(Recetas.Mejora.LUJO)));
+        int granjaExtra = 0;
+        if (c.esp == null && pl != null) {                                                 // ingredientes de la granja: gasta los mejores que haya y el plato paga mas
+            Granja.Uso uso = Granja.usar(dd, pl);
+            if (uso.extra() > 0) { granjaExtra = (int) Math.round(base * uso.extra()); base += granjaExtra; dd.granjaBonus += granjaExtra; }
+        }
         if (c.critico) base *= 3;
         else if (c.esp == null && platoDelDia != null && pl == platoDelDia) base *= 2;
         double pac = c.pacienciaRestante();
@@ -1388,7 +1397,7 @@ final class Cafe {
         ganarRep(c.critico ? 8 : c.esp != null ? 5 : pac > 0.5 ? 2 : 1);
         Sonidos.mundo(w, c.e.getX(), c.e.getY(), c.e.getZ(), "cobrar", 1.0f, 1.0f);
         w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.4, c.e.getZ(), 4, 0.3, 0.2, 0.3, 0.0);
-        Msg.actionBar(p, Text.literal("+" + pago + " monedas" + (propina > 0 ? " (propina " + propina + ")" : "") + (fav ? " ♥ ¡su favorito!" : "") + (auto ? " (camarero)" : "")).formatted(Formatting.GOLD, Formatting.BOLD));
+        Msg.actionBar(p, Text.literal("+" + pago + " monedas" + (propina > 0 ? " (propina " + propina + ")" : "") + (fav ? " ♥ ¡su favorito!" : "") + (granjaExtra > 0 ? " · granja +" + granjaExtra : "") + (auto ? " (camarero)" : "")).formatted(Formatting.GOLD, Formatting.BOLD));
     }
 
     // ------------------------------------------------------------ cerrar
@@ -1398,6 +1407,7 @@ final class Cafe {
         obras.quitarMarcas();
         if (construyendo) { construyendo = false; estEnMano.clear(); if (EmiCafe.datos != null) EmiCafe.datos.guardar(duenio); }
         quitarAyudantes();
+        granja.quitar();
         if (tut != null) { tut.quitar(); tut = null; }
         for (Cliente c : clientes) c.quitar();
         clientes.clear();

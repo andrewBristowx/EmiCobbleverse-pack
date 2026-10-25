@@ -10,7 +10,9 @@ final class Personal {
     enum Rol {
         MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 8),
         LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 6),
-        CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 8);
+        CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 8),
+        /** El michigranjero de un huerto o corral (0.24.0): viene con la finca, no se contrata (max 0) y no cuenta en el total. */
+        GRANJERO("granjero", "Michigranjero", "Cuida un huerto o un corral y lleva la cosecha a la despensa.", 0, 5, 0, 20, "emi_cafe:icono_granjero", 6, 0);
 
         final String id, nombre, descripcion, icono;
         final int precio, reqLocal, reqRep, cada, aspectoDefecto, max;

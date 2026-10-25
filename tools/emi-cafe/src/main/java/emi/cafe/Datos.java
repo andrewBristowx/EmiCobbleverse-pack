@@ -34,6 +34,16 @@ final class Datos {
         int[] puesto;                // donde descansa, elegido por el dueño con su peluche en el modo construccion: {x, y de los pies, z} relativos al local (null = automatico)
     }
 
+    /** Un huerto o un corral de la granja (desde 0.24.0): lo que cria, su nivel (= la calidad de lo que da), cuando empezo el ciclo actual y su michigranjero. */
+    static final class Finca {
+        String tipo = "";            // id del cultivo o animal (ver Granja.Cultivo)
+        int slot;                    // el sitio de la granja, al fondo de la parcela (0 a 5)
+        int nivel = 1;               // 1 a 5
+        long desde;                  // cuando empezo a crecer (ms de reloj de pared: crece aunque el dueño no este)
+        long cosechas;
+        Empleado granjero = new Empleado();
+    }
+
     static final class Jugador {
         String nombre = "";
         int monedas;                 // el dinero del cafe: se gana sirviendo y se gasta en platos y mejoras
@@ -67,6 +77,10 @@ final class Datos {
         boolean visitas = true;                                                       // ¿se puede visitar su cafe?
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
         int especialesServidos;                                                       // visitantes especiales atendidos en total
+        java.util.List<Finca> granja = new java.util.ArrayList<>();                   // huertos y corrales (desde 0.24.0)
+        java.util.Map<String, Integer> despensa = new java.util.LinkedHashMap<>();    // lo que cosechan: «<objeto>@<calidad 1-5>» -> cantidad (ver Granja)
+        long granjaCosechado;                                                         // unidades cosechadas en total
+        long granjaBonus;                                                             // monedas extra ganadas gracias a los ingredientes de la granja
 
         // estrellas (la moneda de la tienda del servidor), estadisticas, tienda, misiones y logros
         int estrellas, estrellasTotal;
