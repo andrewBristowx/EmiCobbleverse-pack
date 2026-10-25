@@ -1099,8 +1099,8 @@ final class Cafe {
                 e.addProperty("item", CafeItems.id(c.pedido));
                 e.addProperty("plato", CafeItems.nombre(c.pedido));
                 e.addProperty("pac", (int) Math.round(c.pacienciaRestante() * 100));
-                e.addProperty("quien", c.esp != null ? c.esp.michi : c.critico ? "Crítico" : c.especie);
-                e.addProperty("especial", c.esp != null || c.critico);
+                e.addProperty("quien", c.twitchNombre != null ? "✦ " + c.twitchNombre : c.esp != null ? c.esp.michi : c.critico ? "Crítico" : c.especie);
+                e.addProperty("especial", c.esp != null || c.critico || c.twitchNombre != null);
                 boolean atiende = false;
                 for (Ayudante a : ayudantes) if (a.mesaChef == m || a.mesaServ == m) atiende = true;
                 e.addProperty("atiende", atiende);
@@ -1200,6 +1200,38 @@ final class Cafe {
     boolean forzarCliente() {
         for (Mesa m : mesas) if (m.libre()) return forzarCliente(m);
         return false;
+    }
+
+    boolean abierto() { return estado == Estado.ABIERTO; }
+
+    /**
+     * Un pedido de Twitch (!cafeteria): entra un cliente con el nombre del espectador, ese plato y su mensaje. Devuelve null si ha entrado y el motivo si no
+     * («cerrado», «lleno» = ya hay {@code maxDentro} espectadores dentro, «sin mesa»).
+     */
+    String twitchCliente(String nombre, Recetas.Plato pl, String mensaje, int maxDentro) {
+        if (estado != Estado.ABIERTO) return "cerrado";
+        int dentro = 0;
+        for (Cliente c : clientes) if (c.twitchPlato != null) dentro++;
+        if (dentro >= maxDentro) return "lleno";
+        List<Mesa> libres = new ArrayList<>();
+        for (Mesa m : mesas) if (m.libre()) libres.add(m);
+        if (libres.isEmpty()) return "sin mesa";
+        Mesa m = libres.get(rnd.nextInt(libres.size()));
+        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre);
+        if (c == null) return "sin mesa";
+        c.twitchNombre = nombre; c.twitchMsg = mensaje; c.twitchPlato = pl.item;
+        m.cliente = c;
+        clientes.add(c);
+        return null;
+    }
+
+    /** El espectador llega a su mesa: se avisa en el chat del juego de quien es y que pide. */
+    void alLlegarTwitch(Cliente c) {
+        aTodos(p -> {
+            p.sendMessage(Msg.say("Twitch · " + c.twitchNombre + " pide «" + CafeItems.nombre(c.pedido) + "»" + (c.twitchMsg.isEmpty() ? "" : ": " + c.twitchMsg)), false);
+            Msg.sound(p, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.4f);
+        });
+        w.spawnParticles(ParticleTypes.NOTE, c.e.getX(), c.e.getY() + 1.4, c.e.getZ(), 6, 0.4, 0.4, 0.4, 0.5);
     }
 
     private void ponerSucio(Mesa m) {

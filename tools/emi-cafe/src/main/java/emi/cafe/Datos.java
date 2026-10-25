@@ -100,6 +100,7 @@ final class Datos {
     private final Map<UUID, Jugador> jugadores = new HashMap<>();
 
     Datos(Path raiz) { this.raiz = raiz; }
+    Path raiz() { return raiz; }
 
     private Path archivo(UUID id) { return raiz.resolve("jugadores").resolve(id + ".json"); }
 

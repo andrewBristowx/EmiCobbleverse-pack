@@ -61,13 +61,16 @@ final class Cliente {
     private final List<double[]> ruta;
     private int paso;
     private double alto = ALTURA;
-    private Entity burbuja, icono, barra, titulo;
+    private Entity burbuja, icono, barra, titulo, mensaje;
     private PoseType pose = PoseType.STAND;
 
     /** Si es un visitante especial (un Michialien con accesorio que enseña su plato), cual; null = cliente normal. */
     Especial esp;
     boolean critico;                         // el critico gastronomico (ver Cafe.forzarCritico)
     boolean favorito;                        // pide el plato que mas le gusta a su especie (paga extra)
+    /** Un espectador de Twitch que pidio con !cafeteria: su nombre, el plato que escribio (null = cliente normal) y su mensaje (puede estar vacio). */
+    String twitchNombre, twitchMsg;
+    Item twitchPlato;
 
     private Cliente(PokemonEntity e, Mesa mesa, String especie, List<double[]> ruta) { this.e = e; this.mesa = mesa; this.especie = especie; this.ruta = ruta; }
 
@@ -136,9 +139,10 @@ final class Cliente {
                     fase = Fase.ESPERANDO;
                     mirarMesa();
                     llegada = ++LLEGADAS;
-                    pedido = esp != null ? esp.plato : critico ? cafe.pedidoCritico() : cafe.elegirPedido(rnd, especie);
-                    favorito = esp == null && !critico && pedido == cafe.favoritoDe(especie);
-                    pacienciaMax = paciencia = esp != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks();
+                    pedido = twitchPlato != null ? twitchPlato : esp != null ? esp.plato : critico ? cafe.pedidoCritico() : cafe.elegirPedido(rnd, especie);
+                    favorito = esp == null && !critico && twitchPlato == null && pedido == cafe.favoritoDe(especie);
+                    pacienciaMax = paciencia = esp != null || twitchPlato != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks();
+                    if (twitchPlato != null) cafe.alLlegarTwitch(this);
                     if (esp != null) cafe.alLlegarEspecial(this);
                     if (critico) cafe.alLlegarCritico(this);
                     ponerPose(PoseType.STAND);
@@ -217,7 +221,15 @@ final class Cliente {
         burbuja = Disp.objeto(w, CafeItems.id(CafeItems.BURBUJA), e.getX(), ybase(), e.getZ(), 0.95f, true);
         icono = Disp.objeto(w, CafeItems.id(pedido), e.getX(), ybase() + 0.08, e.getZ(), 0.5f, true, 0.04f);
         barra = Disp.texto(w, barraJson(), e.getX(), ybase() + 0.62, e.getZ(), 1.0f, false);
-        if (esp != null) titulo = Disp.texto(w, "{\"text\":\"★ " + esp.michi + " ★\",\"color\":\"gold\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
+        if (twitchNombre != null) {
+            titulo = Disp.texto(w, "{\"text\":\"✦ " + twitchNombre + " ✦\",\"color\":\"light_purple\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
+            if (twitchMsg != null && !twitchMsg.isEmpty()) {
+                String txt = TwitchTexto.enLineas(twitchMsg);
+                int lineas = txt.split("\n", -1).length;
+                mensaje = Disp.texto(w, "{\"text\":\"" + txt + "\",\"color\":\"white\"}", e.getX(), ybase() + 1.2 + 0.09 * lineas, e.getZ(), 0.8f, true);
+            }
+        }
+        else if (esp != null) titulo = Disp.texto(w, "{\"text\":\"★ " + esp.michi + " ★\",\"color\":\"gold\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
         else if (critico) titulo = Disp.texto(w, "{\"text\":\"★ Crítico gastronómico ★\",\"color\":\"aqua\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
         else if (favorito) titulo = Disp.texto(w, "{\"text\":\"♥ ¡Su favorito!\",\"color\":\"light_purple\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.8f, false);
     }
@@ -231,7 +243,7 @@ final class Cliente {
         return "{\"text\":\"" + "▮".repeat(Math.max(0, n)) + "\",\"color\":\"" + color + "\"}";
     }
 
-    private void quitarGlobo() { Disp.quitar(burbuja); Disp.quitar(icono); Disp.quitar(barra); Disp.quitar(titulo); burbuja = icono = barra = titulo = null; }
+    private void quitarGlobo() { Disp.quitar(burbuja); Disp.quitar(icono); Disp.quitar(barra); Disp.quitar(titulo); Disp.quitar(mensaje); burbuja = icono = barra = titulo = mensaje = null; }
 
     void quitar() { quitarGlobo(); if (!e.isRemoved()) e.discard(); }
 
