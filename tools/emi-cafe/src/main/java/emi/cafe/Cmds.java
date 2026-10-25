@@ -124,7 +124,7 @@ final class Cmds {
                         .then(CommandManager.literal("on").executes(c -> con(c, p -> twitchActivar(p, true))))
                         .then(CommandManager.literal("off").executes(c -> con(c, p -> twitchActivar(p, false))))
                         .then(CommandManager.literal("estado").executes(c -> con(c, p -> {
-                            p.sendMessage(Msg.say("Pedidos de Twitch: " + (TwitchPedidos.activo ? "ACTIVOS" : "apagados") + " · café de " + TwitchPedidos.DUENIA + " · " + (TwitchPedidos.cafe() != null ? "abierto ahora (los pedidos entran)" : "cerrado o sin ella dentro (no entra nada)")
+                            p.sendMessage(Msg.say("Pedidos de Twitch: " + (TwitchPedidos.activo ? "ACTIVOS" : "apagados") + " · cafés de " + TwitchPedidos.DUENIA.replace(",", " y ") + " · " + (TwitchPedidos.cafe() != null ? "abierto ahora (los pedidos entran)" : "cerrado o sin su dueño dentro (no entra nada)")
                                     + " · espera por persona " + TwitchPedidos.ESPERA + " s · máx. " + TwitchPedidos.MAX_DENTRO + " espectadores a la vez"), false);
                             return null;
                         }))))
@@ -396,7 +396,7 @@ final class Cmds {
 
     /** Enciende o apaga los pedidos de Twitch (solo la dueña del café de los pedidos o un admin). */
     private static String twitchActivar(ServerPlayerEntity p, boolean on) {
-        if (!p.getGameProfile().getName().equalsIgnoreCase(TwitchPedidos.DUENIA) && !p.hasPermissionLevel(2)) return "Solo " + TwitchPedidos.DUENIA + " o un administrador pueden cambiar esto.";
+        if (!TwitchPedidos.esDuenio(p.getGameProfile().getName()) && !p.hasPermissionLevel(2)) return "Solo " + TwitchPedidos.DUENIA.replace(",", " y ") + " o un administrador pueden cambiar esto.";
         TwitchPedidos.activo = on;
         if (!on) TwitchPedidos.reiniciar();
         p.sendMessage(Msg.say(on ? "Pedidos de Twitch ACTIVADOS: !cafeteria funciona en tu café mientras esté abierto." : "Pedidos de Twitch apagados."), false);

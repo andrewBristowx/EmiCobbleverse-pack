@@ -20,8 +20,12 @@ public final class TwitchPedidos {
     private TwitchPedidos() {}
 
     static final String COMANDO = "!cafeteria";
-    /** De quien es el cafe donde salen los pedidos (nombre de Minecraft). */
-    static final String DUENIA = System.getProperty("emi.cafe.twitch.dueno", "EmilyExtacy");
+    /** De quien son los cafes donde salen los pedidos (nombres de Minecraft separados por comas; si hay varios abiertos, sale en el primero de la lista). */
+    static final String DUENIA = System.getProperty("emi.cafe.twitch.dueno", "EmilyExtacy,somitadepony");
+    static final String[] DUENIOS = DUENIA.split("\\s*,\\s*");
+
+    /** ¿Es ese jugador uno de los que reciben pedidos? */
+    static boolean esDuenio(String nombre) { for (String d : DUENIOS) if (d.equalsIgnoreCase(nombre)) return true; return false; }
     static boolean activo = !"false".equalsIgnoreCase(System.getProperty("emi.cafe.twitch", "true"));
     /** Segundos que tiene que esperar cada espectador entre pedidos (moderadores y la streamer: ESPERA_MOD). */
     static final int ESPERA = Integer.getInteger("emi.cafe.twitch.espera", 90), ESPERA_MOD = 15;
@@ -81,8 +85,8 @@ public final class TwitchPedidos {
 
     /** El cafe de la streamer si esta dentro de el y lo tiene abierto; null si no. */
     static Cafe cafe() {
-        Cafe c = Cafes.deDuenio(DUENIA);
-        return c != null && c.abierto() ? c : null;
+        for (String d : DUENIOS) { Cafe c = Cafes.deDuenio(d); if (c != null && c.abierto()) return c; }
+        return null;
     }
 
     private static void atender(Entrada e) {
