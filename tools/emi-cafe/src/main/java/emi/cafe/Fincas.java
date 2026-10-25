@@ -16,6 +16,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import com.cobblemon.mod.common.entity.PoseType;
 import net.minecraft.util.math.Box;
 
 import java.util.ArrayList;
@@ -35,13 +37,16 @@ final class Fincas {
     private final Random rnd = new Random();
     private final Map<Integer, Vivo> vivos = new HashMap<>();
 
+    /** Una casilla de cultivo; {@code dir} = hacia donde mira (el cacao se pega a un tronco; null = nada). */
+    private record Celda(BlockPos pos, Direction dir) {}
+
     /** Lo que hay en el mundo de una finca. */
     private static final class Vivo {
         Datos.Finca f;
         Granja.Cultivo cult;
         Ayudante granjero;
         final List<PokemonEntity> animales = new ArrayList<>();
-        final List<BlockPos> cultivos = new ArrayList<>();
+        final List<Celda> cultivos = new ArrayList<>();
         Block bloque;                                   // el cultivo que se ve (null en un corral)
         Entity rotulo;
         boolean cosechando;
@@ -99,13 +104,26 @@ final class Fincas {
         }
         poner(ax, 2, Granja.Z0, "lantern[hanging=false]"); poner(ax + Granja.ANCHO - 1, 2, Granja.Z0, "lantern[hanging=false]");
         poner(ax + 1, 2, Granja.Z1, "lantern[hanging=false]"); poner(ax + Granja.ANCHO - 2, 2, Granja.Z1, "lantern[hanging=false]");
-        if (cult.tipo == Granja.Tipo.HUERTO) {
-            for (String id : cult.bloques) { v.bloque = bloque(id); if (v.bloque != null) break; }
+        for (String id : cult.bloques) { v.bloque = bloque(id); if (v.bloque != null) break; }
+        boolean arrozal = v.bloque != null && Registries.BLOCK.getId(v.bloque).getPath().equals("rice");
+        if (cult == Granja.Cultivo.CACAO) {                                                      // troncos de jungla con cacao pegado por los cuatro lados, a dos alturas
+            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) poner(ax + dx, 0, z, "grass_block");
+            for (int px : new int[]{2, 6}) for (int pz : new int[]{-9, -6}) {
+                poner(ax + px, 1, pz, "jungle_log"); poner(ax + px, 2, pz, "jungle_log"); poner(ax + px, 3, pz, "jungle_leaves[persistent=true]");
+                for (int dy = 1; dy <= 2; dy++) for (Direction dir : Direction.Type.HORIZONTAL)
+                    v.cultivos.add(new Celda(new BlockPos(ax + px - dir.getOffsetX(), Local.Y + dy, pz - dir.getOffsetZ()), dir));      // el tronco queda en la direccion «dir» desde el cacao
+            }
+        } else if (cult.tipo == Granja.Tipo.HUERTO && arrozal) {                                  // arrozal: todo agua y el arroz plantado en el agua
+            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) { poner(ax + dx, 0, z, "water"); v.cultivos.add(new Celda(new BlockPos(ax + dx, Local.Y, z), null)); }
+        } else if (cult.tipo == Granja.Tipo.HUERTO) {
             for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) {
                 if (dx == 4) { poner(ax + dx, 0, z, "water"); continue; }
                 poner(ax + dx, 0, z, "farmland[moisture=7]");
-                v.cultivos.add(new BlockPos(ax + dx, Local.Y + 1, z));
+                v.cultivos.add(new Celda(new BlockPos(ax + dx, Local.Y + 1, z), null));
             }
+        } else if (cult == Granja.Cultivo.PESCADO) {                                              // estanque: todo agua, con los Magikarp dentro
+            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) poner(ax + dx, 0, z, "water");
+            poner(ax + 1, 1, Granja.Z0 + 1, "lily_pad"); poner(ax + 6, 1, Granja.Z0 + 3, "lily_pad"); poner(ax + 3, 1, Granja.Z1 - 2, "lily_pad");
         } else {
             poner(ax + 1, 1, Granja.Z0 + 1, "hay_block"); poner(ax + 7, 1, Granja.Z0 + 1, "hay_block"); poner(ax + 1, 2, Granja.Z0 + 1, "hay_block");
             poner(ax + 4, 1, Granja.Z0 + 1, "water_cauldron[level=3]");
@@ -144,9 +162,11 @@ final class Fincas {
                 e.setCustomNameVisible(false);
                 try { e.hideNameRendering(); } catch (Throwable t) { /* version de Cobblemon sin esta funcion */ }
                 e.addCommandTag(Disp.TAG);
-                e.refreshPositionAndAngles(x, Local.Y + 1, z, rnd.nextFloat() * 360f, 0f);
+                boolean agua = v.cult == Granja.Cultivo.PESCADO;
+                e.refreshPositionAndAngles(x, agua ? Local.Y + 0.35 : Local.Y + 1, z, rnd.nextFloat() * 360f, 0f);
                 c.w.spawnEntity(e);
                 e.getPokemon().setScaleModifier((float) Math.max(0.35, Math.min(3.0, 0.9 / Math.max(0.3, e.getHeight()))));
+                if (agua) try { e.getDataTracker().set(PokemonEntity.getPOSE_TYPE(), PoseType.SWIM); } catch (Throwable t) { /* se queda como estaba */ }
                 v.animales.add(e);
             } catch (Throwable t) {
                 EmiCafe.LOG.error("No se pudo crear el animal {}", v.cult.especie, t);
@@ -172,12 +192,14 @@ final class Fincas {
         int etapa = prog >= 1.0 ? max : (int) Math.floor(prog * max);
         if (!forzar && etapa == v.edad) return;
         v.edad = etapa;
-        for (BlockPos p : v.cultivos) ponerCultivo(v, p, age, etapa);
+        for (Celda ce : v.cultivos) ponerCultivo(v, ce, age, etapa);
     }
 
-    private void ponerCultivo(Vivo v, BlockPos p, IntProperty age, int etapa) {
+    private void ponerCultivo(Vivo v, Celda ce, IntProperty age, int etapa) {
         BlockState s = v.bloque.getDefaultState();
         if (age != null) s = s.with(age, Math.max(0, Math.min(Collections.max(age.getValues()), etapa)));
+        if (ce.dir() != null && s.contains(net.minecraft.state.property.Properties.HORIZONTAL_FACING)) s = s.with(net.minecraft.state.property.Properties.HORIZONTAL_FACING, ce.dir());
+        BlockPos p = ce.pos();
         if (c.w.getBlockState(p) != s) c.w.setBlockState(p, s, Obra.BANDERAS);
     }
 
@@ -250,10 +272,10 @@ final class Fincas {
     private void recoger(Vivo v, int cuarto) {
         IntProperty age = v.bloque == null ? null : v.bloque.getStateManager().getProperty("age") instanceof IntProperty ip ? ip : null;
         int ax = ax(v.f);
-        for (BlockPos p : v.cultivos) {
-            boolean izq = p.getX() - ax < 4, atras = p.getZ() < -7;
+        for (Celda ce : v.cultivos) {
+            boolean izq = ce.pos().getX() - ax < 4, atras = ce.pos().getZ() < -7;
             boolean en = switch (cuarto) { case 0 -> izq && !atras; case 1 -> izq && atras; case 2 -> !izq && atras; default -> !izq && !atras; };
-            if (en && v.bloque != null) ponerCultivo(v, p, age, 0);
+            if (en && v.bloque != null) ponerCultivo(v, ce, age, 0);
         }
     }
 

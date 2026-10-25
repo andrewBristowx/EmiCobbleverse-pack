@@ -27,9 +27,14 @@ final class Granja {
         CEBOLLAS("cebollas", "Huerto de cebollas", Tipo.HUERTO, CafeItems.CEBOLLA, 480, 1000, "Farmer's Delight", "Cebollas de Farmer's Delight: platos nuevos.", new String[]{"farmersdelight:onions", "minecraft:carrots"}, null),
         CALABAZAS("calabazas", "Huerto de calabazas", Tipo.HUERTO, CafeItems.CALABAZA, 540, 1100, "Minecraft", "Calabazas para sopas y gratinados.", new String[]{"minecraft:pumpkin_stem"}, null),
         BAYAS("bayas", "Huerto de bayas", Tipo.HUERTO, CafeItems.BAYA, 480, 1000, "Cobblemon", "Bayas de Cobblemon: las bayas del café.", new String[]{"cobblemon:oran_berry", "minecraft:sweet_berry_bush"}, null),
+        ARROZ("arroz", "Arrozal", Tipo.HUERTO, CafeItems.ARROZ, 540, 1100, "Farmer's Delight", "Arroz de Farmer's Delight, plantado en agua.", new String[]{"farmersdelight:rice", "minecraft:wheat"}, null),
+        CACAO("cacao", "Plantación de cacao", Tipo.HUERTO, CafeItems.CACAO, 540, 1200, "Minecraft", "Cacao en sus troncos de jungla: para el chocolate.", new String[]{"minecraft:cocoa"}, null),
+        GRANOS("granos", "Huerto de granos de café", Tipo.HUERTO, CafeItems.GRANOS, 480, 1000, "Cobblecuisine", "Las judías de Cobblecuisine hacen de granos de café.", new String[]{"cobblecuisine:bean_crop", "minecraft:beetroots"}, null),
         VACAS("vacas", "Corral de Miltank", Tipo.CORRAL, CafeItems.LECHE, 420, 1400, "Cobblemon", "Miltank da la leche del café.", new String[0], "miltank"),
         GALLINAS("gallinas", "Corral de Chansey", Tipo.CORRAL, CafeItems.HUEVO, 420, 1400, "Cobblemon", "Chansey pone los huevos.", new String[0], "chansey"),
         TAUROS("tauros", "Corral de Tauros", Tipo.CORRAL, CafeItems.CARNE, 600, 1800, "Cobblemon", "Tauros da la carne.", new String[0], "tauros"),
+        PESCADO("pescado", "Estanque de Magikarp", Tipo.CORRAL, CafeItems.PESCADO, 480, 1500, "Cobblemon", "Magikarp nada en su estanque: es el pescado del café.", new String[0], "magikarp"),
+        QUESO("queso", "Corral de Gogoat", Tipo.CORRAL, CafeItems.QUESO, 540, 1500, "Cobblemon", "Gogoat da el queso del café.", new String[0], "gogoat"),
         ABEJAS("abejas", "Colmena de Combee", Tipo.CORRAL, CafeItems.MIEL, 600, 1600, "Cobblemon", "Combee hace la miel.", new String[0], "combee");
 
         final String id, nombre, fuente, texto, especie;
