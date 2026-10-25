@@ -40,10 +40,44 @@ final class Cmds {
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.ponerNombreCafe(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
                 }))))
+                .then(CommandManager.literal("deshacer").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    String err = cf.obras.deshacer(p);
+                    if (err == null) p.sendMessage(Msg.say("Deshecho."), false);
+                    return err;
+                })))
+                .then(CommandManager.literal("baul").executes(c -> con(c, p -> buscarBaul(p, ""))).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> buscarBaul(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"))))))
+                .then(CommandManager.literal("plano")
+                        .then(CommandManager.literal("guardar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            String err = cf.obras.guardarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
+                            if (err == null) { p.sendMessage(Msg.say("Plano guardado."), false); Menus.abrir(cf, p, "planos", false); }
+                            return err;
+                        }))))
+                        .then(CommandManager.literal("restaurar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            String err = cf.obras.restaurarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
+                            if (err == null) p.sendMessage(Msg.say("Plano restaurado."), false);
+                            return err;
+                        }))))
+                        .then(CommandManager.literal("borrar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            return cf.obras.borrarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
+                        })))))
+                .then(CommandManager.literal("buscar").executes(c -> con(c, p -> buscar(p, ""))).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> buscar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"))))))
                 .then(CommandManager.literal("personal").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 20)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.renombrar(p, IntegerArgumentType.getInteger(c, "numero"), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
+                }))))))
+                .then(CommandManager.literal("granja").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 6)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                    return cf.granja.renombrar(p, IntegerArgumentType.getInteger(c, "numero") - 1, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
                 }))))))
                 .then(CommandManager.literal("ir").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> Cafes.irA(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador"))))))
                 .then(CommandManager.literal("megusta").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
@@ -109,6 +143,47 @@ final class Cmds {
                             for (Mesa m : cf.mesas) if (m.libre()) return cf.forzarEspecial(m, e) ? null : "No se pudo crear.";
                             return "No hay mesa libre.";
                         }))))
+                        .then(CommandManager.literal("granja")
+                                .then(CommandManager.literal("comprar").then(CommandManager.argument("tipo", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    return cf.granja.comprar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "tipo"));
+                                }))))
+                                .then(CommandManager.literal("dar").then(CommandManager.argument("tipo", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    return cf.granja.darGratis(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "tipo"));
+                                }))))
+                                .then(CommandManager.literal("mejorar").then(CommandManager.argument("slot", IntegerArgumentType.integer(0, 5)).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    return cf.granja.mejorar(p, IntegerArgumentType.getInteger(c, "slot"));
+                                }))))
+                                .then(CommandManager.literal("listo").executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    cf.granja.listaYa(null);
+                                    return null;
+                                })))
+                                .then(CommandManager.literal("probar").then(CommandManager.argument("plato", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    Recetas.Plato pl = Recetas.Plato.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "plato"));
+                                    if (pl == null) return "Un id de plato.";
+                                    Granja.Uso u = Granja.usar(cf.dj(), pl);
+                                    p.sendMessage(Msg.say(pl.nombre() + ": extra " + Math.round(u.extra() * 1000) / 10.0 + " % (" + u.usados() + " de " + u.total() + " ingredientes de la granja, mejor calidad " + u.mejor() + ")"), false);
+                                    return null;
+                                }))))
+                                .then(CommandManager.literal("estado").executes(c -> con(c, p -> {
+                                    Cafe cf = Cafes.de(p.getUuid());
+                                    if (cf == null) return "Entra primero con /cafe entrar.";
+                                    Datos.Jugador dd = cf.dj();
+                                    StringBuilder b = new StringBuilder(cf.granja.estado()).append(" · despensa:");
+                                    for (java.util.Map.Entry<String, Integer> en : dd.despensa.entrySet()) b.append(' ').append(en.getKey().replace("emi_cafe:", "")).append('=').append(en.getValue());
+                                    b.append(" · extra ganado ").append(dd.granjaBonus);
+                                    p.sendMessage(Msg.say(b.toString()), false);
+                                    return null;
+                                }))))
                         .then(CommandManager.literal("pedido").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                             String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
                             Recetas.Plato pl = Recetas.Plato.de(id);
@@ -207,7 +282,7 @@ final class Cmds {
                         .then(CommandManager.literal("reiniciar").executes(c -> con(c, p -> {
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.inicial = null; j.platos.clear(); j.mejoras.clear(); j.monedas = 0;
-                            j.libre = true; j.kitDado = false; j.almacen.clear(); j.decor.clear(); j.quitados.clear(); j.estPos.clear(); j.mesasPos.clear(); j.mesasCap = 0; j.tutorialHecho = false;      // desde 0.18.0: parcela vacia otra vez
+                            j.libre = true; j.kitDado = false; j.almacen.clear(); if (j.baul != null) j.baul.clear(); j.decor.clear(); j.quitados.clear(); j.estPos.clear(); j.mesasPos.clear(); j.mesasCap = 0; j.tutorialHecho = false;      // desde 0.18.0: parcela vacia otra vez
                             EmiCafe.datos.guardar(p.getUuid());
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf != null) cf.reconstruir();
@@ -221,6 +296,17 @@ final class Cmds {
                             if (cf.construyendo) cf.obras.llenarInventario(p);
                             return null;
                         })))))
+                        .then(CommandManager.literal("catalogo").executes(c -> {                                // solo pruebas: escribe en el registro cuantos articulos tiene cada fuente y grupo de la tienda DECORAR
+                            StringBuilder sb = new StringBuilder("Catálogo de DECORAR:");
+                            for (Decor.Fuente f : Decor.fuentes()) {
+                                int n = 0; StringBuilder gs = new StringBuilder();
+                                for (Decor.Grupo g : f.grupos()) { n += g.arts().size(); gs.append(" [").append(g.nombre()).append(' ').append(g.arts().size()).append(']'); }
+                                sb.append("\n  ").append(f.nombre()).append(" = ").append(n).append(':').append(gs);
+                            }
+                            EmiCafe.LOG.info(sb.toString());
+                            c.getSource().sendFeedback(() -> Text.literal("Catálogo escrito en el registro."), false);
+                            return 1;
+                        }))
                         .then(CommandManager.literal("libre").then(CommandManager.argument("v", com.mojang.brigadier.arguments.BoolArgumentType.bool()).executes(c -> con(c, p -> {      // solo pruebas: pasa tu cafe a parcela libre o al de antes
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());
                             j.libre = com.mojang.brigadier.arguments.BoolArgumentType.getBool(c, "v");
@@ -252,6 +338,24 @@ final class Cmds {
                 st = st.with(net.minecraft.block.HorizontalFacingBlock.FACING, switch (dir) { case "norte" -> net.minecraft.util.math.Direction.NORTH; case "sur" -> net.minecraft.util.math.Direction.SOUTH; case "oeste" -> net.minecraft.util.math.Direction.WEST; default -> net.minecraft.util.math.Direction.EAST; });
             return cf.obras.ponerDev(IntegerArgumentType.getInteger(c, "x"), IntegerArgumentType.getInteger(c, "y"), IntegerArgumentType.getInteger(c, "z"), st);
         });
+    }
+
+    /** {@code /cafe buscar <texto>}: busca en la tienda DECORAR (por el nombre en ingles del objeto, por ejemplo «oak chair»); sin texto borra la busqueda. */
+    private static String buscar(ServerPlayerEntity p, String texto) {
+        Cafe cf = Cafes.de(p.getUuid());
+        if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+        Menus.vista(p).buscar(texto);
+        Menus.abrir(cf, p, "decorar", false);
+        return null;
+    }
+
+    /** {@code /cafe baul <texto>}: filtra el baul por el nombre del objeto; sin texto quita el filtro. */
+    private static String buscarBaul(ServerPlayerEntity p, String texto) {
+        Cafe cf = Cafes.de(p.getUuid());
+        if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+        Menus.vista(p).baulBuscar = texto == null ? "" : texto.trim();
+        Menus.abrir(cf, p, "baul", false);
+        return null;
     }
 
     private static int con(com.mojang.brigadier.context.CommandContext<ServerCommandSource> c, Accion a) {

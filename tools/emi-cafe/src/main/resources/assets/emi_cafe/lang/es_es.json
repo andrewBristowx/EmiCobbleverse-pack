@@ -189,5 +189,16 @@
   "block.emi_cafe.parrilla": "Parrilla",
   "block.emi_cafe.crepera": "Crepera",
   "block.emi_cafe.vaporera": "Vaporera",
-  "block.emi_cafe.fuente_chocolate": "Fuente de chocolate"
+  "block.emi_cafe.fuente_chocolate": "Fuente de chocolate",
+  "item.emi_cafe.cebolla": "Cebolla",
+  "item.emi_cafe.sopa_cebolla": "Sopa de cebolla",
+  "item.emi_cafe.aros_cebolla": "Aros de cebolla",
+  "item.emi_cafe.sopa_cebolla_gratinada": "Sopa de cebolla gratinada",
+  "item.emi_cafe.ensalada_completa": "Ensalada completa",
+  "item.emi_cafe.icono_huerto": "Huerto",
+  "item.emi_cafe.icono_corral": "Corral",
+  "item.emi_cafe.icono_despensa": "Despensa",
+  "item.emi_cafe.icono_granjero": "Michigranjero",
+  "block.emi_cafe.caja_cebolla": "Caja de cebollas",
+  "item.emi_cafe.cebolla_picada": "Cebolla picada"
 }

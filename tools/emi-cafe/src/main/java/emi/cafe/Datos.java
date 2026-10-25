@@ -17,12 +17,31 @@ final class Datos {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /** Un Michialien contratado: su rol, el nombre que le puso el dueño y su aspecto (indice en {@code Personal.ASPECTOS}). */
+    /** Un diseño guardado del café: lo construido (bloques, bloques quitados, lo expuesto en las vitrinas) y los materiales; los objetos no se guardan: al restaurar se cuentan. */
+    static final class Plano {
+        String nombre;
+        long fecha;
+        java.util.Map<String, String> decor = new java.util.LinkedHashMap<>();
+        java.util.Set<String> quitados = new java.util.LinkedHashSet<>();
+        java.util.Map<String, String> vitrina = new java.util.LinkedHashMap<>();
+    }
+
     static final class Empleado {
         String rol = "";
         String nombre = "";
         int aspecto;
         int nivel;                   // 1 a 5 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
         int[] puesto;                // donde descansa, elegido por el dueño con su peluche en el modo construccion: {x, y de los pies, z} relativos al local (null = automatico)
+    }
+
+    /** Un huerto o un corral de la granja (desde 0.24.0): lo que cria, su nivel (= la calidad de lo que da), cuando empezo el ciclo actual y su michigranjero. */
+    static final class Finca {
+        String tipo = "";            // id del cultivo o animal (ver Granja.Cultivo)
+        int slot;                    // el sitio de la granja, al fondo de la parcela (0 a 5)
+        int nivel = 1;               // 1 a 5
+        long desde;                  // cuando empezo a crecer (ms de reloj de pared: crece aunque el dueño no este)
+        long cosechas;
+        Empleado granjero = new Empleado();
     }
 
     static final class Jugador {
@@ -38,6 +57,9 @@ final class Datos {
         java.util.List<int[]> mesasPos = new java.util.ArrayList<>();                // donde estan las mesas ({x, z} del local): se pueden mover en el modo construccion
         boolean libre = true;                                                          // parcela libre (desde 0.18.0): empieza vacia y se construye comprando; los cafes de antes (false) conservan su local ya hecho
         java.util.Map<String, Integer> almacen = new java.util.LinkedHashMap<>();       // lo que el dueño tiene guardado para construir (bloques comprados, estaciones, mesas...): item -> cantidad
+        java.util.Set<String> favoritos = new java.util.LinkedHashSet<>();            // objetos de la tienda DECORAR marcados con la estrella (desde 0.22.0)
+        java.util.Map<String, Plano> planos = new java.util.LinkedHashMap<>();         // diseños guardados del café (desde 0.22.0): «auto1..3» = copias automáticas, el resto los pone el dueño
+        java.util.Set<String> baul = new java.util.LinkedHashSet<>();                  // objetos del almacen que el dueño ha dejado «solo en el baul»: no se copian al inventario al construir (desde 0.21.0)
         java.util.Set<String> estaciones = new java.util.LinkedHashSet<>();            // las estaciones que ya posee (nombres del enum), puestas o guardadas
         boolean kitDado;                                                               // ya recibio el kit del principio
         java.util.Set<String> quitados = new java.util.LinkedHashSet<>();             // bloques del edificio original que el dueño ha quitado en el modo construccion («x,y,z» relativos al local)
@@ -55,6 +77,10 @@ final class Datos {
         boolean visitas = true;                                                       // ¿se puede visitar su cafe?
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
         int especialesServidos;                                                       // visitantes especiales atendidos en total
+        java.util.List<Finca> granja = new java.util.ArrayList<>();                   // huertos y corrales (desde 0.24.0)
+        java.util.Map<String, Integer> despensa = new java.util.LinkedHashMap<>();    // lo que cosechan: «<objeto>@<calidad 1-5>» -> cantidad (ver Granja)
+        long granjaCosechado;                                                         // unidades cosechadas en total
+        long granjaBonus;                                                             // monedas extra ganadas gracias a los ingredientes de la granja
 
         // estrellas (la moneda de la tienda del servidor), estadisticas, tienda, misiones y logros
         int estrellas, estrellasTotal;

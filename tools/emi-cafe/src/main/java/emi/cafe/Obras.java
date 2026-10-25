@@ -117,11 +117,81 @@ final class Obras {
     void sumarStock(String item, int delta) {
         Map<String, Integer> a = d().almacen;
         int n = Math.max(0, stock(item) + delta);
-        if (n == 0) a.remove(item); else a.put(item, n);
+        if (n == 0) { a.remove(item); if (d().baul != null) d().baul.remove(item); } else a.put(item, n);
         datosSucios = true;                                                 // se guarda en disco en 2 s
     }
 
     static String idItem(Block b) { return Registries.ITEM.getId(b.asItem()).toString(); }
+
+    // ------------------------------------------------------------ el baul (desde 0.21.0): el almacen visto como un cofre sin fondo
+
+    /** Los objetos que el dueño ha dejado «solo en el baul»: se tienen, pero no se copian al inventario al construir. */
+    Set<String> baulSet() {
+        Datos.Jugador d = d();
+        if (d.baul == null) d.baul = new LinkedHashSet<>();
+        return d.baul;
+    }
+
+    /** Cuantos de ese objeto lleva el jugador en el inventario ahora mismo. */
+    int enInventario(ServerPlayerEntity p, String item) {
+        int n = 0;
+        for (ItemStack s : p.getInventory().main) if (!s.isEmpty() && empleadoDe(s) == null && Registries.ITEM.getId(s.getItem()).toString().equals(item)) n += s.getCount();
+        return n;
+    }
+
+    private void quitarDelInventario(ServerPlayerEntity p, String item) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.main.size(); i++) {
+            ItemStack s = inv.main.get(i);
+            if (!s.isEmpty() && empleadoDe(s) == null && Registries.ITEM.getId(s.getItem()).toString().equals(item)) inv.main.set(i, ItemStack.EMPTY);
+        }
+    }
+
+    /** Guarda un objeto en el baul: lo quita del inventario (sigue siendo tuyo, solo que no ocupa sitio). Devuelve el error, o null. */
+    String guardarEnBaul(ServerPlayerEntity p, String item) {
+        if (!c.construyendo) return "Solo puedes guardar y sacar cosas del baúl dentro del modo construcción.";
+        if (stock(item) <= 0) return "Eso no está en tu baúl.";
+        baulSet().add(item);
+        quitarDelInventario(p, item);
+        datosSucios = true;
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+        return null;
+    }
+
+    /** Saca un objeto del baul al inventario (lo que quepa; el resto se queda en el baul y entra solo cuando haya sitio). Devuelve el error, o null. */
+    String sacarDelBaul(ServerPlayerEntity p, String item) {
+        if (!c.construyendo) return "Solo puedes guardar y sacar cosas del baúl dentro del modo construcción.";
+        int n = stock(item);
+        if (n <= 0) return "Eso no está en tu baúl.";
+        Item it = Registries.ITEM.get(Identifier.of(item));
+        if (it == null || it == net.minecraft.item.Items.AIR) return "Ese objeto ya no existe.";
+        baulSet().remove(item);
+        int falta = n - enInventario(p, item);
+        boolean cupo = true;
+        while (falta > 0 && cupo) {
+            int q = Math.min(falta, it.getMaxCount());
+            if (!p.getInventory().insertStack(new ItemStack(it, q))) cupo = false; else falta -= q;
+        }
+        datosSucios = true;
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+        return cupo ? null : "Tu inventario se ha llenado: lo que no cabe sigue en el baúl y entrará cuando liberes sitio.";
+    }
+
+    /** Guarda en el baul todo lo que llevas para construir (deja el inventario vacio de bloques; los peluches de los empleados se quedan). */
+    void guardarTodoEnBaul(ServerPlayerEntity p) {
+        if (!c.construyendo) return;
+        for (String k : new ArrayList<>(d().almacen.keySet())) { baulSet().add(k); quitarDelInventario(p, k); }
+        datosSucios = true;
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+    }
+
+    /** Saca del baul todo lo que quepa (el orden es el de siempre: primero lo del cafe). */
+    void sacarTodoDelBaul(ServerPlayerEntity p) {
+        if (!c.construyendo) return;
+        baulSet().clear();
+        datosSucios = true;
+        completar(p);
+    }
 
     /** Pone en el inventario todo lo que hay en el almacen (primero lo del cafe: caja registradora, mesas y estaciones). */
     void llenarInventario(ServerPlayerEntity p) {
@@ -130,6 +200,7 @@ final class Obras {
         claves.sort((a, b) -> Integer.compare(prioridad(a), prioridad(b)));
         boolean lleno = false;
         for (String k : claves) {
+            if (baulSet().contains(k)) continue;                               // lo que el dueño dejo solo en el baul no se copia al inventario
             Item it = Registries.ITEM.get(Identifier.of(k));
             if (it == null || it == net.minecraft.item.Items.AIR) continue;
             int n = stock(k);
@@ -218,6 +289,7 @@ final class Obras {
             tengo.merge(Registries.ITEM.getId(s.getItem()).toString(), s.getCount(), Integer::sum);
         }
         for (Map.Entry<String, Integer> en : new ArrayList<>(d().almacen.entrySet())) {
+            if (baulSet().contains(en.getKey())) continue;
             Item it = Registries.ITEM.get(Identifier.of(en.getKey()));
             if (it == null || it == net.minecraft.item.Items.AIR) continue;
             int falta = en.getValue() - tengo.getOrDefault(en.getKey(), 0);
@@ -235,7 +307,7 @@ final class Obras {
         p.playerScreenHandler.sendContentUpdates();
     }
 
-    private static int prioridad(String k) {
+    static int prioridad(String k) {
         if (k.equals(idItem(CafeBlocks.REGISTRADORA))) return 0;
         if (k.equals(idItem(CafeBlocks.MESA)) || k.startsWith("emi_cafe:mesa_")) return 1;
         return k.startsWith("emi_cafe:") ? 2 : 3;
@@ -301,6 +373,7 @@ final class Obras {
         if (ry < 0 || ry > 9) return false;
         if (rx < Ciudad.X0 + 1 || rx > Ciudad.X1 - 1 || rz < Local.Z_ATRAS + 2 || rz > 15) return false;
         if (rz >= 14 && rx >= 5 && rx <= 10) return false;                                                    // el camino de la puerta se queda libre
+        if (Granja.enHuella(d(), rx, rz)) return false;                                                       // los huertos y corrales de la granja
         if (!d().libre) {
             if (rz == 13 && rx >= 7 && rx <= 8 && ry >= 1 && ry <= 4) return false;                          // y la puerta
             if (rz == 14 && rx >= 7 && rx <= 8 && ry >= 5) return false;                                      // y el letrero que hay encima
@@ -319,6 +392,7 @@ final class Obras {
         if (PROHIBIDOS.contains(p) || p.contains("command_block") || p.contains("structure") || p.contains("redstone") || p.contains("piston") || p.contains("repeater") || p.contains("comparator") || p.contains("test_")) return false;
         if (b instanceof net.minecraft.block.FallingBlock || b instanceof net.minecraft.block.FluidBlock || b instanceof net.minecraft.block.AbstractFireBlock || b instanceof net.minecraft.block.TntBlock) return false;
         if (b instanceof net.minecraft.block.BlockWithEntity) {
+            if (Decor.MODS.containsKey(id.getNamespace())) return true;                // los muebles de los mods de decoracion (cajones, estantes, vajilla...) son adorno: dentro del cafe no se pueden abrir
             return b instanceof net.minecraft.block.AbstractSignBlock || b instanceof net.minecraft.block.AbstractBannerBlock || b instanceof net.minecraft.block.BedBlock
                     || b instanceof net.minecraft.block.AbstractSkullBlock || b instanceof net.minecraft.block.CampfireBlock || b instanceof net.minecraft.block.BellBlock || b instanceof net.minecraft.block.EnchantingTableBlock;
         }
@@ -540,6 +614,7 @@ final class Obras {
         if (c.estado != Cafe.Estado.PREPARANDO) return "Cierra el café antes de construir.";
         if (c.trabajadores() > 1) return "Despide primero a tus invitados: solo se construye a solas.";
         c.construyendo = true;
+        pilaDeshacer.clear();
         c.estEnMano.clear();
         c.manos.put(p.getUuid(), null);
         c.quitarAyudantes();                                                  // los empleados no estorban mientras se construye (vuelven al terminar)
@@ -558,6 +633,8 @@ final class Obras {
     void salir(ServerPlayerEntity p) {
         if (!c.construyendo) return;
         c.construyendo = false;
+        pilaDeshacer.clear();
+        if (d().libre) guardarAuto();
         quitarMarcas();
         p.getInventory().clear();
         p.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
@@ -588,6 +665,14 @@ final class Obras {
 
     /** Clic derecho del dueño en modo construccion. */
     ActionResult clic(ServerPlayerEntity p, BlockHitResult hit, Hand hand) {
+        if (!d().libre) return clicInterno(p, hit, hand);
+        Diseno antes = tomar();
+        ActionResult r = clicInterno(p, hit, hand);
+        if (!igual(antes)) empujar(antes);
+        return r;
+    }
+
+    private ActionResult clicInterno(ServerPlayerEntity p, BlockHitResult hit, Hand hand) {
         if (hand != Hand.MAIN_HAND) return ActionResult.FAIL;
         BlockPos clic = hit.getBlockPos();
         if (!c.enParcela(clic)) { c.msg(p, "Ese terreno no es tuyo"); return ActionResult.FAIL; }
@@ -646,11 +731,15 @@ final class Obras {
                     c.w.setBlockState(pos2, der, Block.NOTIFY_ALL);
                     d.decor.put(clave(pos2), Decor.guardar(der));
                 }
-                // una cama, una puerta o una planta alta ocupan dos bloques: se guarda tambien el de al lado
-                for (BlockPos q : new BlockPos[]{pos.up(), pos.down(), pos.north(), pos.south(), pos.east(), pos.west()}) {
+                // una cama, una puerta o una planta alta ocupan dos bloques (y el reloj de pie de un mod, tres): se guardan tambien los de al lado
+                boolean mod = Decor.MODS.containsKey(Registries.BLOCK.getId(nuevo.getBlock()).getNamespace());
+                int rad = mod ? 3 : 1;
+                for (int dx = -rad; dx <= rad; dx++) for (int dy = -rad; dy <= rad; dy++) for (int dz = -rad; dz <= rad; dz++) {
+                    if ((dx == 0 && dy == 0 && dz == 0) || (!mod && Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1)) continue;
+                    BlockPos q = pos.add(dx, dy, dz);
                     BlockState sq = c.w.getBlockState(q);
-                    if (sq.getBlock() == nuevo.getBlock() && !q.equals(pos) && construible(q) && !d.decor.containsKey(clave(q))
-                            && (sq.getBlock() instanceof net.minecraft.block.BedBlock || sq.getBlock() instanceof net.minecraft.block.DoorBlock || sq.getBlock() instanceof net.minecraft.block.TallPlantBlock)) {
+                    if (sq.getBlock() == nuevo.getBlock() && construible(q) && !d.decor.containsKey(clave(q))
+                            && (mod || sq.getBlock() instanceof net.minecraft.block.BedBlock || sq.getBlock() instanceof net.minecraft.block.DoorBlock || sq.getBlock() instanceof net.minecraft.block.TallPlantBlock)) {
                         d.quitados.remove(clave(q));
                         d.decor.put(clave(q), Decor.guardar(sq));
                     }
@@ -714,6 +803,14 @@ final class Obras {
 
     /** Clic izquierdo del dueño en modo construccion: quita lo suyo (y se lo devuelve al almacen) o un bloque del terreno que se pueda construir. */
     ActionResult ataque(ServerPlayerEntity p, BlockPos pos) {
+        if (!d().libre) return ataqueInterno(p, pos);
+        Diseno antes = tomar();
+        ActionResult r = ataqueInterno(p, pos);
+        if (!igual(antes)) empujar(antes);
+        return r;
+    }
+
+    private ActionResult ataqueInterno(ServerPlayerEntity p, BlockPos pos) {
         BlockState st = c.w.getBlockState(pos);
         if (st.isAir() || !c.enParcela(pos)) return ActionResult.FAIL;
         Datos.Jugador d = d();
@@ -761,7 +858,10 @@ final class Obras {
                 BlockPos otra = st.get(PlacaBlock.DER) ? pos.west() : pos.east();
                 if (c.w.getBlockState(otra).getBlock() == CafeBlocks.CARTEL) { c.w.setBlockState(otra, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL); d.decor.remove(clave(otra)); }
             }
-            for (BlockPos q : new BlockPos[]{pos.up(), pos.down(), pos.north(), pos.south(), pos.east(), pos.west()}) {          // la otra mitad de una puerta o una cama que se ha ido sola
+            int rr = Decor.MODS.containsKey(Registries.BLOCK.getId(b).getNamespace()) ? 3 : 1;
+            for (int dx = -rr; dx <= rr; dx++) for (int dy = -rr; dy <= rr; dy++) for (int dz = -rr; dz <= rr; dz++) {          // las otras mitades de una puerta, una cama o un mueble alto que se han ido solas
+                if ((dx == 0 && dy == 0 && dz == 0) || (rr == 1 && Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1)) continue;
+                BlockPos q = pos.add(dx, dy, dz);
                 if (c.w.getBlockState(q).isAir() && d.decor.remove(clave(q)) != null) { /* ya no existe */ }
             }
         }
@@ -797,10 +897,202 @@ final class Obras {
         return null;
     }
 
+    // ------------------------------------------------------------ deshacer y planos (desde 0.22.0)
+
+    /** Una foto de lo construido: sirve para deshacer y para los planos. */
+    record Diseno(Map<String, String> decor, Set<String> quitados, Map<String, String> vitrina) {}
+
+    private final java.util.ArrayDeque<Diseno> pilaDeshacer = new java.util.ArrayDeque<>();
+    static final int MAX_DESHACER = 30;
+    static final int MAX_PLANOS = 6;
+
+    private Diseno tomar() {
+        Datos.Jugador d = d();
+        return new Diseno(new LinkedHashMap<>(d.decor), d.quitados == null ? new LinkedHashSet<>() : new LinkedHashSet<>(d.quitados), d.vitrina == null ? new LinkedHashMap<>() : new LinkedHashMap<>(d.vitrina));
+    }
+
+    private boolean igual(Diseno a) {
+        Datos.Jugador d = d();
+        return d.decor.equals(a.decor()) && (d.quitados == null ? a.quitados().isEmpty() : d.quitados.equals(a.quitados())) && (d.vitrina == null ? a.vitrina().isEmpty() : d.vitrina.equals(a.vitrina()));
+    }
+
+    private void empujar(Diseno antes) {
+        pilaDeshacer.push(antes);
+        while (pilaDeshacer.size() > MAX_DESHACER) pilaDeshacer.removeLast();
+    }
+
+    int deshacerDisponibles() { return pilaDeshacer.size(); }
+
+    /** Deshace lo ultimo que se puso o se quito (hasta 30 cosas atras; se olvida al terminar de construir). */
+    String deshacer(ServerPlayerEntity p) {
+        if (!c.esDuenio(p)) return "Solo el dueño construye.";
+        if (!c.construyendo) return "Solo se deshace dentro del modo construcción.";
+        if (!d().libre) return "Deshacer solo funciona en los cafés de parcela libre.";
+        if (pilaDeshacer.isEmpty()) return "No hay nada que deshacer.";
+        Diseno prev = pilaDeshacer.pop();
+        String err = reemplazar(prev, p);
+        if (err != null) { pilaDeshacer.push(prev); return err; }
+        c.sonido(p.getX(), p.getY(), p.getZ(), SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.8f);
+        return null;
+    }
+
+    private static final Map<String, Object[]> CACHE_PIEZAS = new HashMap<>();
+
+    /** Cuantos objetos «cuesta» un bloque puesto: 0 si es la segunda mitad de algo (cama, puerta, mueble alto), 2 en una losa doble, N en velas/huevos/nieve. */
+    static int piezas(BlockState st) {
+        int n = 1;
+        boolean vanilla = Registries.BLOCK.getId(st.getBlock()).getNamespace().equals("minecraft");
+        for (net.minecraft.state.property.Property<?> pr : st.getProperties()) {
+            Object val = st.get(pr);
+            String v = val instanceof net.minecraft.util.StringIdentifiable si ? si.asString() : String.valueOf(val);
+            switch (pr.getName()) {
+                case "half" -> { if (v.equals("upper")) return 0; }
+                case "part" -> { if (v.equals("head") || v.equals("top") || v.equals("middle")) return 0; }
+                case "der" -> { if (v.equals("true")) return 0; }
+                case "type" -> { if (v.equals("double")) n = 2; }
+                case "candles", "pickles", "eggs", "layers" -> { if (vanilla && val instanceof Integer i) n = i; }
+                default -> { }
+            }
+        }
+        return n;
+    }
+
+    /** Cuantos objetos de cada tipo hay puestos en un diseño. */
+    static Map<String, Integer> contar(Map<String, String> decor) {
+        Map<String, Integer> m = new HashMap<>();
+        if (CACHE_PIEZAS.size() > 6000) CACHE_PIEZAS.clear();
+        for (String v : decor.values()) {
+            Object[] r = CACHE_PIEZAS.get(v);
+            if (r == null) {
+                BlockState st = Decor.leer(v);
+                if (st == null || st.getBlock().asItem() == net.minecraft.item.Items.AIR) r = new Object[]{"", 0};
+                else r = new Object[]{Registries.ITEM.getId(st.getBlock().asItem()).toString(), piezas(st)};
+                CACHE_PIEZAS.put(v, r);
+            }
+            if ((Integer) r[1] > 0) m.merge((String) r[0], (Integer) r[1], Integer::sum);
+        }
+        return m;
+    }
+
+    /**
+     * Cambia lo construido por otro diseño: lo que hay puesto ahora vuelve al baul y se gasta lo que pida el nuevo (si no te llega, no se hace nada y te dice lo que falta). Despues se
+     * reconstruye la parcela. Devuelve el error, o null.
+     */
+    private String reemplazar(Diseno nuevo, ServerPlayerEntity p) {
+        Datos.Jugador d = d();
+        Map<String, Integer> act = contar(d.decor), nue = contar(nuevo.decor());
+        Set<String> claves = new LinkedHashSet<>(act.keySet());
+        claves.addAll(nue.keySet());
+        StringBuilder falta = new StringBuilder();
+        for (String k : claves) {
+            int delta = act.getOrDefault(k, 0) - nue.getOrDefault(k, 0);
+            if (stock(k) + delta >= 0 || esBasico(k)) continue;                              // lo basico del cafe (caja, cartel, libro, estaciones) se repone solo al reconstruir
+            Item it = Registries.ITEM.get(Identifier.of(k));
+            falta.append(falta.length() > 0 ? ", " : "").append(-(stock(k) + delta)).append(" × ").append(it == null ? k : it.getName().getString());
+        }
+        if (falta.length() > 0) return "No te llegan los objetos para ese diseño. Te faltan: " + falta + ". Cómpralos en DECORAR.";
+        for (String k : claves) sumarStock(k, act.getOrDefault(k, 0) - nue.getOrDefault(k, 0));
+        d.decor.clear(); d.decor.putAll(nuevo.decor());
+        if (d.quitados == null) d.quitados = new LinkedHashSet<>();
+        d.quitados.clear(); d.quitados.addAll(nuevo.quitados());
+        if (d.vitrina == null) d.vitrina = new LinkedHashMap<>();
+        d.vitrina.clear(); d.vitrina.putAll(nuevo.vitrina());
+        c.reconstruir();
+        if (c.construyendo) { c.quitarAyudantes(); llenarInventario(p); }
+        guardarPronto();
+        return null;
+    }
+
+    /** La caja registradora, el cartel, el libro y las estaciones de cocina: `sincronizar` los da gratis si faltan (no las mesas, encimeras, vitrinas ni puertas, que se compran). */
+    private static boolean esBasico(String item) {
+        if (!item.startsWith("emi_cafe:")) return false;
+        Block b = Registries.BLOCK.get(Identifier.of(item));
+        if (b == CafeBlocks.REGISTRADORA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED) return true;
+        return Estacion.de(b) != null && !CafeBlocks.esMesa(b);
+    }
+
+    private static String clavePlano(String nombre) { return nombre.trim().toLowerCase(java.util.Locale.ROOT); }
+
+    private Datos.Plano fotoPlano(String nombre) {
+        Datos.Plano pl = new Datos.Plano();
+        Diseno f = tomar();
+        pl.nombre = nombre; pl.fecha = System.currentTimeMillis();
+        pl.decor = f.decor(); pl.quitados = f.quitados(); pl.vitrina = f.vitrina();
+        return pl;
+    }
+
+    /** Guarda el diseño de ahora con un nombre (si ya existe uno igual, lo sustituye). Devuelve el error, o null. */
+    String guardarPlano(ServerPlayerEntity p, String nombre) {
+        if (!c.esDuenio(p)) return "Solo el dueño guarda planos.";
+        if (!d().libre) return "Los planos solo funcionan en los cafés de parcela libre.";
+        String n = nombre == null ? "" : nombre.trim();
+        if (n.isEmpty() || n.length() > 24) return "Ponle un nombre de 1 a 24 letras.";
+        if (n.toLowerCase(java.util.Locale.ROOT).startsWith("auto")) return "Ese nombre está reservado para las copias automáticas.";
+        Datos.Jugador d = d();
+        String k = clavePlano(n);
+        if (!d.planos.containsKey(k)) {
+            long manuales = d.planos.keySet().stream().filter(x -> !x.startsWith("auto")).count();
+            if (manuales >= MAX_PLANOS) return "Ya tienes " + MAX_PLANOS + " planos: borra alguno o sobrescribe uno.";
+        }
+        d.planos.put(k, fotoPlano(n));
+        EmiCafe.datos.guardar(c.duenio);
+        return null;
+    }
+
+    /** Copia automatica (al terminar de construir y antes de restaurar un plano): se guardan las 3 ultimas distintas. */
+    void guardarAuto() {
+        Datos.Jugador d = d();
+        if (!d.libre || d.decor == null || d.decor.isEmpty()) return;
+        guardarAuto(tomar());
+    }
+
+    private void guardarAuto(Diseno f) {
+        Datos.Jugador d = d();
+        if (f.decor().isEmpty()) return;
+        Datos.Plano a1 = d.planos.get("auto1");
+        if (a1 != null && a1.decor.equals(f.decor()) && a1.quitados.equals(f.quitados())) return;
+        Datos.Plano a2 = d.planos.get("auto2");
+        if (a2 != null) d.planos.put("auto3", a2);
+        if (a1 != null) d.planos.put("auto2", a1);
+        Datos.Plano nuevo = new Datos.Plano();
+        nuevo.nombre = "Copia automática"; nuevo.fecha = System.currentTimeMillis();
+        nuevo.decor = new LinkedHashMap<>(f.decor()); nuevo.quitados = new LinkedHashSet<>(f.quitados()); nuevo.vitrina = new LinkedHashMap<>(f.vitrina());
+        d.planos.put("auto1", nuevo);
+        EmiCafe.datos.guardar(c.duenio);
+    }
+
+    /** Pone un plano guardado (solo con el cafe cerrado). Antes se hace una copia automatica del diseño de ahora. Devuelve el error, o null. */
+    String restaurarPlano(ServerPlayerEntity p, String clave) {
+        if (!c.esDuenio(p)) return "Solo el dueño restaura planos.";
+        if (!d().libre) return "Los planos solo funcionan en los cafés de parcela libre.";
+        if (c.estado != Cafe.Estado.PREPARANDO) return "Cierra el café antes de restaurar un plano.";
+        if (c.trabajadores() > 1) return "Despide primero a tus invitados.";
+        Datos.Plano pl = d().planos.get(clavePlano(clave));
+        if (pl == null) return "Ese plano no existe.";
+        Diseno nuevo = new Diseno(new LinkedHashMap<>(pl.decor), new LinkedHashSet<>(pl.quitados), new LinkedHashMap<>(pl.vitrina));
+        Diseno ahora = tomar();
+        String err = reemplazar(nuevo, p);
+        if (err != null) return err;
+        guardarAuto(ahora);                                                       // la copia de lo de antes (si no es igual a la ultima)
+        pilaDeshacer.clear();
+        return null;
+    }
+
+    String borrarPlano(ServerPlayerEntity p, String clave) {
+        if (!c.esDuenio(p)) return "Solo el dueño borra planos.";
+        if (d().planos.remove(clavePlano(clave)) == null) return "Ese plano no existe.";
+        EmiCafe.datos.guardar(c.duenio);
+        return null;
+    }
+
     // ------------------------------------------------------------ comprar para construir
+
+    /** Cuantos objetos de la ultima compra no cupieron en el inventario y se quedaron en el baul (para avisar al jugador). */
+    int sobrante;
 
     /** Compra un articulo de la tienda de bloques: va al almacen (y al inventario si se esta construyendo). Devuelve el error, o null. */
     String comprar(ServerPlayerEntity p, Decor.Articulo art) {
+        sobrante = 0;
         if (art == null || !c.esDuenio(p)) return "Solo el dueño compra.";
         if (c.estado != Cafe.Estado.PREPARANDO) return "Solo se compra con el café cerrado.";
         Datos.Jugador d = c.dj(p);
@@ -811,12 +1103,13 @@ final class Obras {
         if (d.monedas < art.precio()) return "Te faltan " + (art.precio() - d.monedas) + " monedas.";
         Item it = art.objeto();
         if (it == null || it == net.minecraft.item.Items.AIR) return "Ese artículo ya no existe.";
-        if (c.construyendo) {
-            ItemStack st = new ItemStack(it, art.cantidad());
-            if (!p.getInventory().insertStack(st) && !st.isEmpty()) return "Tu inventario está lleno.";
-        }
         d.monedas -= art.precio();
         sumarStock(art.item(), art.cantidad());
+        if (c.construyendo && !baulSet().contains(art.item())) {
+            ItemStack st = new ItemStack(it, art.cantidad());
+            p.getInventory().insertStack(st);                                          // si el inventario esta lleno lo que sobra se queda en el baul (el almacen) y entra solo cuando haya sitio
+            sobrante = st.getCount();
+        }
         EmiCafe.datos.guardar(p.getUuid());
         return null;
     }

@@ -39,6 +39,7 @@ enum Estacion {
     CAJA_PESCADO("Caja de pescado", CafeBlocks.CAJA_PESCADO, Tipo.CAJA, 15, 1, 0, CafeItems.PESCADO, false),
     CAJA_CACAO("Saco de cacao", CafeBlocks.CAJA_CACAO, Tipo.CAJA, 16, 1, 0, CafeItems.CACAO, false),
     CAJA_MIEL("Tarro de miel", CafeBlocks.CAJA_MIEL, Tipo.CAJA, 17, 1, 0, CafeItems.MIEL, false),
+    CAJA_CEBOLLA("Caja de cebollas", CafeBlocks.CAJA_CEBOLLA, Tipo.CAJA, 18, 1, 0, CafeItems.CEBOLLA, false),
     PARRILLA("Parrilla", CafeBlocks.PARRILLA, Tipo.PROCESO, 14, 5, 140, null, false),
     CREPERA("Crepera", CafeBlocks.CREPERA, Tipo.PROCESO, 15, 5, 90, null, false),
     VAPORERA("Vaporera", CafeBlocks.VAPORERA, Tipo.PROCESO, 16, 5, 130, null, false),

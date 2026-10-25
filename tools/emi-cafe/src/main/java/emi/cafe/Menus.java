@@ -20,6 +20,10 @@ final class Menus {
     private Menus() {}
 
     private static final java.util.Map<java.util.UUID, Long> ULTIMO_REFRESCO = new java.util.HashMap<>();
+    private static final java.util.Map<java.util.UUID, Decor.Vista> VISTAS = new java.util.HashMap<>();
+
+    /** Lo que ve este jugador en la tienda DECORAR (fuente, grupo, pagina y busqueda). */
+    static Decor.Vista vista(ServerPlayerEntity p) { return VISTAS.computeIfAbsent(p.getUuid(), k -> new Decor.Vista()); }
 
     // ------------------------------------------------------------ abrir, refrescar, cerrar
 
@@ -113,14 +117,80 @@ final class Menus {
         o.addProperty("platosLimpios", c.platos);
         o.addProperty("construyendo", c.construyendo);
         o.addProperty("mesasUsadas", c.mesasPos().size()); o.addProperty("mesasMax", c.numMesas());
+        Decor.Vista vista = vista(p);
+        vista.ponerFavoritos(dd.favoritos);
+        java.util.List<Decor.Articulo> lista = vista.lista();
         JsonArray deco = new JsonArray();
-        for (Decor.Articulo a : Decor.CATALOGO) {
+        for (int i = vista.pag * Decor.POR_PAG; i < Math.min(lista.size(), (vista.pag + 1) * Decor.POR_PAG); i++) {
+            Decor.Articulo a = lista.get(i);
             JsonObject e = new JsonObject();
             e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("cantidad", a.cantidad());
             e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("tienes", c.obras.stock(a.item()));
+            e.addProperty("fav", dd.favoritos.contains(a.item()));
             deco.add(e);
         }
         o.add("deco", deco);
+        java.util.List<Decor.Fuente> fuentes = Decor.fuentes();
+        JsonArray fs = new JsonArray(), gs = new JsonArray();
+        for (Decor.Fuente f : fuentes) fs.add(f.nombre());
+        Decor.Fuente fAct = fuentes.get(Math.max(0, Math.min(fuentes.size() - 1, vista.fuente)));
+        for (Decor.Grupo g : fAct.grupos()) gs.add(g.nombre() + " (" + g.arts().size() + ")");
+        o.add("decoFuentes", fs); o.add("decoGrupos", gs);
+        o.addProperty("decoFuente", vista.fuente); o.addProperty("decoGrupo", vista.grupo);
+        o.addProperty("decoPag", vista.pag); o.addProperty("decoPags", vista.paginas());
+        o.addProperty("decoTotal", lista.size()); o.addProperty("decoBuscar", vista.buscar); o.addProperty("decoFav", vista.verFav); o.addProperty("nFav", dd.favoritos.size());
+        JsonArray baul = new JsonArray();                                      // el baul: todo lo que tiene guardado el dueño (desde 0.21.0), con filtro por fuente y busqueda (0.22.0)
+        JsonArray bfs = new JsonArray();
+        bfs.add("Todo");
+        int bTotal = 0;
+        if (duenio) {
+            java.util.List<String> claves = new java.util.ArrayList<>(dd.almacen.keySet());
+            claves.sort((x, y) -> Integer.compare(Obras.prioridad(x), Obras.prioridad(y)));
+            java.util.List<String> fuentesBaul = new java.util.ArrayList<>();
+            for (String k : claves) if (dd.almacen.get(k) > 0) { String f = fuenteDe(k); if (!fuentesBaul.contains(f)) fuentesBaul.add(f); }
+            for (String f : fuentesBaul) bfs.add(f);
+            vista.baulFuente = Math.max(0, Math.min(fuentesBaul.size(), vista.baulFuente));
+            String filtro = vista.baulFuente == 0 ? null : fuentesBaul.get(vista.baulFuente - 1);
+            String[] toks = vista.baulBuscar.isEmpty() ? new String[0] : vista.baulBuscar.toLowerCase(java.util.Locale.ROOT).split("\\s+");
+            for (String k : claves) {
+                int n = dd.almacen.get(k);
+                if (n <= 0) continue;
+                bTotal++;
+                if (filtro != null && !filtro.equals(fuenteDe(k))) continue;
+                boolean ok = true;
+                for (String t : toks) if (!k.toLowerCase(java.util.Locale.ROOT).contains(t)) { ok = false; break; }
+                if (!ok || baul.size() >= 600) continue;
+                JsonObject e = new JsonObject();
+                e.addProperty("item", k); e.addProperty("n", n);
+                e.addProperty("fuera", dd.baul != null && dd.baul.contains(k));
+                e.addProperty("mano", c.construyendo ? c.obras.enInventario(p, k) : 0);
+                baul.add(e);
+            }
+        }
+        o.add("baul", baul);
+        o.add("baulFuentes", bfs);
+        o.addProperty("baulFuente", vista.baulFuente); o.addProperty("baulBuscar", vista.baulBuscar); o.addProperty("baulTotal", bTotal);
+        o.addProperty("deshacer", c.obras.deshacerDisponibles());
+        JsonArray planos = new JsonArray();                                    // los planos guardados (0.22.0)
+        if (duenio && dd.libre) {
+            java.util.List<java.util.Map.Entry<String, Datos.Plano>> ps = new java.util.ArrayList<>(dd.planos.entrySet());
+            ps.sort((x, y) -> {
+                boolean ax = x.getKey().startsWith("auto"), ay = y.getKey().startsWith("auto");
+                if (ax != ay) return ax ? 1 : -1;
+                return ax ? x.getKey().compareTo(y.getKey()) : Long.compare(y.getValue().fecha, x.getValue().fecha);
+            });
+            java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm");
+            for (var en : ps) {
+                JsonObject e = new JsonObject();
+                e.addProperty("clave", en.getKey()); e.addProperty("nombre", en.getValue().nombre);
+                e.addProperty("auto", en.getKey().startsWith("auto"));
+                e.addProperty("fecha", java.time.Instant.ofEpochMilli(en.getValue().fecha).atZone(ZoneId.systemDefault()).format(fmt));
+                e.addProperty("bloques", en.getValue().decor.size());
+                planos.add(e);
+            }
+        }
+        o.add("planos", planos);
+        o.addProperty("planosMax", Obras.MAX_PLANOS);
         o.addProperty("libre", dd.libre);
         StringBuilder guardado = new StringBuilder();                          // lo del cafe que se tiene guardado para poner (caja registradora, estaciones, cartel...)
         for (java.util.Map.Entry<String, Integer> g : dd.almacen.entrySet()) {
@@ -157,9 +227,10 @@ final class Menus {
             pers.add(e);
         }
         o.add("personal", pers);
-        o.addProperty("personalMax", 8);
+        o.addProperty("personalMax", Personal.maxTotal());
         JsonArray contr = new JsonArray();                                   // a quien se puede contratar
         for (Personal.Rol rol : Personal.Rol.values()) {
+            if (rol.max == 0) continue;                                    // el michigranjero viene con la finca
             JsonObject e = new JsonObject();
             e.addProperty("rol", rol.id); e.addProperty("nombre", rol.nombre); e.addProperty("texto", rol.descripcion); e.addProperty("icono", rol.icono);
             e.addProperty("precio", rol.precio); e.addProperty("reqLocal", rol.reqLocal); e.addProperty("reqRep", rol.reqRep);
@@ -171,6 +242,7 @@ final class Menus {
             contr.add(e);
         }
         o.add("contratos", contr);
+        o.add("granja", jsonGranja(c, dd));
         o.addProperty("estacionesEnMano", c.estEnMano.size());
         o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", c.maxEstaciones());
         o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
@@ -316,6 +388,65 @@ final class Menus {
         return a;
     }
 
+    /** La granja para el menu: las fincas del dueño, lo que se puede comprar y lo que hay en la despensa. */
+    private static JsonObject jsonGranja(Cafe c, Datos.Jugador dd) {
+        JsonObject g = new JsonObject();
+        long ahora = System.currentTimeMillis();
+        int max = Granja.fincasMax(c.nivelLocal());
+        g.addProperty("nivelLocal", c.nivelLocal()); g.addProperty("minLocal", Granja.NIVEL_LOCAL); g.addProperty("max", max); g.addProperty("tienes", dd.granja.size());
+        g.addProperty("cosechado", dd.granjaCosechado); g.addProperty("extra", dd.granjaBonus); g.addProperty("capacidad", Granja.CAPACIDAD);
+        JsonArray bonus = new JsonArray();
+        for (int q = 1; q <= Granja.NIVEL_MAX; q++) { JsonObject b = new JsonObject(); b.addProperty("nombre", Granja.CALIDAD[q]); b.addProperty("pct", Granja.bonusPct(q)); bonus.add(b); }
+        g.add("calidades", bonus);
+        JsonArray fs = new JsonArray();
+        for (Datos.Finca f : dd.granja) {
+            Granja.Cultivo cult = Granja.Cultivo.de(f.tipo);
+            if (cult == null) continue;
+            JsonObject e = new JsonObject();
+            e.addProperty("slot", f.slot); e.addProperty("tipo", cult.id); e.addProperty("nombre", cult.nombre); e.addProperty("kind", cult.tipo == Granja.Tipo.HUERTO ? "huerto" : "corral");
+            e.addProperty("icono", idItem(cult.ingrediente)); e.addProperty("fuente", cult.fuente); e.addProperty("nivel", f.nivel);
+            double prog = Granja.progreso(f, ahora);
+            e.addProperty("prog", (int) Math.round(prog * 100)); e.addProperty("resta", Granja.restanteSeg(f, ahora));
+            e.addProperty("granjero", f.granjero.nombre); e.addProperty("aspecto", Personal.ASPECTOS[Math.floorMod(f.granjero.aspecto, Personal.ASPECTOS.length)][1]);
+            int coste = Granja.costeMejora(cult, f.nivel);
+            e.addProperty("coste", coste);
+            e.addProperty("tope", f.nivel >= Granja.NIVEL_MAX ? "NIVEL MÁXIMO" : "");
+            e.addProperty("rend", Granja.rendimiento(cult, f.nivel)); e.addProperty("bonus", Granja.bonusPct(f.nivel)); e.addProperty("calidad", Granja.CALIDAD[f.nivel]);
+            e.addProperty("animales", cult.tipo == Granja.Tipo.CORRAL ? Granja.animales(f.nivel) : 0);
+            e.addProperty("cosechas", f.cosechas);
+            fs.add(e);
+        }
+        g.add("fincas", fs);
+        JsonArray cat = new JsonArray();
+        for (Granja.Cultivo cult : Granja.Cultivo.values()) {
+            JsonObject e = new JsonObject();
+            e.addProperty("id", cult.id); e.addProperty("nombre", cult.nombre); e.addProperty("kind", cult.tipo == Granja.Tipo.HUERTO ? "huerto" : "corral");
+            e.addProperty("icono", idItem(cult.ingrediente)); e.addProperty("precio", cult.precio); e.addProperty("ciclo", cult.ciclo); e.addProperty("fuente", cult.fuente); e.addProperty("texto", cult.texto);
+            String blq = "";
+            boolean tiene = false;
+            for (Datos.Finca f : dd.granja) if (f.tipo.equals(cult.id)) tiene = true;
+            if (c.nivelLocal() < Granja.NIVEL_LOCAL) blq = "Local nivel " + Granja.NIVEL_LOCAL;
+            else if (tiene) blq = "YA LO TIENES";
+            else if (dd.granja.size() >= max) blq = max >= Granja.MAX_FINCAS ? "SIN SITIO" : "Local nivel " + (c.nivelLocal() + 1);
+            e.addProperty("bloqueo", blq);
+            cat.add(e);
+        }
+        g.add("catalogo", cat);
+        JsonArray desp = new JsonArray();
+        for (Granja.Cultivo cult : Granja.Cultivo.values()) {
+            int total = Granja.cantidad(dd, cult.ingrediente);
+            if (total <= 0) continue;
+            JsonObject e = new JsonObject();
+            e.addProperty("item", idItem(cult.ingrediente)); e.addProperty("nombre", CafeItems.nombre(cult.ingrediente)); e.addProperty("total", total);
+            JsonArray q = new JsonArray();
+            for (int i = 1; i <= Granja.NIVEL_MAX; i++) q.add(Granja.cantidad(dd, cult.ingrediente, i));
+            e.add("q", q);
+            desp.add(e);
+        }
+        g.add("despensa", desp);
+        return g;
+    }
+
     // ------------------------------------------------------------ las acciones del cliente
 
     static void recibir(ServerPlayerEntity p, AccionPayload a) {
@@ -373,8 +504,24 @@ final class Menus {
                 case "despedir" -> { String err = c.despedir(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "mejorar_emp" -> { String err = c.mejorarEmpleado(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "granjaComprar" -> { String err = duenio ? c.granja.comprar(p, a.a()) : "Solo el dueño maneja la granja."; if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "granjaMejorar" -> { String err = duenio ? c.granja.mejorar(p, parseIdx(a.a())) : "Solo el dueño maneja la granja."; if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "granjaAspecto" -> { String err = c.granja.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
+                case "decoFav" -> { if (duenio) { Datos.Jugador dj = c.dj(); if (!dj.favoritos.remove(a.a())) { if (Decor.articulo(a.a()) != null && dj.favoritos.size() < 300) dj.favoritos.add(a.a()); } EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }
+                case "baulFiltro" -> { Decor.Vista v = vista(p); v.baulFuente = Math.max(0, v.baulFuente + parseIdx(a.a())); actualizar(c, p); }
+                case "baulBuscar" -> { vista(p).baulBuscar = a.a().trim(); actualizar(c, p); }
+                case "deshacer" -> { String err = duenio ? c.obras.deshacer(p) : "Solo el dueño construye."; if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else p.sendMessage(Msg.say("Deshecho."), false); actualizar(c, p); }
+                case "planoRestaurar" -> { String err = c.obras.restaurarPlano(p, a.a()); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else { p.sendMessage(Msg.say("Plano restaurado. Lo que tenías antes quedó en una copia automática."), false); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.2f); } actualizar(c, p); }
+                case "planoSobrescribir" -> { Datos.Plano pl = c.dj().planos.get(a.a().toLowerCase(java.util.Locale.ROOT)); String err = pl == null || a.a().startsWith("auto") ? "Ese plano no se puede sobrescribir." : c.obras.guardarPlano(p, pl.nombre); if (err != null) p.sendMessage(Msg.err(err), false); else p.sendMessage(Msg.say("Plano «" + pl.nombre + "» actualizado con el diseño de ahora."), false); actualizar(c, p); }
+                case "planoBorrar" -> { String err = c.obras.borrarPlano(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "decoMover" -> { Decor.Vista v = vista(p); v.ponerFavoritos(c.dj().favoritos); v.mover(a.a(), parseIdx(a.b())); actualizar(c, p); }
+                case "decoBuscar" -> { vista(p).buscar(a.a()); actualizar(c, p); }
+                case "baulSacar" -> { if (duenio) { String err = c.obras.sacarDelBaul(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); } actualizar(c, p); }
+                case "baulGuardar" -> { if (duenio) { String err = c.obras.guardarEnBaul(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); } actualizar(c, p); }
+                case "baulSacarTodo" -> { if (duenio) c.obras.sacarTodoDelBaul(p); actualizar(c, p); }
+                case "baulGuardarTodo" -> { if (duenio) c.obras.guardarTodoEnBaul(p); actualizar(c, p); }
                 case "cerrarTurno" -> { if (duenio) c.cerrarTurno(); cerrar(p); }
                 case "salir" -> { cerrar(p); Cafes.salir(p); }
                 case "invitar" -> {
@@ -402,6 +549,15 @@ final class Menus {
         } catch (Throwable t) {
             EmiCafe.LOG.error("Error en una accion del menu del cafe", t);
         }
+    }
+
+    /** De donde viene un objeto del baul, para el filtro: Café, Minecraft o el nombre del mod. */
+    static String fuenteDe(String item) {
+        int i = item.indexOf(':');
+        String ns = i < 0 ? "minecraft" : item.substring(0, i);
+        if (ns.equals("emi_cafe")) return "Café";
+        if (ns.equals("minecraft")) return "Minecraft";
+        return Decor.MODS.getOrDefault(ns, ns);
     }
 
     private static int parseIdx(String s) { try { return Integer.parseInt(s); } catch (NumberFormatException e) { return -1; } }
@@ -440,7 +596,10 @@ final class Menus {
         String err = c.obras.comprar(p, art);
         if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); return; }
         Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f);
-        p.sendMessage(Msg.say("Compraste " + art.nombre() + " (" + art.cantidad() + ")." + (c.construyendo ? "" : " Se queda guardado: lo tendrás en el inventario al entrar en el modo construcción.")), false);
+        String nom = art.nombre().isEmpty() ? art.objeto().getName().getString() : art.nombre();
+        String resto = !c.construyendo ? " Se queda guardado en tu baúl: lo tendrás en el inventario al entrar en el modo construcción."
+                : c.obras.sobrante > 0 ? " Tu inventario está lleno: " + c.obras.sobrante + " se quedan en tu baúl (pestaña BAÚL) y entran solos cuando liberes sitio." : "";
+        p.sendMessage(Msg.say("Compraste " + nom + " (" + art.cantidad() + ")." + resto), false);
     }
 
     private static void comprarMejora(Cafe c, ServerPlayerEntity p, Recetas.Mejora me) {

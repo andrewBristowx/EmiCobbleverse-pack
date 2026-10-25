@@ -49,6 +49,7 @@ public final class CafeBlocks {
     public static final Block CREPERA = reg("crepera");
     public static final Block VAPORERA = reg("vaporera");
     public static final Block FUENTE_CHOCOLATE = reg("fuente_chocolate");
+    public static final Block CAJA_CEBOLLA = reg("caja_cebolla");                     // la granja (0.24.0)
 
     /** El letrero de la puerta (2 casillas de ancho, medio bloque de alto) y el libro de recetas de la pared (1 casilla): imagenes sobre una placa fina, sin objeto. */
     public static final Block CARTEL = placa("cartel", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0.25, 0, 1, 0.75, 1 / 16.0));
