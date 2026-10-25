@@ -716,7 +716,8 @@ final class Cafe {
                 Estacion es = receta.get(k);
                 boolean ultima = k == receta.size() - 1;
                 BlockPos b = posCerca(es, f[0], f[1]);
-                if (es.tipo == Estacion.Tipo.CAJA && es.ingrediente != null && Granja.cantidad(dj(), es.ingrediente) > 0) {      // si hay ingredientes de la granja y su despensa esta puesta, los saca de alli
+                boolean deGranja = es.tipo == Estacion.Tipo.CAJA && es.ingrediente != null && c.esp == null && Granja.cantidad(dj(), es.ingrediente) > 0 && despensaPuesta(es.ingrediente);
+                if (deGranja) {                                                           // si hay ingredientes de la granja y su despensa esta puesta, los saca de alli
                     BlockPos dsp = posDespensa(es.ingrediente, f[0], f[1]);
                     if (dsp != null) b = dsp;
                 }
@@ -724,7 +725,10 @@ final class Cafe {
                 if (fin == null) { ok = false; break; }
                 int espera = es.tipo == Estacion.Tipo.CAJA ? 24 : es.tipo == Estacion.Tipo.EMPLATAR ? 44 : Math.max(44, Math.min(100, es.ticks / 2));
                 boolean proceso = es.tipo != Estacion.Tipo.CAJA;
-                a.paso(fin[0], fin[1], a.t(espera), () -> cocinando(a, proceso), ultima ? () -> a.llevar(w, CafeItems.id(plato)) : null, b.getX() + 0.5, b.getZ() + 0.5);   // al acabar la ultima, el plato queda en sus manos
+                final Item ingr = deGranja ? es.ingrediente : null;
+                Runnable alAcabar = ultima ? () -> a.llevar(w, CafeItems.id(plato)) : null;                  // al acabar la ultima, el plato queda en sus manos
+                if (ingr != null) { Runnable resto = alAcabar; alAcabar = () -> { tomarDeDespensa(a, c, ingr); if (resto != null) resto.run(); }; }
+                a.paso(fin[0], fin[1], a.t(espera), () -> cocinando(a, proceso), alAcabar, b.getX() + 0.5, b.getZ() + 0.5);
                 f = fin;
             }
             boolean aLaVentanilla = ok && a.pase != null && hayMeseros();
@@ -752,6 +756,21 @@ final class Cafe {
             a.vigente = () -> esperaPlato(m, plato) && !mesaOcupada(m, a, false);          // si un mesero ya lleva a esa mesa el plato del dueño, el chef lo deja
             return;
         }
+    }
+
+    /**
+     * El chef coge de la despensa el ingrediente de un plato (0.30.0): se gasta en ese momento (la mejor calidad que haya), el rotulo de la despensa baja al instante y la calidad
+     * se apunta en el cliente para pagar el extra al servirle. Antes se gastaba al cobrar, asi que con las fincas llenas la despensa parecia no bajar nunca.
+     */
+    private void tomarDeDespensa(Ayudante a, Cliente c, Item ing) {
+        if (c.esp != null || !despensaPuesta(ing)) return;
+        int q = Granja.gastar(dj(), ing);
+        if (c.calidades == null) c.calidades = new java.util.LinkedHashMap<>();
+        if (q <= 0) { c.calidades.remove(ing); return; }
+        c.calidades.put(ing, q);
+        w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 1.2, a.e.getZ(), 3, 0.2, 0.2, 0.2, 0.0);
+        actualizarDespensas();
+        if (DEBUG) EmiCafe.LOG.info("[granja] {} saca {} (calidad {}) de la despensa; quedan {}", a.emp.nombre, CafeItems.id(ing), q, Granja.cantidad(dj(), ing));
     }
 
     private void cocinando(Ayudante a, boolean proceso) {
@@ -942,11 +961,8 @@ final class Cafe {
 
     // ------------------------------------------------------------ terraza y clima (0.29.0)
 
-    /** ¿Es una mesa de terraza? = al aire libre: no hay ningun bloque encima (ni techo, ni cristal, ni hojas). Se mira el mapa de alturas, asi que sirve dentro y fuera del edificio. */
-    boolean esTerraza(Mesa m) {
-        BlockPos b = m.bloque;
-        return w.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, b.getX(), b.getZ()) <= b.getY() + 1;
-    }
+    /** ¿Es una mesa de terraza? = el bloque «Mesa de terraza» (0.30.0; en 0.29.0 era cualquier mesa al aire libre, pero eso limitaba donde construir). Da igual si esta dentro o fuera. */
+    boolean esTerraza(Mesa m) { return w.getBlockState(m.bloque).getBlock() == CafeBlocks.mesaTerraza(); }
 
     int mesasTerraza() { int n = 0; for (Mesa m : mesas) if (esTerraza(m)) n++; return n; }
 
@@ -963,15 +979,17 @@ final class Cafe {
     /** Cuanto cambia la paciencia de quien se sienta en esa mesa por el tiempo (1 = nada). */
     double climaPaciencia(Mesa m) { return esTerraza(m) ? clima.paciencia : 1.0; }
 
-    /** Una mesa libre de esas, al azar, con mas o menos ganas segun el tiempo (la terraza con sol atrae, con lluvia casi no). */
+    /**
+     * La mesa de un cliente nuevo (0.30.0). Cada cliente decide si quiere terraza (con sol casi siempre, con lluvia casi nunca, ver {@link Clima#probTerraza}): si quiere y hay una mesa
+     * de terraza libre se sienta en ella; si no quiere se sienta dentro, y si dentro no queda ninguna libre acepta la terraza (y al reves).
+     */
     Mesa elegirMesa(List<Mesa> libres) {
-        double total = 0;
-        double[] pesos = new double[libres.size()];
-        for (int i = 0; i < pesos.length; i++) { pesos[i] = esTerraza(libres.get(i)) ? clima.preferencia : 1.0; total += pesos[i]; }
-        double r = rnd.nextDouble() * total;
-        Mesa elegida = libres.get(libres.size() - 1);
-        for (int i = 0; i < pesos.length; i++) { r -= pesos[i]; if (r <= 0) { elegida = libres.get(i); break; } }
-        if (DEBUG) EmiCafe.LOG.info("[terraza] clima {}: cliente a la mesa {} (terraza={})", clima.nombre, elegida.bloque.toShortString(), esTerraza(elegida));
+        List<Mesa> fuera = new ArrayList<>(), dentro = new ArrayList<>();
+        for (Mesa m : libres) (esTerraza(m) ? fuera : dentro).add(m);
+        boolean quiere = !fuera.isEmpty() && rnd.nextDouble() < clima.probTerraza;
+        List<Mesa> de = quiere ? fuera : !dentro.isEmpty() ? dentro : fuera;
+        Mesa elegida = de.get(rnd.nextInt(de.size()));
+        if (DEBUG) EmiCafe.LOG.info("[terraza] clima {}: cliente {}a la mesa {} (terraza={})", clima.nombre, quiere ? "que quiere terraza " : "", elegida.bloque.toShortString(), esTerraza(elegida));
         return elegida;
     }
 
@@ -1523,7 +1541,7 @@ final class Cafe {
         base = (int) Math.round(base * (1.0 + 0.06 * nivel(Recetas.Mejora.LUJO)));
         int granjaExtra = 0;
         if (c.esp == null && pl != null) {                                                 // ingredientes de la granja: gasta los mejores que haya y el plato paga mas
-            Granja.Uso uso = Granja.usar(dd, pl, this::despensaPuesta);
+            Granja.Uso uso = c.calidades != null ? Granja.extraDe(c.calidades, pl) : Granja.usar(dd, pl, this::despensaPuesta);      // el chef ya gasto los suyos al sacarlos de la despensa
             if (uso.extra() > 0) { granjaExtra = (int) Math.round(base * uso.extra()); base += granjaExtra; dd.granjaBonus += granjaExtra; }
         }
         if (c.critico) base *= 3;

@@ -19,7 +19,8 @@ MESAS = [('azul', 'Mesa azul', 'Blue table', ((40, 70, 160), (70, 110, 220), (24
          ('blanca', 'Mesa blanca', 'White table', ((196, 196, 210), (232, 232, 244), (255, 255, 255)), (214, 190, 150)),
          ('madera', 'Mesa de madera', 'Wooden table', None, (176, 126, 76)),
          ('piedra', 'Mesa de piedra', 'Stone table', ((104, 104, 116), (148, 148, 160), (200, 200, 212)), (120, 120, 130)),
-         ('dorada', 'Mesa dorada', 'Golden table', ((170, 120, 30), (232, 182, 52), (255, 246, 208)), (84, 54, 30))]
+         ('dorada', 'Mesa dorada', 'Golden table', ((170, 120, 30), (232, 182, 52), (255, 246, 208)), (84, 54, 30)),
+         ('terraza', 'Mesa de terraza', 'Terrace table', ((20, 130, 150), (60, 190, 205), (255, 255, 255)), (214, 196, 150))]    # 0.30.0: la mesa donde se sientan los clientes que quieren terraza
 
 
 def w(ruta, obj):

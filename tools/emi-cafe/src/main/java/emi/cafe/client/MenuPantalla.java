@@ -80,7 +80,7 @@ public final class MenuPantalla extends Lienzo {
     private final List<DespC> despensa = new ArrayList<>();
     private final List<String> calidadesGranja = new ArrayList<>();
     private final List<Integer> calidadesPct = new ArrayList<>();
-    private int granjaMax, granjaTienes, granjaMinLocal = 5, granjaCap = 120, pagCatGranja;
+    private int granjaMax, granjaTienes, granjaMinLocal = 5, granjaCap = 120, pagCatGranja, pagFincas;
     private long granjaCosechado, granjaExtra;
     private final List<PlatoC> platos = new ArrayList<>();            // todos, para el recetario
     private final List<PlatoC> tiendaPlatos = new ArrayList<>();      // los que se compran (sin los de visitantes especiales)
@@ -1077,7 +1077,7 @@ public final class MenuPantalla extends Lienzo {
         boolean huerto = kind.equals("huerto");
         List<FincaC> mias = fincasDe(kind);
         texto(g, huerto ? "TUS HUERTOS" : "TU GANADO", LX, CY - 8, ORO, 1.1f);
-        texto(g, "Huertos y corrales: " + granjaTienes + "/" + granjaMax + (granjaMax < 6 ? " (uno más por cada nivel de local)" : ""), LX + 100, CY - 6, SUAVE, 0.75f);
+        texto(g, "Huertos y corrales: " + granjaTienes + "/" + granjaMax + (granjaMax < 16 ? " (más con cada nivel de local)" : ""), LX + 100, CY - 6, SUAVE, 0.75f);
         if (nivelLocal < granjaMinLocal) {
             parrafo(g, "La granja se desbloquea con un local de nivel " + granjaMinLocal + " (ahora tienes el " + nivelLocal + "). Cada huerto o corral viene con su michigranjero, que cosecha solo y lleva todo a la despensa.", LX, CY + 14, 340, GRIS, 0.9f);
         } else if (mias.isEmpty()) {
@@ -1085,8 +1085,11 @@ public final class MenuPantalla extends Lienzo {
                     : "Todavía no tienes corrales. Compra uno a la derecha: viene con su michigranjero y sus Pokémon, y da leche, huevos, carne o miel.", LX, CY + 14, 340, GRIS, 0.9f);
         }
         boolean puede = duenio && !construyendo;
-        for (int i = 0; i < mias.size() && i < 5; i++) {
-            FincaC f = mias.get(i);
+        int pf = paginas(mias.size(), 5);
+        pagFincas = Math.max(0, Math.min(pf - 1, pagFincas));
+        if (pf > 1) paginador(g, mx, my, 295, CY - 12, pagFincas, pf);
+        for (int i = 0; i < 5 && pagFincas * 5 + i < mias.size(); i++) {
+            FincaC f = mias.get(pagFincas * 5 + i);
             int y = CY + 8 + i * (FH + 3);
             caja(g, LX, y, 360, FH, FONDO, f.prog() >= 100 ? VERDE : BORDE);
             objeto(g, f.icono(), LX + 6, y + 6, 1.4f);
@@ -1129,8 +1132,10 @@ public final class MenuPantalla extends Lienzo {
     private void clicGranja(int mx, int my, String kind) {
         List<FincaC> mias = fincasDe(kind);
         boolean puede = duenio && !construyendo;
-        for (int i = 0; i < mias.size() && i < 5; i++) {
-            FincaC f = mias.get(i);
+        int dp = clicPaginador(mx, my, 295, CY - 12);
+        if (dp != 0) { pagFincas = Math.max(0, Math.min(paginas(mias.size(), 5) - 1, pagFincas + dp)); return; }
+        for (int i = 0; i < 5 && pagFincas * 5 + i < mias.size(); i++) {
+            FincaC f = mias.get(pagFincas * 5 + i);
             int y = CY + 8 + i * (FH + 3), bx = LX + 360 - 3 * 58;
             if (duenio && dentro(mx, my, bx, y + 3, 54, 14)) { pedirTexto("/cafe granja nombre " + (f.slot() + 1) + " "); return; }
             if (duenio && dentro(mx, my, bx + 58, y + 3, 54, 14)) { enviar("granjaAspecto", String.valueOf(f.slot()), ""); return; }

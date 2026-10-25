@@ -89,7 +89,7 @@ final class Cmds {
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.renombrar(p, IntegerArgumentType.getInteger(c, "numero"), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
                 }))))))
-                .then(CommandManager.literal("granja").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 6)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                .then(CommandManager.literal("granja").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 16)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.granja.renombrar(p, IntegerArgumentType.getInteger(c, "numero") - 1, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
@@ -117,8 +117,8 @@ final class Cmds {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null) return "Entra primero a un café con /cafe entrar.";
                     int t = cf.mesasTerraza();
-                    p.sendMessage(Msg.say("Terraza: " + t + (t == 1 ? " mesa" : " mesas") + " al aire libre (sin nada encima) de " + cf.mesas.size() + ". Tiempo de hoy: " + cf.clima.icono + " " + cf.clima.nombre + " — " + cf.clima.descripcion
-                            + " Pon mesas fuera del edificio (jardín o acera) o sin techo para tener terraza; el tiempo se sortea cada vez que abres el café."), false);
+                    p.sendMessage(Msg.say("Terraza: " + t + (t == 1 ? " mesa" : " mesas") + " de terraza de " + cf.mesas.size() + ". Tiempo de hoy: " + cf.clima.icono + " " + cf.clima.nombre + " — " + cf.clima.descripcion
+                            + " Compra la «Mesa de terraza» en DECORAR → Mesas y ponla donde quieras (dentro o fuera) para tener terraza; el tiempo se sortea cada vez que abres el café."), false);
                     return null;
                 })))
                 .then(CommandManager.literal("twitch")
@@ -208,7 +208,7 @@ final class Cmds {
                                     if (cf == null) return "Entra primero con /cafe entrar.";
                                     return cf.granja.darGratis(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "tipo"));
                                 }))))
-                                .then(CommandManager.literal("mejorar").then(CommandManager.argument("slot", IntegerArgumentType.integer(0, 5)).executes(c -> con(c, p -> {
+                                .then(CommandManager.literal("mejorar").then(CommandManager.argument("slot", IntegerArgumentType.integer(0, 15)).executes(c -> con(c, p -> {
                                     Cafe cf = Cafes.de(p.getUuid());
                                     if (cf == null) return "Entra primero con /cafe entrar.";
                                     return cf.granja.mejorar(p, IntegerArgumentType.getInteger(c, "slot"));

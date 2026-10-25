@@ -70,7 +70,7 @@ public final class CafeBlocks {
     }
 
     /** Los 8 diseños de mesa (0.19.0): mesas de verdad, que cuentan igual que la mesa de siempre ({@link #esMesa}). */
-    public static final String[] DISENOS_MESA = {"azul", "verde", "rosa", "negra", "blanca", "madera", "piedra", "dorada"};
+    public static final String[] DISENOS_MESA = {"azul", "verde", "rosa", "negra", "blanca", "madera", "piedra", "dorada", "terraza"};
     public static final java.util.List<Block> MESAS_DISENO = new java.util.ArrayList<>();
     /** Las vitrinas de cristal de colores (0.19.0), una por color. */
     public static final java.util.List<Block> VITRINAS = new java.util.ArrayList<>();
@@ -84,6 +84,9 @@ public final class CafeBlocks {
             VITRINAS.add(b);
         }
     }
+
+    /** La mesa de terraza (0.30.0): una mesa mas, pero a ella solo van los clientes que quieren sentarse fuera (ver {@code Cafe.elegirMesa}). */
+    public static Block mesaTerraza() { return MESAS_DISENO.get(DISENOS_MESA.length - 1); }
 
     /** ¿Es una mesa del cafe (la de siempre o uno de los diseños)? */
     public static boolean esMesa(Block b) { return b == MESA || MESAS_DISENO.contains(b); }

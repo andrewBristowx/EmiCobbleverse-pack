@@ -62,6 +62,7 @@ final class Fincas {
     /** Pone en el mundo todas las fincas del dueño (terreno, cultivo, animales y michigranjeros). */
     void construir() {
         quitar();
+        filasHechas = 0;
         if (d().granja.isEmpty()) return;
         terreno();
         for (Datos.Finca f : d().granja) { puerta(f); construirFinca(f); }
@@ -70,15 +71,33 @@ final class Fincas {
     /**
      * El terreno de detras del muro del fondo de la parcela (0.26.0): suelo de hierba de lado a lado, el camino de justo detras del muro, un muro propio al fondo y a los lados,
      * y una puerta de 3 bloques en el muro de la parcela (y en el seto) delante de cada finca. El dueño no puede construir aqui: solo es de la granja.
+     * Desde 0.30.0 hay hasta 3 filas de fincas (6 + 6 + 4): cada fila nueva tiene su camino delante y el muro del fondo se corre hacia atras.
      */
+    private int filasHechas;                                   // filas de terreno ya construidas (0 = nada)
+
+    private int filasNecesarias() {
+        int n = 1;
+        for (Datos.Finca f : d().granja) n = Math.max(n, Granja.fila(f.slot) + 1);
+        return n;
+    }
+
+    /** Construye el terreno de las filas que falten; las ya hechas (con sus fincas) no se tocan. */
     private void terreno() {
-        for (int x = c.ox + Ciudad.X0; x <= c.ox + Ciudad.X1; x++) for (int z = Granja.Z_MURO; z <= Granja.Z_CAMINO; z++) {
+        int filas = filasNecesarias();
+        if (filas <= filasHechas) return;
+        int zMuro = Granja.zMuro(filas);
+        // desde el muro nuevo hasta la primera linea libre de detras de la ultima fila ya hecha (la primera vez: hasta el camino de delante del todo)
+        int hasta = filasHechas == 0 ? Granja.Z_CAMINO : Granja.z0((filasHechas - 1) * Granja.COLUMNAS) - 1;
+        for (int x = c.ox + Ciudad.X0; x <= c.ox + Ciudad.X1; x++) for (int z = zMuro; z <= hasta; z++) {
             boolean lado = x == c.ox + Ciudad.X0 || x == c.ox + Ciudad.X1;
+            boolean camino = false;
+            for (int r = 0; r < filas; r++) if (z == Granja.z1(r * Granja.COLUMNAS) + 1) camino = true;
             poner(x, -1, z, "dirt");
-            poner(x, 0, z, z == Granja.Z_CAMINO ? "coarse_dirt" : "grass_block");
+            poner(x, 0, z, camino ? "coarse_dirt" : "grass_block");
             for (int y = 1; y <= 9; y++) poner(x, y, z, "air");
-            if (z == Granja.Z_MURO || lado) { poner(x, 1, z, "stone_bricks"); poner(x, 2, z, "stone_brick_slab[type=top]"); }
+            if (z == zMuro || lado) { poner(x, 1, z, "stone_bricks"); poner(x, 2, z, "stone_brick_slab[type=top]"); }
         }
+        filasHechas = filas;
     }
 
     /** La puerta de 3 bloques que une el jardin con la finca: abre el muro de la parcela y el seto, y pone un farolillo a cada lado. */
@@ -106,6 +125,8 @@ final class Fincas {
     }
 
     private int ax(Datos.Finca f) { return c.ox + Granja.x0(f.slot); }
+    private static int z0(Datos.Finca f) { return Granja.z0(f.slot); }
+    private static int z1(Datos.Finca f) { return Granja.z1(f.slot); }
 
     private void poner(int x, int dy, int z, String b) { Obra.poner(c.w, x, Local.Y + dy, z, b); }
 
@@ -123,42 +144,49 @@ final class Fincas {
         v.f = f; v.cult = cult;
         int ax = ax(f);
         // el suelo y el vallado (un hueco en la valla del lado de la puerta, en el centro)
-        for (int dx = 0; dx < Granja.ANCHO; dx++) for (int z = Granja.Z0; z <= Granja.Z1; z++) {
-            boolean borde = dx == 0 || dx == Granja.ANCHO - 1 || z == Granja.Z0 || z == Granja.Z1;
+        for (int dx = 0; dx < Granja.ANCHO; dx++) for (int z = z0(f); z <= z1(f); z++) {
+            boolean borde = dx == 0 || dx == Granja.ANCHO - 1 || z == z0(f) || z == z1(f);
             poner(ax + dx, -1, z, "dirt");
             poner(ax + dx, 0, z, borde ? "grass_block" : cult.tipo == Granja.Tipo.HUERTO ? "dirt" : "grass_block");
             for (int y = 1; y <= 3; y++) poner(ax + dx, y, z, "air");
-            if (borde && !(z == Granja.Z1 && dx == 4)) poner(ax + dx, 1, z, "oak_fence");
+            if (borde && !(z == z1(f) && dx == 4)) poner(ax + dx, 1, z, "oak_fence");
         }
-        poner(ax, 2, Granja.Z0, "lantern[hanging=false]"); poner(ax + Granja.ANCHO - 1, 2, Granja.Z0, "lantern[hanging=false]");
-        poner(ax + 1, 2, Granja.Z1, "lantern[hanging=false]"); poner(ax + Granja.ANCHO - 2, 2, Granja.Z1, "lantern[hanging=false]");
+        poner(ax, 2, z0(f), "lantern[hanging=false]"); poner(ax + Granja.ANCHO - 1, 2, z0(f), "lantern[hanging=false]");
+        poner(ax + 1, 2, z1(f), "lantern[hanging=false]"); poner(ax + Granja.ANCHO - 2, 2, z1(f), "lantern[hanging=false]");
         for (String id : cult.bloques) { v.bloque = bloque(id); if (v.bloque != null) break; }
         boolean arrozal = v.bloque != null && Registries.BLOCK.getId(v.bloque).getPath().equals("rice");
         if (cult == Granja.Cultivo.CACAO) {                                                      // troncos de jungla con cacao pegado por los cuatro lados, a dos alturas
-            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) poner(ax + dx, 0, z, "grass_block");
-            for (int px : new int[]{2, 6}) for (int pz : new int[]{Granja.Z0 + 2, Granja.Z0 + 5}) {
+            for (int dx = 1; dx <= 7; dx++) for (int z = z0(f) + 1; z < z1(f); z++) poner(ax + dx, 0, z, "grass_block");
+            for (int px : new int[]{2, 6}) for (int pz : new int[]{z0(f) + 2, z0(f) + 5}) {
                 poner(ax + px, 1, pz, "jungle_log"); poner(ax + px, 2, pz, "jungle_log"); poner(ax + px, 3, pz, "jungle_leaves[persistent=true]");
                 for (int dy = 1; dy <= 2; dy++) for (Direction dir : Direction.Type.HORIZONTAL)
                     v.cultivos.add(new Celda(new BlockPos(ax + px - dir.getOffsetX(), Local.Y + dy, pz - dir.getOffsetZ()), dir));      // el tronco queda en la direccion «dir» desde el cacao
             }
         } else if (cult.tipo == Granja.Tipo.HUERTO && arrozal) {                                  // arrozal: todo agua y el arroz plantado en el agua
-            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) { poner(ax + dx, 0, z, "water"); v.cultivos.add(new Celda(new BlockPos(ax + dx, Local.Y, z), null)); }
+            for (int dx = 1; dx <= 7; dx++) for (int z = z0(f) + 1; z < z1(f); z++) { poner(ax + dx, 0, z, "water"); v.cultivos.add(new Celda(new BlockPos(ax + dx, Local.Y, z), null)); }
         } else if (cult.tipo == Granja.Tipo.HUERTO) {
-            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) {
+            for (int dx = 1; dx <= 7; dx++) for (int z = z0(f) + 1; z < z1(f); z++) {
                 if (dx == 4) { poner(ax + dx, 0, z, "water"); continue; }
                 poner(ax + dx, 0, z, "farmland[moisture=7]");
                 v.cultivos.add(new Celda(new BlockPos(ax + dx, Local.Y + 1, z), null));
             }
         } else if (cult == Granja.Cultivo.PESCADO) {                                              // estanque: todo agua, con los Magikarp dentro
-            for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) poner(ax + dx, 0, z, "water");
-            poner(ax + 1, 1, Granja.Z0 + 1, "lily_pad"); poner(ax + 6, 1, Granja.Z0 + 3, "lily_pad"); poner(ax + 3, 1, Granja.Z1 - 2, "lily_pad");
+            for (int dx = 1; dx <= 7; dx++) for (int z = z0(f) + 1; z < z1(f); z++) poner(ax + dx, 0, z, "water");
+            poner(ax + 1, 1, z0(f) + 1, "lily_pad"); poner(ax + 6, 1, z0(f) + 3, "lily_pad"); poner(ax + 3, 1, z1(f) - 2, "lily_pad");
         } else {
-            poner(ax + 1, 1, Granja.Z0 + 1, "hay_block"); poner(ax + 7, 1, Granja.Z0 + 1, "hay_block"); poner(ax + 1, 2, Granja.Z0 + 1, "hay_block");
-            poner(ax + 4, 1, Granja.Z0 + 1, "water_cauldron[level=3]");
-            for (int dx = 1; dx <= 7; dx += 2) poner(ax + dx, 1, Granja.Z1 - 1, "short_grass");
+            poner(ax + 1, 1, z0(f) + 1, "hay_block"); poner(ax + 7, 1, z0(f) + 1, "hay_block"); poner(ax + 1, 2, z0(f) + 1, "hay_block");
+            poner(ax + 4, 1, z0(f) + 1, "water_cauldron[level=3]");
+            for (int dx = 1; dx <= 7; dx += 2) poner(ax + dx, 1, z1(f) - 1, "short_grass");
+        }
+        for (int dx = 0; dx < Granja.ANCHO; dx++) for (int z = z0(f); z <= z1(f); z++) {            // las vallas se pusieron sin avisar a los vecinos: cada una vuelve a mirar y se conecta con la de al lado
+            BlockPos vp = new BlockPos(ax + dx, Local.Y + 1, z);
+            BlockState vs = c.w.getBlockState(vp);
+            if (!(vs.getBlock() instanceof net.minecraft.block.FenceBlock)) continue;
+            BlockState nuevo = Block.postProcessState(vs, c.w, vp);
+            if (nuevo != vs) c.w.setBlockState(vp, nuevo, Obra.BANDERAS);
         }
         // quita los carteles de texto que hubiera de antes (por si el servidor se paro sin avisar)
-        for (Entity e : c.w.getEntitiesByType(EntityType.TEXT_DISPLAY, new Box(ax, Local.Y + 1, Granja.Z0, ax + Granja.ANCHO, Local.Y + 6, Granja.Z1 + 1), x -> x.getCommandTags().contains(Disp.TAG))) e.discard();
+        for (Entity e : c.w.getEntitiesByType(EntityType.TEXT_DISPLAY, new Box(ax, Local.Y + 1, z0(f), ax + Granja.ANCHO, Local.Y + 6, z1(f) + 1), x -> x.getCommandTags().contains(Disp.TAG))) e.discard();
         vivos.put(f.slot, v);
         actualizarCultivos(v, Granja.progreso(f, System.currentTimeMillis()), true);
         if (cult.tipo == Granja.Tipo.CORRAL) animales(v);
@@ -172,7 +200,7 @@ final class Fincas {
         for (int i = 0; i < n; i++) {
             double x = 0, z = 0;
             for (int intento = 0; intento < 20; intento++) {                  // un sitio dentro del corral que no este pegado a otro animal
-                x = ax + 1.5 + rnd.nextDouble() * 6.0; z = Granja.Z0 + 2.5 + rnd.nextDouble() * 5.0;
+                x = ax + 1.5 + rnd.nextDouble() * 6.0; z = z0(v.f) + 2.5 + rnd.nextDouble() * 5.0;
                 boolean libre = true;
                 for (double[] q : puestos) if (Math.hypot(q[0] - x, q[1] - z) < 1.4) libre = false;
                 if (libre) break;
@@ -205,7 +233,7 @@ final class Fincas {
     private void crearGranjero(Vivo v) {
         Datos.Empleado emp = v.f.granjero;
         emp.rol = "granjero"; emp.nivel = v.f.nivel;
-        double x = ax(v.f) + 4.5, z = Granja.Z1 + 1.5;
+        double x = ax(v.f) + 4.5, z = z1(v.f) + 1.5;
         Ayudante a = Ayudante.crear(c.w, emp, x, Local.Y + 1, z);
         if (a != null) { a.alSitio(); v.granjero = a; }
     }
@@ -235,7 +263,7 @@ final class Fincas {
         if (v.rotulo == null || v.rotulo.isRemoved()) v.rotulo = null;
         String linea2 = v.cosechando ? "Cosechando…" : prog >= 1.0 ? "¡Lista para cosechar!" : Math.round(prog * 100) + " % · " + Granja.CALIDAD[v.f.nivel];
         String json = "{\"text\":\"" + v.cult.nombre + "\",\"color\":\"gold\",\"bold\":true,\"extra\":[{\"text\":\"\\nNv " + v.f.nivel + " · " + linea2 + "\",\"color\":\"" + (prog >= 1.0 ? "green" : "gray") + "\",\"bold\":false}]}";
-        double x = ax(v.f) + 4.5, y = Local.Y + 3.3, z = Granja.Z1 - 0.2;
+        double x = ax(v.f) + 4.5, y = Local.Y + 3.3, z = z1(v.f) - 0.2;
         if (v.rotulo == null) v.rotulo = Disp.texto(c.w, json, x, y, z, 0.9f, false);
         else Disp.cambiarTexto(v.rotulo, json, x, y, z, 0.9f, false);
     }
@@ -269,19 +297,19 @@ final class Fincas {
     private void empezarCosecha(Vivo v) {
         Ayudante a = v.granjero;
         v.cosechando = true;
-        double ax = ax(v.f), z1 = Granja.Z1;
+        double ax = ax(v.f), z1 = z1(v.f);
         double hx = a.hx, hz = a.hz;
         Runnable fin = () -> entregar(v);
         a.paso(ax + 4.5, z1 + 0.5, 4, null, null, ax + 4.5, z1 - 5);                                  // entra por el hueco de la valla
         if (v.cult.tipo == Granja.Tipo.HUERTO) {
-            double zc = Granja.Z0 + 5.5, za = Granja.Z0 + 2.0;                                               // las dos filas de cultivo que recorre
+            double zc = z0(v.f) + 5.5, za = z0(v.f) + 2.0;                                               // las dos filas de cultivo que recorre
             double[][] paradas = {{2.5, zc}, {2.5, za}, {6.5, za}, {6.5, zc}};
             for (int k = 0; k < paradas.length; k++) {
                 final int q = k;
                 a.paso(ax + paradas[k][0], paradas[k][1], a.t(36), () -> cosechando(a), () -> recoger(v, q), ax + paradas[k][0] + (k < 2 ? 1 : -1), paradas[k][1]);
             }
         } else {
-            a.paso(ax + 4.5, Granja.Z0 + 4.0, a.t(80), () -> ordenando(a, v), null, ax + 4.5, Granja.Z0 + 2.0);
+            a.paso(ax + 4.5, z0(v.f) + 4.0, a.t(80), () -> ordenando(a, v), null, ax + 4.5, z0(v.f) + 2.0);
         }
         a.paso(ax + 4.5, z1 + 0.5, 4, null, () -> a.llevar(c.w, CafeItems.id(v.cult.ingrediente)), hx, hz + 5);
         a.paso(hx, hz, a.t(14), null, fin, hx, hz + 5);
@@ -302,7 +330,7 @@ final class Fincas {
         IntProperty age = v.bloque == null ? null : v.bloque.getStateManager().getProperty("age") instanceof IntProperty ip ? ip : null;
         int ax = ax(v.f);
         for (Celda ce : v.cultivos) {
-            boolean izq = ce.pos().getX() - ax < 4, atras = ce.pos().getZ() < Granja.Z0 + 4;
+            boolean izq = ce.pos().getX() - ax < 4, atras = ce.pos().getZ() < z0(v.f) + 4;
             boolean en = switch (cuarto) { case 0 -> izq && !atras; case 1 -> izq && atras; case 2 -> !izq && atras; default -> !izq && !atras; };
             if (en && v.bloque != null) ponerCultivo(v, ce, age, 0);
         }
@@ -352,7 +380,7 @@ final class Fincas {
         Datos.Jugador d = d();
         if (c.nivelLocal() < Granja.NIVEL_LOCAL) return "La granja necesita un local de nivel " + Granja.NIVEL_LOCAL + ".";
         int max = Granja.fincasMax(c.nivelLocal());
-        if (d.granja.size() >= max) return "Tu local de nivel " + c.nivelLocal() + " admite " + max + " huertos y corrales" + (max < Granja.MAX_FINCAS ? " (uno más por cada nivel de local)." : ".");
+        if (d.granja.size() >= max) return "Tu local de nivel " + c.nivelLocal() + " admite " + max + " huertos y corrales" + (max < Granja.MAX_FINCAS ? " (más con cada nivel de local)." : ".");
         for (Datos.Finca f : d.granja) if (f.tipo.equals(cult.id)) return "Ya tienes ese " + (cult.tipo == Granja.Tipo.HUERTO ? "huerto" : "corral") + ".";
         if (d.monedas < cult.precio) return "Te faltan monedas (" + cult.precio + ").";
         int slot = Granja.sitioLibre(d, max);
@@ -362,7 +390,7 @@ final class Fincas {
         return null;
     }
 
-    /** Solo pruebas: pone una finca gratis y sin limites en el primer sitio libre (hasta 6). */
+    /** Solo pruebas: pone una finca gratis y sin limites en el primer sitio libre (hasta 16). */
     String darGratis(ServerPlayerEntity p, String id) {
         Granja.Cultivo cult = Granja.Cultivo.de(id);
         if (cult == null) return "Eso no se puede criar.";
@@ -379,7 +407,7 @@ final class Fincas {
         d.granja.add(f);
         c.obras.sincronizar();                                                                   // la despensa de ese cultivo llega al baul
         EmiCafe.datos.guardar(c.duenio);
-        if (vivos.isEmpty()) terreno();                                                         // la primera finca crea el terreno de detras del muro (no se rehace con las demas)
+        terreno();                                                                               // la primera finca crea el terreno de detras del muro; una fila nueva lo alarga hacia el fondo
         puerta(f);
         construirFinca(f);
         p.sendMessage(Msg.say("¡Compraste «" + cult.nombre + "»! Viene con su michigranjero " + f.granjero.nombre + ", que cosecha solo y lo deja en la despensa. Ponle nombre en la pestaña GRANJA (botón NOMBRE) o con /cafe granja nombre " + (slot + 1) + " <nombre>."), false);

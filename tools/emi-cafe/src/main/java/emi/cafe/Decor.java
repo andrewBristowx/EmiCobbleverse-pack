@@ -34,6 +34,7 @@ final class Decor {
             new Articulo("mesa_madera", "emi_cafe:mesa_madera", 1, 70, "Mesas", "Mesa de madera"),
             new Articulo("mesa_piedra", "emi_cafe:mesa_piedra", 1, 90, "Mesas", "Mesa de piedra"),
             new Articulo("mesa_dorada", "emi_cafe:mesa_dorada", 1, 150, "Mesas", "Mesa dorada"),
+            new Articulo("mesa_terraza", "emi_cafe:mesa_terraza", 1, 80, "Mesas", "Mesa de terraza"),
             new Articulo("encimera", "emi_cafe:encimera", 8, 40, "Café", "Encimeras"),
             new Articulo("roble", "minecraft:oak_planks", 16, 30, "Madera", "Tablones de roble"),
             new Articulo("abeto", "minecraft:spruce_planks", 16, 30, "Madera", "Tablones de abeto"),

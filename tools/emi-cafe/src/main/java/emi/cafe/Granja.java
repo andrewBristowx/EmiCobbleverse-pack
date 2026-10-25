@@ -55,13 +55,16 @@ final class Granja {
 
     static final int NIVEL_MAX = 5;
     static final int NIVEL_LOCAL = 5;                              // el local tiene que ser de nivel 5 para tener granja
-    static final int MAX_FINCAS = 6;
+    static final int MAX_FINCAS = 16;                              // una de cada cultivo (0.30.0: antes 6)
+    static final int COLUMNAS = 6;                                 // fincas por fila de terreno (3 filas: 6 + 6 + 4)
     static final int CAPACIDAD = 120;                              // lo que cabe en la despensa de cada ingrediente (suma de todas las calidades)
     static final String[] CALIDAD = {"", "Fresco", "Selecto", "Superior", "Excelente", "Gourmet"};
     private static final int[] BONUS = {0, 6, 12, 20, 30, 45};     // % extra sobre la parte del plato que es ese ingrediente (calidad 1 a 5)
 
-    /** Cuantos huertos y corrales caben segun el nivel del local: 2 en el nivel 5 y uno mas por cada nivel hasta 6 (nivel 9). */
-    static int fincasMax(int nivelLocal) { return Math.max(0, Math.min(MAX_FINCAS, nivelLocal - 3)); }
+    private static final int[] FINCAS_POR_NIVEL = {0, 0, 0, 0, 2, 4, 7, 10, 13, 16};      // local nivel 1 a 10: con el nivel 10 caben las 16 (0.30.0)
+
+    /** Cuantos huertos y corrales caben segun el nivel del local: 2 en el nivel 5 y mas en cada nivel hasta las 16 del nivel 10. */
+    static int fincasMax(int nivelLocal) { return nivelLocal < 1 ? 0 : FINCAS_POR_NIVEL[Math.min(nivelLocal, FINCAS_POR_NIVEL.length) - 1]; }
 
     static int bonusPct(int calidad) { return BONUS[Math.max(0, Math.min(NIVEL_MAX, calidad))]; }
 
@@ -169,6 +172,18 @@ final class Granja {
         return new Uso(suma / ings.size(), usados, mejor, ings.size());
     }
 
+    /** El extra de un plato cuyos ingredientes ya se sacaron de la despensa (el chef los gasta al cogerlos): {@code calidades} = ingrediente -> calidad usada. */
+    static Uso extraDe(java.util.Map<Item, Integer> calidades, Recetas.Plato pl) {
+        List<Item> ings = ingredientes(pl);
+        if (ings.isEmpty()) return new Uso(0, 0, 0, 0);
+        double suma = 0; int usados = 0, mejor = 0;
+        for (Item i : ings) {
+            Integer q = calidades.get(i);
+            if (q != null && q > 0) { suma += BONUS[Math.min(q, NIVEL_MAX)] / 100.0; usados++; mejor = Math.max(mejor, q); }
+        }
+        return new Uso(suma / ings.size(), usados, mejor, ings.size());
+    }
+
     /** Lo mismo sin gastar nada (para mostrar en el menu cuanto mas paga un plato con lo que hay). */
     static double extraPosible(Datos.Jugador d, Recetas.Plato pl) {
         List<Item> ings = ingredientes(pl);
@@ -185,11 +200,20 @@ final class Granja {
      * La fila z = -14 es el camino de detras del muro y el muro (z = -13) tiene una puerta de 3 bloques delante de cada finca.
      */
     static final int X0 = -3, ANCHO = 9, Z0 = -23, Z1 = -15;
-    static int x0(int slot) { return X0 + 10 * slot; }
+    static int x0(int slot) { return X0 + 10 * (slot % COLUMNAS); }
+    /** Desde 0.30.0 hay hasta 3 filas de fincas (de 6 columnas), una detras de otra: cada fila se desplaza 11 bloques hacia el fondo. */
+    static int fila(int slot) { return slot / COLUMNAS; }
+    static int z0(int slot) { return Z0 - 11 * fila(slot); }
+    static int z1(int slot) { return Z1 - 11 * fila(slot); }
+    /** El muro del fondo del terreno cuando hay {@code filas} filas (3 bloques detras de la ultima). */
+    static int zMuro(int filas) { return Z0 - 11 * (Math.max(1, filas) - 1) - 3; }
+    static final int FILAS_MAX = (MAX_FINCAS + COLUMNAS - 1) / COLUMNAS;
     /** Donde estaba la granja hasta la 0.25.0 (dentro del jardin): sirve para limpiar los huertos viejos. */
     static final int VIEJO_Z0 = -11, VIEJO_Z1 = -3;
     /** La fila del camino (entre el muro y las fincas) y el muro de detras de todo (el de la granja). */
     static final int Z_CAMINO = -14, Z_MURO = -26;
+    /** Hasta donde llega el terreno de la granja con las 3 filas (para barrer la parcela). */
+    static final int Z_FONDO = Z0 - 11 * (FILAS_MAX - 1) - 3;
 
     /** El primer sitio libre de la granja (-1 = lleno). */
     static int sitioLibre(Datos.Jugador d, int max) {

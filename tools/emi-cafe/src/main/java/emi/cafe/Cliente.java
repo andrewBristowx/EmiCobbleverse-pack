@@ -67,6 +67,7 @@ final class Cliente {
     /** Si es un visitante especial (un Michialien con accesorio que enseña su plato), cual; null = cliente normal. */
     Especial esp;
     boolean critico;                         // el critico gastronomico (ver Cafe.forzarCritico)
+    java.util.Map<Item, Integer> calidades;  // ingredientes de la granja que el chef ya saco de la despensa para su plato (ingrediente -> calidad); null = nadie ha cocinado aun
     boolean favorito;                        // pide el plato que mas le gusta a su especie (paga extra)
     /** Un espectador de Twitch que pidio con !cafeteria: su nombre, el plato que escribio (null = cliente normal) y su mensaje (puede estar vacio). */
     String twitchNombre, twitchMsg;

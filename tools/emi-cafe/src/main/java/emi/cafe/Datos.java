@@ -37,7 +37,7 @@ final class Datos {
     /** Un huerto o un corral de la granja (desde 0.24.0): lo que cria, su nivel (= la calidad de lo que da), cuando empezo el ciclo actual y su michigranjero. */
     static final class Finca {
         String tipo = "";            // id del cultivo o animal (ver Granja.Cultivo)
-        int slot;                    // el sitio de la granja, detras del muro del fondo de la parcela (0 a 5)
+        int slot;                    // el sitio de la granja, detras del muro del fondo de la parcela (0 a 15: 6 columnas x 3 filas)
         int nivel = 1;               // 1 a 5
         long desde;                  // cuando empezo a crecer (ms de reloj de pared: crece aunque el dueño no este)
         long cosechas;
