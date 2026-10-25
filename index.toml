@@ -1398,7 +1398,7 @@ metafile = true
 
 [[files]]
 file = "mods/Emipokemon-0.6.0-alpha.1.jar"
-hash = "d253a92594423921dd3497e94a3734cc6a07d61efa18dce1566c24323ff889b0"
+hash = "4e9ed8325e8da925b33a9575a85b0f48cf27c4ae6419c92145787b4f7c81b4c6"
 
 [[files]]
 file = "mods/accessories-compat-layer.pw.toml"
@@ -1840,8 +1840,8 @@ file = "mods/emi-buildbattle-1.0.0.jar"
 hash = "0321f9f07de39d05a16fdfc9af9ef963d8d20ee4ee89d1effc1db5022cff01da"
 
 [[files]]
-file = "mods/emi-cafe-0.27.0.jar"
-hash = "ddda4ac00a7833a54a679c460548353974b319115b35eecf42d9ca437b87e0c0"
+file = "mods/emi-cafe-0.28.0.jar"
+hash = "ed02896d3797e86e5ab5df10b474254eddebd366be63398d2ffb1a41a038c99d"
 
 [[files]]
 file = "mods/emi-carreras-0.8.0.jar"

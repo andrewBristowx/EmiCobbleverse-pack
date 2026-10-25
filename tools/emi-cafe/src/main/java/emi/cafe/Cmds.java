@@ -113,6 +113,21 @@ final class Cmds {
                     p.sendMessage(Msg.say(j.visitas ? "Tu café acepta visitas." : "Tu café ya no acepta visitas."), false);
                     return null;
                 }))))
+                .then(CommandManager.literal("twitch")
+                        .then(CommandManager.literal("lista").executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null) return "Entra primero a un café con /cafe entrar.";
+                            java.util.List<Recetas.Plato> carta = TwitchPedidos.carta(cf);
+                            p.sendMessage(Msg.say("Carta para el chat de Twitch (cópiala en tu comando de bot): " + TwitchPedidos.COMANDO + " [plato] [mensaje]  ·  platos: " + TwitchPedidos.listaTexto(carta)), false);
+                            return null;
+                        })))
+                        .then(CommandManager.literal("on").executes(c -> con(c, p -> twitchActivar(p, true))))
+                        .then(CommandManager.literal("off").executes(c -> con(c, p -> twitchActivar(p, false))))
+                        .then(CommandManager.literal("estado").executes(c -> con(c, p -> {
+                            p.sendMessage(Msg.say("Pedidos de Twitch: " + (TwitchPedidos.activo ? "ACTIVOS" : "apagados") + " · cafés de " + TwitchPedidos.DUENIA.replace(",", " y ") + " · " + (TwitchPedidos.cafe() != null ? "abierto ahora (los pedidos entran)" : "cerrado o sin su dueño dentro (no entra nada)")
+                                    + " · espera por persona " + TwitchPedidos.ESPERA + " s · máx. " + TwitchPedidos.MAX_DENTRO + " espectadores a la vez"), false);
+                            return null;
+                        }))))
                 .then(CommandManager.literal("tutorial").executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
@@ -134,6 +149,12 @@ final class Cmds {
                     return null;
                 })))
                 .then(CommandManager.literal("dev").requires(Perm::admin)
+                        .then(CommandManager.literal("twitch").then(CommandManager.argument("usuario", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            String u = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "usuario");
+                            TwitchPedidos.reiniciar();                       // sin esperas: se prueba tantas veces como haga falta
+                            TwitchPedidos.alChat(u.toLowerCase(), u, TwitchPedidos.COMANDO + " " + com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"), false, false, false, false);
+                            return null;
+                        })))))
                         .then(CommandManager.literal("vecino").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
                             String nombre = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre");
                             java.util.UUID id = java.util.UUID.nameUUIDFromBytes(("vecino:" + nombre).getBytes());
@@ -370,6 +391,15 @@ final class Cmds {
         if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
         Menus.vista(p).baulBuscar = texto == null ? "" : texto.trim();
         Menus.abrir(cf, p, "baul", false);
+        return null;
+    }
+
+    /** Enciende o apaga los pedidos de Twitch (solo la dueña del café de los pedidos o un admin). */
+    private static String twitchActivar(ServerPlayerEntity p, boolean on) {
+        if (!TwitchPedidos.esDuenio(p.getGameProfile().getName()) && !p.hasPermissionLevel(2)) return "Solo " + TwitchPedidos.DUENIA.replace(",", " y ") + " o un administrador pueden cambiar esto.";
+        TwitchPedidos.activo = on;
+        if (!on) TwitchPedidos.reiniciar();
+        p.sendMessage(Msg.say(on ? "Pedidos de Twitch ACTIVADOS: !cafeteria funciona en tu café mientras esté abierto." : "Pedidos de Twitch apagados."), false);
         return null;
     }
 
