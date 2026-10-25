@@ -251,6 +251,17 @@ final class Decor {
             bas.grupos.computeIfAbsent(a.grupo(), k -> new java.util.ArrayList<>()).add(a);
             TODOS.add(new Ent(a, sinAcentos(a.item() + " " + a.nombre() + " " + a.grupo() + " Básicos")));
         }
+        for (Estacion e : Estacion.values()) {                                  // copias extra de las estaciones de cocina (0.27.0): el precio sube con las copias que ya tienes (Obras.precioDe)
+            if (e.x < 0 || e.tipo == Estacion.Tipo.MESA) continue;
+            String item = Registries.ITEM.getId(e.bloque.asItem()).toString();
+            int base = switch (e.tipo) { case CAJA -> 50; case BASURA -> 40; case EMPLATAR -> 100; default -> 120; };
+            Articulo a = new Articulo("est_" + e.name().toLowerCase(java.util.Locale.ROOT), item, 1, base, "Cocina: copias extra", e.nombre + " extra");
+            if (POR_ID.containsKey(a.item()) || !existe(a.item())) continue;
+            POR_ID.put(a.item(), a);
+            POR_ID.putIfAbsent(a.id(), a);
+            bas.grupos.computeIfAbsent(a.grupo(), k -> new java.util.ArrayList<>()).add(a);
+            TODOS.add(new Ent(a, sinAcentos(a.item() + " " + a.nombre() + " " + a.grupo() + " Básicos copias extra estacion")));
+        }
         Fuente fb = bas.fin();
         if (fb != null) res.add(fb);
         res.add(vanilla());
@@ -386,6 +397,8 @@ final class Decor {
         List<Articulo> resultados = List.of();
         List<Articulo> favs = List.of();                  // los favoritos del dueño, puestos por Menus antes de usar la vista
         int baulFuente;                                   // filtro del baul: 0 = todo, 1.. = una fuente (ver Menus)
+        String planoElegido = "";                         // el plano que se va a compartir (0.27.0): lo elige el clic en COMPARTIR y lo usa /cafe plano compartir <jugador>
+        int baulGrupo;                                    // filtro del baul por categoria (0.27.0): 0 = todas, 1.. = un grupo de los que hay en lo ya filtrado por fuente
         String baulBuscar = "";
 
         void ponerFavoritos(java.util.Collection<String> ids) {

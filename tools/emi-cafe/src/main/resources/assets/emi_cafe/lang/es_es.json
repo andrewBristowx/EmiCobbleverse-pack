@@ -200,5 +200,21 @@
   "item.emi_cafe.icono_despensa": "Despensa",
   "item.emi_cafe.icono_granjero": "Michigranjero",
   "block.emi_cafe.caja_cebolla": "Caja de cebollas",
-  "item.emi_cafe.cebolla_picada": "Cebolla picada"
+  "item.emi_cafe.cebolla_picada": "Cebolla picada",
+  "block.emi_cafe.despensa_papas": "Despensa de papas",
+  "block.emi_cafe.despensa_trigo": "Despensa de trigo (harina)",
+  "block.emi_cafe.despensa_col": "Despensa de col (lechuga)",
+  "block.emi_cafe.despensa_tomates": "Despensa de tomates",
+  "block.emi_cafe.despensa_cebollas": "Despensa de cebollas",
+  "block.emi_cafe.despensa_calabazas": "Despensa de calabazas",
+  "block.emi_cafe.despensa_bayas": "Despensa de bayas",
+  "block.emi_cafe.despensa_arroz": "Despensa de arroz",
+  "block.emi_cafe.despensa_cacao": "Despensa de cacao",
+  "block.emi_cafe.despensa_granos": "Despensa de granos de café",
+  "block.emi_cafe.despensa_vacas": "Despensa de leche",
+  "block.emi_cafe.despensa_gallinas": "Despensa de huevos",
+  "block.emi_cafe.despensa_tauros": "Despensa de carne",
+  "block.emi_cafe.despensa_pescado": "Despensa de pescado",
+  "block.emi_cafe.despensa_queso": "Despensa de queso",
+  "block.emi_cafe.despensa_abejas": "Despensa de miel"
 }

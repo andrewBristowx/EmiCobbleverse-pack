@@ -120,6 +120,75 @@ final class Cafe {
 
     // ------------------------------------------------------------ nivel del local (1 a 5)
 
+    /** ¿Esta puesta en el cafe la despensa de ese ingrediente? (en un cafe de antes no se pueden poner: se considera siempre puesta). */
+    boolean despensaPuesta(Item ing) {
+        if (!dj().libre) return true;
+        Granja.Cultivo cu = Granja.cultivoDe(ing);
+        return cu != null && !obras.despensas(cu).isEmpty();
+    }
+
+    /** La despensa de ese ingrediente mas cercana a un punto (null si no hay ninguna puesta). */
+    BlockPos posDespensa(Item ing, double x, double z) {
+        Granja.Cultivo cu = Granja.cultivoDe(ing);
+        if (cu == null || !dj().libre) return null;
+        BlockPos mejor = null; double dm = Double.MAX_VALUE;
+        for (int[] q : obras.despensas(cu)) {
+            BlockPos p = Local.pos(ox, q[0], q.length > 2 ? q[2] : 1, q[1]);
+            double dd = (p.getX() + 0.5 - x) * (p.getX() + 0.5 - x) + (p.getZ() + 0.5 - z) * (p.getZ() + 0.5 - z);
+            if (dd < dm) { dm = dd; mejor = p; }
+        }
+        return mejor;
+    }
+
+    private final Map<BlockPos, net.minecraft.entity.Entity> despRot = new HashMap<>();      // los rotulos flotantes de las despensas
+    private final Map<BlockPos, String> despTxt = new HashMap<>();
+
+    /** Pone y actualiza sobre cada despensa puesta un rotulo con lo que tiene («Papa ×87 · Selecto»). */
+    void actualizarDespensas() {
+        Datos.Jugador d = dj();
+        if (!d.libre) return;
+        Set<BlockPos> vivas = new java.util.HashSet<>();
+        for (Granja.Cultivo cu : Granja.Cultivo.values()) for (int[] q : obras.despensas(cu)) {
+            BlockPos p = Local.pos(ox, q[0], q.length > 2 ? q[2] : 1, q[1]);
+            vivas.add(p);
+            int n = Granja.cantidad(d, cu.ingrediente), mejor = Granja.mejorCalidad(d, cu.ingrediente);
+            String txt = CafeItems.nombre(cu.ingrediente) + (n > 0 ? " ×" + n + " · " + Granja.CALIDAD[mejor] : " · vacía");
+            net.minecraft.entity.Entity e = despRot.get(p);
+            if (e != null && !e.isRemoved() && txt.equals(despTxt.get(p))) continue;
+            Disp.quitar(e);
+            String json = "{\"text\":\"" + txt.replace("\"", "") + "\",\"color\":\"" + (n > 0 ? "gold" : "gray") + "\",\"bold\":true}";
+            despRot.put(p, Disp.texto(w, json, p.getX() + 0.5, p.getY() + 1.2, p.getZ() + 0.5, 0.6f, false));
+            despTxt.put(p, txt);
+        }
+        for (java.util.Iterator<Map.Entry<BlockPos, net.minecraft.entity.Entity>> it = despRot.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<BlockPos, net.minecraft.entity.Entity> en = it.next();
+            if (!vivas.contains(en.getKey())) { Disp.quitar(en.getValue()); despTxt.remove(en.getKey()); it.remove(); }
+        }
+    }
+
+    private void quitarRotulosDespensas() { for (net.minecraft.entity.Entity e : despRot.values()) Disp.quitar(e); despRot.clear(); despTxt.clear(); }
+
+    /** Cuantas copias de una misma estacion caben (una mas cada dos niveles de local). */
+    int maxCopias() { return Local.maxCopias(nivelLocal()); }
+
+    /** Todas las copias puestas de una estacion (en un cafe de antes, la unica). */
+    List<BlockPos> posesDe(Estacion e) {
+        List<BlockPos> r = new ArrayList<>();
+        if (dj().libre) { for (int[] q : obras.copias(e)) r.add(Local.pos(ox, q[0], q.length > 2 ? q[2] : 1, q[1])); }
+        else { BlockPos p = posDe(e); if (p != null) r.add(p); }
+        return r;
+    }
+
+    /** La copia de una estacion mas cercana a un punto (la unica, si solo hay una; null si no hay ninguna). */
+    BlockPos posCerca(Estacion e, double x, double z) {
+        BlockPos mejor = null; double dm = Double.MAX_VALUE;
+        for (BlockPos p : posesDe(e)) {
+            double dd = (p.getX() + 0.5 - x) * (p.getX() + 0.5 - x) + (p.getZ() + 0.5 - z) * (p.getZ() + 0.5 - z);
+            if (dd < dm) { dm = dd; mejor = p; }
+        }
+        return mejor;
+    }
+
     /** El nivel del local: 1 + los niveles de «Ampliar el local» (tamaño, mesas, estaciones, platos y mejoras que se pueden tener dependen de él). */
     int nivelLocal() { return 1 + nivel(Recetas.Mejora.AMPLIAR); }
 
@@ -210,6 +279,7 @@ final class Cafe {
         clientes.clear();
         mesas.clear();
         for (Est e : ests.values()) { Disp.quitar(e.icono); Disp.quitar(e.barra); }
+        quitarRotulosDespensas();
         ests.clear();
         quitarAyudantes();
         Datos.Jugador d = dj();
@@ -533,7 +603,7 @@ final class Cafe {
             if (aMesa == null) { a.pasos.clear(); continue; }
             a.mesaLava = m;
             dbg(a, "va a recoger el plato sucio de la mesa " + m.bloque.toShortString());
-            BlockPos fr = posDe(Estacion.FREGADERO);
+            BlockPos fr = posCerca(Estacion.FREGADERO, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
             a.paso(aMesa[0], aMesa[1], a.t(14), null, () -> {
                 if (m.sucio == null) { mandarACasa(a); return; }
                 Disp.quitar(m.sucio); m.sucio = null;
@@ -643,7 +713,11 @@ final class Cafe {
             for (int k = 0; k < receta.size(); k++) {
                 Estacion es = receta.get(k);
                 boolean ultima = k == receta.size() - 1;
-                BlockPos b = posDe(es);
+                BlockPos b = posCerca(es, f[0], f[1]);
+                if (es.tipo == Estacion.Tipo.CAJA && es.ingrediente != null && Granja.cantidad(dj(), es.ingrediente) > 0) {      // si hay ingredientes de la granja y su despensa esta puesta, los saca de alli
+                    BlockPos dsp = posDespensa(es.ingrediente, f[0], f[1]);
+                    if (dsp != null) b = dsp;
+                }
                 double[] fin = b == null ? null : irJunto(a, b, f, null);
                 if (fin == null) { ok = false; break; }
                 int espera = es.tipo == Estacion.Tipo.CAJA ? 24 : es.tipo == Estacion.Tipo.EMPLATAR ? 44 : Math.max(44, Math.min(100, es.ticks / 2));
@@ -964,6 +1038,7 @@ final class Cafe {
             if (clientes.isEmpty() || cierre > 20 * 12) terminarTurno();
         }
         for (Map.Entry<BlockPos, Est> en : ests.entrySet()) tickEstacion(en.getKey(), en.getValue());
+        if (t % 40 == 7) actualizarDespensas();
         if (t % 2 == 0) for (ServerPlayerEntity p : ps) sincronizarMano(p);
         if (t % 10 == 0) {
             for (ServerPlayerEntity p : ps) {
@@ -1155,10 +1230,21 @@ final class Cafe {
 
     // ------------------------------------------------------------ usar bloques y clientes
 
+    /** Clic en una despensa: dice lo que tiene. */
+    private void infoDespensa(ServerPlayerEntity p, Granja.Cultivo cu) {
+        Datos.Jugador d = dj();
+        int total = Granja.cantidad(d, cu.ingrediente);
+        StringBuilder sb = new StringBuilder();
+        for (int q = Granja.NIVEL_MAX; q >= 1; q--) { int n = Granja.cantidad(d, cu.ingrediente, q); if (n > 0) sb.append(sb.length() > 0 ? ", " : "").append(Granja.CALIDAD[q]).append(' ').append(n); }
+        p.sendMessage(Msg.say("Despensa de " + CafeItems.nombre(cu.ingrediente) + ": " + (total == 0 ? "vacía" : total + " (" + sb + ")") + ". Tus michialiens la usan al cocinar: por cada plato gastan 1 de la mejor calidad y el plato paga más. Cabe hasta " + Granja.CAPACIDAD + "."), false);
+    }
+
     /** El jugador hace clic derecho en un bloque del local. */
     void usarBloque(ServerPlayerEntity p, BlockPos pos) {
         net.minecraft.block.Block bl = w.getBlockState(pos).getBlock();
         if (bl == CafeBlocks.LIBRO_PARED) { Menus.libro(this, p); return; }
+        Granja.Cultivo despCu = Granja.cultivoDe(bl);
+        if (despCu != null) { if (contiene(pos)) infoDespensa(p, despCu); return; }
         if (bl instanceof VitrinaBlock) { if (contiene(pos) && !visitantes.contains(p.getUuid())) obras.usarVitrina(p, pos); return; }
         Estacion e = Estacion.de(bl);
         if (e == null) return;
@@ -1365,7 +1451,7 @@ final class Cafe {
         base = (int) Math.round(base * (1.0 + 0.06 * nivel(Recetas.Mejora.LUJO)));
         int granjaExtra = 0;
         if (c.esp == null && pl != null) {                                                 // ingredientes de la granja: gasta los mejores que haya y el plato paga mas
-            Granja.Uso uso = Granja.usar(dd, pl);
+            Granja.Uso uso = Granja.usar(dd, pl, this::despensaPuesta);
             if (uso.extra() > 0) { granjaExtra = (int) Math.round(base * uso.extra()); base += granjaExtra; dd.granjaBonus += granjaExtra; }
         }
         if (c.critico) base *= 3;
@@ -1413,6 +1499,7 @@ final class Cafe {
         clientes.clear();
         for (Mesa m : mesas) { Disp.quitar(m.plato); Disp.quitar(m.sucio); m.plato = null; m.sucio = null; m.cliente = null; }
         for (Est e : ests.values()) { Disp.quitar(e.icono); Disp.quitar(e.barra); }
+        quitarRotulosDespensas();
         ests.clear();
         Disp.barrerParcelaMoviles(w, ox);
     }

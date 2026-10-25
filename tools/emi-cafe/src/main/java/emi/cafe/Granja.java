@@ -141,12 +141,28 @@ final class Granja {
      * Al servir un plato se gasta una unidad de cada ingrediente que haya en la despensa (siempre la mejor calidad: el chef y quien sirve a mano cogen lo mejor) y el plato paga mas:
      * cada ingrediente de calidad q suma {@code BONUS[q] %} repartido entre todos los ingredientes del plato (un ingrediente sin granja suma 0).
      */
-    static Uso usar(Datos.Jugador d, Recetas.Plato pl) {
+    static Uso usar(Datos.Jugador d, Recetas.Plato pl) { return usar(d, pl, i -> true); }
+
+    /** El cultivo cuya despensa es ese bloque (null si no es una despensa). */
+    static Cultivo cultivoDe(net.minecraft.block.Block b) {
+        for (Cultivo c : Cultivo.values()) if (CafeBlocks.DESPENSAS.get(c.id) == b) return c;
+        return null;
+    }
+
+    /** El cultivo que da ese ingrediente (null si ninguno). */
+    static Cultivo cultivoDe(Item ing) {
+        for (Cultivo c : Cultivo.values()) if (c.ingrediente == ing) return c;
+        return null;
+    }
+
+    /** Como {@link #usar(Datos.Jugador, Recetas.Plato)}, pero solo se gastan (y cuentan) los ingredientes cuya despensa esta puesta en el cafe ({@code disponible}). */
+    static Uso usar(Datos.Jugador d, Recetas.Plato pl, java.util.function.Predicate<Item> disponible) {
         if (pl == null || d.despensa.isEmpty()) return new Uso(0, 0, 0, pl == null ? 0 : ingredientes(pl).size());
         List<Item> ings = ingredientes(pl);
         if (ings.isEmpty()) return new Uso(0, 0, 0, 0);
         double suma = 0; int usados = 0, mejor = 0;
         for (Item i : ings) {
+            if (!disponible.test(i)) continue;
             int q = gastar(d, i);
             if (q > 0) { suma += BONUS[q] / 100.0; usados++; mejor = Math.max(mejor, q); }
         }

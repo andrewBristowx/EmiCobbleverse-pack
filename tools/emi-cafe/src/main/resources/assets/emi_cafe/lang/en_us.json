@@ -200,5 +200,21 @@
   "item.emi_cafe.icono_despensa": "Pantry",
   "item.emi_cafe.icono_granjero": "Farmer Michi",
   "block.emi_cafe.caja_cebolla": "Onion Crate",
-  "item.emi_cafe.cebolla_picada": "Chopped Onion"
+  "item.emi_cafe.cebolla_picada": "Chopped Onion",
+  "block.emi_cafe.despensa_papas": "Potato pantry",
+  "block.emi_cafe.despensa_trigo": "Wheat pantry (flour)",
+  "block.emi_cafe.despensa_col": "Cabbage pantry (lettuce)",
+  "block.emi_cafe.despensa_tomates": "Tomato pantry",
+  "block.emi_cafe.despensa_cebollas": "Onion pantry",
+  "block.emi_cafe.despensa_calabazas": "Pumpkin pantry",
+  "block.emi_cafe.despensa_bayas": "Berry pantry",
+  "block.emi_cafe.despensa_arroz": "Rice pantry",
+  "block.emi_cafe.despensa_cacao": "Cocoa pantry",
+  "block.emi_cafe.despensa_granos": "Coffee bean pantry",
+  "block.emi_cafe.despensa_vacas": "Milk pantry",
+  "block.emi_cafe.despensa_gallinas": "Egg pantry",
+  "block.emi_cafe.despensa_tauros": "Meat pantry",
+  "block.emi_cafe.despensa_pescado": "Fish pantry",
+  "block.emi_cafe.despensa_queso": "Cheese pantry",
+  "block.emi_cafe.despensa_abejas": "Honey pantry"
 }

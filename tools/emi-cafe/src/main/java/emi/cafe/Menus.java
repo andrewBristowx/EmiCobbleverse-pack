@@ -124,8 +124,10 @@ final class Menus {
         for (int i = vista.pag * Decor.POR_PAG; i < Math.min(lista.size(), (vista.pag + 1) * Decor.POR_PAG); i++) {
             Decor.Articulo a = lista.get(i);
             JsonObject e = new JsonObject();
-            e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("nombre", a.nombre()); e.addProperty("cantidad", a.cantidad());
-            e.addProperty("precio", a.precio()); e.addProperty("grupo", a.grupo()); e.addProperty("tienes", c.obras.stock(a.item()));
+            Estacion ex = Obras.estacionExtra(a);
+            e.addProperty("id", a.id()); e.addProperty("item", a.item()); e.addProperty("cantidad", a.cantidad());
+            e.addProperty("nombre", ex == null ? a.nombre() : a.nombre() + " (" + c.obras.copiasTiene(ex) + "/" + c.maxCopias() + ")");
+            e.addProperty("precio", c.obras.precioDe(a)); e.addProperty("grupo", a.grupo()); e.addProperty("tienes", c.obras.stock(a.item()));
             e.addProperty("fav", dd.favoritos.contains(a.item()));
             deco.add(e);
         }
@@ -151,12 +153,22 @@ final class Menus {
             for (String f : fuentesBaul) bfs.add(f);
             vista.baulFuente = Math.max(0, Math.min(fuentesBaul.size(), vista.baulFuente));
             String filtro = vista.baulFuente == 0 ? null : fuentesBaul.get(vista.baulFuente - 1);
+            java.util.List<String> gruposBaul = new java.util.ArrayList<>();                 // las categorias de lo que hay (ya filtrado por fuente)
+            for (String k : claves) if (dd.almacen.get(k) > 0 && (filtro == null || filtro.equals(fuenteDe(k)))) { String g = grupoDe(k); if (!gruposBaul.contains(g)) gruposBaul.add(g); }
+            java.util.Collections.sort(gruposBaul);
+            JsonArray bgs = new JsonArray();
+            bgs.add("Todas");
+            for (String g : gruposBaul) bgs.add(g);
+            vista.baulGrupo = Math.max(0, Math.min(gruposBaul.size(), vista.baulGrupo));
+            String filtroG = vista.baulGrupo == 0 ? null : gruposBaul.get(vista.baulGrupo - 1);
+            o.add("baulGrupos", bgs); o.addProperty("baulGrupo", vista.baulGrupo);
             String[] toks = vista.baulBuscar.isEmpty() ? new String[0] : vista.baulBuscar.toLowerCase(java.util.Locale.ROOT).split("\\s+");
             for (String k : claves) {
                 int n = dd.almacen.get(k);
                 if (n <= 0) continue;
                 bTotal++;
                 if (filtro != null && !filtro.equals(fuenteDe(k))) continue;
+                if (filtroG != null && !filtroG.equals(grupoDe(k))) continue;
                 boolean ok = true;
                 for (String t : toks) if (!k.toLowerCase(java.util.Locale.ROOT).contains(t)) { ok = false; break; }
                 if (!ok || baul.size() >= 600) continue;
@@ -191,6 +203,9 @@ final class Menus {
         }
         o.add("planos", planos);
         o.addProperty("planosMax", Obras.MAX_PLANOS);
+        JsonArray temas = new JsonArray();                                     // los cafes tematicos que se pueden comprar (0.27.0)
+        for (Tematicos.Tema t : Tematicos.TEMAS) { JsonObject e = new JsonObject(); e.addProperty("id", t.id()); e.addProperty("nombre", t.nombre()); e.addProperty("desc", t.descripcion()); e.addProperty("precio", t.precio()); temas.add(e); }
+        o.add("temas", temas);
         o.addProperty("libre", dd.libre);
         StringBuilder guardado = new StringBuilder();                          // lo del cafe que se tiene guardado para poner (caja registradora, estaciones, cartel...)
         for (java.util.Map.Entry<String, Integer> g : dd.almacen.entrySet()) {
@@ -510,11 +525,20 @@ final class Menus {
                 case "libro_mostrar" -> { c.mostrarReceta(p, Recetas.Plato.de(a.a())); }
                 case "comprarDeco" -> { comprarDeco(c, p, Decor.articulo(a.a())); actualizar(c, p); }
                 case "decoFav" -> { if (duenio) { Datos.Jugador dj = c.dj(); if (!dj.favoritos.remove(a.a())) { if (Decor.articulo(a.a()) != null && dj.favoritos.size() < 300) dj.favoritos.add(a.a()); } EmiCafe.datos.guardar(c.duenio); } actualizar(c, p); }
-                case "baulFiltro" -> { Decor.Vista v = vista(p); v.baulFuente = Math.max(0, v.baulFuente + parseIdx(a.a())); actualizar(c, p); }
+                case "baulFiltro" -> { Decor.Vista v = vista(p); v.baulFuente = Math.max(0, v.baulFuente + parseIdx(a.a())); v.baulGrupo = 0; actualizar(c, p); }
+                case "baulGrupo" -> { Decor.Vista v = vista(p); v.baulGrupo = Math.max(0, v.baulGrupo + parseIdx(a.a())); actualizar(c, p); }
                 case "baulBuscar" -> { vista(p).baulBuscar = a.a().trim(); actualizar(c, p); }
                 case "deshacer" -> { String err = duenio ? c.obras.deshacer(p) : "Solo el dueño construye."; if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else p.sendMessage(Msg.say("Deshecho."), false); actualizar(c, p); }
                 case "planoRestaurar" -> { String err = c.obras.restaurarPlano(p, a.a()); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else { p.sendMessage(Msg.say("Plano restaurado. Lo que tenías antes quedó en una copia automática."), false); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.2f); } actualizar(c, p); }
                 case "planoSobrescribir" -> { Datos.Plano pl = c.dj().planos.get(a.a().toLowerCase(java.util.Locale.ROOT)); String err = pl == null || a.a().startsWith("auto") ? "Ese plano no se puede sobrescribir." : c.obras.guardarPlano(p, pl.nombre); if (err != null) p.sendMessage(Msg.err(err), false); else p.sendMessage(Msg.say("Plano «" + pl.nombre + "» actualizado con el diseño de ahora."), false); actualizar(c, p); }
+                case "planoElegir" -> { Datos.Plano pl = c.dj().planos.get(a.a().toLowerCase(java.util.Locale.ROOT)); if (pl == null || a.a().startsWith("auto")) p.sendMessage(Msg.err("Ese plano no se puede compartir."), false); else { vista(p).planoElegido = a.a(); p.sendMessage(Msg.say("Vas a compartir «" + pl.nombre + "». Escribe el nombre del jugador (debe estar conectado)."), false); } }
+                case "temaComprar" -> {
+                    Tematicos.Tema t = Tematicos.tema(a.a());
+                    String err = c.obras.comprarTematico(p, a.a());
+                    if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); }
+                    else { p.sendMessage(Msg.say("Tu café ahora es «" + t.nombre() + "». Los bloques que faltaban te los hemos entregado y lo de antes quedó en una copia automática (pestaña PLANOS)."), false); Msg.sound(p, SoundEvents.ENTITY_PLAYER_LEVELUP, 1f, 1.2f); }
+                    actualizar(c, p);
+                }
                 case "planoBorrar" -> { String err = c.obras.borrarPlano(p, a.a()); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "decoMover" -> { Decor.Vista v = vista(p); v.ponerFavoritos(c.dj().favoritos); v.mover(a.a(), parseIdx(a.b())); actualizar(c, p); }
                 case "decoBuscar" -> { vista(p).buscar(a.a()); actualizar(c, p); }
@@ -552,6 +576,12 @@ final class Menus {
     }
 
     /** De donde viene un objeto del baul, para el filtro: Café, Minecraft o el nombre del mod. */
+    /** La categoria de un objeto del baul (el grupo de la tienda DECORAR; «Otros» si no esta en ella). */
+    static String grupoDe(String item) {
+        Decor.Articulo a = Decor.articulo(item);
+        return a == null || a.grupo() == null || a.grupo().isEmpty() ? "Otros" : a.grupo();
+    }
+
     static String fuenteDe(String item) {
         int i = item.indexOf(':');
         String ns = i < 0 ? "minecraft" : item.substring(0, i);

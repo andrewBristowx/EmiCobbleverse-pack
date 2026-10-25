@@ -19,6 +19,8 @@ final class Local {
     static final int[][] MESAS = {{5, 9}, {9, 9}, {2, 9}, {12, 9}, {16, 9}, {20, 9}, {24, 9}, {28, 9}, {32, 9}, {36, 9}, {40, 9}, {44, 9}};
     /** Cuantas estaciones de trabajo (cajas, procesadoras y la mesa de emplatar; sin contar la basura ni el fregadero) caben en cada nivel de local (1 a 10). */
     static final int[] MAX_ESTACIONES = {5, 8, 12, 17, 22, 28, 34, 40, 46, 52};
+    /** Cuantas copias de una misma estacion se pueden tener (0.27.0): una en el nivel 1 y una mas cada dos niveles de local (1, 1, 2, 2, 3, 3, 4, 4, 5, 5). */
+    static int maxCopias(int nivelLocal) { return 1 + (Math.max(1, Math.min(MAX_ESTACIONES.length, nivelLocal)) - 1) / 2; }
     static int maxEstaciones(int nivelLocal) { return MAX_ESTACIONES[Math.max(1, Math.min(MAX_ESTACIONES.length, nivelLocal)) - 1]; }
     static final int ANCHO_BASE = 14, ANCHO_POR_NIVEL = 8;
     static int ancho(int nivel) { return ANCHO_BASE + ANCHO_POR_NIVEL * Math.min(nivel, 4); }          // el edificio de un cafe de antes no crece mas del nivel 5
