@@ -46,7 +46,10 @@ final class PanelCafe {
 
         final int W = 164, P = 5, FILA = 10;
         JsonArray ped = o.has("pedidos") ? o.getAsJsonArray("pedidos") : new JsonArray();
-        int filas = visita ? 3 : 6;
+        boolean abiertoYa = estado.equals("abierto") || estado.equals("cerrando");
+        String clima = str(o, "clima", "");
+        boolean verClima = !visita && abiertoYa && !clima.isEmpty() && num(o, "terrazas") > 0;          // el tiempo solo importa si hay mesas de terraza
+        int filas = (visita ? 3 : 6) + (verClima ? 1 : 0);
         int nPed = Math.min(MAX_FILAS, ped.size());
         int alto = P * 2 + filas * FILA + (visita ? 0 : 4 + FILA + Math.max(1, nPed) * 18 + (ped.size() > MAX_FILAS ? FILA : 0));
         int x = g.getScaledWindowWidth() - W - 6, y = 6;
@@ -69,6 +72,11 @@ final class PanelCafe {
 
         g.drawText(f, "Monedas: " + num(o, "monedas"), x + P, cy, 0xFFFFD34E, true);
         cy += FILA;
+        if (verClima) {
+            int t = num(o, "terrazas");
+            g.drawText(f, f.trimToWidth(clima + " · Terraza: " + t + (t == 1 ? " mesa" : " mesas"), W - 2 * P), x + P, cy, 0xFF9FD8FF, true);
+            cy += FILA;
+        }
         boolean abierto = estado.equals("abierto") || estado.equals("cerrando");
         String gan = (abierto ? "Jornada: +" : "Última jornada: +") + num(o, "ganado");
         g.drawText(f, gan, x + P, cy, 0xFF6FE08A, true);

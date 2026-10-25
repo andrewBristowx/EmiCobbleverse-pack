@@ -141,7 +141,7 @@ final class Cliente {
                     llegada = ++LLEGADAS;
                     pedido = twitchPlato != null ? twitchPlato : esp != null ? esp.plato : critico ? cafe.pedidoCritico() : cafe.elegirPedido(rnd, especie);
                     favorito = esp == null && !critico && twitchPlato == null && pedido == cafe.favoritoDe(especie);
-                    pacienciaMax = paciencia = esp != null || twitchPlato != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks();
+                    pacienciaMax = paciencia = (int) Math.round((esp != null || twitchPlato != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks()) * cafe.climaPaciencia(mesa));
                     if (twitchPlato != null) cafe.alLlegarTwitch(this);
                     if (esp != null) cafe.alLlegarEspecial(this);
                     if (critico) cafe.alLlegarCritico(this);

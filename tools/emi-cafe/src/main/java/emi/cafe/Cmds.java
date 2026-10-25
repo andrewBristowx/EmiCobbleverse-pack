@@ -113,6 +113,14 @@ final class Cmds {
                     p.sendMessage(Msg.say(j.visitas ? "Tu café acepta visitas." : "Tu café ya no acepta visitas."), false);
                     return null;
                 }))))
+                .then(CommandManager.literal("terraza").executes(c -> con(c, p -> {
+                    Cafe cf = Cafes.de(p.getUuid());
+                    if (cf == null) return "Entra primero a un café con /cafe entrar.";
+                    int t = cf.mesasTerraza();
+                    p.sendMessage(Msg.say("Terraza: " + t + (t == 1 ? " mesa" : " mesas") + " al aire libre (sin nada encima) de " + cf.mesas.size() + ". Tiempo de hoy: " + cf.clima.icono + " " + cf.clima.nombre + " — " + cf.clima.descripcion
+                            + " Pon mesas fuera del edificio (jardín o acera) o sin techo para tener terraza; el tiempo se sortea cada vez que abres el café."), false);
+                    return null;
+                })))
                 .then(CommandManager.literal("twitch")
                         .then(CommandManager.literal("lista").executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
@@ -149,6 +157,16 @@ final class Cmds {
                     return null;
                 })))
                 .then(CommandManager.literal("dev").requires(Perm::admin)
+                        .then(CommandManager.literal("clima").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (id.equals("azar")) { Cafe.climaForzado = null; return null; }
+                            Clima cl = Clima.de(id);
+                            if (cl == null) return "Uno de: soleado, nublado, lluvia, azar.";
+                            Cafe.climaForzado = cl;                                  // vale tambien para los proximos cafes que se abran
+                            if (cf != null) cf.ponerClima(cl, true);
+                            return null;
+                        }))))
                         .then(CommandManager.literal("twitch").then(CommandManager.argument("usuario", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                             String u = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "usuario");
                             TwitchPedidos.reiniciar();                       // sin esperas: se prueba tantas veces como haga falta

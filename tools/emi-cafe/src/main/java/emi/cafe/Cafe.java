@@ -73,6 +73,8 @@ final class Cafe {
     final Fincas granja = new Fincas(this);               // huertos, corrales y michigranjeros (0.24.0)
     final Set<UUID> visitantes = new LinkedHashSet<>();   // gente que solo esta de visita (tambien estan en `jugadores`, pero no cocinan ni sirven)
     Evento evento = Evento.NINGUNO;                       // el suceso de la jornada de hoy
+    Clima clima = Clima.NUBLADO;                           // el tiempo de hoy (solo importa a las mesas de terraza)
+    static Clima climaForzado;                             // solo pruebas: /cafe dev clima
     static Item pedidoForzado;                            // solo pruebas: /cafe dev pedido <plato> hace que todos pidan eso
     static Evento eventoForzado;                          // solo pruebas: /cafe dev evento <nombre> lo pone para la proxima vez que se abra
     Recetas.Plato platoDelDia;
@@ -934,7 +936,43 @@ final class Cafe {
         });
         obras.letrero(true);
         aplicarEvento(ev);
+        ponerClima(climaForzado != null ? climaForzado : Clima.azar(rnd), true);
         return null;
+    }
+
+    // ------------------------------------------------------------ terraza y clima (0.29.0)
+
+    /** ¿Es una mesa de terraza? = al aire libre: no hay ningun bloque encima (ni techo, ni cristal, ni hojas). Se mira el mapa de alturas, asi que sirve dentro y fuera del edificio. */
+    boolean esTerraza(Mesa m) {
+        BlockPos b = m.bloque;
+        return w.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, b.getX(), b.getZ()) <= b.getY() + 1;
+    }
+
+    int mesasTerraza() { int n = 0; for (Mesa m : mesas) if (esTerraza(m)) n++; return n; }
+
+    /** Cambia el tiempo de hoy y, si el cafe tiene terraza, lo anuncia. */
+    void ponerClima(Clima nuevo, boolean avisar) {
+        clima = nuevo;
+        int t = mesasTerraza();
+        if (avisar && t > 0) aTodos(p -> p.sendMessage(Msg.say("Tiempo de hoy: " + nuevo.icono + " " + nuevo.nombre + " — " + nuevo.descripcion + " (tienes " + t + (t == 1 ? " mesa" : " mesas") + " de terraza)"), false));
+    }
+
+    /** Cuanto cambia el pago de una mesa por el tiempo (1 = nada): solo la terraza. */
+    double climaPago(Mesa m) { return esTerraza(m) ? clima.pago : 1.0; }
+
+    /** Cuanto cambia la paciencia de quien se sienta en esa mesa por el tiempo (1 = nada). */
+    double climaPaciencia(Mesa m) { return esTerraza(m) ? clima.paciencia : 1.0; }
+
+    /** Una mesa libre de esas, al azar, con mas o menos ganas segun el tiempo (la terraza con sol atrae, con lluvia casi no). */
+    Mesa elegirMesa(List<Mesa> libres) {
+        double total = 0;
+        double[] pesos = new double[libres.size()];
+        for (int i = 0; i < pesos.length; i++) { pesos[i] = esTerraza(libres.get(i)) ? clima.preferencia : 1.0; total += pesos[i]; }
+        double r = rnd.nextDouble() * total;
+        Mesa elegida = libres.get(libres.size() - 1);
+        for (int i = 0; i < pesos.length; i++) { r -= pesos[i]; if (r <= 0) { elegida = libres.get(i); break; } }
+        if (DEBUG) EmiCafe.LOG.info("[terraza] clima {}: cliente a la mesa {} (terraza={})", clima.nombre, elegida.bloque.toShortString(), esTerraza(elegida));
+        return elegida;
     }
 
     /** El suceso de hoy al azar (con condiciones: el critico pide reputacion y 3 platos, el dia del plato 2 platos, el dia Michialien algun visitante posible). */
@@ -1081,6 +1119,8 @@ final class Cafe {
         o.addProperty("rep", Reputacion.nombre(nivelRep()));
         o.addProperty("estilo", Estilo.NOMBRES[nivelEstilo()]);
         o.addProperty("megusta", d.megusta);
+        o.addProperty("clima", estado == Estado.ABIERTO ? clima.icono + " " + clima.nombre : "");
+        o.addProperty("terrazas", mesasTerraza());
         if (!visita) {
             o.addProperty("monedas", dj(p).monedas);
             o.addProperty("ganado", ganadoPor.getOrDefault(p.getUuid(), 0));
@@ -1129,7 +1169,7 @@ final class Cafe {
         List<Mesa> libres = new ArrayList<>();
         for (Mesa m : mesas) if (m.libre()) libres.add(m);
         if (libres.isEmpty()) return;
-        Mesa m = libres.get(rnd.nextInt(libres.size()));
+        Mesa m = elegirMesa(libres);
         int prob = evento == Evento.DIA_MICHIALIEN ? 40 : evento == Evento.HALLOWEEN ? 45 : PROB_ESPECIAL + Estilo.probEspecialExtra(nivelEstilo());
         if (!hayEspecial() && rnd.nextInt(100) < prob) {
             List<Especial> el = elegibles();
@@ -1216,7 +1256,7 @@ final class Cafe {
         List<Mesa> libres = new ArrayList<>();
         for (Mesa m : mesas) if (m.libre()) libres.add(m);
         if (libres.isEmpty()) return "sin mesa";
-        Mesa m = libres.get(rnd.nextInt(libres.size()));
+        Mesa m = elegirMesa(libres);
         Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre);
         if (c == null) return "sin mesa";
         c.twitchNombre = nombre; c.twitchMsg = mensaje; c.twitchPlato = pl.item;
@@ -1492,7 +1532,8 @@ final class Cafe {
         int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()) * (1.0 + 0.10 * nivel(Recetas.Mejora.PROPINAS)));
         boolean fav = c.favorito;
         if (fav) propina += (int) Math.round(base * 0.4);
-        int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)) * (evento == Evento.HALLOWEEN ? 1.2 : 1.0));
+        int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)) * (evento == Evento.HALLOWEEN ? 1.2 : 1.0) * climaPago(m));
+        if (DEBUG) EmiCafe.LOG.info("[terraza] cobro {} monedas en mesa {} (terraza={}, clima {}, x{})", pago, m.bloque.toShortString(), esTerraza(m), clima.nombre, climaPago(m));
         platos--;
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
