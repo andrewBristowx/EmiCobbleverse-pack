@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * La granja del cafe (0.24.0): huertos y corrales al fondo de la parcela que dan ingredientes de calidad. Aqui estan solo las reglas y las cuentas (sin mundo):
+ * La granja del cafe (0.24.0): huertos y corrales detras del muro del fondo de la parcela que dan ingredientes de calidad. Aqui estan solo las reglas y las cuentas (sin mundo):
  * los cultivos y animales, el tiempo de crecimiento, lo que se cosecha, la despensa con calidad y el extra de dinero al servir un plato hecho con ingredientes de la granja.
  * Lo que se dibuja en el mundo y el michigranjero estan en {@link Fincas}.
  */
@@ -164,16 +164,16 @@ final class Granja {
 
     // ------------------------------------------------------------ donde esta cada finca (relativo al origen de la parcela)
 
-    /** Cada finca ocupa 9 x 9 bloques al fondo de la parcela: x de {@code X0 + 10 * slot} y z de -11 a -3. */
-    static final int X0 = -3, ANCHO = 9, Z0 = -11, Z1 = -3;
+    /**
+     * Cada finca ocupa 9 x 9 bloques en el terreno de detras del muro del fondo de la parcela (0.26.0; antes estaba dentro del jardin): x de {@code X0 + 10 * slot} y z de -23 a -15.
+     * La fila z = -14 es el camino de detras del muro y el muro (z = -13) tiene una puerta de 3 bloques delante de cada finca.
+     */
+    static final int X0 = -3, ANCHO = 9, Z0 = -23, Z1 = -15;
     static int x0(int slot) { return X0 + 10 * slot; }
-
-    /** ¿Cae (rx, rz) dentro de una finca ya comprada? */
-    static boolean enHuella(Datos.Jugador d, int rx, int rz) {
-        if (rz < Z0 || rz > Z1 || d == null) return false;
-        for (Datos.Finca f : d.granja) if (rx >= x0(f.slot) && rx < x0(f.slot) + ANCHO) return true;
-        return false;
-    }
+    /** Donde estaba la granja hasta la 0.25.0 (dentro del jardin): sirve para limpiar los huertos viejos. */
+    static final int VIEJO_Z0 = -11, VIEJO_Z1 = -3;
+    /** La fila del camino (entre el muro y las fincas) y el muro de detras de todo (el de la granja). */
+    static final int Z_CAMINO = -14, Z_MURO = -26;
 
     /** El primer sitio libre de la granja (-1 = lleno). */
     static int sitioLibre(Datos.Jugador d, int max) {

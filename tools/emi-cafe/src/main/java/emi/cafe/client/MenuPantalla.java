@@ -270,6 +270,11 @@ public final class MenuPantalla extends Lienzo {
         textoCentrado(g, texto, x + w / 2, y + (int) ((h - 8 * tam) / 2), activo ? BLANCO : 0xFF9A9AAA, tam);
     }
 
+    /** Barra de estrellas llenas/vacías; nunca negativa aunque el nivel pase del máximo (así se colgó el menú con empleados de nivel 6). */
+    private static String estrellas(int nivel, int max) {
+        int n = Math.max(0, Math.min(max, nivel));
+        return "★".repeat(n) + "☆".repeat(max - n);
+    }
     private static String recortar(String s, int max) { return s.length() <= max ? s : s.substring(0, max - 1) + "…"; }
 
     private ItemStack pila(String item) {
@@ -562,7 +567,7 @@ public final class MenuPantalla extends Lienzo {
             objeto(g, p.icono(), LX + 8, y + 9, 1.3f);
             texto(g, recortar(p.nombre(), 16), LX + 38, y + 4, ORO, 1.1f);
             texto(g, p.rol() + " · " + recortar(p.aspecto(), 18), LX + 38, y + 17, GRIS, 0.78f);
-            texto(g, "★".repeat(p.nivel()) + "☆".repeat(5 - p.nivel()) + "  Nv " + p.nivel(), LX + 38, y + 27, ORO, 0.75f);
+            texto(g, estrellas(p.nivel(), 10) + "  Nv " + p.nivel(), LX + 38, y + 27, ORO, 0.75f);
             int bx = LX + 360 - 3 * 66;
             boton(g, bx, y + 3, 62, 15, "✎ NOMBRE", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, bx, y + 3, 62, 15), 0.7f);
             boton(g, bx + 66, y + 3, 62, 15, "ASPECTO ▶", 0xFF4A7AC0, puede, puede && dentro(mx, my, bx + 66, y + 3, 62, 15), 0.7f);
@@ -1029,7 +1034,7 @@ public final class MenuPantalla extends Lienzo {
             caja(g, LX, y, 360, FH, FONDO, f.prog() >= 100 ? VERDE : BORDE);
             objeto(g, f.icono(), LX + 6, y + 6, 1.4f);
             texto(g, f.nombre(), LX + 34, y + 3, ORO, 0.95f);
-            texto(g, "★".repeat(f.nivel()) + "☆".repeat(5 - f.nivel()) + " " + f.calidad() + " · +" + f.bonus() + " % al plato", LX + 34, y + 14, ESTRELLA, 0.68f);
+            texto(g, estrellas(f.nivel(), 5) + " " + f.calidad() + " · +" + f.bonus() + " % al plato", LX + 34, y + 14, ESTRELLA, 0.68f);
             barra(g, LX + 34, y + 25, 96, f.prog(), 100, f.prog() >= 100 ? VERDE : AZUL);
             texto(g, f.prog() >= 100 ? "¡Lista!" : f.prog() + " % · " + tiempo(f.resta()), LX + 134, y + 24, f.prog() >= 100 ? VERDE : GRIS, 0.62f);
             texto(g, "Michigranjero: " + recortar(f.granjero(), 12) + " (" + recortar(f.aspecto(), 14) + ") · da " + f.rend() + " por cosecha" + (f.animales() > 0 ? " · " + f.animales() + " animales" : ""), LX + 34, y + 35, SUAVE, 0.62f);
