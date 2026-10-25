@@ -103,5 +103,12 @@ public final class CafeBlocks {
         return b;
     }
 
+    /** Las despensas (0.27.0): una por cada cultivo de la granja, para poner en el café; de ellas sacan los ingredientes los michialiens (ver {@link Granja}). */
+    public static final java.util.Map<String, Block> DESPENSAS = new java.util.LinkedHashMap<>();
+    static {
+        for (String id : new String[]{"papas", "trigo", "col", "tomates", "cebollas", "calabazas", "bayas", "arroz", "cacao", "granos", "vacas", "gallinas", "tauros", "pescado", "queso", "abejas"})
+            DESPENSAS.put(id, reg("despensa_" + id));
+    }
+
     static void init() { }
 }

@@ -45,6 +45,8 @@ final class Obras {
 
     private int ver, verCache = -1;
     private final Map<Estacion, int[]> cEst = new EnumMap<>(Estacion.class);
+    private final Map<String, List<int[]>> cDespensas = new HashMap<>();                    // despensas puestas por cultivo (0.27.0)
+    private final Map<Estacion, List<int[]>> cCopias = new EnumMap<>(Estacion.class);      // todas las copias puestas de cada estacion (0.27.0); cEst guarda solo la primera
     private final List<int[]> cMesas = new ArrayList<>();
     private final Set<String> cNombres = new HashSet<>();
     private int[] cCartel;
@@ -68,7 +70,7 @@ final class Obras {
     private void escanear() {
         if (verCache == ver) return;
         verCache = ver;
-        cEst.clear(); cMesas.clear(); cNombres.clear(); cPuertas.clear(); cCartel = null;
+        cEst.clear(); cCopias.clear(); cDespensas.clear(); cMesas.clear(); cNombres.clear(); cPuertas.clear(); cCartel = null;
         Datos.Jugador d = d();
         if (!d.libre || d.decor == null) return;
         Map<String, Estacion> pb = porBloque();
@@ -84,10 +86,24 @@ final class Obras {
             Estacion e = pb.get(nombre);
             if (e != null) {
                 if (e.tipo == Estacion.Tipo.MESA) cMesas.add(new int[]{rx, rz, ry});
-                else if (e.x >= 0 && !cEst.containsKey(e)) cEst.put(e, new int[]{rx, rz, ry});
+                else if (e.x >= 0) {
+                    if (!cEst.containsKey(e)) cEst.put(e, new int[]{rx, rz, ry});
+                    cCopias.computeIfAbsent(e, kk -> new ArrayList<>()).add(new int[]{rx, rz, ry});
+                }
+            } else if (nombre.startsWith("emi_cafe:despensa_")) {
+                cDespensas.computeIfAbsent(nombre.substring("emi_cafe:despensa_".length()), kk -> new ArrayList<>()).add(new int[]{rx, rz, ry});
             } else if (nombre.equals("emi_cafe:cartel") && en.getValue().contains("der:\"false\"")) cCartel = new int[]{rx, rz, ry};
         }
     }
+
+    /** Las despensas puestas de un cultivo (x, z, y del local). */
+    List<int[]> despensas(Granja.Cultivo c) { escanear(); List<int[]> l = cDespensas.get(c.id); return l == null ? List.of() : l; }
+
+    /** Todas las copias puestas de una estacion (x, z, y del local). */
+    List<int[]> copias(Estacion e) { escanear(); List<int[]> l = cCopias.get(e); return l == null ? List.of() : l; }
+
+    /** Cuantas copias de esa estacion tiene el dueño: las puestas mas las guardadas en el almacen. */
+    int copiasTiene(Estacion e) { return copias(e).size() + stock(idItem(e.bloque)); }
 
     /** Donde esta cada estacion puesta (x, z, y del local). */
     Map<Estacion, int[]> estaciones() { escanear(); return cEst; }
@@ -360,6 +376,7 @@ final class Obras {
         asegurar(CafeBlocks.REGISTRADORA); asegurar(CafeBlocks.CARTEL); asegurar(CafeBlocks.LIBRO_PARED);
         Set<Estacion> act = c.activas();
         for (Estacion e : Estacion.values()) if (e.x >= 0 && (e.siempre || act.contains(e))) asegurar(e.bloque);
+        if (d.granja != null) for (Datos.Finca f : d.granja) { Block b = CafeBlocks.DESPENSAS.get(f.tipo); if (b != null) asegurar(b); }      // una despensa por cada finca
     }
 
     // ------------------------------------------------------------ que se puede construir y donde
@@ -387,7 +404,7 @@ final class Obras {
     static boolean permitido(Block b) {
         Identifier id = Registries.BLOCK.getId(b);
         String p = id.getPath();
-        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || CafeBlocks.esMesa(b) || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || b instanceof PuertaCristalBlock || b instanceof VitrinaBlock || Estacion.de(b) != null;
+        if (id.getNamespace().equals("emi_cafe")) return b == CafeBlocks.ENCIMERA || CafeBlocks.esMesa(b) || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || Granja.cultivoDe(b) != null || b instanceof PuertaCristalBlock || b instanceof VitrinaBlock || Estacion.de(b) != null;
         if (PROHIBIDOS.contains(p) || p.contains("command_block") || p.contains("structure") || p.contains("redstone") || p.contains("piston") || p.contains("repeater") || p.contains("comparator") || p.contains("test_")) return false;
         if (b instanceof net.minecraft.block.FallingBlock || b instanceof net.minecraft.block.FluidBlock || b instanceof net.minecraft.block.AbstractFireBlock || b instanceof net.minecraft.block.TntBlock) return false;
         if (b instanceof net.minecraft.block.BlockWithEntity) {
@@ -706,7 +723,11 @@ final class Obras {
         boolean cartel = bloque == CafeBlocks.CARTEL;
         BlockPos pos2 = pos.east();
         if (cartel && (!construible(pos2) || !c.w.getBlockState(pos2).isReplaceable())) { c.msg(p, "El cartel mide 2 bloques de ancho: necesita sitio libre a la derecha"); return ActionResult.FAIL; }
-        if (d.libre && est != null && est.x >= 0 && !est.siempre) {
+        if (d.libre && est != null && est.x >= 0 && copias(est).size() >= c.maxCopias()) {
+            c.msg(p, "Ya tienes " + copias(est).size() + " de «" + est.nombre + "» puestas: es lo que admite tu local de nivel " + c.nivelLocal() + " (con más nivel caben más copias)");
+            return ActionResult.FAIL;
+        }
+        if (d.libre && est != null && est.x >= 0 && !est.siempre && copias(est).isEmpty()) {            // las copias de una que ya esta puesta no cuentan para el limite de tipos de estacion
             int puestas = 0;
             for (Estacion e : estaciones().keySet()) if (!e.siempre) puestas++;
             if (puestas >= c.maxEstaciones()) { c.msg(p, "Tu local de nivel " + c.nivelLocal() + " solo admite " + c.maxEstaciones() + " estaciones: amplíalo o compra «Más estaciones» en la tienda → MEJORAS"); return ActionResult.FAIL; }
@@ -1006,7 +1027,7 @@ final class Obras {
     private static boolean esBasico(String item) {
         if (!item.startsWith("emi_cafe:")) return false;
         Block b = Registries.BLOCK.get(Identifier.of(item));
-        if (b == CafeBlocks.REGISTRADORA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED) return true;
+        if (b == CafeBlocks.REGISTRADORA || b == CafeBlocks.CARTEL || b == CafeBlocks.LIBRO_PARED || Granja.cultivoDe(b) != null) return true;
         return Estacion.de(b) != null && !CafeBlocks.esMesa(b);
     }
 
@@ -1077,6 +1098,73 @@ final class Obras {
         return null;
     }
 
+    /** Le da a otro jugador conectado una copia de uno de tus planos (no de las copias automaticas). Devuelve el error, o null. */
+    String compartirPlano(ServerPlayerEntity p, String clave, String jugador) {
+        if (!c.esDuenio(p)) return "Solo el dueño comparte planos.";
+        if (!d().libre) return "Los planos solo funcionan en los cafés de parcela libre.";
+        String k = clavePlano(clave == null ? "" : clave);
+        if (k.isEmpty()) return "Elige primero un plano con el botón COMPARTIR de la pestaña PLANOS.";
+        if (k.startsWith("auto")) return "Las copias automáticas no se comparten: guarda un plano con nombre.";
+        Datos.Plano pl = d().planos.get(k);
+        if (pl == null) return "Ese plano no existe.";
+        ServerPlayerEntity otro = c.server.getPlayerManager().getPlayer(jugador);
+        if (otro == null) return jugador + " no está conectado.";
+        if (otro.getUuid().equals(p.getUuid())) return "Ese plano ya es tuyo.";
+        Datos.Jugador dd = EmiCafe.datos.jugador(otro.getUuid(), otro.getGameProfile().getName());
+        if (dd.inicial == null || !dd.libre) return otro.getGameProfile().getName() + " todavía no tiene un café de parcela libre: no puede recibir planos.";
+        long manuales = dd.planos.keySet().stream().filter(x -> !x.startsWith("auto")).count();
+        if (manuales >= MAX_PLANOS) return otro.getGameProfile().getName() + " ya tiene " + MAX_PLANOS + " planos: tendría que borrar alguno.";
+        String autor = p.getGameProfile().getName();
+        String nombre = pl.nombre.length() > 24 ? pl.nombre.substring(0, 24) : pl.nombre;
+        String clave2 = clavePlano(nombre);
+        if (dd.planos.containsKey(clave2)) {                                   // ya tiene uno con ese nombre: se le pone el del autor
+            String sufijo = " de " + autor;
+            nombre = (pl.nombre.length() + sufijo.length() > 24 ? pl.nombre.substring(0, Math.max(1, 24 - sufijo.length())) : pl.nombre) + sufijo;
+            nombre = nombre.length() > 24 ? nombre.substring(0, 24) : nombre;
+            clave2 = clavePlano(nombre);
+            if (dd.planos.containsKey(clave2)) return otro.getGameProfile().getName() + " ya tiene un plano con ese nombre.";
+        }
+        Datos.Plano copia = new Datos.Plano();
+        copia.nombre = nombre; copia.fecha = System.currentTimeMillis();
+        copia.decor = new LinkedHashMap<>(pl.decor); copia.quitados = new LinkedHashSet<>(pl.quitados); copia.vitrina = new LinkedHashMap<>(pl.vitrina);
+        dd.planos.put(clave2, copia);
+        EmiCafe.datos.guardar(otro.getUuid());
+        otro.sendMessage(Msg.say(autor + " te ha dado el plano «" + nombre + "». Lo tienes en la caja registradora → CONSTRUCCIÓN → PLANOS. Para ponerlo necesitas tener los objetos que usa (si faltan, te lo dirá)."), false);
+        return null;
+    }
+
+    /**
+     * Compra un cafe tematico: cambia lo construido por el edificio del tema (con tus estaciones y mesas en su sitio), entrega los bloques que te falten y cobra las monedas. Lo de antes
+     * queda en una copia automatica (pestaña PLANOS). Devuelve el error, o null.
+     */
+    String comprarTematico(ServerPlayerEntity p, String id) {
+        if (!c.esDuenio(p)) return "Solo el dueño compra cafés temáticos.";
+        Datos.Jugador d = d();
+        if (!d.libre) return "Los cafés temáticos solo funcionan en los cafés de parcela libre.";
+        Tematicos.Tema t = Tematicos.tema(id);
+        if (t == null) return "Ese café temático no existe.";
+        if (c.estado != Cafe.Estado.PREPARANDO) return "Cierra el café antes de cambiarlo por uno temático.";
+        if (c.trabajadores() > 1) return "Despide primero a tus invitados.";
+        if (d.monedas < t.precio()) return "Te faltan " + (t.precio() - d.monedas) + " monedas.";
+        sincronizar();
+        Diseno nuevo = Tematicos.construir(c, t);
+        Diseno ahora = tomar();
+        Map<String, Integer> act = contar(d.decor), nue = contar(nuevo.decor());
+        Set<String> claves = new LinkedHashSet<>(act.keySet());
+        claves.addAll(nue.keySet());
+        for (String k : claves) {                                                  // la compra trae los bloques que falten (menos lo basico, que ya se repone solo)
+            int falta = -(stock(k) + act.getOrDefault(k, 0) - nue.getOrDefault(k, 0));
+            if (falta > 0 && !esBasico(k)) sumarStock(k, falta);
+        }
+        String err = reemplazar(nuevo, p);
+        if (err != null) return err;
+        d.monedas -= t.precio();
+        guardarAuto(ahora);                                                        // la copia de lo de antes
+        pilaDeshacer.clear();
+        EmiCafe.datos.guardar(c.duenio);
+        return null;
+    }
+
     String borrarPlano(ServerPlayerEntity p, String clave) {
         if (!c.esDuenio(p)) return "Solo el dueño borra planos.";
         if (d().planos.remove(clavePlano(clave)) == null) return "Ese plano no existe.";
@@ -1089,20 +1177,43 @@ final class Obras {
     /** Cuantos objetos de la ultima compra no cupieron en el inventario y se quedaron en el baul (para avisar al jugador). */
     int sobrante;
 
+    /** Si el articulo es una copia extra de una estacion de cocina, cual (null = no lo es). */
+    static Estacion estacionExtra(Decor.Articulo art) {
+        if (art == null || !art.id().startsWith("est_")) return null;
+        Block b = Registries.BLOCK.get(Identifier.of(art.item()));
+        Estacion e = Estacion.de(b);
+        return e != null && e.x >= 0 && e.tipo != Estacion.Tipo.MESA ? e : null;
+    }
+
+    /** Lo que cuesta ahora un articulo: el precio de la lista, salvo las copias extra de estaciones, que cuestan mas cuantas mas tengas (precio base × copias que ya tienes). */
+    int precioDe(Decor.Articulo art) {
+        Estacion e = estacionExtra(art);
+        return e == null ? art.precio() : art.precio() * Math.max(1, copiasTiene(e));
+    }
+
     /** Compra un articulo de la tienda de bloques: va al almacen (y al inventario si se esta construyendo). Devuelve el error, o null. */
     String comprar(ServerPlayerEntity p, Decor.Articulo art) {
         sobrante = 0;
         if (art == null || !c.esDuenio(p)) return "Solo el dueño compra.";
         if (c.estado != Cafe.Estado.PREPARANDO) return "Solo se compra con el café cerrado.";
         Datos.Jugador d = c.dj(p);
+        Estacion extra = estacionExtra(art);
+        int precio = precioDe(art);
+        if (extra != null) {
+            if (!d.libre) return "Las copias extra de estaciones solo se compran en las parcelas libres.";
+            sincronizar();
+            int tiene = copiasTiene(extra);
+            if (tiene < 1) return "Aún no tienes «" + extra.nombre + "»: aprende un plato que la use.";
+            if (tiene >= c.maxCopias()) return "Tu local de nivel " + c.nivelLocal() + " solo admite " + c.maxCopias() + " de «" + extra.nombre + "» (con más nivel caben más).";
+        }
         if (art.item().equals(idItem(CafeBlocks.MESA)) || art.item().startsWith("emi_cafe:mesa_")) {
             int tiene = (d.libre ? mesas().size() : c.mesasPos().size()) + stockMesas();
             if (tiene >= c.numMesas()) return "No caben más mesas en tu café (" + c.numMesas() + "): mejora «Mesas» o amplía el local.";
         }
-        if (d.monedas < art.precio()) return "Te faltan " + (art.precio() - d.monedas) + " monedas.";
+        if (d.monedas < precio) return "Te faltan " + (precio - d.monedas) + " monedas.";
         Item it = art.objeto();
         if (it == null || it == net.minecraft.item.Items.AIR) return "Ese artículo ya no existe.";
-        d.monedas -= art.precio();
+        d.monedas -= precio;
         sumarStock(art.item(), art.cantidad());
         if (c.construyendo && !baulSet().contains(art.item())) {
             ItemStack st = new ItemStack(it, art.cantidad());

@@ -55,6 +55,7 @@ public final class MenuPantalla extends Lienzo {
     // ------------------------------------------------------------ datos
     private record DecoC(String id, String item, String nombre, int cantidad, int precio, String grupo, int tienes, boolean fav) {}
     private record PlanoC(String clave, String nombre, boolean auto, String fecha, int bloques) {}
+    private record TemaC(String id, String nombre, String desc, int precio) {}
     private record BaulC(String item, int n, boolean fuera, int mano) {}
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
     private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi, int nivelLocal, String bloqueo) {}
@@ -91,10 +92,14 @@ public final class MenuPantalla extends Lienzo {
     private final List<BaulC> baul = new ArrayList<>();
     private int pagBaul;
     private boolean decoFav;                                                  // se ve la lista de favoritos
-    private int nFav, baulFuente, baulTotal, deshacerN, planosMax = 6;
+    private int nFav, baulFuente, baulGrupo, baulTotal, deshacerN, planosMax = 6;
+    private final List<String> baulGrupos = new ArrayList<>();
     private String baulBuscar = "";
     private final List<String> baulFuentes = new ArrayList<>();
     private final List<PlanoC> planos = new ArrayList<>();
+    private final List<TemaC> temas = new ArrayList<>();
+    private int planosSub;                                                    // 0 = mis planos, 1 = cafes tematicos
+    private String confirmaTema = "";                                         // id del tema que se va a comprar (segundo clic para confirmar)
     private String confirmaBorrar = "";                                       // clave del plano que se va a borrar (segundo clic para confirmar)
     private String tipItem = "", tipNombre = "", tipExtra = "";               // el objeto sobre el que esta el raton (vista ampliada)
     private boolean construyendo;
@@ -165,11 +170,16 @@ public final class MenuPantalla extends Lienzo {
         decoFav = o.has("decoFav") && o.get("decoFav").getAsBoolean(); nFav = o.has("nFav") ? o.get("nFav").getAsInt() : 0;
         baulFuentes.clear();
         if (o.has("baulFuentes")) for (JsonElement e : o.getAsJsonArray("baulFuentes")) baulFuentes.add(e.getAsString());
+        baulGrupos.clear();
+        if (o.has("baulGrupos")) for (JsonElement e : o.getAsJsonArray("baulGrupos")) baulGrupos.add(e.getAsString());
+        baulGrupo = o.has("baulGrupo") ? o.get("baulGrupo").getAsInt() : 0;
         baulFuente = o.has("baulFuente") ? o.get("baulFuente").getAsInt() : 0; baulBuscar = o.has("baulBuscar") ? o.get("baulBuscar").getAsString() : "";
         baulTotal = o.has("baulTotal") ? o.get("baulTotal").getAsInt() : 0; deshacerN = o.has("deshacer") ? o.get("deshacer").getAsInt() : 0;
         planos.clear();
         if (o.has("planos")) for (JsonElement e : o.getAsJsonArray("planos")) { JsonObject j = e.getAsJsonObject(); planos.add(new PlanoC(s(j, "clave"), s(j, "nombre"), j.get("auto").getAsBoolean(), s(j, "fecha"), j.get("bloques").getAsInt())); }
         planosMax = o.has("planosMax") ? o.get("planosMax").getAsInt() : 6;
+        temas.clear();
+        if (o.has("temas")) for (JsonElement e : o.getAsJsonArray("temas")) { JsonObject j = e.getAsJsonObject(); temas.add(new TemaC(s(j, "id"), s(j, "nombre"), s(j, "desc"), j.get("precio").getAsInt())); }
         baul.clear();
         if (o.has("baul")) for (JsonElement e : o.getAsJsonArray("baul")) { JsonObject j = e.getAsJsonObject(); baul.add(new BaulC(s(j, "item"), j.get("n").getAsInt(), j.get("fuera").getAsBoolean(), j.get("mano").getAsInt())); }
         libre = o.has("libre") && o.get("libre").getAsBoolean();
@@ -811,7 +821,11 @@ public final class MenuPantalla extends Lienzo {
 
     // ------------------------------------------------------------ el baul (todo lo que tienes guardado para construir, sin limite)
 
-    private int baulSelX() { return construyendo ? LX + 282 : LX; }
+    // posiciones de la fila de filtros del baul: [SACAR TODO] [GUARDAR TODO] [fuente] [categoria] [BUSCAR]
+    private static final int BSEL_W = 112, BBUSCAR_W = 76;
+    private int baulSelX() { return construyendo ? LX + 182 : LX; }
+    private int baulGrupoX() { return baulSelX() + BSEL_W + 4; }
+    private int baulBuscarX() { return baulGrupoX() + BSEL_W + 4; }
 
     private void baulTab(DrawContext g, int mx, int my) {
         texto(g, "BAÚL", LX, CY - 8, ORO, 1.2f);
@@ -822,12 +836,13 @@ public final class MenuPantalla extends Lienzo {
         pagBaul = Math.max(0, Math.min(pagBaul, total - 1));
         paginador(g, mx, my, LX + 528, CY + 4, pagBaul, total);
         if (construyendo) {
-            boton(g, LX, CY + 6, 120, 16, "SACAR TODO", 0xFF3A7A5A, true, dentro(mx, my, LX, CY + 6, 120, 16), 0.85f);
-            boton(g, LX + 126, CY + 6, 150, 16, "GUARDAR TODO EN EL BAÚL", 0xFF7A4AC0, true, dentro(mx, my, LX + 126, CY + 6, 150, 16), 0.8f);
+            boton(g, LX, CY + 6, 78, 16, "SACAR TODO", 0xFF3A7A5A, true, dentro(mx, my, LX, CY + 6, 78, 16), 0.8f);
+            boton(g, LX + 82, CY + 6, 96, 16, "GUARDAR TODO", 0xFF7A4AC0, true, dentro(mx, my, LX + 82, CY + 6, 96, 16), 0.8f);
         }
-        selector(g, mx, my, baulSelX(), CY + 6, 150, baulFuente < baulFuentes.size() ? baulFuentes.get(baulFuente) : "Todo");
+        selector(g, mx, my, baulSelX(), CY + 6, BSEL_W, baulFuente < baulFuentes.size() ? baulFuentes.get(baulFuente) : "Todo");
+        selector(g, mx, my, baulGrupoX(), CY + 6, BSEL_W, baulGrupo < baulGrupos.size() ? baulGrupos.get(baulGrupo) : "Todas");
         boolean filtrando = !baulBuscar.isEmpty();
-        boton(g, baulSelX() + 156, CY + 6, 80, 16, filtrando ? "✖ «" + recortar(baulBuscar, 8) + "»" : "BUSCAR…", filtrando ? 0xFF8A3A3A : 0xFF3A7A5A, true, dentro(mx, my, baulSelX() + 156, CY + 6, 80, 16), 0.75f);
+        boton(g, baulBuscarX(), CY + 6, BBUSCAR_W, 16, filtrando ? "✖ «" + recortar(baulBuscar, 6) + "»" : "BUSCAR…", filtrando ? 0xFF8A3A3A : 0xFF3A7A5A, true, dentro(mx, my, baulBuscarX(), CY + 6, BBUSCAR_W, 16), 0.75f);
         if (baul.isEmpty()) { parrafo(g, baulTotal > 0 ? "Nada coincide con el filtro." : "Tu baúl está vacío. Compra bloques y muebles en la pestaña DECORAR: se guardan aquí.", LX, DY + 10, 400, GRIS, 0.9f); return; }
         for (int n = 0; n < DPOR_PAG; n++) {
             int i = pagBaul * DPOR_PAG + n;
@@ -849,15 +864,17 @@ public final class MenuPantalla extends Lienzo {
         int total = paginas(baul.size(), DPOR_PAG);
         int d = clicPaginador(mx, my, LX + 528, CY + 4);
         if (d != 0) { pagBaul = Math.max(0, Math.min(total - 1, pagBaul + d)); return; }
-        int f = clicSelector(mx, my, baulSelX(), CY + 6, 150);
+        int f = clicSelector(mx, my, baulSelX(), CY + 6, BSEL_W);
         if (f != 0) { pagBaul = 0; enviar("baulFiltro", String.valueOf(f), ""); return; }
-        if (dentro(mx, my, baulSelX() + 156, CY + 6, 80, 16)) {
+        int gg = clicSelector(mx, my, baulGrupoX(), CY + 6, BSEL_W);
+        if (gg != 0) { pagBaul = 0; enviar("baulGrupo", String.valueOf(gg), ""); return; }
+        if (dentro(mx, my, baulBuscarX(), CY + 6, BBUSCAR_W, 16)) {
             if (baulBuscar.isEmpty()) pedirTexto("/cafe baul "); else { pagBaul = 0; enviar("baulBuscar", "", ""); }
             return;
         }
         if (!construyendo) return;
-        if (dentro(mx, my, LX, CY + 6, 120, 16)) { enviar("baulSacarTodo", "", ""); return; }
-        if (dentro(mx, my, LX + 126, CY + 6, 150, 16)) { enviar("baulGuardarTodo", "", ""); return; }
+        if (dentro(mx, my, LX, CY + 6, 78, 16)) { enviar("baulSacarTodo", "", ""); return; }
+        if (dentro(mx, my, LX + 82, CY + 6, 96, 16)) { enviar("baulGuardarTodo", "", ""); return; }
         for (int n = 0; n < DPOR_PAG; n++) {
             int i = pagBaul * DPOR_PAG + n;
             if (i >= baul.size()) break;
@@ -873,9 +890,12 @@ public final class MenuPantalla extends Lienzo {
 
     private void planosTab(DrawContext g, int mx, int my) {
         texto(g, "PLANOS", LX, CY - 8, ORO, 1.2f);
-        texto(g, "Guarda cómo tienes decorado el café para recuperarlo, probar otro diseño o volver atrás.", LX + 70, CY - 5, GRIS, 0.75f);
+        texto(g, "Guarda tu diseño y recupéralo cuando quieras.", LX + 70, CY - 5, GRIS, 0.75f);
         if (!duenio) { parrafo(g, "Solo el dueño tiene planos.", LX, CY + 14, 400, GRIS, 0.9f); return; }
         if (!libre) { parrafo(g, "Los planos solo funcionan en los cafés de parcela libre (los nuevos).", LX, CY + 14, 400, GRIS, 0.9f); return; }
+        boton(g, LX + 372, CY - 12, 100, 14, "MIS PLANOS", planosSub == 0 ? 0xFF7A4AC0 : 0xFF4A4A6A, true, dentro(mx, my, LX + 372, CY - 12, 100, 14), 0.75f);
+        boton(g, LX + 476, CY - 12, 124, 14, "CAFÉS TEMÁTICOS", planosSub == 1 ? 0xFF7A4AC0 : 0xFF4A4A6A, true, dentro(mx, my, LX + 476, CY - 12, 124, 14), 0.75f);
+        if (planosSub == 1) { temasTab(g, mx, my); return; }
         long manuales = planos.stream().filter(pl -> !pl.auto()).count();
         boolean cerrado = estado.equals("preparando");
         boton(g, LX, CY + 6, 170, 16, "GUARDAR PLANO NUEVO… (" + manuales + "/" + planosMax + ")", 0xFF3A7A5A, manuales < planosMax, manuales < planosMax && dentro(mx, my, LX, CY + 6, 170, 16), 0.78f);
@@ -886,24 +906,61 @@ public final class MenuPantalla extends Lienzo {
             int y = CY + 28 + i * (PL_H + 2);
             caja(g, LX, y, 600, PL_H, FONDO, pl.auto() ? BORDE : 0xFF6A8A5A);
             texto(g, pl.auto() ? "⟲ " + pl.nombre() : "▣ " + pl.nombre(), LX + 8, y + 7, BLANCO, 0.9f);
-            texto(g, pl.fecha() + " · " + pl.bloques() + " bloques", LX + 170, y + 8, SUAVE, 0.7f);
-            boton(g, LX + 330, y + 3, 90, 16, "RESTAURAR", 0xFF3A7A5A, cerrado, cerrado && dentro(mx, my, LX + 330, y + 3, 90, 16), 0.8f);
-            if (!pl.auto()) boton(g, LX + 426, y + 3, 100, 16, "SOBRESCRIBIR", 0xFF7A4AC0, true, dentro(mx, my, LX + 426, y + 3, 100, 16), 0.75f);
+            texto(g, pl.fecha() + " · " + pl.bloques() + " bloques", LX + 130, y + 8, SUAVE, 0.65f);
+            boton(g, LX + 262, y + 3, 78, 16, "RESTAURAR", 0xFF3A7A5A, cerrado, cerrado && dentro(mx, my, LX + 262, y + 3, 78, 16), 0.8f);
+            if (!pl.auto()) boton(g, LX + 344, y + 3, 92, 16, "SOBRESCRIBIR", 0xFF7A4AC0, true, dentro(mx, my, LX + 344, y + 3, 92, 16), 0.72f);
+            if (!pl.auto()) boton(g, LX + 440, y + 3, 76, 16, "COMPARTIR", 0xFF3A6AA0, true, dentro(mx, my, LX + 440, y + 3, 76, 16), 0.75f);
             boolean conf = confirmaBorrar.equals(pl.clave());
-            boton(g, LX + 532, y + 3, 62, 16, conf ? "¿SEGURO?" : "BORRAR", 0xFF8A3A3A, true, dentro(mx, my, LX + 532, y + 3, 62, 16), 0.75f);
+            boton(g, LX + 520, y + 3, 74, 16, conf ? "¿SEGURO?" : "BORRAR", 0xFF8A3A3A, true, dentro(mx, my, LX + 520, y + 3, 74, 16), 0.75f);
         }
+    }
+
+    private static final int TEMA_H = 46;
+
+    private void temasTab(DrawContext g, int mx, int my) {
+        boolean cerrado = estado.equals("preparando");
+        parrafo(g, "Cambia todo tu café por un edificio ya construido y decorado. Tus estaciones y mesas se colocan solas, los bloques que falten van incluidos en el precio y lo de antes queda en una copia automática (MIS PLANOS).", LX, CY + 6, 590, SUAVE, 0.72f);
+        if (!cerrado) texto(g, "Cierra el café para comprar uno.", LX, CY + 30, 0xFFE0A050, 0.75f);
+        for (int i = 0; i < temas.size() && i < 4; i++) {
+            TemaC t = temas.get(i);
+            int y = CY + 42 + i * (TEMA_H + 3);
+            caja(g, LX, y, 600, TEMA_H, FONDO, 0xFF6A8A5A);
+            texto(g, t.nombre(), LX + 10, y + 7, ORO, 1.0f);
+            parrafo(g, t.desc(), LX + 10, y + 21, 390, GRIS, 0.72f);
+            boolean puede = cerrado && monedas >= t.precio();
+            boolean conf = confirmaTema.equals(t.id());
+            boton(g, LX + 440, y + 8, 152, 28, conf ? "¿SEGURO? " + t.precio() + " monedas" : "COMPRAR · " + t.precio(), conf ? 0xFFB0602A : 0xFF3A7A5A, puede, puede && dentro(mx, my, LX + 440, y + 8, 152, 28), 0.82f);
+        }
+    }
+
+    private void clicTemas(int mx, int my) {
+        boolean cerrado = estado.equals("preparando");
+        for (int i = 0; i < temas.size() && i < 4; i++) {
+            TemaC t = temas.get(i);
+            int y = CY + 42 + i * (TEMA_H + 3);
+            if (cerrado && monedas >= t.precio() && dentro(mx, my, LX + 440, y + 8, 152, 28)) {
+                if (confirmaTema.equals(t.id())) { confirmaTema = ""; enviar("temaComprar", t.id(), ""); }
+                else confirmaTema = t.id();
+                return;
+            }
+        }
+        confirmaTema = "";
     }
 
     private void clicPlanos(int mx, int my) {
         if (!duenio || !libre) return;
+        if (dentro(mx, my, LX + 372, CY - 12, 100, 14)) { planosSub = 0; confirmaTema = ""; return; }
+        if (dentro(mx, my, LX + 476, CY - 12, 124, 14)) { planosSub = 1; confirmaBorrar = ""; return; }
+        if (planosSub == 1) { clicTemas(mx, my); return; }
         long manuales = planos.stream().filter(pl -> !pl.auto()).count();
         if (manuales < planosMax && dentro(mx, my, LX, CY + 6, 170, 16)) { pedirTexto("/cafe plano guardar "); return; }
         for (int i = 0; i < planos.size() && i < 9; i++) {
             PlanoC pl = planos.get(i);
             int y = CY + 28 + i * (PL_H + 2);
-            if (estado.equals("preparando") && dentro(mx, my, LX + 330, y + 3, 90, 16)) { confirmaBorrar = ""; enviar("planoRestaurar", pl.clave(), ""); return; }
-            if (!pl.auto() && dentro(mx, my, LX + 426, y + 3, 100, 16)) { confirmaBorrar = ""; enviar("planoSobrescribir", pl.clave(), ""); return; }
-            if (dentro(mx, my, LX + 532, y + 3, 62, 16)) {
+            if (estado.equals("preparando") && dentro(mx, my, LX + 262, y + 3, 78, 16)) { confirmaBorrar = ""; enviar("planoRestaurar", pl.clave(), ""); return; }
+            if (!pl.auto() && dentro(mx, my, LX + 344, y + 3, 92, 16)) { confirmaBorrar = ""; enviar("planoSobrescribir", pl.clave(), ""); return; }
+            if (!pl.auto() && dentro(mx, my, LX + 440, y + 3, 76, 16)) { confirmaBorrar = ""; enviar("planoElegir", pl.clave(), ""); pedirTexto("/cafe plano compartir "); return; }
+            if (dentro(mx, my, LX + 520, y + 3, 74, 16)) {
                 if (confirmaBorrar.equals(pl.clave())) { confirmaBorrar = ""; enviar("planoBorrar", pl.clave(), ""); }
                 else confirmaBorrar = pl.clave();
                 return;
@@ -1091,7 +1148,7 @@ public final class MenuPantalla extends Lienzo {
 
     private void despensaTab(DrawContext g, int mx, int my) {
         texto(g, "DESPENSA", LX, CY - 8, ORO, 1.1f);
-        texto(g, "Lo que cosechan tus michigranjeros. Al servir un plato se gasta un poco de cada ingrediente (el mejor) y el plato paga más.", LX + 70, CY - 6, SUAVE, 0.68f);
+        texto(g, "Cosecha de tus michigranjeros. Pon cada despensa en tu café (BAÚL): sin ella puesta no se usa.", LX + 70, CY - 6, SUAVE, 0.68f);
         if (despensa.isEmpty()) {
             parrafo(g, "La despensa está vacía. Compra un huerto o un corral en las pestañas HUERTOS y GANADO: cuando esté listo, su michigranjero traerá la cosecha aquí.", LX, CY + 14, 340, GRIS, 0.9f);
         }

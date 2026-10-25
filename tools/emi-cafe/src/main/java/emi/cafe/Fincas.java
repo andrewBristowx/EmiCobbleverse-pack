@@ -377,6 +377,7 @@ final class Fincas {
         f.tipo = cult.id; f.slot = slot; f.nivel = 1; f.desde = System.currentTimeMillis();
         f.granjero.rol = "granjero"; f.granjero.nombre = Personal.nombreNuevo(todosLosNombres(d)); f.granjero.aspecto = 6; f.granjero.nivel = 1;
         d.granja.add(f);
+        c.obras.sincronizar();                                                                   // la despensa de ese cultivo llega al baul
         EmiCafe.datos.guardar(c.duenio);
         if (vivos.isEmpty()) terreno();                                                         // la primera finca crea el terreno de detras del muro (no se rehace con las demas)
         puerta(f);

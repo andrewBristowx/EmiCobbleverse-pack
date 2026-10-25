@@ -63,6 +63,21 @@ final class Cmds {
                             if (err == null) p.sendMessage(Msg.say("Plano restaurado."), false);
                             return err;
                         }))))
+                        .then(CommandManager.literal("compartir").then(CommandManager.argument("jugador", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            String j = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador");
+                            String err = cf.obras.compartirPlano(p, Menus.vista(p).planoElegido, j);
+                            if (err == null) p.sendMessage(Msg.say("Plano enviado a " + j + "."), false);
+                            return err;
+                        })).then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
+                            String j = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "jugador");
+                            String err = cf.obras.compartirPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"), j);
+                            if (err == null) p.sendMessage(Msg.say("Plano enviado a " + j + "."), false);
+                            return err;
+                        })))))
                         .then(CommandManager.literal("borrar").then(CommandManager.argument("nombre", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
