@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * La granja de un cafe en el mundo (0.24.0): los huertos y corrales al fondo de la parcela (9 x 9 bloques cada uno, ver {@link Granja}), el cultivo que se ve crecer, los animales y el
+ * La granja de un cafe en el mundo (0.24.0): los huertos y corrales detras del muro del fondo de la parcela (9 x 9 bloques cada uno, ver {@link Granja}), el cultivo que se ve crecer, los animales y el
  * michigranjero de cada uno, que cosecha cuando esta listo y lo deja en la despensa. Solo vive mientras alguien esta en el cafe; el tiempo de crecimiento cuenta con el reloj de pared
  * (crece aunque el dueño no este: al volver estara listo y los michigranjeros se ponen a cosechar).
  */
@@ -62,7 +62,35 @@ final class Fincas {
     /** Pone en el mundo todas las fincas del dueño (terreno, cultivo, animales y michigranjeros). */
     void construir() {
         quitar();
-        for (Datos.Finca f : d().granja) construirFinca(f);
+        if (d().granja.isEmpty()) return;
+        terreno();
+        for (Datos.Finca f : d().granja) { puerta(f); construirFinca(f); }
+    }
+
+    /**
+     * El terreno de detras del muro del fondo de la parcela (0.26.0): suelo de hierba de lado a lado, el camino de justo detras del muro, un muro propio al fondo y a los lados,
+     * y una puerta de 3 bloques en el muro de la parcela (y en el seto) delante de cada finca. El dueño no puede construir aqui: solo es de la granja.
+     */
+    private void terreno() {
+        for (int x = c.ox + Ciudad.X0; x <= c.ox + Ciudad.X1; x++) for (int z = Granja.Z_MURO; z <= Granja.Z_CAMINO; z++) {
+            boolean lado = x == c.ox + Ciudad.X0 || x == c.ox + Ciudad.X1;
+            poner(x, -1, z, "dirt");
+            poner(x, 0, z, z == Granja.Z_CAMINO ? "coarse_dirt" : "grass_block");
+            for (int y = 1; y <= 9; y++) poner(x, y, z, "air");
+            if (z == Granja.Z_MURO || lado) { poner(x, 1, z, "stone_bricks"); poner(x, 2, z, "stone_brick_slab[type=top]"); }
+        }
+    }
+
+    /** La puerta de 3 bloques que une el jardin con la finca: abre el muro de la parcela y el seto, y pone un farolillo a cada lado. */
+    private void puerta(Datos.Finca f) {
+        int ax = ax(f);
+        for (int dx = 3; dx <= 5; dx++) {
+            poner(ax + dx, 1, Local.Z_ATRAS, "air"); poner(ax + dx, 2, Local.Z_ATRAS, "air");
+            poner(ax + dx, 1, Local.Z_ATRAS + 1, "air");
+            poner(ax + dx, 0, Local.Z_ATRAS, "coarse_dirt");
+        }
+        poner(ax + 2, 3, Local.Z_ATRAS, "lantern[hanging=false]");
+        poner(ax + 6, 3, Local.Z_ATRAS, "lantern[hanging=false]");
     }
 
     /** Quita lo que se mueve (animales, michigranjeros y rotulos); el terreno se queda. */
@@ -108,7 +136,7 @@ final class Fincas {
         boolean arrozal = v.bloque != null && Registries.BLOCK.getId(v.bloque).getPath().equals("rice");
         if (cult == Granja.Cultivo.CACAO) {                                                      // troncos de jungla con cacao pegado por los cuatro lados, a dos alturas
             for (int dx = 1; dx <= 7; dx++) for (int z = Granja.Z0 + 1; z < Granja.Z1; z++) poner(ax + dx, 0, z, "grass_block");
-            for (int px : new int[]{2, 6}) for (int pz : new int[]{-9, -6}) {
+            for (int px : new int[]{2, 6}) for (int pz : new int[]{Granja.Z0 + 2, Granja.Z0 + 5}) {
                 poner(ax + px, 1, pz, "jungle_log"); poner(ax + px, 2, pz, "jungle_log"); poner(ax + px, 3, pz, "jungle_leaves[persistent=true]");
                 for (int dy = 1; dy <= 2; dy++) for (Direction dir : Direction.Type.HORIZONTAL)
                     v.cultivos.add(new Celda(new BlockPos(ax + px - dir.getOffsetX(), Local.Y + dy, pz - dir.getOffsetZ()), dir));      // el tronco queda en la direccion «dir» desde el cacao
@@ -246,13 +274,14 @@ final class Fincas {
         Runnable fin = () -> entregar(v);
         a.paso(ax + 4.5, z1 + 0.5, 4, null, null, ax + 4.5, z1 - 5);                                  // entra por el hueco de la valla
         if (v.cult.tipo == Granja.Tipo.HUERTO) {
-            double[][] paradas = {{2.5, -5.5}, {2.5, -9.0}, {6.5, -9.0}, {6.5, -5.5}};
+            double zc = Granja.Z0 + 5.5, za = Granja.Z0 + 2.0;                                               // las dos filas de cultivo que recorre
+            double[][] paradas = {{2.5, zc}, {2.5, za}, {6.5, za}, {6.5, zc}};
             for (int k = 0; k < paradas.length; k++) {
                 final int q = k;
                 a.paso(ax + paradas[k][0], paradas[k][1], a.t(36), () -> cosechando(a), () -> recoger(v, q), ax + paradas[k][0] + (k < 2 ? 1 : -1), paradas[k][1]);
             }
         } else {
-            a.paso(ax + 4.5, -7.0, a.t(80), () -> ordenando(a, v), null, ax + 4.5, -9.0);
+            a.paso(ax + 4.5, Granja.Z0 + 4.0, a.t(80), () -> ordenando(a, v), null, ax + 4.5, Granja.Z0 + 2.0);
         }
         a.paso(ax + 4.5, z1 + 0.5, 4, null, () -> a.llevar(c.w, CafeItems.id(v.cult.ingrediente)), hx, hz + 5);
         a.paso(hx, hz, a.t(14), null, fin, hx, hz + 5);
@@ -273,7 +302,7 @@ final class Fincas {
         IntProperty age = v.bloque == null ? null : v.bloque.getStateManager().getProperty("age") instanceof IntProperty ip ? ip : null;
         int ax = ax(v.f);
         for (Celda ce : v.cultivos) {
-            boolean izq = ce.pos().getX() - ax < 4, atras = ce.pos().getZ() < -7;
+            boolean izq = ce.pos().getX() - ax < 4, atras = ce.pos().getZ() < Granja.Z0 + 4;
             boolean en = switch (cuarto) { case 0 -> izq && !atras; case 1 -> izq && atras; case 2 -> !izq && atras; default -> !izq && !atras; };
             if (en && v.bloque != null) ponerCultivo(v, ce, age, 0);
         }
@@ -328,15 +357,6 @@ final class Fincas {
         if (d.monedas < cult.precio) return "Te faltan monedas (" + cult.precio + ").";
         int slot = Granja.sitioLibre(d, max);
         if (slot < 0) return "No queda sitio en la granja.";
-        int x0 = Granja.x0(slot);
-        for (String k : d.decor.keySet()) {                                         // el terreno de atras tiene que estar libre de lo que el dueño construyo
-            String[] a = k.split(",");
-            try {
-                int rx = Integer.parseInt(a[0]), rz = Integer.parseInt(a[2]);
-                if (rx >= x0 && rx < x0 + Granja.ANCHO && rz >= Granja.Z0 && rz <= Granja.Z1)
-                    return "El terreno del fondo (x " + x0 + " a " + (x0 + Granja.ANCHO - 1) + ", z " + Granja.Z0 + " a " + Granja.Z1 + " del local) tiene construcciones tuyas: quítalas para hacer sitio.";
-            } catch (Exception e) { /* clave rara: se salta */ }
-        }
         d.monedas -= cult.precio;
         crear(p, d, cult, slot);
         return null;
@@ -358,6 +378,8 @@ final class Fincas {
         f.granjero.rol = "granjero"; f.granjero.nombre = Personal.nombreNuevo(todosLosNombres(d)); f.granjero.aspecto = 6; f.granjero.nivel = 1;
         d.granja.add(f);
         EmiCafe.datos.guardar(c.duenio);
+        if (vivos.isEmpty()) terreno();                                                         // la primera finca crea el terreno de detras del muro (no se rehace con las demas)
+        puerta(f);
         construirFinca(f);
         p.sendMessage(Msg.say("¡Compraste «" + cult.nombre + "»! Viene con su michigranjero " + f.granjero.nombre + ", que cosecha solo y lo deja en la despensa. Ponle nombre en la pestaña GRANJA (botón NOMBRE) o con /cafe granja nombre " + (slot + 1) + " <nombre>."), false);
         Sonidos.jugador(p, "subir", 1f, 1.1f);

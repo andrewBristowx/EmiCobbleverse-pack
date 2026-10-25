@@ -373,7 +373,6 @@ final class Obras {
         if (ry < 0 || ry > 9) return false;
         if (rx < Ciudad.X0 + 1 || rx > Ciudad.X1 - 1 || rz < Local.Z_ATRAS + 2 || rz > 15) return false;
         if (rz >= 14 && rx >= 5 && rx <= 10) return false;                                                    // el camino de la puerta se queda libre
-        if (Granja.enHuella(d(), rx, rz)) return false;                                                       // los huertos y corrales de la granja
         if (!d().libre) {
             if (rz == 13 && rx >= 7 && rx <= 8 && ry >= 1 && ry <= 4) return false;                          // y la puerta
             if (rz == 14 && rx >= 7 && rx <= 8 && ry >= 5) return false;                                      // y el letrero que hay encima
