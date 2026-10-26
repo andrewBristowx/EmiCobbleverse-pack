@@ -726,6 +726,7 @@ final class Obras {
         BlockPos pos = pc.getBlockPos();
         if (!construible(pos)) { c.msg(p, "Ahí no se puede construir (solo en tu terreno hasta 9 bloques de alto; no el camino de los clientes, ni la calle, el parque o el seto)"); return ActionResult.FAIL; }
         if (esMesa && antigua && c.mesasPos().size() >= c.numMesas()) { c.msg(p, "No tienes más mesas: mejora el café para tener más"); return ActionResult.FAIL; }
+        if (esMesa && d.libre && mesas().size() >= c.numMesas()) { c.msg(p, "Ya tienes " + mesas().size() + " mesas colocadas, que es lo que admite tu café: quita una para poner esta o mejora «Mesas»"); return ActionResult.FAIL; }
         boolean cartel = bloque == CafeBlocks.CARTEL;
         BlockPos pos2 = pos.east();
         if (cartel && (!construible(pos2) || !c.w.getBlockState(pos2).isReplaceable())) { c.msg(p, "El cartel mide 2 bloques de ancho: necesita sitio libre a la derecha"); return ActionResult.FAIL; }
@@ -1213,8 +1214,8 @@ final class Obras {
             if (tiene >= c.maxCopias()) return "Tu local de nivel " + c.nivelLocal() + " solo admite " + c.maxCopias() + " de «" + extra.nombre + "» (con más nivel caben más).";
         }
         if (art.item().equals(idItem(CafeBlocks.MESA)) || art.item().startsWith("emi_cafe:mesa_")) {
-            int tiene = (d.libre ? mesas().size() : c.mesasPos().size()) + stockMesas();
-            if (tiene >= c.numMesas()) return "No caben más mesas en tu café (" + c.numMesas() + "): mejora «Mesas» o amplía el local.";
+            int puestas = d.libre ? mesas().size() : c.mesasPos().size();          // desde 0.33.1 solo cuentan las mesas COLOCADAS: las guardadas en el almacen no gastan el tope (se puede comprar un diseño para cambiar una mesa)
+            if (d.libre ? puestas >= c.numMesas() : puestas + stockMesas() >= c.numMesas()) return "Ya tienes " + puestas + " mesas colocadas, que es lo que admite tu café (" + c.numMesas() + "): mejora «Mesas» o amplía el local, o quita alguna.";
         }
         if (d.monedas < precio) return "Te faltan " + (precio - d.monedas) + " monedas.";
         Item it = art.objeto();
