@@ -34,11 +34,11 @@ final class Cliente {
             {"flareon", "jolteon", "leafeon"}};
 
     /** Una especie al azar de las que ya pueden venir a un local de ese nivel. */
-    static String elegirEspecie(Random rnd, int nivelLocal, java.util.Map<String, Integer> clientela) {
+    static String elegirEspecie(Random rnd, int nivelLocal, java.util.Map<String, Integer> clientela, Sabores.Region semana) {
         int n = Math.max(1, Math.min(POR_NIVEL.length, nivelLocal));
         List<String> todas = new ArrayList<>();
         for (int i = 0; i < n; i++) todas.addAll(java.util.Arrays.asList(POR_NIVEL[i]));
-        return Clientela.elegir(rnd, todas, clientela);          // las especies habituales y VIP vienen mas a menudo
+        return Clientela.elegir(rnd, todas, clientela, e -> Sabores.pesoRegion(semana, e));          // las especies habituales y VIP vienen mas a menudo
     }
     /** Especies cuyo modelo se ve mucho mas grande que su caja de colision (medido en el juego): se encogen para no pasar por encima de la mesa. */
     static final java.util.Map<String, Float> AJUSTE = java.util.Map.of("rattata", 0.58f, "slowpoke", 0.65f, "gatitoalien", 1.2f);
@@ -79,8 +79,9 @@ final class Cliente {
     /** El critico gastronomico (un Persian): pide el plato mas caro, paga el triple y da o quita reputacion. */
     static final String ESPECIE_CRITICO = "persian";
 
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora, boolean exigirRuta, java.util.Map<String, Integer> clientela) {
-        String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal, clientela);
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora, boolean exigirRuta, Cafe cafe) {
+        java.util.Map<String, Integer> clientela = cafe.dj().clientela;
+        String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal, clientela, cafe.region);
         try {
             PokemonEntity e = PokemonProperties.Companion.parse(especie + (esp != null ? " " + esp.aspecto : "") + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
             e.setAiDisabled(true);

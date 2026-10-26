@@ -11,6 +11,9 @@ final class Personal {
         MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 8),
         LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 6),
         CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 8),
+        /** Puestos de 0.32.0 sin tarea propia: su efecto vale solo por tenerlos contratados (y sube con su nivel). */
+        ANFITRION("anfitrion", "Anfitrión", "Recibe a los clientes con una sonrisa: aguantan más esperando (+6 % por anfitrión, más cuanto más nivel).", 900, 4, 3, 20, "emi_cafe:cartel", 3, 2),
+        CAJERO("cajero", "Cajero", "Cobra con simpatía: más propinas (+5 % por cajero, más cuanto más nivel).", 700, 5, 4, 20, "emi_cafe:caja_registradora", 7, 2),
         /** El michigranjero de un huerto o corral (0.24.0): viene con la finca, no se contrata (max 0) y no cuenta en el total. */
         GRANJERO("granjero", "Michigranjero", "Cuida un huerto o un corral y lleva la cosecha a la despensa.", 0, 5, 0, 20, "emi_cafe:icono_granjero", 6, 0);
 
@@ -23,6 +26,45 @@ final class Personal {
 
         static Rol de(String id) { for (Rol r : values()) if (r.id.equals(id)) return r; return null; }
     }
+
+    // ------------------------------------------------------------ efectos de los puestos nuevos, uniformes y felicidad (0.32.0)
+
+    /** Cuanta paciencia extra dan los anfitriones (fraccion: 0,06 = +6 %): cada uno da 5 % + 1 % por nivel. */
+    static double bonoPaciencia(java.util.List<Datos.Empleado> l) {
+        double b = 0;
+        for (Datos.Empleado e : l) if (Rol.ANFITRION.id.equals(e.rol)) b += (4 + nivel(e)) / 100.0;
+        return b;
+    }
+
+    /** Cuanta propina extra dan los cajeros: cada uno 4 % + 1 % por nivel. */
+    static double bonoPropina(java.util.List<Datos.Empleado> l) {
+        double b = 0;
+        for (Datos.Empleado e : l) if (Rol.CAJERO.id.equals(e.rol)) b += (3 + nivel(e)) / 100.0;
+        return b;
+    }
+
+    /** Uniforme: +2 % de pago por cada puesto con 2 o mas empleados que lleven todos el mismo aspecto, y +3 % mas si todo el personal (4 o mas) va igual. */
+    static int uniformePct(java.util.List<Datos.Empleado> l) {
+        int pct = 0;
+        for (Rol r : Rol.values()) {
+            if (r == Rol.GRANJERO) continue;
+            int n = 0, asp = -1; boolean igual = true;
+            for (Datos.Empleado e : l) if (r.id.equals(e.rol)) { n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
+            if (n >= 2 && igual) pct += 2;
+        }
+        int n = 0, asp = -1; boolean igual = true;
+        for (Datos.Empleado e : l) { n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
+        if (n >= 4 && igual) pct += 3;
+        return pct;
+    }
+
+    /** La felicidad de un empleado (0 a 100; 70 al contratarlo) y como se llama cada tramo. */
+    static final String[] ANIMOS = {"Agotado", "Normal", "Contento", "Radiante"};
+    static int animoNivel(int felicidad) { return felicidad < 30 ? 0 : felicidad < 60 ? 1 : felicidad < 85 ? 2 : 3; }
+    /** Cuanto cambia lo rapido que trabaja segun su humor: 0,90 / 1,00 / 1,05 / 1,12. */
+    static double animo(int felicidad) { return new double[]{0.90, 1.0, 1.05, 1.12}[animoNivel(felicidad)]; }
+    /** Lo que cuesta darle un premio (sube 25 puntos de felicidad). */
+    static int costePremio(Datos.Empleado e) { return 40 * nivel(e); }
 
     /** Cuantos empleados caben en total (la suma de lo que admite cada puesto); todos los contratados trabajan. */
     static int maxTotal() { int n = 0; for (Rol r : Rol.values()) n += r.max; return n; }

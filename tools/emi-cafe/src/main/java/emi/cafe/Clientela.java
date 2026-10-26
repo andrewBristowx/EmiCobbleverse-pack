@@ -40,11 +40,11 @@ final class Clientela {
     static int peso(int nivel) { return 2 + 2 * nivel; }
 
     /** Una especie al azar entre las {@code candidatas}, con mas peso las de mas nivel. */
-    static String elegir(Random rnd, java.util.List<String> candidatas, Map<String, Integer> clientela) {
+    static String elegir(Random rnd, java.util.List<String> candidatas, Map<String, Integer> clientela, java.util.function.ToIntFunction<String> extra) {
         int total = 0;
-        for (String s : candidatas) total += peso(nivel(clientela, s));
+        for (String s : candidatas) total += peso(nivel(clientela, s)) * extra.applyAsInt(s);
         int k = rnd.nextInt(Math.max(1, total));
-        for (String s : candidatas) { k -= peso(nivel(clientela, s)); if (k < 0) return s; }
+        for (String s : candidatas) { k -= peso(nivel(clientela, s)) * extra.applyAsInt(s); if (k < 0) return s; }
         return candidatas.get(candidatas.size() - 1);
     }
 }

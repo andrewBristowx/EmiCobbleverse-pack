@@ -273,6 +273,24 @@ final class Cmds {
                             if (cf.estado == Cafe.Estado.ABIERTO) cf.aplicarEvento(e); else { Cafe.eventoForzado = e; p.sendMessage(Msg.say("El evento saldrá la próxima vez que abras."), false); }
                             return null;
                         }))))
+                        .then(CommandManager.literal("region").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
+                            Cafe.regionForzada = id.equals("azar") ? null : Sabores.Region.de(id);
+                            if (!id.equals("azar") && Cafe.regionForzada == null) return "kanto, johto, hoenn, sinnoh o azar";
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null && cf.estado == Cafe.Estado.ABIERTO) cf.region = Cafe.regionForzada != null ? Cafe.regionForzada : Sabores.region(java.time.LocalDate.now());
+                            p.sendMessage(Msg.say("Región de la semana: " + (Cafe.regionForzada == null ? "la de esta semana" : Cafe.regionForzada.nombre)), false);
+                            return null;
+                        }))))
+                        .then(CommandManager.literal("temporada").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(c -> con(c, p -> {
+                            String id = com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id");
+                            Cafe.temporadaForzada = id.equals("azar") ? null : Sabores.Temporada.de(id);
+                            if (!id.equals("azar") && Cafe.temporadaForzada == null) return "ninguna, navidad, san_valentin, primavera, verano, cosecha o azar";
+                            Cafe cf = Cafes.de(p.getUuid());
+                            if (cf != null && cf.estado == Cafe.Estado.ABIERTO) cf.temporada = Cafe.temporadaForzada != null ? Cafe.temporadaForzada : Sabores.temporada(java.time.LocalDate.now());
+                            p.sendMessage(Msg.say("Temporada: " + (Cafe.temporadaForzada == null ? "la de hoy" : Cafe.temporadaForzada.nombre)), false);
+                            return null;
+                        }))))
                         .then(CommandManager.literal("rep").then(CommandManager.argument("n", IntegerArgumentType.integer(-100000, 100000)).executes(c -> con(c, p -> {
                             Cafe cf = Cafes.de(p.getUuid());
                             if (cf == null) return "Entra primero con /cafe entrar.";
