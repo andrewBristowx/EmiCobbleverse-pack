@@ -123,7 +123,7 @@ final class Cafe {
     /** Ticks entre un cliente y el siguiente (menos con mejor publicidad y con mas gente cocinando). */
     int intervalo() {
         double base = 20 * (16 - 3 * nivel(Recetas.Mejora.PUBLICIDAD)) / (1.0 + 0.5 * (trabajadores() - 1));
-        base *= Estilo.multLlegada(nivelEstilo()) * (evento == Evento.HORA_PUNTA ? 0.55 : 1.0);
+        base *= Estilo.multLlegada(nivelEstilo()) * (evento == Evento.HORA_PUNTA ? 0.55 : 1.0) * Resenas.factorLlegada(dj().resenas);
         return (int) base + rnd.nextInt(60);
     }
 
@@ -169,6 +169,20 @@ final class Cafe {
             despRot.put(p, Disp.texto(w, json, p.getX() + 0.5, p.getY() + 1.2, p.getZ() + 0.5, 0.6f, false));
             despTxt.put(p, txt);
         }
+        for (Estacion es : Estacion.values()) {                                      // existencias de las cajas de ingredientes
+            if (es.tipo != Estacion.Tipo.CAJA || es.ingrediente == null) continue;
+            for (BlockPos p : posesDe(es)) {
+                vivas.add(p);
+                int n = existencias(es.ingrediente);
+                String txt = n > 0 ? n + "/" + STOCK_MAX : "Vacía";
+                net.minecraft.entity.Entity e = despRot.get(p);
+                if (e != null && !e.isRemoved() && txt.equals(despTxt.get(p))) continue;
+                Disp.quitar(e);
+                String json = "{\"text\":\"" + txt + "\",\"color\":\"" + (n > 10 ? "green" : n > 0 ? "yellow" : "red") + "\",\"bold\":true}";
+                despRot.put(p, Disp.texto(w, json, p.getX() + 0.5, p.getY() + 1.55, p.getZ() + 0.5, 0.5f, false));
+                despTxt.put(p, txt);
+            }
+        }
         for (java.util.Iterator<Map.Entry<BlockPos, net.minecraft.entity.Entity>> it = despRot.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<BlockPos, net.minecraft.entity.Entity> en = it.next();
             if (!vivas.contains(en.getKey())) { Disp.quitar(en.getValue()); despTxt.remove(en.getKey()); it.remove(); }
@@ -176,6 +190,41 @@ final class Cafe {
     }
 
     private void quitarRotulosDespensas() { for (net.minecraft.entity.Entity e : despRot.values()) Disp.quitar(e); despRot.clear(); despTxt.clear(); }
+
+    // ------------------------------------------------------------ existencias de las cajas (0.33.0)
+
+    /** Unidades que caben en cada caja de ingredientes. */
+    static final int STOCK_MAX = 25;
+    /** Monedas que cuesta cada unidad que repone el proveedor (los ingredientes de la granja no pagan nada). */
+    static final int PRECIO_UNIDAD = 1;
+    /** Lo minimo que deja el proveedor aunque no haya monedas, para que nunca se bloquee el cafe. */
+    static final int STOCK_FIADO = 5;
+
+    int existencias(Item ing) { return dj().stock.getOrDefault(CafeItems.id(ing), STOCK_MAX); }
+
+    /** Gasta una unidad de la caja de ese ingrediente (solo en parcela libre). Con la caja vacia llega el proveedor, que cobra lo que repone. */
+    void gastarCaja(Item ing) {
+        Datos.Jugador d = dj();
+        if (!d.libre || ing == null) return;
+        String id = CafeItems.id(ing);
+        int n = d.stock.getOrDefault(id, STOCK_MAX);
+        if (n <= 0) n = reponerCaja(ing, d);
+        d.stock.put(id, n - 1);
+        actualizarDespensas();
+    }
+
+    /** El proveedor llena la caja: cobra {@link #PRECIO_UNIDAD} por unidad (si no llegan las monedas, fia {@link #STOCK_FIADO} unidades). */
+    private int reponerCaja(Item ing, Datos.Jugador d) {
+        int unidades = Math.min(STOCK_MAX, d.monedas / PRECIO_UNIDAD);
+        int coste = unidades * PRECIO_UNIDAD;
+        if (unidades < STOCK_FIADO) unidades = STOCK_FIADO;
+        d.monedas -= coste; d.gastoProveedor += coste;
+        final int u = unidades, c = coste;
+        aTodos(p -> Msg.actionBar(p, Text.literal("📦 Llega el proveedor: " + CafeItems.nombre(ing) + " ×" + u + (c > 0 ? " (−" + c + " monedas)" : " (a cuenta)")).formatted(Formatting.YELLOW)));
+        if (DEBUG) EmiCafe.LOG.info("[stock] el proveedor repone {} x{} por {} monedas", CafeItems.id(ing), u, c);
+        EmiCafe.datos.guardar(duenio);
+        return unidades;
+    }
 
     /** Cuantas copias de una misma estacion caben (una mas cada dos niveles de local). */
     int maxCopias() { return Local.maxCopias(nivelLocal()); }
@@ -776,6 +825,7 @@ final class Cafe {
                 final Item ingr = deGranja ? es.ingrediente : null;
                 Runnable alAcabar = ultima ? () -> a.llevar(w, CafeItems.id(plato)) : null;                  // al acabar la ultima, el plato queda en sus manos
                 if (ingr != null) { Runnable resto = alAcabar; alAcabar = () -> { tomarDeDespensa(a, c, ingr); if (resto != null) resto.run(); }; }
+                else if (es.tipo == Estacion.Tipo.CAJA && es.ingrediente != null) { Runnable resto = alAcabar; final Item deCaja = es.ingrediente; alAcabar = () -> { gastarCaja(deCaja); if (resto != null) resto.run(); }; }
                 a.paso(fin[0], fin[1], a.t(espera), () -> cocinando(a, proceso), alAcabar, b.getX() + 0.5, b.getZ() + 0.5);
                 f = fin;
             }
@@ -1022,8 +1072,25 @@ final class Cafe {
         Progreso.dar(this, dd, duenio, est);
     }
 
+    /** El cliente deja su resena (los visitantes de Twitch no). */
+    private void escribirResena(Cliente c, int estrellas, String plato) {
+        if (c.twitchNombre != null) return;
+        Datos.Jugador d = dj();
+        Resenas.Resena r = new Resenas.Resena();
+        r.esp = c.especie; r.est = c.critico ? Math.max(4, estrellas) : estrellas; r.plato = plato;
+        r.texto = c.critico && estrellas > 1 ? "Una experiencia memorable. Mis felicitaciones al chef." : Resenas.texto(estrellas, plato, rnd);
+        r.dia = System.currentTimeMillis() / 86_400_000L;
+        double antes = Resenas.media(d.resenas);
+        Resenas.anadir(d.resenas, r);
+        d.resenasTotal++;
+        if (r.est == 5 && antes < 4.5 && Resenas.media(d.resenas) >= 4.5 && d.resenas.size() >= Resenas.MIN_EFECTO)
+            aTodos(p -> p.sendMessage(Msg.say("⭐ ¡Tu café tiene fama de 4,5 estrellas o más! Los clientes llegan antes."), false));
+    }
+
     void alEnfadarse(Cliente c) {
         enfadados++;
+        if (c.grupo != null) alEnfadarseGrupo(c);
+        escribirResena(c, Resenas.ENFADADO, c.pedido != null ? CafeItems.nombre(c.pedido) : "");
         ganarRep(c.critico ? -10 : -3);
         aTodos(p -> Msg.actionBar(p, Text.literal("Un cliente se fue enfadado...").formatted(Formatting.RED)));
         sonido(c.e.getX(), c.e.getY(), c.e.getZ(), SoundEvents.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -1310,7 +1377,51 @@ final class Cafe {
             }
             if (!el.isEmpty() && forzarEspecial(m, el.get(rnd.nextInt(el.size())))) return;
         }
+        if (libres.size() >= 2 && nivelLocal() >= 3 && nivelRep() >= 2 && rnd.nextInt(100) < PROB_GRUPO && grupoNuevo(m, libres)) return;
         forzarCliente(m);
+    }
+
+    static final int PROB_GRUPO = Integer.getInteger("emi.cafe.grupo", 18);        // % de llegadas que son un grupo (solo con local nivel 3+ y reputacion 2+)
+
+    /**
+     * Llega un grupo de 2 o 3 clientes (0.33.0): se sientan en mesas cercanas y cada uno pide lo suyo. Si se sirve a todos sin que nadie se enfade, el grupo deja un bono; si uno se enfada,
+     * los demás se impacientan. Devuelve false si no se pudo crear un grupo (entonces llega un cliente normal).
+     */
+    boolean grupoNuevo(Mesa primera, List<Mesa> libres) {
+        List<Mesa> otras = new ArrayList<>(libres);
+        otras.remove(primera);
+        otras.sort(java.util.Comparator.comparingDouble(o -> o.bloque.getSquaredDistance(primera.bloque)));
+        int tam = Math.min(1 + otras.size(), rnd.nextInt(100) < 70 ? 2 : 3);
+        List<Cliente> hechos = new ArrayList<>();
+        Cliente c0 = crearNormal(primera);
+        if (c0 == null) return false;
+        hechos.add(c0);
+        for (int i = 0; i < tam - 1 && i < otras.size(); i++) { Cliente ci = crearNormal(otras.get(i)); if (ci != null) hechos.add(ci); }
+        if (hechos.size() < 2) return true;                                                // un grupo de uno es un cliente normal (ya esta creado)
+        Cliente.Grupo g = new Cliente.Grupo(hechos.size());
+        for (Cliente ci : hechos) ci.grupo = g;
+        if (DEBUG) EmiCafe.LOG.info("[grupo] grupo de {} en las mesas {}", hechos.size(), hechos.stream().map(x -> x.mesa.bloque.toShortString()).toList());
+        return true;
+    }
+
+    /** Un miembro de un grupo ha recibido su plato: si ya comieron todos y nadie se enfado, bono del grupo. */
+    private void alServirGrupo(Cliente c) {
+        Cliente.Grupo g = c.grupo;
+        g.servidos++;
+        if (g.servidos < g.tam || g.enfadados > 0) return;
+        int bono = 12 * g.tam + 5 * nivelRep();
+        Datos.Jugador dd = dj();
+        dd.monedas += bono; dd.monedasTotal += bono;
+        ganado += bono;
+        aTodos(p -> p.sendMessage(Msg.say("¡Grupo de " + g.tam + " encantado! Bono del grupo: +" + bono + " monedas."), false));
+        w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, c.e.getX(), c.e.getY() + 1.2, c.e.getZ(), 14, 0.5, 0.4, 0.5, 0.0);
+    }
+
+    /** Un miembro de un grupo se fue enfadado: los demas que aun esperan pierden casi toda su paciencia. */
+    private void alEnfadarseGrupo(Cliente c) {
+        Cliente.Grupo g = c.grupo;
+        g.enfadados++;
+        for (Cliente o : clientes) if (o != c && o.grupo == g) o.impacientar();
     }
 
     /** Crea ya un visitante especial en esa mesa (tambien lo usa el comando de pruebas). */
@@ -1359,12 +1470,15 @@ final class Cafe {
     }
 
     /** Crea un cliente ya (tambien lo usa el comando de pruebas). false si no hay mesa libre. */
-    boolean forzarCliente(Mesa m) {
+    boolean forzarCliente(Mesa m) { return crearNormal(m) != null; }
+
+    /** Crea un cliente normal en esa mesa y lo devuelve (null si no pudo entrar). */
+    Cliente crearNormal(Mesa m) {
         Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre, this);
-        if (c == null) return false;
+        if (c == null) return null;
         m.cliente = c;
         clientes.add(c);
-        return true;
+        return c;
     }
 
     boolean forzarCliente() {
@@ -1464,6 +1578,7 @@ final class Cafe {
             case CAJA -> {
                 if (carga != null) { msg(p, "Ya llevas algo en las manos"); return; }
                 manos.put(p.getUuid(), e.ingrediente);
+                gastarCaja(e.ingrediente);
                 sonido(x, y, z, SoundEvents.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             }
             case BASURA -> {
@@ -1670,6 +1785,8 @@ final class Cafe {
         platos--;
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
+        if (c.grupo != null) alServirGrupo(c);
+        escribirResena(c, Resenas.estrellas(pac, fav), pl != null ? pl.nombre() : CafeItems.nombre(carga));
         if (m.plato != null) Disp.quitar(m.plato);
         m.plato = Disp.emplatado(w, CafeItems.id(carga), m.bloque.getX() + 0.5, m.bloque.getY() + 1.3, m.bloque.getZ() + 0.5, 0.6f, true);       // la comida llega emplatada
         Datos.Jugador d = dj(p);

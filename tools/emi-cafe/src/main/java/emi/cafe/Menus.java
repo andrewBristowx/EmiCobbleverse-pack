@@ -410,6 +410,20 @@ final class Menus {
             clientela.add(e);
         }
         o.add("clientela", clientela);
+        JsonObject rs = new JsonObject();                              // resenas de los clientes (0.33.0)
+        int[] dist = new int[5];
+        JsonArray listaRes = new JsonArray();
+        for (Resenas.Resena r : dd.resenas) {
+            dist[Math.max(1, Math.min(5, r.est)) - 1]++;
+            JsonObject e = new JsonObject();
+            e.addProperty("esp", r.esp.isEmpty() ? "" : r.esp.substring(0, 1).toUpperCase() + r.esp.substring(1)); e.addProperty("est", r.est); e.addProperty("plato", r.plato); e.addProperty("texto", r.texto);
+            listaRes.add(e);
+        }
+        rs.addProperty("media", Resenas.media(dd.resenas)); rs.addProperty("n", dd.resenas.size()); rs.addProperty("total", dd.resenasTotal); rs.addProperty("efecto", Resenas.efectoTexto(dd.resenas));
+        rs.addProperty("proveedor", dd.gastoProveedor);
+        JsonArray dj = new JsonArray(); for (int x : dist) dj.add(x);
+        rs.add("dist", dj); rs.add("lista", listaRes);
+        o.add("resenas", rs);
 
         if (conResumen) {
             JsonObject r = new JsonObject();

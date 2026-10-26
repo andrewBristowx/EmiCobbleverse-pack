@@ -68,6 +68,9 @@ final class Cliente {
     boolean critico;                         // el critico gastronomico (ver Cafe.forzarCritico)
     java.util.Map<Item, Integer> calidades;  // ingredientes de la granja que el chef ya saco de la despensa para su plato (ingrediente -> calidad); null = nadie ha cocinado aun
     int nivelClientela;                      // 0 = cliente nuevo; 1-3 = habitual, fiel o VIP de su especie (ver Clientela)
+    /** Los clientes que llegaron juntos (0.33.0). */
+    static final class Grupo { final int tam; int servidos, enfadados; Grupo(int tam) { this.tam = tam; } }
+    Grupo grupo;
     boolean favorito;                        // pide el plato que mas le gusta a su especie (paga extra)
     /** Un espectador de Twitch que pidio con !cafeteria: su nombre, el plato que escribio (null = cliente normal) y su mensaje (puede estar vacio). */
     String twitchNombre, twitchMsg;
@@ -130,6 +133,9 @@ final class Cliente {
             return null;
         }
     }
+
+    /** Un compañero de grupo se fue enfadado: me queda un tercio de paciencia como mucho. */
+    void impacientar() { if (fase == Fase.ESPERANDO) paciencia = Math.min(paciencia, Math.max(40, pacienciaMax / 3)); }
 
     boolean fuera() { return e.isRemoved(); }
 
@@ -234,8 +240,9 @@ final class Cliente {
         }
         else if (esp != null) titulo = Disp.texto(w, "{\"text\":\"★ " + esp.michi + " ★\",\"color\":\"gold\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
         else if (critico) titulo = Disp.texto(w, "{\"text\":\"★ Crítico gastronómico ★\",\"color\":\"aqua\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
-        else if (nivelClientela > 0 || favorito) {
-            String t = nivelClientela > 0 ? Clientela.ICONOS[nivelClientela] + " " + Clientela.NOMBRES[nivelClientela] + (favorito ? " · ♥ ¡Su favorito!" : "") : "♥ ¡Su favorito!";
+        else if (nivelClientela > 0 || favorito || grupo != null) {
+            String t = (grupo != null ? "👥 Grupo de " + grupo.tam + (nivelClientela > 0 || favorito ? " · " : "") : "")
+                    + (nivelClientela > 0 ? Clientela.ICONOS[nivelClientela] + " " + Clientela.NOMBRES[nivelClientela] + (favorito ? " · ♥ ¡Su favorito!" : "") : favorito ? "♥ ¡Su favorito!" : "");
             titulo = Disp.texto(w, "{\"text\":\"" + t + "\",\"color\":\"" + (nivelClientela > 0 ? Clientela.COLORES[nivelClientela] : "light_purple") + "\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.8f, false);
         }
     }

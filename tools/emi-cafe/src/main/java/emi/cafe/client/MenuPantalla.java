@@ -26,16 +26,16 @@ import java.util.Map;
  */
 @Environment(EnvType.CLIENT)
 public final class MenuPantalla extends Lienzo {
-    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9, T_PLANOS = 10, T_HUERTOS = 11, T_GANADO = 12, T_DESPENSA = 13, T_CLIENTELA = 14;
-    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL", "PLANOS", "HUERTOS", "GANADO", "DESPENSA", "CLIENTELA"};
-    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul", "planos", "huertos", "ganado", "despensa", "clientela"};
+    private static final int T_CAFE = 0, T_RECETARIO = 1, T_TIENDA = 2, T_ESTRELLAS = 3, T_MISIONES = 4, T_LOGROS = 5, T_DECORAR = 6, T_CAFES = 7, T_PERSONAL = 8, T_BAUL = 9, T_PLANOS = 10, T_HUERTOS = 11, T_GANADO = 12, T_DESPENSA = 13, T_CLIENTELA = 14, T_RESENAS = 15;
+    private static final String[] TABS = {"CAFÉ", "RECETARIO", "TIENDA", "ESTRELLAS", "MISIONES", "LOGROS", "DECORAR", "CAFÉS", "PERSONAL", "BAÚL", "PLANOS", "HUERTOS", "GANADO", "DESPENSA", "CLIENTELA", "RESEÑAS"};
+    private static final String[] TABS_ID = {"cafe", "recetario", "tienda", "estrellas", "misiones", "logros", "decorar", "cafes", "personal", "baul", "planos", "huertos", "ganado", "despensa", "clientela", "resenas"};
     // las 11 pantallas se reparten en 6 pestañas grandes; CONSTRUCCIÓN y PROGRESO llevan una fila de subpestañas debajo (desde 0.23.0)
     private static final String[] TOP = {"CAFÉ", "RECETARIO", "PERSONAL", "GRANJA", "CAFÉS", "CONSTRUCCIÓN", "PROGRESO"};
     private static final int[] TOP_REF = {T_CAFE, T_RECETARIO, T_PERSONAL, 102, T_CAFES, 100, 101};          // >= 100: un grupo de subpestañas (SUBS[ref - 100])
-    private static final int[][] SUBS = {{T_DECORAR, T_BAUL, T_PLANOS}, {T_TIENDA, T_MISIONES, T_LOGROS, T_CLIENTELA, T_ESTRELLAS}, {T_HUERTOS, T_GANADO, T_DESPENSA}};
-    private static final String[][] SUBN = {{"DECORAR", "BAÚL", "PLANOS"}, {"MEJORAS Y PLATOS", "MISIONES", "LOGROS", "CLIENTELA", "RECOMPENSAS"}, {"HUERTOS", "GANADO", "DESPENSA"}};
+    private static final int[][] SUBS = {{T_DECORAR, T_BAUL, T_PLANOS}, {T_TIENDA, T_MISIONES, T_LOGROS, T_CLIENTELA, T_RESENAS, T_ESTRELLAS}, {T_HUERTOS, T_GANADO, T_DESPENSA}};
+    private static final String[][] SUBN = {{"DECORAR", "BAÚL", "PLANOS"}, {"MEJORAS Y PLATOS", "MISIONES", "LOGROS", "CLIENTELA", "RESEÑAS", "RECOMPENSAS"}, {"HUERTOS", "GANADO", "DESPENSA"}};
     private static final int TOP_W = 72, SUBY = 20;
-    private static int subW(int gr) { return SUBS[gr].length > 4 ? 100 : 124; }          // con 5 subpestañas se estrechan para caber                    // ancho de cada pestaña grande y de cada subpestaña, y lo que baja el contenido para dejarles sitio
+    private static int subW(int gr) { return SUBS[gr].length > 5 ? 84 : SUBS[gr].length > 4 ? 100 : 124; }          // con 5 subpestañas se estrechan para caber                    // ancho de cada pestaña grande y de cada subpestaña, y lo que baja el contenido para dejarles sitio
     private final int[] subActual = {T_DECORAR, T_TIENDA, T_HUERTOS};                           // la ultima subpestaña de cada grupo
 
     private static int grupoDe(int t) { for (int g = 0; g < SUBS.length; g++) for (int x : SUBS[g]) if (x == t) return g; return -1; }
@@ -68,6 +68,10 @@ public final class MenuPantalla extends Lienzo {
     private record EstiloC(String parte, String nombre) {}
     private record GenteC(String nombre, boolean yo, boolean host, boolean visita) {}
     private record MisionC(String texto, int prog, int objetivo, int premio, boolean hecha) {}
+    private record ResenaC(String esp, int est, String plato, String texto) {}
+    private final List<ResenaC> resenas = new ArrayList<>();
+    private double resMedia; private int resN, resTotal; private long resProveedor; private String resEfecto = ""; private final int[] resDist = new int[5];
+    private int pagResenas;
     private record ClienteC(String id, String nombre, int visitas, int nivel, int sig, int pago) {}
     private final List<ClienteC> clientela = new ArrayList<>();
     private int pagClientela;
@@ -255,6 +259,13 @@ public final class MenuPantalla extends Lienzo {
             JsonObject j = e.getAsJsonObject();
             logros.add(new LogroC(s(j, "nombre"), s(j, "texto"), j.get("nivel").getAsInt(), j.get("max").getAsInt(), j.get("valor").getAsLong(), j.get("meta").getAsLong(), j.get("premio").getAsInt()));
         }
+        resenas.clear(); resMedia = 0; resN = resTotal = 0; resProveedor = 0; resEfecto = ""; java.util.Arrays.fill(resDist, 0);
+        if (o.has("resenas")) {
+            JsonObject rj = o.getAsJsonObject("resenas");
+            resMedia = rj.get("media").getAsDouble(); resN = rj.get("n").getAsInt(); resTotal = rj.get("total").getAsInt(); resProveedor = rj.get("proveedor").getAsLong(); resEfecto = s(rj, "efecto");
+            int k = 0; for (JsonElement e : rj.getAsJsonArray("dist")) if (k < 5) resDist[k++] = e.getAsInt();
+            for (JsonElement e : rj.getAsJsonArray("lista")) { JsonObject j = e.getAsJsonObject(); resenas.add(new ResenaC(s(j, "esp"), j.get("est").getAsInt(), s(j, "plato"), s(j, "texto"))); }
+        }
         clientela.clear();
         if (o.has("clientela")) for (JsonElement e : o.getAsJsonArray("clientela")) { JsonObject j = e.getAsJsonObject(); clientela.add(new ClienteC(s(j, "id"), s(j, "nombre"), j.get("visitas").getAsInt(), j.get("nivel").getAsInt(), j.get("sig").getAsInt(), j.get("pago").getAsInt())); }
         articulos.clear();
@@ -387,6 +398,7 @@ public final class MenuPantalla extends Lienzo {
             case T_GANADO -> granjaTab(g, mx, my, "corral");
             case T_DESPENSA -> despensaTab(g, mx, my);
             case T_CLIENTELA -> clientelaTab(g, mx, my);
+            case T_RESENAS -> resenasTab(g, mx, my);
             default -> logrosTab(g);
         }
     }
@@ -510,7 +522,7 @@ public final class MenuPantalla extends Lienzo {
         texto(g, est, LX, y + 11, 0xFFFF9AD5, 0.75f);
         texto(g, "Local nivel " + nivelLocal + " · estaciones " + estUsadas + "/" + estMax + " · mesas " + mesasUsadas + "/" + mesasMax, LX, y + 33, 0xFF8AE0A0, 0.75f);
         if (!funcional.isEmpty()) texto(g, "Decoración útil: " + recortar(funcional, 60), LX, y + 44, 0xFF9AC8FF, 0.7f);
-        texto(g, "♥ " + megusta + " me gusta" + (nVisitantes > 0 ? " · " + nVisitantes + " de visita" : ""), LX, y + 22, 0xFFFF7AA8, 0.75f);
+        texto(g, "♥ " + megusta + " me gusta" + (nVisitantes > 0 ? " · " + nVisitantes + " de visita" : "") + (resN > 0 ? " · ★ " + String.format("%.1f", resMedia) + " (" + resN + " reseñas)" : ""), LX, y + 22, 0xFFFF7AA8, 0.75f);
     }
 
     // ------------------------------------------------------------ cafes de otros: visitar y top
@@ -1102,6 +1114,40 @@ public final class MenuPantalla extends Lienzo {
         if (clientela.isEmpty()) parrafo(g, "Todavía no has servido a nadie. Cada cliente servido cuenta para su especie.", LX, CY + 24, 340, GRIS, 0.9f);
     }
 
+    private static String estrellas(int n) { return "★".repeat(Math.max(0, Math.min(5, n))) + "☆".repeat(5 - Math.max(0, Math.min(5, n))); }
+
+    private void resenasTab(DrawContext g, int mx, int my) {
+        texto(g, "RESEÑAS", LX, CY - 8, ORO, 1.1f);
+        texto(g, "Cada cliente que se va deja de 1 a 5 estrellas: rápido y con su favorito, más; enfadado, 1.", LX + 62, CY - 6, SUAVE, 0.62f);
+        int pags = paginas(resenas.size(), 7);
+        pagResenas = Math.max(0, Math.min(pags - 1, pagResenas));
+        if (pags > 1) paginador(g, mx, my, LX + 528, CY + 2, pagResenas, pags);
+        caja(g, LX, CY + 8, 150, 120, FONDO, resN >= Resenas_MIN && resMedia >= 4.5 ? ORO : BORDE);
+        if (resN == 0) { parrafo(g, "Todavía no hay reseñas. Sirve clientes y aparecerán aquí.", LX + 8, CY + 18, 134, GRIS, 0.8f); }
+        else {
+            texto(g, String.format("%.1f", resMedia), LX + 10, CY + 14, resMedia >= 4 ? ORO : resMedia >= 3 ? 0xFFE0E0E0 : 0xFFFF8080, 2.0f);
+            texto(g, estrellas((int) Math.round(resMedia)), LX + 62, CY + 22, ORO, 0.9f);
+            texto(g, resN + " recientes · " + resTotal + " en total", LX + 10, CY + 40, GRIS, 0.7f);
+            for (int k = 4; k >= 0; k--) {
+                int yy = CY + 54 + (4 - k) * 11;
+                texto(g, (k + 1) + "★", LX + 10, yy, GRIS, 0.7f);
+                barra(g, LX + 30, yy + 1, 100, resDist[k], Math.max(1, resN), k >= 3 ? ORO : k == 2 ? 0xFFB0B0C0 : 0xFFE06060);
+            }
+        }
+        parrafo(g, resEfecto, LX, CY + 134, 150, SUAVE, 0.62f);
+        if (resProveedor > 0) texto(g, "Proveedor: −" + resProveedor + " monedas", LX, CY + 168, 0xFFFFD27F, 0.62f);
+        for (int k = 0; k < 7 && pagResenas * 7 + k < resenas.size(); k++) {
+            ResenaC r = resenas.get(pagResenas * 7 + k);
+            int x = LX + 160, y = CY + 8 + k * 24;
+            caja(g, x, y, 380, 22, FONDO, r.est() >= 5 ? ORO : r.est() <= 2 ? 0xFF8A3A3A : BORDE);
+            texto(g, estrellas(r.est()), x + 6, y + 3, r.est() >= 4 ? ORO : r.est() == 3 ? 0xFFB0B0C0 : 0xFFFF8080, 0.8f);
+            texto(g, r.esp(), x + 60, y + 3, BLANCO, 0.75f);
+            texto(g, recortar("«" + r.texto() + "»", 62), x + 60, y + 12, GRIS, 0.65f);
+        }
+    }
+
+    private static final int Resenas_MIN = 10;
+
     private void logrosTab(DrawContext g) {
         texto(g, "LOGROS", LX, CY - 8, ORO, 1.1f);
         texto(g, "Escalones que se cobran solos en estrellas al alcanzarlos.", LX + 70, CY - 6, GRIS, 0.8f);
@@ -1297,6 +1343,7 @@ public final class MenuPantalla extends Lienzo {
             case T_PLANOS -> clicPlanos(mx, my);
             case T_HUERTOS -> clicGranja(mx, my, "huerto");
             case T_GANADO -> clicGranja(mx, my, "corral");
+            case T_RESENAS -> { int dc = clicPaginador(mx, my, LX + 528, CY + 2); if (dc != 0) pagResenas = Math.max(0, Math.min(paginas(resenas.size(), 7) - 1, pagResenas + dc)); }
             case T_CLIENTELA -> { int dc = clicPaginador(mx, my, LX + 528, CY + 2); if (dc != 0) pagClientela = Math.max(0, Math.min(paginas(clientela.size(), 12) - 1, pagClientela + dc)); }
             default -> { }
         }

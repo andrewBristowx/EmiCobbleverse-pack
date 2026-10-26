@@ -80,6 +80,10 @@ final class Datos {
         java.util.Map<String, Integer> clientela = new java.util.LinkedHashMap<>();   // clientes servidos por especie (ver Clientela)
         java.util.Map<String, Integer> maestria = new java.util.LinkedHashMap<>();    // veces servido cada plato (ver Maestria)
         int especialesServidos;                                                       // visitantes especiales atendidos en total
+        java.util.Map<String, Integer> stock = new java.util.LinkedHashMap<>();        // existencias de cada caja de ingredientes (objeto -> unidades; lo que falta esta lleno), ver Cafe.gastarCaja (desde 0.33.0)
+        java.util.List<Resenas.Resena> resenas = new java.util.ArrayList<>();          // las ultimas resenas de los clientes, la mas nueva primero (ver Resenas)
+        int resenasTotal;                                                             // resenas escritas en total
+        long gastoProveedor;                                                          // monedas pagadas al proveedor por reponer las cajas
         java.util.List<Finca> granja = new java.util.ArrayList<>();                   // huertos y corrales (desde 0.24.0)
         java.util.Map<String, Integer> despensa = new java.util.LinkedHashMap<>();    // lo que cosechan: «<objeto>@<calidad 1-5>» -> cantidad (ver Granja)
         long granjaCosechado;                                                         // unidades cosechadas en total
