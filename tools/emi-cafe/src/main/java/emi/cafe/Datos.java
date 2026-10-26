@@ -30,6 +30,7 @@ final class Datos {
         String rol = "";
         String nombre = "";
         int aspecto;
+        int felicidad = 70;          // 0 a 100 (0.32.0): sube con jornadas sin enfados y premios, baja con clientes enfadados; cambia lo rapido que trabaja
         int nivel;                   // 1 a 5 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
         int[] puesto;                // donde descansa, elegido por el dueño con su peluche en el modo construccion: {x, y de los pies, z} relativos al local (null = automatico)
     }
@@ -37,7 +38,7 @@ final class Datos {
     /** Un huerto o un corral de la granja (desde 0.24.0): lo que cria, su nivel (= la calidad de lo que da), cuando empezo el ciclo actual y su michigranjero. */
     static final class Finca {
         String tipo = "";            // id del cultivo o animal (ver Granja.Cultivo)
-        int slot;                    // el sitio de la granja, detras del muro del fondo de la parcela (0 a 5)
+        int slot;                    // el sitio de la granja, detras del muro del fondo de la parcela (0 a 15: 6 columnas x 3 filas)
         int nivel = 1;               // 1 a 5
         long desde;                  // cuando empezo a crecer (ms de reloj de pared: crece aunque el dueño no este)
         long cosechas;
@@ -76,6 +77,8 @@ final class Datos {
         boolean tutorialHecho;                                                       // ya hizo la guia de inicio
         boolean visitas = true;                                                       // ¿se puede visitar su cafe?
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
+        java.util.Map<String, Integer> clientela = new java.util.LinkedHashMap<>();   // clientes servidos por especie (ver Clientela)
+        java.util.Map<String, Integer> maestria = new java.util.LinkedHashMap<>();    // veces servido cada plato (ver Maestria)
         int especialesServidos;                                                       // visitantes especiales atendidos en total
         java.util.List<Finca> granja = new java.util.ArrayList<>();                   // huertos y corrales (desde 0.24.0)
         java.util.Map<String, Integer> despensa = new java.util.LinkedHashMap<>();    // lo que cosechan: «<objeto>@<calidad 1-5>» -> cantidad (ver Granja)

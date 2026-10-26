@@ -51,6 +51,7 @@ final class Obras {
     private final Set<String> cNombres = new HashSet<>();
     private int[] cCartel;
     private final List<int[]> cPuertas = new ArrayList<>();
+    private final Map<Funcional, Integer> cFuncional = new EnumMap<>(Funcional.class);     // decoracion con funcion puesta (0.32.0)
     private static final Pattern NOMBRE = Pattern.compile("Name:\"([^\"]+)\"");
     private static Map<String, Estacion> porBloque;
 
@@ -70,7 +71,7 @@ final class Obras {
     private void escanear() {
         if (verCache == ver) return;
         verCache = ver;
-        cEst.clear(); cCopias.clear(); cDespensas.clear(); cMesas.clear(); cNombres.clear(); cPuertas.clear(); cCartel = null;
+        cFuncional.clear(); cEst.clear(); cCopias.clear(); cDespensas.clear(); cMesas.clear(); cNombres.clear(); cPuertas.clear(); cCartel = null;
         Datos.Jugador d = d();
         if (!d.libre || d.decor == null) return;
         Map<String, Estacion> pb = porBloque();
@@ -78,6 +79,8 @@ final class Obras {
             Matcher m = NOMBRE.matcher(en.getValue());
             if (!m.find()) continue;
             String nombre = m.group(1);
+            Funcional fn = Funcional.de(nombre);
+            if (fn != null) cFuncional.merge(fn, 1, Integer::sum);
             if (!nombre.startsWith("emi_cafe:")) continue;
             cNombres.add(nombre);
             if (nombre.startsWith("emi_cafe:puerta_") && en.getValue().contains("half:\"lower\"")) cPuertas.add(new int[]{Integer.parseInt(en.getKey().split(",")[0]), Integer.parseInt(en.getKey().split(",")[2]), Integer.parseInt(en.getKey().split(",")[1])});
@@ -95,6 +98,9 @@ final class Obras {
             } else if (nombre.equals("emi_cafe:cartel") && en.getValue().contains("der:\"false\"")) cCartel = new int[]{rx, rz, ry};
         }
     }
+
+    /** Cuantas unidades de esa decoracion con funcion cuentan (las puestas, hasta su tope). Solo en cafes de parcela libre. */
+    int funcional(Funcional f) { escanear(); return Math.min(f.max, cFuncional.getOrDefault(f, 0)); }
 
     /** Las despensas puestas de un cultivo (x, z, y del local). */
     List<int[]> despensas(Granja.Cultivo c) { escanear(); List<int[]> l = cDespensas.get(c.id); return l == null ? List.of() : l; }

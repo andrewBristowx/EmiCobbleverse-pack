@@ -54,6 +54,8 @@ final class Menus {
             e.addProperty("id", pl.id); e.addProperty("item", idItem(pl.item)); e.addProperty("nombre", pl.nombre());
             e.addProperty("precio", pl.precio); e.addProperty("coste", pl.coste); e.addProperty("receta", pl.receta);
             e.addProperty("tengo", dd.platos.contains(pl.id));
+            int srv = dd.maestria.getOrDefault(pl.id, 0);
+            e.addProperty("servidos", srv); e.addProperty("mnivel", Maestria.nivel(srv)); e.addProperty("msig", Maestria.siguiente(srv));
             e.addProperty("nivelLocal", pl.nivelLocal());
             String blq = dd.platos.contains(pl.id) ? null : c.bloqueoPlato(pl);
             e.addProperty("bloqueo", blq == null ? "" : blq);
@@ -238,10 +240,16 @@ final class Menus {
             e.addProperty("nivel", nv);
             e.addProperty("costo", Personal.costeSubida(rol, nv));
             e.addProperty("tope", nv >= Personal.NIVEL_MAX ? "NIVEL MÁXIMO" : nv + 1 > c.nivelLocal() ? "NECESITA LOCAL NIVEL " + (nv + 1) : "");
+            e.addProperty("felicidad", em.felicidad); e.addProperty("animo", Personal.ANIMOS[Personal.animoNivel(em.felicidad)]); e.addProperty("premio", Personal.costePremio(em));
             e.addProperty("efecto", "Anda +" + Math.round((Personal.velocidad(nv) - 1) * 100) + " % · trabaja +" + Math.round((Personal.trabajo(nv) - 1) * 100) + " %");
             pers.add(e);
         }
         o.add("personal", pers);
+        if (dd.personal != null) {
+            o.addProperty("bonoPaciencia", (int) Math.round(Personal.bonoPaciencia(dd.personal) * 100));
+            o.addProperty("bonoPropina", (int) Math.round(Personal.bonoPropina(dd.personal) * 100));
+            o.addProperty("uniformePct", Personal.uniformePct(dd.personal));
+        }
         o.addProperty("personalMax", Personal.maxTotal());
         JsonArray contr = new JsonArray();                                   // a quien se puede contratar
         for (Personal.Rol rol : Personal.Rol.values()) {
@@ -259,6 +267,9 @@ final class Menus {
         o.add("contratos", contr);
         o.add("granja", jsonGranja(c, dd));
         o.addProperty("estacionesEnMano", c.estEnMano.size());
+        StringBuilder fx = new StringBuilder();                                  // decoracion con funcion puesta (0.32.0)
+        for (Funcional f : Funcional.values()) { int n = c.fn(f); if (n > 0) fx.append(fx.length() > 0 ? " · " : "").append(f.nombre).append(" ×").append(n); }
+        o.addProperty("funcional", fx.toString());
         o.addProperty("nivelLocal", c.nivelLocal()); o.addProperty("estUsadas", c.estacionesUsadas()); o.addProperty("estMax", c.maxEstaciones());
         o.addProperty("visitante", c.visitantes.contains(p.getUuid()));
         o.addProperty("visitas", dd.visitas);
@@ -269,8 +280,12 @@ final class Menus {
         o.addProperty("repValor", dd.rep); o.addProperty("repNivel", nRep); o.addProperty("repNombre", Reputacion.nombre(nRep)); o.addProperty("repSig", Reputacion.siguiente(dd.rep));
         int pts = Estilo.puntos(dd.decor, dd.estilo, dd.pintura), nEst = Estilo.nivelDe(pts);
         o.addProperty("estPuntos", pts); o.addProperty("estNivel", nEst); o.addProperty("estNombre", Estilo.NOMBRES[nEst]); o.addProperty("estSig", Estilo.siguiente(pts));
-        o.addProperty("evento", c.evento == Evento.NINGUNO ? "" : c.evento.nombre + (c.platoDelDia != null ? ": " + c.platoDelDia.nombre() : ""));
-        o.addProperty("eventoTexto", c.evento.descripcion);
+        StringBuilder ev = new StringBuilder(), evt = new StringBuilder();
+        if (c.evento != Evento.NINGUNO) { ev.append(c.evento.nombre).append(c.platoDelDia != null ? ": " + c.platoDelDia.nombre() : ""); evt.append(c.evento.descripcion); }
+        if (c.region != null) { ev.append(ev.length() > 0 ? " · " : "").append("Semana de ").append(c.region.nombre); evt.append(evt.length() > 0 ? " " : "").append("Clientes y platos típicos de ").append(c.region.nombre).append(" pagan más."); }
+        if (c.temporada != Sabores.Temporada.NINGUNA) { ev.append(ev.length() > 0 ? " · " : "").append(c.temporada.nombre); evt.append(evt.length() > 0 ? " " : "").append(c.temporada.nombre).append(": ").append(c.temporada.descripcion); }
+        o.addProperty("evento", ev.toString());
+        o.addProperty("eventoTexto", evt.toString());
         JsonArray cafes = new JsonArray();                                   // todos los vecinos de la ciudad (para ir a su café)
         for (Ciudad.Vecino v : Ciudad.todos()) {
             java.util.UUID uid = Ciudad.duenioDe(v.slot);
@@ -324,6 +339,8 @@ final class Menus {
             e.addProperty("id", pl.id); e.addProperty("item", idItem(pl.item)); e.addProperty("nombre", pl.nombre());
             e.addProperty("precio", pl.precio); e.addProperty("coste", pl.coste); e.addProperty("receta", pl.receta);
             e.addProperty("tengo", dd.platos.contains(pl.id));
+            int srv2 = dd.maestria.getOrDefault(pl.id, 0);
+            e.addProperty("servidos", srv2); e.addProperty("mnivel", Maestria.nivel(srv2)); e.addProperty("msig", Maestria.siguiente(srv2));
             e.addProperty("nivelLocal", pl.nivelLocal());
             String blq = dd.platos.contains(pl.id) ? null : c.bloqueoPlato(pl);
             e.addProperty("bloqueo", blq == null ? "" : blq);
@@ -381,6 +398,18 @@ final class Menus {
             logros.add(e);
         }
         o.add("logros", logros);
+        JsonArray clientela = new JsonArray();                       // clientela habitual (0.31.0): las especies que ya pueden venir a este local y las que ya tienen visitas
+        java.util.LinkedHashSet<String> especiesCl = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < Math.min(Cliente.POR_NIVEL.length, Math.max(1, c.nivelLocal())); i++) especiesCl.addAll(java.util.Arrays.asList(Cliente.POR_NIVEL[i]));
+        especiesCl.addAll(dd.clientela.keySet());
+        for (String esp : especiesCl) {
+            int vis = dd.clientela.getOrDefault(esp, 0), niv = Clientela.nivel(vis);
+            JsonObject e = new JsonObject();
+            e.addProperty("id", esp); e.addProperty("nombre", esp.substring(0, 1).toUpperCase() + esp.substring(1)); e.addProperty("visitas", vis); e.addProperty("nivel", niv);
+            e.addProperty("sig", Clientela.siguiente(vis)); e.addProperty("pago", Clientela.PAGO_PCT[niv]);
+            clientela.add(e);
+        }
+        o.add("clientela", clientela);
 
         if (conResumen) {
             JsonObject r = new JsonObject();
@@ -518,6 +547,8 @@ final class Menus {
                 }
                 case "despedir" -> { String err = c.despedir(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "mejorar_emp" -> { String err = c.mejorarEmpleado(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
+                case "uniforme" -> { String err = c.uniforme(p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "premio" -> { String err = c.premiar(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "granjaComprar" -> { String err = duenio ? c.granja.comprar(p, a.a()) : "Solo el dueño maneja la granja."; if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "granjaMejorar" -> { String err = duenio ? c.granja.mejorar(p, parseIdx(a.a())) : "Solo el dueño maneja la granja."; if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }

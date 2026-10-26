@@ -34,12 +34,11 @@ final class Cliente {
             {"flareon", "jolteon", "leafeon"}};
 
     /** Una especie al azar de las que ya pueden venir a un local de ese nivel. */
-    static String elegirEspecie(Random rnd, int nivelLocal) {
-        int total = 0, n = Math.max(1, Math.min(POR_NIVEL.length, nivelLocal));
-        for (int i = 0; i < n; i++) total += POR_NIVEL[i].length;
-        int k = rnd.nextInt(total);
-        for (int i = 0; i < n; i++) { if (k < POR_NIVEL[i].length) return POR_NIVEL[i][k]; k -= POR_NIVEL[i].length; }
-        return POR_NIVEL[0][0];
+    static String elegirEspecie(Random rnd, int nivelLocal, java.util.Map<String, Integer> clientela, Sabores.Region semana) {
+        int n = Math.max(1, Math.min(POR_NIVEL.length, nivelLocal));
+        List<String> todas = new ArrayList<>();
+        for (int i = 0; i < n; i++) todas.addAll(java.util.Arrays.asList(POR_NIVEL[i]));
+        return Clientela.elegir(rnd, todas, clientela, e -> Sabores.pesoRegion(semana, e));          // las especies habituales y VIP vienen mas a menudo
     }
     /** Especies cuyo modelo se ve mucho mas grande que su caja de colision (medido en el juego): se encogen para no pasar por encima de la mesa. */
     static final java.util.Map<String, Float> AJUSTE = java.util.Map.of("rattata", 0.58f, "slowpoke", 0.65f, "gatitoalien", 1.2f);
@@ -67,6 +66,8 @@ final class Cliente {
     /** Si es un visitante especial (un Michialien con accesorio que enseña su plato), cual; null = cliente normal. */
     Especial esp;
     boolean critico;                         // el critico gastronomico (ver Cafe.forzarCritico)
+    java.util.Map<Item, Integer> calidades;  // ingredientes de la granja que el chef ya saco de la despensa para su plato (ingrediente -> calidad); null = nadie ha cocinado aun
+    int nivelClientela;                      // 0 = cliente nuevo; 1-3 = habitual, fiel o VIP de su especie (ver Clientela)
     boolean favorito;                        // pide el plato que mas le gusta a su especie (paga extra)
     /** Un espectador de Twitch que pidio con !cafeteria: su nombre, el plato que escribio (null = cliente normal) y su mensaje (puede estar vacio). */
     String twitchNombre, twitchMsg;
@@ -78,8 +79,9 @@ final class Cliente {
     /** El critico gastronomico (un Persian): pide el plato mas caro, paga el triple y da o quita reputacion. */
     static final String ESPECIE_CRITICO = "persian";
 
-    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora, boolean exigirRuta) {
-        String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal);
+    static Cliente crear(ServerWorld w, int ox, Mesa mesa, Random rnd, Especial esp, boolean critico, int nivelLocal, Rutas rutas, long ahora, boolean exigirRuta, Cafe cafe) {
+        java.util.Map<String, Integer> clientela = cafe.dj().clientela;
+        String especie = esp != null ? "gatitoalien" : critico ? ESPECIE_CRITICO : forzar != null ? forzar : elegirEspecie(rnd, nivelLocal, clientela, cafe.region);
         try {
             PokemonEntity e = PokemonProperties.Companion.parse(especie + (esp != null ? " " + esp.aspecto : "") + " level=" + (5 + rnd.nextInt(20))).createEntity(w);
             e.setAiDisabled(true);
@@ -121,6 +123,7 @@ final class Cliente {
             c.alto = ALTURA;
             c.esp = esp;
             c.critico = critico;
+            c.nivelClientela = esp == null && !critico ? Clientela.nivel(clientela, especie) : 0;
             return c;
         } catch (Throwable t) {
             EmiCafe.LOG.error("No se pudo crear el cliente {}", especie, t);
@@ -141,7 +144,7 @@ final class Cliente {
                     llegada = ++LLEGADAS;
                     pedido = twitchPlato != null ? twitchPlato : esp != null ? esp.plato : critico ? cafe.pedidoCritico() : cafe.elegirPedido(rnd, especie);
                     favorito = esp == null && !critico && twitchPlato == null && pedido == cafe.favoritoDe(especie);
-                    pacienciaMax = paciencia = esp != null || twitchPlato != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks();
+                    pacienciaMax = paciencia = (int) Math.round((esp != null || twitchPlato != null ? cafe.pacienciaTicks() * 8 / 5 : critico ? cafe.pacienciaTicks() * 7 / 10 : cafe.pacienciaTicks()) * cafe.climaPaciencia(mesa) * (1.0 + Clientela.PACIENCIA_PCT[nivelClientela] / 100.0));
                     if (twitchPlato != null) cafe.alLlegarTwitch(this);
                     if (esp != null) cafe.alLlegarEspecial(this);
                     if (critico) cafe.alLlegarCritico(this);
@@ -231,7 +234,10 @@ final class Cliente {
         }
         else if (esp != null) titulo = Disp.texto(w, "{\"text\":\"★ " + esp.michi + " ★\",\"color\":\"gold\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
         else if (critico) titulo = Disp.texto(w, "{\"text\":\"★ Crítico gastronómico ★\",\"color\":\"aqua\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
-        else if (favorito) titulo = Disp.texto(w, "{\"text\":\"♥ ¡Su favorito!\",\"color\":\"light_purple\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.8f, false);
+        else if (nivelClientela > 0 || favorito) {
+            String t = nivelClientela > 0 ? Clientela.ICONOS[nivelClientela] + " " + Clientela.NOMBRES[nivelClientela] + (favorito ? " · ♥ ¡Su favorito!" : "") : "♥ ¡Su favorito!";
+            titulo = Disp.texto(w, "{\"text\":\"" + t + "\",\"color\":\"" + (nivelClientela > 0 ? Clientela.COLORES[nivelClientela] : "light_purple") + "\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.8f, false);
+        }
     }
 
     private void actualizarGlobo(ServerWorld w) { Disp.cambiarTexto(barra, barraJson(), e.getX(), ybase() + 0.62, e.getZ(), 1.0f, false); }

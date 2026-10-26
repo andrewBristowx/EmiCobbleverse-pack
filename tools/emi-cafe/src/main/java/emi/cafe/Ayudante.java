@@ -66,7 +66,7 @@ final class Ayudante {
     private static String rolNivel(Personal.Rol rol, Datos.Empleado emp) { return rol.nombre + " Nv " + Personal.nivel(emp); }
 
     /** Ticks de espera en un sitio, acortados segun el nivel (con un minimo de 2). */
-    int t(int ticks) { return Math.max(2, (int) Math.round(ticks / Personal.trabajo(Personal.nivel(emp)))); }
+    int t(int ticks) { return Math.max(2, (int) Math.round(ticks / (Personal.trabajo(Personal.nivel(emp)) * Personal.animo(emp.felicidad)))); }
 
     /** Crea al empleado en su sitio de descanso (x, y, z del mundo; y = la altura de los pies). */
     static Ayudante crear(ServerWorld w, Datos.Empleado emp, double x, double y, double z) {
