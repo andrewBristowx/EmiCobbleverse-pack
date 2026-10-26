@@ -41,6 +41,7 @@ final class Ayudante {
     BooleanSupplier vigente;                        // false = la tarea ya no tiene sentido (el cliente se fue...): se cancela
     Entity llevado;                                 // el plato que lleva en las manos (dibujo)
     Mesa mesaChef, mesaServ, mesaLava;              // la mesa a la que sirve el chef / el mesero / de la que recoge el lavaplatos
+    Mesa mesaCalma, mesaCuenta;                     // la mesa donde el anfitrion calma a un cliente / el cajero cobra la cuenta (0.34.0)
     Recetas.Plato platoChef;
     // la ventanilla del chef: donde deja el plato terminado para que lo lleve un mesero
     BlockPos pase;
@@ -144,7 +145,7 @@ final class Ayudante {
     void limpiar() {
         pasos.clear(); vigente = null; llegado = false; esperaPaso = 0; bloqueo = 0;
         Disp.quitar(llevado); llevado = null;
-        mesaChef = mesaServ = mesaLava = null; platoChef = null;
+        mesaChef = mesaServ = mesaLava = null; platoChef = null; mesaCalma = mesaCuenta = null;
         if (estReserva != null) { estReserva.reserva = null; estReserva = null; }
     }
 

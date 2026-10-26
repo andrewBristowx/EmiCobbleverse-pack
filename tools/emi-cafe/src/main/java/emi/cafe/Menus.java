@@ -561,6 +561,10 @@ final class Menus {
                 }
                 case "despedir" -> { String err = c.despedir(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "mejorar_emp" -> { String err = c.mejorarEmpleado(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
+                case "peluche" -> { String err = c.obras.darPeluche(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f); actualizar(c, p); }
+                case "peluches" -> { String err = c.obras.darPeluches(p, a.a().isEmpty() ? "todos" : a.a()); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f); actualizar(c, p); }
+                case "guardar_peluches" -> { if (c.construyendo && c.esDuenio(p)) { int n = c.obras.quitarPeluches(p); p.sendMessage(Msg.say(n == 0 ? "No llevabas peluches de empleados." : "Guardaste " + n + " peluche" + (n == 1 ? "" : "s") + "."), false); } actualizar(c, p); }
+                case "ordenar_personal" -> { String err = c.ordenarPersonal(p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "uniforme" -> { String err = c.uniforme(p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "premio" -> { String err = c.premiar(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }

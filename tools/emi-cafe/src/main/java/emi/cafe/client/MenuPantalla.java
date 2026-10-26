@@ -438,7 +438,7 @@ public final class MenuPantalla extends Lienzo {
             texto(g, "MODO CONSTRUCCIÓN", LX, CY - 7, ORO, 1.1f);
             parrafo(g, libre ? "Construyes con lo que tienes (tu inventario, E). Clic derecho = poner; clic izquierdo = quitar (te lo devuelve). Agachado + clic en el suelo = cambiar el suelo. Lo que falte se compra en DECORAR."
                     : "Compra bloques en DECORAR. Clic derecho = poner; clic izquierdo = recoger. Decora dentro y fuera (jardín, lados, acera). Mesas y estaciones: recógelas y ponlas en otro sitio.", LX, CY + 10, LW, GRIS, 0.8f);
-            texto(g, "Mesas: " + mesasUsadas + "/" + mesasMax + " colocadas", LX, CY + 82, BLANCO, 0.9f);
+            texto(g, "Mesas: " + mesasUsadas + "/" + (mesasMax >= 9999 ? "∞" : mesasMax) + " colocadas", LX, CY + 82, BLANCO, 0.9f);
             boton(g, LX, CY + 100, LW, 28, "IR A DECORAR (tienda)", 0xFF7A4AC0, true, dentro(mx, my, LX, CY + 100, LW, 28), 1f);
             boton(g, LX, CY + 134, LW, 28, "TERMINAR DE CONSTRUIR", 0xFF2E8B57, true, dentro(mx, my, LX, CY + 134, LW, 28), 1f);
             if (libre) boton(g, LX, CY + 166, LW, 24, deshacerN > 0 ? "↶ DESHACER (" + deshacerN + ")" : "↶ DESHACER", 0xFFB08A20, deshacerN > 0, deshacerN > 0 && dentro(mx, my, LX, CY + 166, LW, 24), 0.9f);
@@ -520,7 +520,7 @@ public final class MenuPantalla extends Lienzo {
         String est = "Estilo: " + estNombre + " · " + estPuntos + " pts" + (estSig > 0 ? "/" + estSig : "");
         texto(g, rep, LX, y, 0xFFFFD27F, 0.75f);
         texto(g, est, LX, y + 11, 0xFFFF9AD5, 0.75f);
-        texto(g, "Local nivel " + nivelLocal + " · estaciones " + estUsadas + "/" + estMax + " · mesas " + mesasUsadas + "/" + mesasMax, LX, y + 33, 0xFF8AE0A0, 0.75f);
+        texto(g, "Local nivel " + nivelLocal + " · estaciones " + estUsadas + "/" + estMax + " · mesas " + mesasUsadas + "/" + (mesasMax >= 9999 ? "∞" : mesasMax), LX, y + 33, 0xFF8AE0A0, 0.75f);
         if (!funcional.isEmpty()) texto(g, "Decoración útil: " + recortar(funcional, 60), LX, y + 44, 0xFF9AC8FF, 0.7f);
         texto(g, "♥ " + megusta + " me gusta" + (nVisitantes > 0 ? " · " + nVisitantes + " de visita" : "") + (resN > 0 ? " · ★ " + String.format("%.1f", resMedia) + " (" + resN + " reseñas)" : ""), LX, y + 22, 0xFFFF7AA8, 0.75f);
     }
@@ -604,7 +604,8 @@ public final class MenuPantalla extends Lienzo {
             texto(g, "☺" + p.felicidad(), LX + 132, y + 27, p.felicidad() < 30 ? ROJO : p.felicidad() < 60 ? GRIS : p.felicidad() < 85 ? VERDE : ORO, 0.7f);
             int bx = LX + 360 - 3 * 66;
             boton(g, bx, y + 3, 62, 15, "✎ NOMBRE", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, bx, y + 3, 62, 15), 0.7f);
-            boton(g, bx + 66, y + 3, 62, 15, "ASPECTO ▶", 0xFF4A7AC0, puede, puede && dentro(mx, my, bx + 66, y + 3, 62, 15), 0.7f);
+            if (construyendo) boton(g, bx + 66, y + 3, 62, 15, "SACAR PELUCHE", 0xFFB06A2E, duenio, duenio && dentro(mx, my, bx + 66, y + 3, 62, 15), 0.62f);
+            else boton(g, bx + 66, y + 3, 62, 15, "ASPECTO ▶", 0xFF4A7AC0, puede, puede && dentro(mx, my, bx + 66, y + 3, 62, 15), 0.7f);
             boton(g, bx + 132, y + 3, 62, 15, "DESPEDIR", 0xFF8A3A3A, puede, puede && dentro(mx, my, bx + 132, y + 3, 62, 15), 0.7f);
             boolean sube = puede && p.tope().isEmpty() && monedas >= p.costo();
             String txt = !p.tope().isEmpty() ? p.tope() : "▲ MEJORAR a Nv " + (p.nivel() + 1) + " · " + p.costo() + " monedas";
@@ -615,8 +616,11 @@ public final class MenuPantalla extends Lienzo {
         if (!personal.isEmpty()) {
             texto(g, "☺ = humor (rapidez 0,90 a 1,12). 🎁 = premio (+25).", LX, CY + 8 + 5 * (PERS_H + 4) + 2, SUAVE, 0.62f);
             boton(g, LX + 232, CY + 8 + 5 * (PERS_H + 4) - 1, 128, 13, "UNIFORME PARA TODOS", 0xFF4A7AC0, puede, puede && dentro(mx, my, LX + 232, CY + 8 + 5 * (PERS_H + 4) - 1, 128, 13), 0.62f);
+            boolean ord = duenio && estado.equals("preparando") && personal.size() > 1;
+            boton(g, LX + 232, CY + 8 + 5 * (PERS_H + 4) + 13, 128, 13, "ORDENAR POR PUESTO", 0xFF7A4AC0, ord, ord && dentro(mx, my, LX + 232, CY + 8 + 5 * (PERS_H + 4) + 13, 128, 13), 0.62f);
             texto(g, "Uniforme +" + uniformePct + " %" + (bonoPaciencia > 0 ? " · paciencia +" + bonoPaciencia + " %" : "") + (bonoPropina > 0 ? " · propinas +" + bonoPropina + " %" : ""), LX, CY + 8 + 5 * (PERS_H + 4) + 12, 0xFF9AC8FF, 0.62f);
         }
+        if (construyendo) { peluchesPanel(g, mx, my); return; }
         texto(g, "CONTRATAR", 400, CY - 8, ORO, 1.1f);
         int cpags = Math.max(1, (contratos.size() + 2) / 3);
         contratoPag = Math.max(0, Math.min(cpags - 1, contratoPag));
@@ -641,6 +645,47 @@ public final class MenuPantalla extends Lienzo {
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 
+    private static final String[][] PUESTOS = {{"chef", "Chef"}, {"mesero", "Mesero"}, {"lavaplatos", "Lavaplatos"}, {"anfitrion", "Anfitrión"}, {"cajero", "Cajero"}, {"granjero", "Michigranjero"}};
+
+    private int cuantosPuesto(String nombre) { int n = 0; for (PersonaC p : personal) if (p.rol().equals(nombre)) n++; return n; }
+
+    /** Con el modo construccion activo, el panel de la derecha sustituye a «contratar»: botones para sacar los peluches de los empleados (por puesto) o guardarlos. */
+    private void peluchesPanel(DrawContext g, int mx, int my) {
+        texto(g, "PELUCHES DEL PERSONAL", 400, CY - 8, ORO, 1.1f);
+        parrafo(g, "Cada empleado es un peluche: sácalo, haz clic derecho donde quieres que descanse (agachado = sitio automático) y guárdalo para no llenar el inventario.", 400, CY + 6, 232, SUAVE, 0.7f);
+        int y = CY + 48;
+        boolean hay = !personal.isEmpty();
+        boton(g, 400, y, 220, 16, "SACAR TODOS (ordenados por puesto)", 0xFFB06A2E, hay && duenio, hay && duenio && dentro(mx, my, 400, y, 220, 16), 0.7f);
+        int k = 0;
+        for (String[] pu : PUESTOS) {
+            int n = cuantosPuesto(pu[1]);
+            if (n == 0) continue;
+            int x = 400 + (k % 2) * 112, yy = y + 22 + (k / 2) * 20;
+            boton(g, x, yy, 108, 16, pu[1] + " (" + n + ")", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, x, yy, 108, 16), 0.68f);
+            k++;
+        }
+        int yb = y + 22 + ((k + 1) / 2) * 20 + 4;
+        boton(g, 400, yb, 108, 16, "GUARDAR PELUCHES", 0xFF4A7AC0, duenio, duenio && dentro(mx, my, 400, yb, 108, 16), 0.68f);
+        boolean ord = duenio && personal.size() > 1;
+        boton(g, 512, yb, 108, 16, "ORDENAR POR PUESTO", 0xFF2E8B57, ord, ord && dentro(mx, my, 512, yb, 108, 16), 0.62f);
+        parrafo(g, "«Ordenar» deja la lista por puestos (chefs, meseros, lavaplatos…); los peluches que llevas se guardan y los sacas otra vez.", 400, yb + 22, 232, SUAVE, 0.65f);
+    }
+
+    private void clicPeluchesPanel(int mx, int my) {
+        int y = CY + 48;
+        if (!personal.isEmpty() && duenio && dentro(mx, my, 400, y, 220, 16)) { enviar("peluches", "todos", ""); return; }
+        int k = 0;
+        for (String[] pu : PUESTOS) {
+            if (cuantosPuesto(pu[1]) == 0) continue;
+            int x = 400 + (k % 2) * 112, yy = y + 22 + (k / 2) * 20;
+            if (duenio && dentro(mx, my, x, yy, 108, 16)) { enviar("peluches", pu[0], ""); return; }
+            k++;
+        }
+        int yb = y + 22 + ((k + 1) / 2) * 20 + 4;
+        if (duenio && dentro(mx, my, 400, yb, 108, 16)) { enviar("guardar_peluches", "", ""); return; }
+        if (duenio && personal.size() > 1 && dentro(mx, my, 512, yb, 108, 16)) { enviar("ordenar_personal", "", ""); return; }
+    }
+
     private void clicPersonal(int mx, int my) {
         boolean puede = duenio && estado.equals("preparando") && !construyendo;
         int pags = Math.max(1, (personal.size() + 4) / 5);
@@ -652,12 +697,15 @@ public final class MenuPantalla extends Lienzo {
             PersonaC p = personal.get(persPag * 5 + i);
             int y = CY + 8 + i * (PERS_H + 4), bx = LX + 360 - 3 * 66;
             if (duenio && dentro(mx, my, bx, y + 3, 62, 15)) { pedirTexto("/cafe personal nombre " + (p.idx() + 1) + " "); return; }
+            if (construyendo && duenio && dentro(mx, my, bx + 66, y + 3, 62, 15)) { enviar("peluche", String.valueOf(p.idx()), ""); return; }
             if (puede && dentro(mx, my, bx + 66, y + 3, 62, 15)) { enviar("aspecto", String.valueOf(p.idx()), ""); return; }
             if (puede && dentro(mx, my, bx + 132, y + 3, 62, 15)) { enviar("despedir", String.valueOf(p.idx()), ""); return; }
             if (puede && p.tope().isEmpty() && dentro(mx, my, bx, y + 21, 128, 15)) { enviar("mejorar_emp", String.valueOf(p.idx()), ""); return; }
             if (puede && dentro(mx, my, bx + 132, y + 21, 62, 15)) { enviar("premio", String.valueOf(p.idx()), ""); return; }
         }
         if (!personal.isEmpty() && puede && dentro(mx, my, LX + 232, CY + 8 + 5 * (PERS_H + 4) - 1, 128, 13)) { enviar("uniforme", "", ""); return; }
+        if (personal.size() > 1 && duenio && estado.equals("preparando") && dentro(mx, my, LX + 232, CY + 8 + 5 * (PERS_H + 4) + 13, 128, 13)) { enviar("ordenar_personal", "", ""); return; }
+        if (construyendo) { clicPeluchesPanel(mx, my); return; }
         int cp = clicPaginador(mx, my, 548, CY - 12);
         if (cp != 0) { contratoPag = Math.max(0, Math.min(Math.max(1, (contratos.size() + 2) / 3) - 1, contratoPag + cp)); return; }
         for (int k = 0; k < 3 && contratoPag * 3 + k < contratos.size(); k++) {
@@ -801,7 +849,7 @@ public final class MenuPantalla extends Lienzo {
             return;
         }
         if (!duenio) { parrafo(g, "Solo el dueño compra para construir.", LX, CY + 14, 400, GRIS, 0.9f); return; }
-        texto(g, "Mesas: " + mesasUsadas + "/" + mesasMax, LX + 170, CY - 5, SUAVE, 0.8f);
+        texto(g, "Mesas: " + mesasUsadas + "/" + (mesasMax >= 9999 ? "∞" : mesasMax), LX + 170, CY - 5, SUAVE, 0.8f);
         boton(g, PAG_DX - 22, CY - 12, 18, 14, "«", 0xFF7A4AC0, decoPag > 0, decoPag > 0 && dentro(mx, my, PAG_DX - 22, CY - 12, 18, 14), 0.9f);
         paginador(g, mx, my, PAG_DX, CY - 12, decoPag, decoPags);
         boton(g, PAG_DX + 76, CY - 12, 18, 14, "»", 0xFF7A4AC0, decoPag < decoPags - 1, decoPag < decoPags - 1 && dentro(mx, my, PAG_DX + 76, CY - 12, 18, 14), 0.9f);

@@ -11,9 +11,9 @@ final class Personal {
         MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 8),
         LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 6),
         CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 8),
-        /** Puestos de 0.32.0 sin tarea propia: su efecto vale solo por tenerlos contratados (y sube con su nivel). */
-        ANFITRION("anfitrion", "Anfitrión", "Recibe a los clientes con una sonrisa: aguantan más esperando (+6 % por anfitrión, más cuanto más nivel).", 900, 4, 3, 20, "emi_cafe:cartel", 3, 2),
-        CAJERO("cajero", "Cajero", "Cobra con simpatía: más propinas (+5 % por cajero, más cuanto más nivel).", 700, 5, 4, 20, "emi_cafe:caja_registradora", 7, 2),
+        /** Puestos de 0.32.0; desde 0.34.0 tienen tarea propia: el anfitrion calma a quien se impacienta y el cajero cobra la cuenta en la mesa. */
+        ANFITRION("anfitrion", "Anfitrión", "Atiende a los clientes: aguantan más esperando (+5 %, más con el nivel) y va a calmar al que se impacienta (+25 % de paciencia, más con el nivel).", 900, 4, 3, 20, "emi_cafe:cartel", 3, 2),
+        CAJERO("cajero", "Cajero", "Va a la mesa a cobrar la cuenta cuando el cliente termina de comer: propina extra (+4 % del pago, más con el nivel).", 700, 5, 4, 20, "emi_cafe:caja_registradora", 7, 2),
         /** El michigranjero de un huerto o corral (0.24.0): viene con la finca, no se contrata (max 0) y no cuenta en el total. */
         GRANJERO("granjero", "Michigranjero", "Cuida un huerto o un corral y lleva la cosecha a la despensa.", 0, 5, 0, 20, "emi_cafe:icono_granjero", 6, 0);
 
@@ -36,7 +36,7 @@ final class Personal {
         return b;
     }
 
-    /** Cuanta propina extra dan los cajeros: cada uno 4 % + 1 % por nivel. */
+    /** Cuanto paga de mas la cuenta que cobra cada cajero en la mesa (fraccion del pago): 3 % + 1 % por nivel. Solo vale si llega a la mesa (desde 0.34.0). */
     static double bonoPropina(java.util.List<Datos.Empleado> l) {
         double b = 0;
         for (Datos.Empleado e : l) if (Rol.CAJERO.id.equals(e.rol)) b += (3 + nivel(e)) / 100.0;
@@ -90,6 +90,13 @@ final class Personal {
     };
 
     static final String[] NOMBRES = {"Michi", "Luna", "Nube", "Canela", "Fresa", "Moka", "Pepita", "Tofu", "Coco", "Mochi", "Brisa", "Chispa"};
+
+    /** Para ordenar la lista por puesto: chefs, meseros, lavaplatos, anfitriones, cajeros y michigranjeros. */
+    static int ordenRol(String id) {
+        Rol[] o = {Rol.CHEF, Rol.MESERO, Rol.LAVAPLATOS, Rol.ANFITRION, Rol.CAJERO, Rol.GRANJERO};
+        for (int i = 0; i < o.length; i++) if (o[i].id.equals(id)) return i;
+        return o.length;
+    }
 
     /** Cuantos hay ya de ese puesto. */
     static int cuantos(java.util.List<Datos.Empleado> l, Rol rol) { int n = 0; for (Datos.Empleado e : l) if (rol.id.equals(e.rol)) n++; return n; }

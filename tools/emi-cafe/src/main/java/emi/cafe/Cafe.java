@@ -111,7 +111,12 @@ final class Cafe {
     // ------------------------------------------------------------ lo que dicen las mejoras
 
     int nivel(Recetas.Mejora m) { return dj().nivel(m.id); }
-    int numMesas() { return Math.min(dj().libre ? 30 : Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS) + 2 * nivel(Recetas.Mejora.AMPLIAR)); }
+    /** Tope de mesas colocadas. En parcela libre, con el local en nivel 10 ya no hay tope ({@link #SIN_TOPE}) (desde 0.34.0). */
+    int numMesas() {
+        if (dj().libre && nivelLocal() >= 10) return SIN_TOPE;
+        return Math.min(dj().libre ? 30 : Local.MESAS.length, 2 + nivel(Recetas.Mejora.MESAS) + 2 * nivel(Recetas.Mejora.AMPLIAR));
+    }
+    static final int SIN_TOPE = 9999;
     /** Las estaciones de cocina que caben: las del nivel del local mas dos por cada nivel de «Mas estaciones». */
     int maxEstaciones() { return Local.maxEstaciones(nivelLocal()) + 2 * nivel(Recetas.Mejora.ESTACIONES); }
     double velocidad() { return 1.0 - 0.2 * nivel(Recetas.Mejora.VELOCIDAD); }
@@ -443,6 +448,20 @@ final class Cafe {
     /** Vuelve a poner a los empleados (despues de contratar, despedir, renombrar o cambiar un aspecto). */
     void recargarPersonal() { quitarAyudantes(); crearPersonal(); }
 
+    /** Ordena la lista de personal por puesto (chefs, meseros, lavaplatos, anfitriones, cajeros...), conservando el orden dentro de cada puesto. Devuelve el error, o null. */
+    String ordenarPersonal(ServerPlayerEntity p) {
+        if (!esDuenio(p)) return "Solo el dueño ordena el personal.";
+        if (estado != Estado.PREPARANDO) return "Ordena con el café cerrado.";
+        Datos.Jugador d = dj();
+        if (d.personal == null || d.personal.size() < 2) return "No hay nada que ordenar.";
+        d.personal.sort(java.util.Comparator.comparingInt(e -> Personal.ordenRol(e.rol)));
+        if (construyendo) obras.quitarPeluches(p);                                       // los numeros de los peluches ya no valdrian
+        EmiCafe.datos.guardar(duenio);
+        if (!construyendo) recargarPersonal();
+        p.sendMessage(Msg.say("Personal ordenado por puesto." + (construyendo ? " Saca de nuevo los peluches que necesites." : "")), false);
+        return null;
+    }
+
     /** El dueño contrata a un Michialien. Devuelve el error, o null. */
     String contratar(ServerPlayerEntity p, Personal.Rol rol) {
         if (!esDuenio(p)) return "Solo el dueño contrata.";
@@ -640,6 +659,8 @@ final class Cafe {
         return false;
     }
 
+    private boolean hayCajeros() { for (Ayudante a : ayudantes) if (a.rol == Personal.Rol.CAJERO && !a.e.isRemoved()) return true; return false; }
+
     private boolean hayMeseros() { for (Ayudante a : ayudantes) if (a.rol == Personal.Rol.MESERO && !a.e.isRemoved()) return true; return false; }
 
     /** Las estaciones por las que pasa el chef para ese pedido, en orden (null si no sabe hacerlo): la receta del plato, o, para un visitante especial, cajas → procesadoras → mesa de emplatar. */
@@ -684,9 +705,73 @@ final class Cafe {
                 case LAVAPLATOS -> tareaLavaplatos(a);
                 case MESERO -> tareaMesero(a);
                 case CHEF -> tareaChef(a);
+                case ANFITRION -> tareaAnfitrion(a);
+                case CAJERO -> tareaCajero(a);
                 default -> { }
             }
             a.espera = a.ocupado() ? 0 : a.t(20);                  // sin tarea: vuelve a mirar dentro de 1 s
+        }
+    }
+
+    /** El anfitrion va a la mesa del cliente que mas se esta impacientando (menos del 55 % de paciencia) y le atiende: recupera paciencia, una sola vez. */
+    private void tareaAnfitrion(Ayudante a) {
+        Mesa mejor = null;
+        for (Mesa m : esperando()) {
+            Cliente c = m.cliente;
+            if (c.calmado || c.pacienciaRestante() > 0.55) continue;
+            boolean otro = false;
+            for (Ayudante b : ayudantes) if (b != a && b.mesaCalma == m) otro = true;
+            if (otro) continue;
+            if (mejor == null || c.pacienciaRestante() < mejor.cliente.pacienciaRestante()) mejor = m;
+        }
+        if (mejor == null) return;
+        final Mesa m = mejor;
+        final Cliente c = m.cliente;
+        double[] aMesa = irJunto(a, m.bloque, pos(a), asiento(m));
+        if (aMesa == null) { a.pasos.clear(); return; }
+        a.mesaCalma = m;
+        a.rotular("atiende a un cliente");
+        dbg(a, "va a calmar al cliente de la mesa " + m.bloque.toShortString());
+        a.paso(aMesa[0], aMesa[1], a.t(30), () -> w.spawnParticles(ParticleTypes.NOTE, a.e.getX(), a.e.getY() + 1.4, a.e.getZ(), 1, 0.2, 0.1, 0.2, 0.0), () -> {
+            if (m.cliente != c || c.fase != Cliente.Fase.ESPERANDO) return;
+            c.calmar(0.25 + 0.02 * Personal.nivel(a.emp));
+            dbg(a, "calmo al cliente de la mesa " + m.bloque.toShortString() + " (paciencia " + Math.round(c.pacienciaRestante() * 100) + " %)");
+            w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.4, c.e.getZ(), 5, 0.3, 0.2, 0.3, 0.0);
+            Sonidos.mundo(w, c.e.getX(), c.e.getY(), c.e.getZ(), "campana", 0.5f, 1.5f);
+        }, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
+        a.vigente = () -> m.cliente == c && c.fase == Cliente.Fase.ESPERANDO;
+    }
+
+    /** El cajero va a la mesa del cliente que ya termino de comer y le cobra la cuenta (propina extra). Si no llega a tiempo, el cliente se va y se pierde. */
+    private void tareaCajero(Ayudante a) {
+        for (Mesa m : mesas) {
+            Cliente c = m.cliente;
+            if (c == null || !c.esperaCuenta()) continue;
+            boolean otro = false;
+            for (Ayudante b : ayudantes) if (b != a && b.mesaCuenta == m) otro = true;
+            if (otro) continue;
+            double[] aMesa = irJunto(a, m.bloque, pos(a), asiento(m));
+            if (aMesa == null) { a.pasos.clear(); continue; }
+            a.mesaCuenta = m;
+            a.rotular("cobra la cuenta");
+            dbg(a, "va a cobrar la cuenta de la mesa " + m.bloque.toShortString());
+            a.paso(aMesa[0], aMesa[1], a.t(20), null, () -> {
+                if (m.cliente != c || !c.esperaCuenta()) return;
+                int extra = c.cuenta;
+                c.cuentaCobrada();
+                dbg(a, "cobro la cuenta de la mesa " + m.bloque.toShortString() + ": +" + extra + " monedas");
+                Datos.Jugador dd = dj();
+                dd.monedas += extra; dd.monedasTotal += extra; dd.propinasTotal += extra;
+                ganado += extra; propinas += extra;
+                ganadoPor.merge(duenio, extra, Integer::sum);
+                w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, c.e.getX(), c.e.getY() + 1.2, c.e.getZ(), 6, 0.3, 0.2, 0.3, 0.0);
+                Sonidos.mundo(w, c.e.getX(), c.e.getY(), c.e.getZ(), "cobrar", 0.6f, 1.3f);
+                ServerPlayerEntity dp = jugador(duenio);
+                if (dp != null) Msg.actionBar(dp, Text.literal("+" + extra + " monedas (cuenta cobrada por " + a.emp.nombre + ")").formatted(Formatting.GOLD));
+                EmiCafe.datos.guardar(duenio);
+            }, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
+            a.vigente = () -> m.cliente == c && c.esperaCuenta();
+            return;
         }
     }
 
@@ -1777,7 +1862,7 @@ final class Cafe {
         if (c.esp == null && !c.critico && c.twitchNombre == null) { int sp = saborPct(c, pl); if (sp > 0) base = (int) Math.round(base * (1.0 + sp / 100.0)); }      // region de la semana y temporada
         if (c.nivelClientela > 0) base = (int) Math.round(base * (1.0 + Clientela.PAGO_PCT[c.nivelClientela] / 100.0));      // clientela habitual: paga mas
         double pac = c.pacienciaRestante();
-        int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()) * (1.0 + 0.10 * nivel(Recetas.Mejora.PROPINAS) + Personal.bonoPropina(dj().personal) + 0.04 * fn(Funcional.MACETERO)));
+        int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()) * (1.0 + 0.10 * nivel(Recetas.Mejora.PROPINAS) + 0.04 * fn(Funcional.MACETERO)));
         boolean fav = c.favorito;
         if (fav) propina += (int) Math.round(base * 0.4);
         int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)) * (evento == Evento.HALLOWEEN ? 1.2 : 1.0) * climaPago(m) * (1.0 + Personal.uniformePct(dj().personal) / 100.0 + 0.03 * fn(Funcional.TARTA)));
@@ -1785,6 +1870,7 @@ final class Cafe {
         platos--;
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
+        if (c.esp == null) { int cu = (int) Math.round(pago * Personal.bonoPropina(dd.personal)); if (cu > 0 && hayCajeros()) { c.cuenta = cu; c.comiendo += 200; } }          // el cajero ira a cobrarla
         if (c.grupo != null) alServirGrupo(c);
         escribirResena(c, Resenas.estrellas(pac, fav), pl != null ? pl.nombre() : CafeItems.nombre(carga));
         if (m.plato != null) Disp.quitar(m.plato);

@@ -55,6 +55,8 @@ final class Cliente {
     Item pedido;
     int paciencia, pacienciaMax;
     int comiendo;
+    int cuenta;                              // monedas que el cajero cobrara en su mesa (0 = nada pendiente); mientras haya, el cliente espera la cuenta (0.34.0)
+    boolean calmado;                         // un anfitrion ya le ha calmado (solo una vez)
     boolean enfadado;
     boolean sirvio;                          // se le sirvio el plato (deja plato sucio al irse)
     private final List<double[]> ruta;
@@ -182,6 +184,15 @@ final class Cliente {
         quitarGlobo();
         ponerPose(PoseType.STAND);
     }
+
+    /** ¿Ha terminado de comer y espera a que el cajero le cobre la cuenta? */
+    boolean esperaCuenta() { return fase == Fase.COMIENDO && cuenta > 0; }
+
+    /** El cajero ha cobrado la cuenta: se va enseguida. */
+    void cuentaCobrada() { cuenta = 0; comiendo = Math.min(comiendo, 25); }
+
+    /** Un anfitrion le atiende: recupera paciencia (una vez). */
+    void calmar(double fraccion) { if (fase == Fase.ESPERANDO && !calmado) { calmado = true; paciencia = Math.min(pacienciaMax, paciencia + (int) Math.round(pacienciaMax * fraccion)); } }
 
     /** Se acaba el turno: se va sin pagar y sin enfadarse. */
     void despedir() { if (fase == Fase.ESPERANDO) irse((ServerWorld) e.getWorld()); }
