@@ -919,6 +919,26 @@ final class Cafe {
         return pl == null ? CafeItems.PAPAS_FRITAS : pl.item;
     }
 
+    /**
+     * Cuenta un cliente servido de esa especie (0.31.0). Al llegar a las visitas de un nivel nuevo (Habitual, Fiel, VIP) se avisa y el cafe recibe un regalo en monedas del dueño.
+     */
+    private void registrarVisita(Datos.Jugador dd, Cliente c) {
+        int antes = dd.clientela.getOrDefault(c.especie, 0), ahora = antes + 1;
+        dd.clientela.put(c.especie, ahora);
+        int na = Clientela.nivel(antes), nn = Clientela.nivel(ahora);
+        if (nn <= na) return;
+        String nombre = c.e.getPokemon().getSpecies().getName();
+        int regalo = Clientela.REGALO[nn];
+        dd.monedas += regalo; dd.monedasTotal += regalo;
+        aTodos(p -> {
+            p.sendMessage(Msg.say("¡" + Clientela.ICONOS[nn] + " Los " + nombre + " ya son clientes " + Clientela.NOMBRES[nn] + "! Vienen más a menudo, aguantan más esperando y pagan un " + Clientela.PAGO_PCT[nn] + " % más. Regalo para el café: " + regalo + " monedas."), false);
+            Sonidos.jugador(p, "subir", 1f, 1.2f);
+        });
+        w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 16, 0.4, 0.5, 0.4, 0.15);
+        ServerPlayerEntity dueno = jugador(duenio);
+        if (dueno != null) Progreso.revisarLogros(this, dueno, dd);
+    }
+
     void alEnfadarse(Cliente c) {
         enfadados++;
         ganarRep(c.critico ? -10 : -3);
@@ -1203,7 +1223,7 @@ final class Cafe {
 
     /** Crea ya un visitante especial en esa mesa (tambien lo usa el comando de pruebas). */
     boolean forzarEspecial(Mesa m, Especial e) {
-        Cliente c = Cliente.crear(w, ox, m, rnd, e, false, nivelLocal(), rutas, t, dj().libre);
+        Cliente c = Cliente.crear(w, ox, m, rnd, e, false, nivelLocal(), rutas, t, dj().libre, dj().clientela);
         if (c == null) return false;
         m.cliente = c;
         clientes.add(c);
@@ -1227,7 +1247,7 @@ final class Cafe {
     /** Crea ya al critico gastronomico en una mesa libre (false si no hay ninguna). */
     boolean forzarCritico() {
         for (Mesa m : mesas) if (m.libre()) {
-            Cliente c = Cliente.crear(w, ox, m, rnd, null, true, nivelLocal(), rutas, t, dj().libre);
+            Cliente c = Cliente.crear(w, ox, m, rnd, null, true, nivelLocal(), rutas, t, dj().libre, dj().clientela);
             if (c == null) return false;
             m.cliente = c;
             clientes.add(c);
@@ -1248,7 +1268,7 @@ final class Cafe {
 
     /** Crea un cliente ya (tambien lo usa el comando de pruebas). false si no hay mesa libre. */
     boolean forzarCliente(Mesa m) {
-        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre);
+        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre, dj().clientela);
         if (c == null) return false;
         m.cliente = c;
         clientes.add(c);
@@ -1275,9 +1295,9 @@ final class Cafe {
         for (Mesa m : mesas) if (m.libre()) libres.add(m);
         if (libres.isEmpty()) return "sin mesa";
         Mesa m = elegirMesa(libres);
-        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre);
+        Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre, dj().clientela);
         if (c == null) return "sin mesa";
-        c.twitchNombre = nombre; c.twitchMsg = mensaje; c.twitchPlato = pl.item;
+        c.twitchNombre = nombre; c.twitchMsg = mensaje; c.twitchPlato = pl.item; c.nivelClientela = 0;
         m.cliente = c;
         clientes.add(c);
         return null;
@@ -1546,6 +1566,7 @@ final class Cafe {
         }
         if (c.critico) base *= 3;
         else if (c.esp == null && platoDelDia != null && pl == platoDelDia) base *= 2;
+        if (c.nivelClientela > 0) base = (int) Math.round(base * (1.0 + Clientela.PAGO_PCT[c.nivelClientela] / 100.0));      // clientela habitual: paga mas
         double pac = c.pacienciaRestante();
         int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()) * (1.0 + 0.10 * nivel(Recetas.Mejora.PROPINAS)));
         boolean fav = c.favorito;
@@ -1562,7 +1583,8 @@ final class Cafe {
         servidos++; propinas += propina; ganado += pago;
         ganadoPor.merge(p.getUuid(), pago, Integer::sum);
         servidosPor.merge(p.getUuid(), 1, Integer::sum);
-        Progreso.dar(this, d, p.getUuid(), c.esp != null ? 12 : c.critico ? 15 : 2);
+        Progreso.dar(this, d, p.getUuid(), (c.esp != null ? 12 : c.critico ? 15 : 2) + (c.nivelClientela >= 3 ? Clientela.ESTRELLAS_VIP : 0));
+        if (c.esp == null && !c.critico && c.twitchNombre == null) registrarVisita(dd, c);
         if (c.esp != null) { d.especialesServidos++; p.sendMessage(Msg.say("¡" + c.esp.michi + " quedó encantado con «" + c.esp.nombrePlato() + "»!"), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
         if (c.critico) { p.sendMessage(Msg.say("¡El crítico quedó encantado! +15 estrellas y mucha reputación."), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
         if (fav) { w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.6, c.e.getZ(), 8, 0.4, 0.3, 0.4, 0.0); }

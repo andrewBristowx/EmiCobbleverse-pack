@@ -76,6 +76,7 @@ final class Datos {
         boolean tutorialHecho;                                                       // ya hizo la guia de inicio
         boolean visitas = true;                                                       // ¿se puede visitar su cafe?
         java.util.List<String> especiales = new java.util.ArrayList<>();             // platos de visitantes especiales que ya conoce
+        java.util.Map<String, Integer> clientela = new java.util.LinkedHashMap<>();   // clientes servidos por especie (ver Clientela)
         int especialesServidos;                                                       // visitantes especiales atendidos en total
         java.util.List<Finca> granja = new java.util.ArrayList<>();                   // huertos y corrales (desde 0.24.0)
         java.util.Map<String, Integer> despensa = new java.util.LinkedHashMap<>();    // lo que cosechan: «<objeto>@<calidad 1-5>» -> cantidad (ver Granja)

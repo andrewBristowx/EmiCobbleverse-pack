@@ -381,6 +381,18 @@ final class Menus {
             logros.add(e);
         }
         o.add("logros", logros);
+        JsonArray clientela = new JsonArray();                       // clientela habitual (0.31.0): las especies que ya pueden venir a este local y las que ya tienen visitas
+        java.util.LinkedHashSet<String> especiesCl = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < Math.min(Cliente.POR_NIVEL.length, Math.max(1, c.nivelLocal())); i++) especiesCl.addAll(java.util.Arrays.asList(Cliente.POR_NIVEL[i]));
+        especiesCl.addAll(dd.clientela.keySet());
+        for (String esp : especiesCl) {
+            int vis = dd.clientela.getOrDefault(esp, 0), niv = Clientela.nivel(vis);
+            JsonObject e = new JsonObject();
+            e.addProperty("id", esp); e.addProperty("nombre", esp.substring(0, 1).toUpperCase() + esp.substring(1)); e.addProperty("visitas", vis); e.addProperty("nivel", niv);
+            e.addProperty("sig", Clientela.siguiente(vis)); e.addProperty("pago", Clientela.PAGO_PCT[niv]);
+            clientela.add(e);
+        }
+        o.add("clientela", clientela);
 
         if (conResumen) {
             JsonObject r = new JsonObject();
