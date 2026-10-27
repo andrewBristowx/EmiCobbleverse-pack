@@ -124,7 +124,10 @@ final class Cafe {
     int fn(Funcional f) { return dj().libre ? obras.funcional(f) : 0; }
 
     int pacienciaTicks() { return (int) (20 * 90 * (1.0 + 0.25 * nivel(Recetas.Mejora.PACIENCIA) + Personal.bonoPaciencia(dj().personal) + 0.08 * fn(Funcional.CAJA_MUSICA)) * (evento == Evento.HORA_PUNTA ? 0.85 : 1.0)); }
-    int platosMax() { return 4 + 2 * nivel(Recetas.Mejora.VAJILLA); }
+    /** Platos limpios de la pila al abrir: 6 + 2 por nivel de «Más vajilla» + 2 por cada nivel de local por encima del 1 (desde 0.37.0; antes 4 + 2 por nivel de vajilla). */
+    int platosMax() { return 6 + 2 * nivel(Recetas.Mejora.VAJILLA) + 2 * (nivelLocal() - 1); }
+    /** Con el local en nivel 10 o más los platos limpios no se acaban (desde 0.37.0), igual que el tope de mesas. */
+    boolean platosInfinitos() { return nivelLocal() >= 10; }
     /** Ticks entre un cliente y el siguiente (menos con mejor publicidad y con mas gente cocinando). */
     int intervalo() {
         double base = 20 * (16 - 3 * nivel(Recetas.Mejora.PUBLICIDAD)) / (1.0 + 0.5 * (trabajadores() - 1));
@@ -844,7 +847,7 @@ final class Cafe {
                 Disp.quitar(m.sucio); m.sucio = null;
                 dbg(a, "recogio el plato sucio, va al fregadero");
                 a.llevar(w, CafeItems.id(CafeItems.PILA_PLATOS));
-                Runnable lavado = () -> { a.llevar(w, null); platos++; a.mesaLava = null; dbg(a, "plato lavado (limpios: " + platos + ")"); };
+                Runnable lavado = () -> { a.llevar(w, null); if (!platosInfinitos()) platos++; a.mesaLava = null; dbg(a, "plato lavado (limpios: " + platos + ")"); };
                 double[] aFr = fr == null ? null : irJunto(a, fr, pos(a), null);
                 if (aFr == null) { a.paso(a.e.getX(), a.e.getZ(), a.t(40), () -> lavando(a), lavado, Double.NaN, Double.NaN); return; }   // sin fregadero (lo lleva el dueño en la mano): lava alli mismo
                 a.paso(aFr[0], aFr[1], a.t(50), () -> lavando(a), lavado, fr.getX() + 0.5, fr.getZ() + 0.5);
@@ -925,7 +928,7 @@ final class Cafe {
         a.llevar(w, null);
         a.vigente = null;
         ServerPlayerEntity d = jugador(duenio);
-        if (d != null && platos > 0 && esperaPlato(m, plato)) {
+        if (d != null && esperaPlato(m, plato)) {                       // aunque la pila llegue a 0 mientras iba, el plato que ya lleva se sirve (0.37.0)
             w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, a.e.getX(), a.e.getY() + 0.9, a.e.getZ(), 8, 0.3, 0.3, 0.3, 0.0);
             cobrar(d, m, plato, true);
             dbg(a, "sirvio y cobro");
@@ -1276,7 +1279,7 @@ final class Cafe {
         }
         estado = Estado.ABIERTO;
         proximoCliente = 40;
-        platos = platosMax();
+        platos = platosInfinitos() ? 9999 : platosMax();
         servidos = enfadados = propinas = ganado = 0;
         ganadoPor.clear(); servidosPor.clear(); estrellasTurno.clear();
         Evento ev = eventoForzado != null ? eventoForzado : elegirEvento();
@@ -1487,7 +1490,7 @@ final class Cafe {
             o.addProperty("servidos", servidos);
             o.addProperty("enfadados", enfadados);
             o.addProperty("propinas", propinas);
-            o.addProperty("platos", platos);
+            o.addProperty("platos", platosInfinitos() ? -1 : platos);
             o.addProperty("equipo", trabajadores());
             if (!evento.equals(Evento.NINGUNO)) o.addProperty("evento", evento.nombre);
             com.google.gson.JsonArray ped = new com.google.gson.JsonArray();
@@ -1873,7 +1876,7 @@ final class Cafe {
             if (est.ticks >= est.total) {
                 if (e.tipo == Estacion.Tipo.FREGADERO) {
                     est.cola--;
-                    platos++;
+                    if (!platosInfinitos()) platos++;
                     if (!est.quien.isEmpty()) { ServerPlayerEntity lav = jugador(est.quien.remove(0)); if (lav != null) { Datos.Jugador dl = dj(lav); dl.lavados++; Progreso.evento(this, lav, dl, "lavados", 1); } }
                     Sonidos.mundo(w, x, y, z, "lavar", 0.7f, 1.0f);
                     w.spawnParticles(ParticleTypes.SPLASH, x, y + 0.3, z, 6, 0.2, 0.1, 0.2, 0.0);
@@ -1961,7 +1964,7 @@ final class Cafe {
         if (fav) propina += (int) Math.round(base * 0.4);
         int pago = (int) Math.round((base + propina) * Reputacion.multPago(Reputacion.nivel(dd.rep)) * (evento == Evento.HALLOWEEN ? 1.2 : 1.0) * climaPago(m) * (1.0 + Personal.uniformePct(dj().personal) / 100.0 + 0.03 * fn(Funcional.TARTA)));
         if (DEBUG) EmiCafe.LOG.info("[terraza] cobro {} monedas en mesa {} (terraza={}, clima {}, x{})", pago, m.bloque.toShortString(), esTerraza(m), clima.nombre, climaPago(m));
-        platos--;
+        if (!platosInfinitos()) platos = Math.max(0, platos - 1);
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
         if (c.esp == null) { int cu = (int) Math.round(pago * Personal.bonoPropina(dd.personal)); if (cu > 0 && !c.paraLlevar && hayCajeros()) { c.cuenta = cu; c.comiendo += 200; } }          // el cajero ira a cobrarla

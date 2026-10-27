@@ -116,7 +116,7 @@ final class Menus {
         o.addProperty("nombreDuenio", host == null ? "" : host.getGameProfile().getName());
         o.addProperty("estado", c.estado.name().toLowerCase());
         o.addProperty("inicial", dd.inicial == null ? "" : dd.inicial);
-        o.addProperty("platosLimpios", c.platos);
+        o.addProperty("platosLimpios", c.platosInfinitos() ? -1 : c.platos);
         o.addProperty("construyendo", c.construyendo);
         o.addProperty("mesasUsadas", c.mesasPos().size()); o.addProperty("mesasMax", c.numMesas());
         Decor.Vista vista = vista(p);
