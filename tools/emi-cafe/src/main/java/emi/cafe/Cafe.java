@@ -662,13 +662,50 @@ final class Cafe {
         return false;
     }
 
+    /** ¿Puede este empleado hacer esa tarea? Sin nada encargado hace de todo; con encargos, solo lo suyo (0.38.0). */
+    static boolean tareaPermite(Datos.Empleado e, String id) { return e.tareas == null || e.tareas.isEmpty() || e.tareas.contains(id); }
+
+    /** El fregadero que usa un lavaplatos: el que tenga encargado (si existe) o el mas cercano a la mesa. */
+    private BlockPos fregaderoDe(Datos.Empleado e, Mesa m) {
+        List<BlockPos> fs = posesDe(Estacion.FREGADERO);
+        if (e.tareas != null) for (String t : e.tareas) if (t.startsWith("f")) {
+            try { int k = Integer.parseInt(t.substring(1)) - 1; if (k >= 0 && k < fs.size()) return fs.get(k); } catch (NumberFormatException ignorado) { }
+        }
+        return posCerca(Estacion.FREGADERO, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
+    }
+
+    /** Las opciones de tareas de un empleado: {id, nombre} (chef = platos que sabe, mesero = mesas, lavaplatos = fregaderos); vacio si su puesto no tiene. */
+    List<String[]> opcionesTarea(Datos.Empleado e) {
+        List<String[]> r = new ArrayList<>();
+        if (Personal.Rol.CHEF.id.equals(e.rol)) { for (String id : dj().platos) { Recetas.Plato pl = Recetas.Plato.de(id); if (pl != null) r.add(new String[]{pl.id, pl.nombre()}); } }
+        else if (Personal.Rol.MESERO.id.equals(e.rol)) { for (int i = 0; i < mesas.size(); i++) r.add(new String[]{"m" + (i + 1), "Mesa " + (i + 1)}); }
+        else if (Personal.Rol.LAVAPLATOS.id.equals(e.rol)) { int n = posesDe(Estacion.FREGADERO).size(); for (int i = 0; i < n; i++) r.add(new String[]{"f" + (i + 1), "Fregadero " + (i + 1)}); }
+        return r;
+    }
+
+    /** Marca o desmarca una tarea de un empleado (el lavaplatos solo tiene un fregadero). Devuelve el error, o null. */
+    String alternarTarea(ServerPlayerEntity p, int idx, String id) {
+        if (!esDuenio(p)) return "Solo el dueño reparte las tareas.";
+        List<Datos.Empleado> pers = dj().personal;
+        if (pers == null || idx < 0 || idx >= pers.size()) return "Ese empleado ya no existe.";
+        Datos.Empleado e = pers.get(idx);
+        boolean valida = false;
+        for (String[] o : opcionesTarea(e)) if (o[0].equals(id)) valida = true;
+        if (id.isEmpty()) { e.tareas.clear(); EmiCafe.datos.guardar(duenio); return null; }          // «cualquiera»
+        if (!valida) return "Esa tarea no es de su puesto.";
+        if (e.tareas == null) e.tareas = new ArrayList<>();
+        boolean tenia = e.tareas.remove(id);
+        if (!tenia) { if (Personal.Rol.LAVAPLATOS.id.equals(e.rol)) e.tareas.clear(); e.tareas.add(id); }
+        EmiCafe.datos.guardar(duenio);
+        return null;
+    }
+
     private boolean hayCajeros() { for (Ayudante a : ayudantes) if (a.rol == Personal.Rol.CAJERO && !a.e.isRemoved()) return true; return false; }
 
     private boolean hayMeseros() { for (Ayudante a : ayudantes) if (a.rol == Personal.Rol.MESERO && !a.e.isRemoved()) return true; return false; }
 
     /** Las estaciones por las que pasa el chef para ese pedido, en orden (null si no sabe hacerlo): la receta del plato, o, para un visitante especial, cajas → procesadoras → mesa de emplatar. */
     private List<Estacion> recetaDe(Cliente c) {
-        if (c.critico) return null;
         if (c.esp != null) {
             List<Estacion> l = new ArrayList<>(c.esp.requiere);
             l.sort((x, y) -> Integer.compare(orden(x), orden(y)));
@@ -841,7 +878,7 @@ final class Cafe {
             if (aMesa == null) { a.pasos.clear(); continue; }
             a.mesaLava = m;
             dbg(a, "va a recoger el plato sucio de la mesa " + m.bloque.toShortString());
-            BlockPos fr = posCerca(Estacion.FREGADERO, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
+            BlockPos fr = fregaderoDe(a.emp, m);
             a.paso(aMesa[0], aMesa[1], a.t(14), null, () -> {
                 if (m.sucio == null) { mandarACasa(a); return; }
                 Disp.quitar(m.sucio); m.sucio = null;
@@ -868,6 +905,7 @@ final class Cafe {
         for (Mesa m : esperando()) {
             Cliente c = m.cliente;
             if (mesaOcupada(m, a, false)) continue;
+            if (!tareaPermite(a.emp, "m" + (mesas.indexOf(m) + 1))) continue;                  // 0.38.0: el mesero solo atiende sus mesas
             Item plato = c.pedido;
             BlockPos origen = null;
             Est est = null;
@@ -944,6 +982,7 @@ final class Cafe {
             Cliente c = m.cliente;
             List<Estacion> receta = recetaDe(c);
             if (receta == null || receta.isEmpty() || !tieneEstaciones(receta) || mesaOcupada(m, a, true)) continue;
+            if (c.esp == null && !tareaPermite(a.emp, Recetas.Plato.de(c.pedido) == null ? "" : Recetas.Plato.de(c.pedido).id)) continue;          // 0.38.0: el chef solo cocina lo que tiene encargado
             Item plato = c.pedido;
             String nombrePlato = CafeItems.nombre(plato);
             final Recetas.Plato plD = c.esp == null ? Recetas.Plato.de(plato) : null;

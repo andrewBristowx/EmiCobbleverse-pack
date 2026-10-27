@@ -243,6 +243,11 @@ final class Menus {
             e.addProperty("tope", nv >= Personal.NIVEL_MAX ? "NIVEL MÁXIMO" : nv + 1 > c.nivelLocal() ? "NECESITA LOCAL NIVEL " + (nv + 1) : "");
             e.addProperty("felicidad", em.felicidad); e.addProperty("animo", Personal.ANIMOS[Personal.animoNivel(em.felicidad)]); e.addProperty("premio", Personal.costePremio(em));
             e.addProperty("efecto", "Anda +" + Math.round((Personal.velocidad(nv) - 1) * 100) + " % · trabaja +" + Math.round((Personal.trabajo(nv) - 1) * 100) + " %");
+            if (rol == Personal.Rol.CHEF || rol == Personal.Rol.MESERO || rol == Personal.Rol.LAVAPLATOS) {          // 0.38.0: tareas encargadas
+                JsonArray ops = new JsonArray();
+                for (String[] op : c.opcionesTarea(em)) { JsonObject x = new JsonObject(); x.addProperty("id", op[0]); x.addProperty("nombre", op[1]); x.addProperty("on", em.tareas != null && em.tareas.contains(op[0])); ops.add(x); }
+                e.add("tareas", ops);
+            }
             pers.add(e);
         }
         o.add("personal", pers);
@@ -572,6 +577,7 @@ final class Menus {
                 case "peluches" -> { String err = c.obras.darPeluches(p, a.a().isEmpty() ? "todos" : a.a()); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } else Msg.sound(p, SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1.2f); actualizar(c, p); }
                 case "guardar_peluches" -> { if (c.construyendo && c.esDuenio(p)) { int n = c.obras.quitarPeluches(p); p.sendMessage(Msg.say(n == 0 ? "No llevabas peluches de empleados." : "Guardaste " + n + " peluche" + (n == 1 ? "" : "s") + "."), false); } actualizar(c, p); }
                 case "ordenar_personal" -> { String err = c.ordenarPersonal(p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
+                case "tarea" -> { String err = c.alternarTarea(p, parseIdx(a.a()), a.b()); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "uniforme" -> { String err = c.uniforme(p); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
                 case "premio" -> { String err = c.premiar(p, parseIdx(a.a())); if (err != null) { p.sendMessage(Msg.err(err), false); Msg.sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f, 1f); } actualizar(c, p); }
                 case "aspecto" -> { String err = c.cambiarAspecto(p, parseIdx(a.a())); if (err != null) p.sendMessage(Msg.err(err), false); actualizar(c, p); }
