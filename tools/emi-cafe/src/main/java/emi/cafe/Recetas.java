@@ -15,8 +15,8 @@ final class Recetas {
             case FREIDORA -> { if (entra == CafeItems.PAPA_TIRAS) return CafeItems.PAPAS_FRITAS; if (entra == CafeItems.HUEVO) return CafeItems.HUEVOS_FRITOS; if (entra == CafeItems.MASA) return CafeItems.DONAS; if (entra == CafeItems.CEBOLLA_PICADA) return CafeItems.AROS_CEBOLLA; }
             case EXPRIMIDOR -> { if (entra == CafeItems.BAYA) return CafeItems.LIMONADA; }
             case PLANCHA -> { if (entra == CafeItems.PAN) return CafeItems.TOSTADAS; if (entra == CafeItems.HUEVO) return CafeItems.TORTILLA; if (entra == CafeItems.MASA) return CafeItems.PANQUEQUES; if (entra == CafeItems.CARNE) return CafeItems.CARNE_ASADA; }
-            case OLLA -> { if (entra == CafeItems.CEBOLLA_PICADA) return CafeItems.SOPA_CEBOLLA; if (entra == CafeItems.TOMATE) return CafeItems.SOPA_TOMATE; if (entra == CafeItems.PAPA_TIRAS) return CafeItems.SOPA; if (entra == CafeItems.BAYA) return CafeItems.TE; if (entra == CafeItems.CARNE) return CafeItems.ESTOFADO; if (entra == CafeItems.CALABAZA) return CafeItems.SOPA_CALABAZA; if (entra == CafeItems.ARROZ) return CafeItems.ARROZ_COCIDO; }
-            case HORNO -> { if (entra == CafeItems.PIZZA_CRUDA) return CafeItems.PIZZA; if (entra == CafeItems.MASA) return CafeItems.PASTEL; if (entra == CafeItems.HARINA) return CafeItems.PAN; if (entra == CafeItems.CALABAZA) return CafeItems.CALABAZA_ASADA; }
+            case OLLA -> { if (entra == CafeItems.CEBOLLA_PICADA) return CafeItems.SOPA_CEBOLLA; if (entra == CafeItems.TOMATE) return CafeItems.SOPA_TOMATE; if (entra == CafeItems.PAPA_TIRAS) return CafeItems.SOPA; if (entra == CafeItems.BAYA) return CafeItems.TE; if (entra == CafeItems.CARNE) return CafeItems.ESTOFADO; if (entra == CafeItems.CALABAZA) return CafeItems.SOPA_CALABAZA; if (entra == CafeItems.ARROZ) return CafeItems.ARROZ_COCIDO; if (entra == CafeItems.SETA) return CafeItems.SOPA_SETAS; if (entra == CafeItems.MAIZ) return CafeItems.SOPA_MAIZ; }
+            case HORNO -> { if (entra == CafeItems.PIZZA_CRUDA) return CafeItems.PIZZA; if (entra == CafeItems.MASA_CANELA) return CafeItems.GALLETAS_CANELA; if (entra == CafeItems.MASA) return CafeItems.PASTEL; if (entra == CafeItems.HARINA) return CafeItems.PAN; if (entra == CafeItems.CALABAZA) return CafeItems.CALABAZA_ASADA; }
             case HELADERA -> { if (entra == CafeItems.LECHE) return CafeItems.HELADO; if (entra == CafeItems.BAYAS_LECHE) return CafeItems.HELADO_BAYAS; }
             case PARRILLA -> { if (entra == CafeItems.PESCADO) return CafeItems.PESCADO_ASADO; if (entra == CafeItems.CARNE) return CafeItems.BISTEC; }
             case CREPERA -> { if (entra == CafeItems.MASA) return CafeItems.CREPES; }
@@ -25,6 +25,13 @@ final class Recetas {
             case WAFLERA -> { if (entra == CafeItems.MASA) return CafeItems.WAFFLES; }
             case BATIDORA -> { if (entra == CafeItems.BAYAS_LECHE) return CafeItems.BATIDO; }
             case CAFETERA -> { if (entra == CafeItems.GRANOS) return CafeItems.CAFE; if (entra == CafeItems.LECHE) return CafeItems.CHOCOLATE; }
+            // local de nivel 11 a 20 (0.36.0)
+            case WOK -> { if (entra == CafeItems.FIDEOS) return CafeItems.YAKISOBA; if (entra == CafeItems.ARROZ_COCIDO) return CafeItems.ARROZ_FRITO; if (entra == CafeItems.SETA) return CafeItems.SETAS_SALTEADAS; }
+            case AHUMADOR -> { if (entra == CafeItems.PESCADO) return CafeItems.PESCADO_AHUMADO; if (entra == CafeItems.CARNE) return CafeItems.COSTILLAS; }
+            case FIDEERA -> { if (entra == CafeItems.MASA) return CafeItems.FIDEOS; }
+            case NATERA -> { if (entra == CafeItems.LECHE) return CafeItems.NATA; }
+            case GRANIZADORA -> { if (entra == CafeItems.FRESA) return CafeItems.GRANIZADO_FRESA; if (entra == CafeItems.COCO) return CafeItems.GRANIZADO_COCO; }
+            case CARAMELIZADORA -> { if (entra == CafeItems.MANZANA) return CafeItems.MANZANA_CARAMELO; if (entra == CafeItems.MAIZ) return CafeItems.PALOMITAS; if (entra == CafeItems.FRESA) return CafeItems.FRESAS_CARAMELO; }
             default -> { }
         }
         return null;
@@ -56,7 +63,26 @@ final class Recetas {
             {CafeItems.BISTEC_PAPAS, CafeItems.SOPA_TOMATE, CafeItems.MENU_GRAN_CHEF},
             // la granja (0.24.0): con la cebolla de Farmer's Delight y lo que ya habia
             {CafeItems.SOPA_CEBOLLA, CafeItems.QUESO, CafeItems.SOPA_CEBOLLA_GRATINADA},
-            {CafeItems.ENSALADA, CafeItems.TOMATE, CafeItems.ENSALADA_COMPLETA}};
+            {CafeItems.ENSALADA, CafeItems.TOMATE, CafeItems.ENSALADA_COMPLETA},
+            // local de nivel 11 a 20 (0.36.0)
+            {CafeItems.ENSALADA, CafeItems.FRESA, CafeItems.ENSALADA_FRESA},
+            {CafeItems.CHOCOLATE, CafeItems.NATA, CafeItems.CHOCOLATE_NATA},
+            {CafeItems.FRESA, CafeItems.NATA, CafeItems.FRESAS_NATA},
+            {CafeItems.PASTEL, CafeItems.MANZANA, CafeItems.TARTA_MANZANA},
+            {CafeItems.PASTEL, CafeItems.FRESA, CafeItems.TARTA_FRESA},
+            {CafeItems.TARTA_FRESA, CafeItems.NATA, CafeItems.TARTA_NATA},
+            {CafeItems.PAN, CafeItems.COSTILLAS, CafeItems.BOCATA_COSTILLAS},
+            {CafeItems.ARROZ_COCIDO, CafeItems.COCO, CafeItems.ARROZ_COCO},
+            {CafeItems.HELADO, CafeItems.FRESA, CafeItems.COPA_FRESAS},
+            {CafeItems.CALABAZA_ASADA, CafeItems.CANELA, CafeItems.CALABAZA_CANELA},
+            {CafeItems.MASA, CafeItems.CANELA, CafeItems.MASA_CANELA},
+            {CafeItems.CAFE, CafeItems.CANELA, CafeItems.CAFE_CANELA},
+            {CafeItems.FIDEOS, CafeItems.SOPA_SETAS, CafeItems.RAMEN},
+            {CafeItems.ARROZ_FRITO, CafeItems.SETAS_SALTEADAS, CafeItems.ARROZ_SETAS},
+            {CafeItems.BISTEC, CafeItems.COSTILLAS, CafeItems.PARRILLADA},
+            {CafeItems.PESCADO_AHUMADO, CafeItems.PESCADO_VAPOR, CafeItems.FESTIN_MAR},
+            {CafeItems.TARTA_NATA, CafeItems.HELADO_CHOCOLATE, CafeItems.BANQUETE_POSTRES},
+            {CafeItems.PARRILLADA, CafeItems.RAMEN, CafeItems.MENU_LEYENDA}};
     /** Las de arriba mas una por cada visitante especial. */
     private static final Item[][] COMBINACIONES;
     static {
@@ -156,7 +182,70 @@ final class Recetas {
         ENSALADA_COMPLETA("ensalada_completa", CafeItems.ENSALADA_COMPLETA, 36, 440, List.of(Estacion.CAJA_LECHUGA, Estacion.CAJA_BAYAS, Estacion.TABLA, Estacion.CAJA_TOMATE, Estacion.EMPLATAR),
                 "Lechuga → Tabla de cortar → Mesa de emplatar (con una baya) → ensalada; ensalada + tomate en la Mesa de emplatar"),
         SOPA_CEBOLLA_GRATINADA("sopa_cebolla_gratinada", CafeItems.SOPA_CEBOLLA_GRATINADA, 56, 640, List.of(Estacion.CAJA_CEBOLLA, Estacion.TABLA, Estacion.OLLA, Estacion.CAJA_QUESO, Estacion.EMPLATAR),
-                "Sopa de cebolla (cebolla → Tabla → Olla) + queso en la Mesa de emplatar");
+                "Sopa de cebolla (cebolla → Tabla → Olla) + queso en la Mesa de emplatar"),
+        // local de nivel 11 a 20 (0.36.0); los de temporada nuevos van marcados en Sabores.Temporada
+        PALOMITAS("palomitas", CafeItems.PALOMITAS, 46, 900, List.of(Estacion.CAJA_MAIZ, Estacion.CARAMELIZADORA),
+                "Saco de maíz → Caramelizadora"),
+        MANZANA_CARAMELO("manzana_caramelo", CafeItems.MANZANA_CARAMELO, 56, 1000, List.of(Estacion.CAJA_MANZANA, Estacion.CARAMELIZADORA),
+                "Caja de manzanas → Caramelizadora"),
+        GRANIZADO_FRESA("granizado_fresa", CafeItems.GRANIZADO_FRESA, 52, 950, List.of(Estacion.CAJA_FRESA, Estacion.GRANIZADORA),
+                "Caja de fresas → Granizadora"),
+        SOPA_MAIZ("sopa_maiz", CafeItems.SOPA_MAIZ, 60, 1050, List.of(Estacion.CAJA_MAIZ, Estacion.OLLA),
+                "Saco de maíz → Olla"),
+        ENSALADA_FRESA("ensalada_fresa", CafeItems.ENSALADA_FRESA, 64, 1150, List.of(Estacion.CAJA_LECHUGA, Estacion.CAJA_BAYAS, Estacion.TABLA, Estacion.CAJA_FRESA, Estacion.EMPLATAR),
+                "Lechuga → Tabla de cortar → Mesa de emplatar (con una baya) → ensalada; ensalada + fresa en la Mesa de emplatar"),
+        FIDEOS("fideos", CafeItems.FIDEOS, 72, 1300, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.FIDEERA),
+                "Harina + huevo (masa) en la Mesa de emplatar → Fideera"),
+        GRANIZADO_COCO("granizado_coco", CafeItems.GRANIZADO_COCO, 62, 1250, List.of(Estacion.CAJA_COCO, Estacion.GRANIZADORA),
+                "Saco de cocos → Granizadora"),
+        SOPA_SETAS("sopa_setas", CafeItems.SOPA_SETAS, 68, 1300, List.of(Estacion.CAJA_SETA, Estacion.OLLA),
+                "Caja de setas → Olla"),
+        CHOCOLATE_NATA("chocolate_nata", CafeItems.CHOCOLATE_NATA, 74, 1400, List.of(Estacion.CAJA_LECHE, Estacion.CAFETERA, Estacion.NATERA, Estacion.EMPLATAR),
+                "Leche → Cafetera (chocolate); leche → Batidor de nata; chocolate + nata en la Mesa de emplatar"),
+        FRESAS_NATA("fresas_nata", CafeItems.FRESAS_NATA, 70, 1350, List.of(Estacion.CAJA_FRESA, Estacion.CAJA_LECHE, Estacion.NATERA, Estacion.EMPLATAR),
+                "Leche → Batidor de nata; fresa + nata en la Mesa de emplatar"),
+        SETAS_SALTEADAS("setas_salteadas", CafeItems.SETAS_SALTEADAS, 76, 1600, List.of(Estacion.CAJA_SETA, Estacion.WOK),
+                "Caja de setas → Wok (¡se quema!)"),
+        ARROZ_FRITO("arroz_frito", CafeItems.ARROZ_FRITO, 86, 1700, List.of(Estacion.CAJA_ARROZ, Estacion.OLLA, Estacion.WOK),
+                "Arroz → Olla; arroz cocido → Wok (¡se quema!)"),
+        TARTA_MANZANA("tarta_manzana", CafeItems.TARTA_MANZANA, 100, 2000, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.HORNO, Estacion.CAJA_MANZANA),
+                "Pastel (masa → Horno) + manzana en la Mesa de emplatar"),
+        YAKISOBA("yakisoba", CafeItems.YAKISOBA, 94, 1900, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.FIDEERA, Estacion.WOK),
+                "Fideos (masa → Fideera) → Wok (¡se quema!)"),
+        FRESAS_CARAMELO("fresas_caramelo", CafeItems.FRESAS_CARAMELO, 74, 1750, List.of(Estacion.CAJA_FRESA, Estacion.CARAMELIZADORA),
+                "Caja de fresas → Caramelizadora"),
+        PESCADO_AHUMADO("pescado_ahumado", CafeItems.PESCADO_AHUMADO, 84, 1900, List.of(Estacion.CAJA_PESCADO, Estacion.AHUMADOR),
+                "Caja de pescado → Ahumador"),
+        COSTILLAS("costillas", CafeItems.COSTILLAS, 100, 2200, List.of(Estacion.CAJA_CARNE, Estacion.AHUMADOR),
+                "Caja de carne → Ahumador"),
+        CALABAZA_CANELA("calabaza_canela", CafeItems.CALABAZA_CANELA, 92, 2000, List.of(Estacion.CAJA_CALABAZA, Estacion.HORNO, Estacion.CAJA_CANELA, Estacion.EMPLATAR),
+                "Calabaza → Horno; calabaza asada + canela en la Mesa de emplatar"),
+        BOCATA_COSTILLAS("bocata_costillas", CafeItems.BOCATA_COSTILLAS, 124, 2700, List.of(Estacion.CAJA_HARINA, Estacion.HORNO, Estacion.CAJA_CARNE, Estacion.AHUMADOR, Estacion.EMPLATAR),
+                "Harina → Horno (pan); carne → Ahumador (costillas); pan + costillas en la Mesa de emplatar"),
+        ARROZ_COCO("arroz_coco", CafeItems.ARROZ_COCO, 92, 2200, List.of(Estacion.CAJA_ARROZ, Estacion.OLLA, Estacion.CAJA_COCO, Estacion.EMPLATAR),
+                "Arroz → Olla; arroz cocido + coco en la Mesa de emplatar"),
+        COPA_FRESAS("copa_fresas", CafeItems.COPA_FRESAS, 96, 2300, List.of(Estacion.CAJA_LECHE, Estacion.HELADERA, Estacion.CAJA_FRESA, Estacion.EMPLATAR),
+                "Helado (leche → Heladera) + fresa en la Mesa de emplatar"),
+        GALLETAS_CANELA("galletas_canela", CafeItems.GALLETAS_CANELA, 88, 2300, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.CAJA_CANELA, Estacion.EMPLATAR, Estacion.HORNO),
+                "Masa (harina + huevo) + canela en la Mesa de emplatar → Horno"),
+        CAFE_CANELA("cafe_canela", CafeItems.CAFE_CANELA, 80, 2000, List.of(Estacion.CAJA_GRANOS, Estacion.CAFETERA, Estacion.CAJA_CANELA, Estacion.EMPLATAR),
+                "Granos → Cafetera; café + canela en la Mesa de emplatar"),
+        TARTA_FRESA("tarta_fresa", CafeItems.TARTA_FRESA, 112, 2700, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.HORNO, Estacion.CAJA_FRESA),
+                "Pastel (masa → Horno) + fresa en la Mesa de emplatar"),
+        RAMEN("ramen", CafeItems.RAMEN, 136, 3300, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.FIDEERA, Estacion.CAJA_SETA, Estacion.OLLA),
+                "Fideos (masa → Fideera) + sopa de setas (setas → Olla) en la Mesa de emplatar"),
+        ARROZ_SETAS("arroz_setas", CafeItems.ARROZ_SETAS, 140, 3400, List.of(Estacion.CAJA_ARROZ, Estacion.OLLA, Estacion.WOK, Estacion.CAJA_SETA, Estacion.EMPLATAR),
+                "Arroz frito (arroz → Olla → Wok) + setas salteadas (setas → Wok) en la Mesa de emplatar"),
+        TARTA_NATA("tarta_nata", CafeItems.TARTA_NATA, 152, 3800, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.HORNO, Estacion.CAJA_FRESA, Estacion.CAJA_LECHE, Estacion.NATERA),
+                "Tarta de fresas (pastel + fresa) + nata (leche → Batidor de nata) en la Mesa de emplatar"),
+        PARRILLADA("parrillada", CafeItems.PARRILLADA, 180, 4500, List.of(Estacion.CAJA_CARNE, Estacion.PARRILLA, Estacion.AHUMADOR, Estacion.EMPLATAR),
+                "Carne → Parrilla (bistec); carne → Ahumador (costillas); bistec + costillas en la Mesa de emplatar"),
+        FESTIN_MAR("festin_mar", CafeItems.FESTIN_MAR, 172, 4400, List.of(Estacion.CAJA_PESCADO, Estacion.AHUMADOR, Estacion.VAPORERA, Estacion.EMPLATAR),
+                "Pescado → Ahumador; pescado → Vaporera; los dos juntos en la Mesa de emplatar"),
+        BANQUETE_POSTRES("banquete_postres", CafeItems.BANQUETE_POSTRES, 224, 5600, List.of(Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.HORNO, Estacion.CAJA_FRESA, Estacion.CAJA_LECHE, Estacion.NATERA, Estacion.HELADERA, Estacion.CAJA_CACAO, Estacion.FUENTE_CHOCOLATE),
+                "Tarta de fresas con nata + helado de chocolate (helado + chocolate fundido) en la Mesa de emplatar"),
+        MENU_LEYENDA("menu_leyenda", CafeItems.MENU_LEYENDA, 300, 7500, List.of(Estacion.CAJA_CARNE, Estacion.PARRILLA, Estacion.AHUMADOR, Estacion.CAJA_HARINA, Estacion.CAJA_HUEVOS, Estacion.EMPLATAR, Estacion.FIDEERA, Estacion.CAJA_SETA, Estacion.OLLA),
+                "Parrillada (bistec + costillas) + ramen (fideos + sopa de setas) en la Mesa de emplatar");
 
         final String id;
         final Item item;
@@ -170,7 +259,7 @@ final class Recetas {
 
         String nombre() { return CafeItems.nombre(item); }
 
-        /** El nivel de local que hace falta para poder comprar este plato (el local se amplia en la tienda: nivel 1 a 10). */
+        /** El nivel de local que hace falta para poder comprar este plato (el local se amplia en la tienda: nivel 1 a 20). */
         int nivelLocal() {
             return switch (this) {
                 case PAPAS_FRITAS, LIMONADA, ENSALADA, TE, CAFE -> 1;
@@ -184,6 +273,16 @@ final class Recetas {
                 case PIZZA_MARGARITA, CREPES_MIEL, PAN_MIEL, SOPA_CEBOLLA_GRATINADA -> 8;
                 case BISTEC_PAPAS, PESCADO_VAPOR, BOLLOS_VAPOR -> 9;
                 case PASTEL_CHOCOLATE, HELADO_CHOCOLATE, MENU_GRAN_CHEF -> 10;
+                case PALOMITAS, MANZANA_CARAMELO, GRANIZADO_FRESA, SOPA_MAIZ, ENSALADA_FRESA -> 11;
+                case FIDEOS, GRANIZADO_COCO, SOPA_SETAS, CHOCOLATE_NATA, FRESAS_NATA -> 12;
+                case SETAS_SALTEADAS, ARROZ_FRITO, TARTA_MANZANA, YAKISOBA -> 13;
+                case FRESAS_CARAMELO, PESCADO_AHUMADO, COSTILLAS, CALABAZA_CANELA -> 14;
+                case BOCATA_COSTILLAS, ARROZ_COCO, COPA_FRESAS -> 15;
+                case GALLETAS_CANELA, CAFE_CANELA, TARTA_FRESA -> 16;
+                case RAMEN, ARROZ_SETAS -> 17;
+                case TARTA_NATA, PARRILLADA -> 18;
+                case FESTIN_MAR, BANQUETE_POSTRES -> 19;
+                case MENU_LEYENDA -> 20;
             };
         }
 
@@ -219,7 +318,8 @@ final class Recetas {
         VELOCIDAD("velocidad", "Estaciones más rápidas", CafeItems.RELOJ, n(150, 300, 600), "Las estaciones tardan un 20 % menos por nivel.", n(1, 2, 4), n(0, 0, 0)),
         PACIENCIA("paciencia", "Clientes más pacientes", CafeItems.CORAZON, n(120, 240), "Esperan un 25 % más por nivel antes de irse.", n(1, 3), n(0, 0)),
         VAJILLA("vajilla", "Más vajilla", CafeItems.PILA_PLATOS, n(100, 200, 400), "Dos platos limpios más en la pila por nivel.", n(1, 2, 4), n(0, 0, 0)),
-        AMPLIAR("ampliar", "Ampliar el local", CafeItems.PUERTA, n(300, 600, 1000, 1600, 2400, 3400, 4600, 6000, 8000), "2 mesas, más estaciones, platos, personal y mejoras por nivel (hasta el nivel 10).", n(1, 2, 3, 4, 5, 6, 7, 8, 9), n(2, 3, 4, 5, 6, 6, 7, 7, 8)),
+        AMPLIAR("ampliar", "Ampliar el local", CafeItems.PUERTA, n(300, 600, 1000, 1600, 2400, 3400, 4600, 6000, 8000, 10500, 13500, 17000, 21000, 25500, 30500, 36000, 42000, 48500, 56000), "2 mesas, más estaciones, platos, personal y mejoras por nivel (hasta el nivel 20).",
+                n(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19), n(2, 3, 4, 5, 6, 6, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8)),
         PUBLICIDAD("publicidad", "Publicidad", CafeItems.MEGAFONO, n(120, 240, 480), "Llegan clientes más seguido.", n(1, 2, 4), n(0, 0, 0)),
         PROPINAS("propinas", "Buen servicio", CafeItems.MONEDA, n(300, 600, 1200), "Un 10 % más de propina por nivel.", n(2, 3, 5), n(0, 0, 0));
 

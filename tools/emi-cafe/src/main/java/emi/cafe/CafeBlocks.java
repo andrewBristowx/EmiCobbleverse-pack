@@ -51,6 +51,20 @@ public final class CafeBlocks {
     public static final Block FUENTE_CHOCOLATE = reg("fuente_chocolate");
     public static final Block CAJA_CEBOLLA = reg("caja_cebolla");                     // la granja (0.24.0)
 
+    // local de nivel 11 a 20 (0.36.0)
+    public static final Block CAJA_MANZANA = reg("caja_manzana");
+    public static final Block CAJA_FRESA = reg("caja_fresa");
+    public static final Block CAJA_COCO = reg("caja_coco");
+    public static final Block CAJA_CANELA = reg("caja_canela");
+    public static final Block CAJA_SETA = reg("caja_seta");
+    public static final Block CAJA_MAIZ = reg("caja_maiz");
+    public static final Block WOK = reg("wok");
+    public static final Block AHUMADOR = reg("ahumador");
+    public static final Block FIDEERA = reg("fideera");
+    public static final Block NATERA = reg("natera");
+    public static final Block GRANIZADORA = reg("granizadora");
+    public static final Block CARAMELIZADORA = reg("caramelizadora");
+
     /** El letrero de la puerta (2 casillas de ancho, medio bloque de alto) y el libro de recetas de la pared (1 casilla): imagenes sobre una placa fina, sin objeto. */
     public static final Block CARTEL = placa("cartel", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0.25, 0, 1, 0.75, 1 / 16.0));
     public static final Block LIBRO_PARED = placa("libro_pared", net.minecraft.util.shape.VoxelShapes.cuboid(0, 0, 0, 1, 1, 1 / 16.0));

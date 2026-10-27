@@ -600,7 +600,7 @@ public final class MenuPantalla extends Lienzo {
             objeto(g, p.icono(), LX + 8, y + 9, 1.3f);
             texto(g, recortar(p.nombre(), 16), LX + 38, y + 4, ORO, 1.1f);
             texto(g, p.rol() + " · " + (p.especial().isEmpty() ? recortar(p.aspecto(), 18) : "★ " + recortar(p.especial(), 16)), LX + 38, y + 17, p.especial().isEmpty() ? GRIS : ORO, 0.78f);
-            texto(g, estrellas(p.nivel(), 10) + "  Nv " + p.nivel(), LX + 38, y + 27, ORO, 0.75f);
+            texto(g, estrellas((p.nivel() + 1) / 2, 10) + "  Nv " + p.nivel(), LX + 38, y + 27, ORO, 0.75f);
             texto(g, "☺" + p.felicidad(), LX + 132, y + 27, p.felicidad() < 30 ? ROJO : p.felicidad() < 60 ? GRIS : p.felicidad() < 85 ? VERDE : ORO, 0.7f);
             int bx = LX + 360 - 3 * 66;
             boton(g, bx, y + 3, 62, 15, "✎ NOMBRE", 0xFF7A4AC0, duenio, duenio && dentro(mx, my, bx, y + 3, 62, 15), 0.7f);
@@ -641,7 +641,7 @@ public final class MenuPantalla extends Lienzo {
         StringBuilder lim = new StringBuilder("Hasta ");
         for (int k = 0; k < contratos.size(); k++) lim.append(k > 0 ? (k == contratos.size() - 1 ? " y " : ", ") : "").append(contratos.get(k).max()).append(' ').append(contratos.get(k).nombre().toLowerCase()).append(contratos.get(k).max() == 1 ? "" : "s");
         parrafo(g, lim + "; cada uno de más pide un local un nivel más grande.", 400, CY + 8 + 3 * 66 + 2, 232, SUAVE, 0.7f);
-        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (hasta nivel 10). No puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 26, 232, SUAVE, 0.7f);
+        parrafo(g, "Cada nivel de un empleado: anda un 12 % y trabaja un 15 % más rápido (del 11 al 20, un 4 % y un 5 %). Máximo nivel 20; no puede pasar del nivel de tu local.", 400, CY + 8 + 3 * 66 + 26, 232, SUAVE, 0.7f);
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 

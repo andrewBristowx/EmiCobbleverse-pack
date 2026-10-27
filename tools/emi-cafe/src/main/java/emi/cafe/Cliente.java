@@ -31,7 +31,18 @@ final class Cliente {
             {"riolu", "munchlax", "pichu"},
             {"ponyta", "dratini", "oddish"},
             {"espeon", "umbreon", "vaporeon"},
-            {"flareon", "jolteon", "leafeon"}};
+            {"flareon", "jolteon", "leafeon"},
+            // local de nivel 11 a 20 (0.36.0)
+            {"sylveon", "glaceon", "lucario"},
+            {"ralts", "delcatty", "roselia"},
+            {"absol", "swablu", "cyndaquil"},
+            {"totodile", "bidoof", "ditto"},
+            {"mimikyu", "minccino", "audino"},
+            {"fennekin", "froakie", "chespin"},
+            {"rowlet", "litten", "popplio"},
+            {"grookey", "scorbunny", "sobble"},
+            {"pawmi", "fidough", "quaxly"},
+            {"bulbasaur", "charmander", "squirtle"}};
 
     /** Una especie al azar de las que ya pueden venir a un local de ese nivel. */
     static String elegirEspecie(Random rnd, int nivelLocal, java.util.Map<String, Integer> clientela, Sabores.Region semana) {

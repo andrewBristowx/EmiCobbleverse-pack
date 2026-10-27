@@ -71,18 +71,21 @@ final class Personal {
     /** Cuantos empleados caben en total (la suma de lo que admite cada puesto); todos los contratados trabajan. */
     static int maxTotal() { int n = 0; for (Rol r : Rol.values()) n += r.max; return n; }
 
-    static final int NIVEL_MAX = 10;
-    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4, 3.4, 4.6, 6.0, 7.6, 9.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
+    static final int NIVEL_MAX = 20;
+    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4, 3.4, 4.6, 6.0, 7.6, 9.4, 11.4, 13.6, 16.0, 18.6, 21.4, 24.4, 27.6, 31.0, 34.6, 38.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
 
-    /** El nivel del empleado (1 a 10). */
+    /** El nivel del empleado (1 a 20). */
     static int nivel(Datos.Empleado e) { return Math.max(1, Math.min(NIVEL_MAX, e.nivel)); }
 
     /** Monedas que cuesta subirlo al nivel siguiente (0 si ya esta al maximo). */
     static int costeSubida(Rol rol, int nivel) { return nivel >= NIVEL_MAX ? 0 : (int) Math.round(rol.precio * COSTE_SUBIDA[nivel - 1]); }
 
-    /** Cuanto mas rapido anda (+12 % por nivel) y trabaja (+15 % por nivel): multiplicadores de 1,0 a 1,48 y de 1,0 a 1,6. */
-    static double velocidad(int nivel) { return 1 + 0.12 * (nivel - 1); }
-    static double trabajo(int nivel) { return 1 + 0.15 * (nivel - 1); }
+    /**
+     * Cuanto mas rapido anda (+12 % por nivel hasta el 10) y trabaja (+15 % por nivel hasta el 10): 1,0 a 2,08 y 1,0 a 2,35. Del nivel 11 al 20 mejora mas despacio
+     * (+4 % y +5 % por nivel; de 2,08 a 2,48 andando y de 2,35 a 2,85 trabajando) para que no atraviesen las paredes ni los clientes se queden sin trabajo.
+     */
+    static double velocidad(int nivel) { return nivel <= 10 ? 1 + 0.12 * (nivel - 1) : 1 + 0.12 * 9 + 0.04 * (nivel - 10); }
+    static double trabajo(int nivel) { return nivel <= 10 ? 1 + 0.15 * (nivel - 1) : 1 + 0.15 * 9 + 0.05 * (nivel - 10); }
 
     /** Los aspectos del Michialien: {propiedades de Cobblemon de emi-plush, nombre}. */
     static final String[][] ASPECTOS = {
