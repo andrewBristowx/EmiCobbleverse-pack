@@ -239,9 +239,14 @@ final class Obras {
 
     /** El peluche de un empleado (el de su aspecto, con su nombre y su numero guardado dentro); null si no existe ese peluche. */
     private ItemStack peluche(Datos.Empleado e, int idx) {
-        if (Personal.Rol.MASCOTA.id.equals(e.rol)) return null;                      // la mascota es un Pokemon: no tiene peluche
-        String[] asp = Personal.ASPECTOS[Math.floorMod(e.aspecto, Personal.ASPECTOS.length)];
-        Item it = Registries.ITEM.get(Identifier.of("emi_plush", "gatitoalien_" + asp[0].substring(asp[0].indexOf('=') + 1)));
+        Item it;
+        if (Personal.Rol.MASCOTA.id.equals(e.rol)) {                                  // la mascota usa el peluche de su especie si existe (Eevee, Vaporeon...), y si no el de Eevee (desde 0.38.0)
+            it = Registries.ITEM.get(Identifier.of("emi_plush", Personal.MASCOTAS[Math.floorMod(e.aspecto, Personal.MASCOTAS.length)] + "_emi"));
+            if (it == null || it == net.minecraft.item.Items.AIR) it = Registries.ITEM.get(Identifier.of("emi_plush", "eevee_emi"));
+        } else {
+            String[] asp = Personal.ASPECTOS[Math.floorMod(e.aspecto, Personal.ASPECTOS.length)];
+            it = Registries.ITEM.get(Identifier.of("emi_plush", "gatitoalien_" + asp[0].substring(asp[0].indexOf('=') + 1)));
+        }
         if (it == null || it == net.minecraft.item.Items.AIR) return null;
         ItemStack st = new ItemStack(it);
         Personal.Rol rol = Personal.Rol.de(e.rol);

@@ -33,6 +33,7 @@ final class Datos {
         int felicidad = 70;          // 0 a 100 (0.32.0): sube con jornadas sin enfados y premios, baja con clientes enfadados; cambia lo rapido que trabaja
         int nivel;                   // 1 a 20 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
         java.util.Map<String, Integer> cocinados = new java.util.LinkedHashMap<>();       // veces que ha cocinado cada plato (chef; desde 0.35.0)
+        java.util.List<String> tareas = new java.util.ArrayList<>();   // lo que tiene encargado (0.38.0): chef = ids de platos, mesero = «m<n>» (mesa n, desde 1), lavaplatos = «f<n>» (fregadero n); vacio = cualquiera
         String especialidad = "";    // el plato en el que ya es especialista (a las 40 veces): paga un 15 % mas y lo cocina mas rapido
         int[] puesto;                // donde descansa, elegido por el dueño con su peluche en el modo construccion: {x, y de los pies, z} relativos al local (null = automatico)
     }
