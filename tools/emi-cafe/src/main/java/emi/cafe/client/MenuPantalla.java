@@ -61,14 +61,14 @@ public final class MenuPantalla extends Lienzo {
     private record InicialC(String id, String nombre, String item, String plato, String receta) {}
     private record PlatoC(String id, String item, String nombre, int precio, int coste, String receta, boolean tengo, boolean especial, String michi, int nivelLocal, String bloqueo, int servidos, int mnivel, int msig) {}
     private record MejoraC(String id, String item, String nombre, String texto, int nivel, int max, int precio) {}
-    private record CafeC(String nombre, String titulo, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente, boolean dentro) {}
-    private record PersonaC(int idx, String nombre, String rol, String icono, String aspecto, int nivel, int costo, String tope, String efecto, int felicidad, String animo, int premio) {}
+    private record CafeC(String nombre, String titulo, int megusta, int estilo, int rep, boolean abierto, boolean visitas, int gente, boolean dentro, double valoracion, int nresenas) {}
+    private record PersonaC(int idx, String nombre, String rol, String icono, String aspecto, int nivel, int costo, String tope, String efecto, int felicidad, String animo, int premio, String especial) {}
     private record ContratoC(String rol, String nombre, String texto, String icono, int precio, String bloqueo, int tienes, int max) {}
     private record TopC(String nombre, int megusta, int rep, int estilo) {}
     private record EstiloC(String parte, String nombre) {}
     private record GenteC(String nombre, boolean yo, boolean host, boolean visita) {}
     private record MisionC(String texto, int prog, int objetivo, int premio, boolean hecha) {}
-    private record ResenaC(String esp, int est, String plato, String texto) {}
+    private record ResenaC(String esp, int est, String plato, String texto, boolean critico) {}
     private final List<ResenaC> resenas = new ArrayList<>();
     private double resMedia; private int resN, resTotal; private long resProveedor; private String resEfecto = ""; private final int[] resDist = new int[5];
     private int pagResenas;
@@ -197,7 +197,7 @@ public final class MenuPantalla extends Lienzo {
         if (o.has("estilo")) for (JsonElement e : o.getAsJsonArray("estilo")) { JsonObject j = e.getAsJsonObject(); estilo.add(new EstiloC(s(j, "parte"), s(j, "nombre"))); }
         nombreCafe = o.has("nombreCafe") ? o.get("nombreCafe").getAsString() : "";
         personal.clear();
-        if (o.has("personal")) for (JsonElement e : o.getAsJsonArray("personal")) { JsonObject j = e.getAsJsonObject(); personal.add(new PersonaC(j.get("idx").getAsInt(), s(j, "nombre"), s(j, "rol"), s(j, "icono"), s(j, "aspecto"), j.has("nivel") ? j.get("nivel").getAsInt() : 1, j.has("costo") ? j.get("costo").getAsInt() : 0, s(j, "tope"), s(j, "efecto"), j.has("felicidad") ? j.get("felicidad").getAsInt() : 70, j.has("animo") ? s(j, "animo") : "", j.has("premio") ? j.get("premio").getAsInt() : 0)); }
+        if (o.has("personal")) for (JsonElement e : o.getAsJsonArray("personal")) { JsonObject j = e.getAsJsonObject(); personal.add(new PersonaC(j.get("idx").getAsInt(), s(j, "nombre"), s(j, "rol"), s(j, "icono"), s(j, "aspecto"), j.has("nivel") ? j.get("nivel").getAsInt() : 1, j.has("costo") ? j.get("costo").getAsInt() : 0, s(j, "tope"), s(j, "efecto"), j.has("felicidad") ? j.get("felicidad").getAsInt() : 70, j.has("animo") ? s(j, "animo") : "", j.has("premio") ? j.get("premio").getAsInt() : 0, j.has("especial") ? s(j, "especial") : "")); }
         bonoPaciencia = o.has("bonoPaciencia") ? o.get("bonoPaciencia").getAsInt() : 0; bonoPropina = o.has("bonoPropina") ? o.get("bonoPropina").getAsInt() : 0; uniformePct = o.has("uniformePct") ? o.get("uniformePct").getAsInt() : 0;
         funcional = o.has("funcional") ? o.get("funcional").getAsString() : "";
         personalMax = o.has("personalMax") ? o.get("personalMax").getAsInt() : 1;
@@ -214,7 +214,7 @@ public final class MenuPantalla extends Lienzo {
         estNombre = o.has("estNombre") ? o.get("estNombre").getAsString() : "";
         evento = o.has("evento") ? o.get("evento").getAsString() : ""; eventoTexto = o.has("eventoTexto") ? o.get("eventoTexto").getAsString() : "";
         cafesAbiertos.clear();
-        if (o.has("cafes")) for (JsonElement e : o.getAsJsonArray("cafes")) { JsonObject j = e.getAsJsonObject(); cafesAbiertos.add(new CafeC(s(j, "nombre"), j.has("titulo") ? s(j, "titulo") : "", j.get("megusta").getAsInt(), j.get("estilo").getAsInt(), j.get("rep").getAsInt(), j.get("abierto").getAsBoolean(), j.get("visitas").getAsBoolean(), j.get("gente").getAsInt(), j.has("dentro") && j.get("dentro").getAsBoolean())); }
+        if (o.has("cafes")) for (JsonElement e : o.getAsJsonArray("cafes")) { JsonObject j = e.getAsJsonObject(); cafesAbiertos.add(new CafeC(s(j, "nombre"), j.has("titulo") ? s(j, "titulo") : "", j.get("megusta").getAsInt(), j.get("estilo").getAsInt(), j.get("rep").getAsInt(), j.get("abierto").getAsBoolean(), j.get("visitas").getAsBoolean(), j.get("gente").getAsInt(), j.has("dentro") && j.get("dentro").getAsBoolean(), j.has("valoracion") ? j.get("valoracion").getAsDouble() : 0, j.has("nresenas") ? j.get("nresenas").getAsInt() : 0)); }
         topCafes.clear();
         if (o.has("top")) for (JsonElement e : o.getAsJsonArray("top")) { JsonObject j = e.getAsJsonObject(); topCafes.add(new TopC(s(j, "nombre"), j.get("megusta").getAsInt(), j.get("rep").getAsInt(), j.get("estilo").getAsInt())); }
         fincas.clear(); catalogoGranja.clear(); despensa.clear(); calidadesGranja.clear(); calidadesPct.clear();
@@ -264,7 +264,7 @@ public final class MenuPantalla extends Lienzo {
             JsonObject rj = o.getAsJsonObject("resenas");
             resMedia = rj.get("media").getAsDouble(); resN = rj.get("n").getAsInt(); resTotal = rj.get("total").getAsInt(); resProveedor = rj.get("proveedor").getAsLong(); resEfecto = s(rj, "efecto");
             int k = 0; for (JsonElement e : rj.getAsJsonArray("dist")) if (k < 5) resDist[k++] = e.getAsInt();
-            for (JsonElement e : rj.getAsJsonArray("lista")) { JsonObject j = e.getAsJsonObject(); resenas.add(new ResenaC(s(j, "esp"), j.get("est").getAsInt(), s(j, "plato"), s(j, "texto"))); }
+            for (JsonElement e : rj.getAsJsonArray("lista")) { JsonObject j = e.getAsJsonObject(); resenas.add(new ResenaC(s(j, "esp"), j.get("est").getAsInt(), s(j, "plato"), s(j, "texto"), j.has("critico") && j.get("critico").getAsBoolean())); }
         }
         clientela.clear();
         if (o.has("clientela")) for (JsonElement e : o.getAsJsonArray("clientela")) { JsonObject j = e.getAsJsonObject(); clientela.add(new ClienteC(s(j, "id"), s(j, "nombre"), j.get("visitas").getAsInt(), j.get("nivel").getAsInt(), j.get("sig").getAsInt(), j.get("pago").getAsInt())); }
@@ -542,7 +542,7 @@ public final class MenuPantalla extends Lienzo {
             int y = CY + 8 + n * 30;
             caja(g, LX, y, 360, 26, FONDO, c.dentro() ? 0xFF6FE08A : BORDE);
             texto(g, recortar(c.titulo().isEmpty() ? c.nombre() : c.titulo() + " · " + c.nombre(), 34), LX + 8, y + 4, BLANCO, 0.95f);
-            texto(g, "♥ " + c.megusta() + " · estilo " + c.estilo() + " · rep " + c.rep() + (c.abierto() ? " · ABIERTO" : c.dentro() ? " · en su café" : " · no está") + (c.gente() > 0 ? " · " + c.gente() + " de visita" : ""), LX + 8, y + 15, SUAVE, 0.7f);
+            texto(g, "♥ " + c.megusta() + (c.nresenas() > 0 ? " · ★ " + String.format("%.1f", c.valoracion()) : "") + " · estilo " + c.estilo() + " · rep " + c.rep() + (c.abierto() ? " · ABIERTO" : c.dentro() ? " · en su café" : " · no está") + (c.gente() > 0 ? " · " + c.gente() + " de visita" : ""), LX + 8, y + 15, SUAVE, 0.7f);
             boton(g, LX + 360 - 92, y + 4, 86, 18, "IR A SU CAFÉ", 0xFF7A4AC0, true, dentro(mx, my, LX + 360 - 92, y + 4, 86, 18), 0.8f);
         }
         texto(g, "LOS MÁS QUERIDOS", 400, CY - 8, ORO, 1.0f);
@@ -599,7 +599,7 @@ public final class MenuPantalla extends Lienzo {
             caja(g, LX, y, 360, PERS_H, FONDO, BORDE);
             objeto(g, p.icono(), LX + 8, y + 9, 1.3f);
             texto(g, recortar(p.nombre(), 16), LX + 38, y + 4, ORO, 1.1f);
-            texto(g, p.rol() + " · " + recortar(p.aspecto(), 18), LX + 38, y + 17, GRIS, 0.78f);
+            texto(g, p.rol() + " · " + (p.especial().isEmpty() ? recortar(p.aspecto(), 18) : "★ " + recortar(p.especial(), 16)), LX + 38, y + 17, p.especial().isEmpty() ? GRIS : ORO, 0.78f);
             texto(g, estrellas(p.nivel(), 10) + "  Nv " + p.nivel(), LX + 38, y + 27, ORO, 0.75f);
             texto(g, "☺" + p.felicidad(), LX + 132, y + 27, p.felicidad() < 30 ? ROJO : p.felicidad() < 60 ? GRIS : p.felicidad() < 85 ? VERDE : ORO, 0.7f);
             int bx = LX + 360 - 3 * 66;
@@ -645,7 +645,7 @@ public final class MenuPantalla extends Lienzo {
         if (!duenio) texto(g, "Solo el dueño contrata y despide.", LX, CY + 190, GRIS, 0.9f);
     }
 
-    private static final String[][] PUESTOS = {{"chef", "Chef"}, {"mesero", "Mesero"}, {"lavaplatos", "Lavaplatos"}, {"anfitrion", "Anfitrión"}, {"cajero", "Cajero"}, {"granjero", "Michigranjero"}};
+    private static final String[][] PUESTOS = {{"chef", "Chef"}, {"mesero", "Mesero"}, {"lavaplatos", "Lavaplatos"}, {"anfitrion", "Anfitrión"}, {"cajero", "Cajero"}, {"mascota", "Mascota"}, {"granjero", "Michigranjero"}};
 
     private int cuantosPuesto(String nombre) { int n = 0; for (PersonaC p : personal) if (p.rol().equals(nombre)) n++; return n; }
 
@@ -1189,7 +1189,7 @@ public final class MenuPantalla extends Lienzo {
             int x = LX + 160, y = CY + 8 + k * 24;
             caja(g, x, y, 380, 22, FONDO, r.est() >= 5 ? ORO : r.est() <= 2 ? 0xFF8A3A3A : BORDE);
             texto(g, estrellas(r.est()), x + 6, y + 3, r.est() >= 4 ? ORO : r.est() == 3 ? 0xFFB0B0C0 : 0xFFFF8080, 0.8f);
-            texto(g, r.esp(), x + 60, y + 3, BLANCO, 0.75f);
+            texto(g, (r.critico() ? "📰 CRÍTICO · " : "") + r.esp(), x + 60, y + 3, r.critico() ? ORO : BLANCO, 0.75f);
             texto(g, recortar("«" + r.texto() + "»", 62), x + 60, y + 12, GRIS, 0.65f);
         }
     }

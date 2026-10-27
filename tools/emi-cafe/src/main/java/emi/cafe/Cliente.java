@@ -57,6 +57,9 @@ final class Cliente {
     int comiendo;
     int cuenta;                              // monedas que el cajero cobrara en su mesa (0 = nada pendiente); mientras haya, el cliente espera la cuenta (0.34.0)
     boolean calmado;                         // un anfitrion ya le ha calmado (solo una vez)
+    boolean acariciado;                      // la mascota ya le ha visitado (una vez)
+    boolean paraLlevar;                      // pide para llevar (0.35.0): menos paciencia, +12 % de pago, se va nada mas recibir el plato y no deja plato sucio
+    Datos.Empleado cocinero;                 // el chef que le cocina el plato (para su especialidad)
     boolean enfadado;
     boolean sirvio;                          // se le sirvio el plato (deja plato sucio al irse)
     private final List<double[]> ruta;
@@ -71,7 +74,7 @@ final class Cliente {
     java.util.Map<Item, Integer> calidades;  // ingredientes de la granja que el chef ya saco de la despensa para su plato (ingrediente -> calidad); null = nadie ha cocinado aun
     int nivelClientela;                      // 0 = cliente nuevo; 1-3 = habitual, fiel o VIP de su especie (ver Clientela)
     /** Los clientes que llegaron juntos (0.33.0). */
-    static final class Grupo { final int tam; int servidos, enfadados; Grupo(int tam) { this.tam = tam; } }
+    static final class Grupo { final int tam; int servidos, enfadados; boolean cumple, grande; Grupo(int tam) { this.tam = tam; } }
     Grupo grupo;
     boolean favorito;                        // pide el plato que mas le gusta a su especie (paga extra)
     /** Un espectador de Twitch que pidio con !cafeteria: su nombre, el plato que escribio (null = cliente normal) y su mensaje (puede estar vacio). */
@@ -137,6 +140,14 @@ final class Cliente {
     }
 
     /** Un compañero de grupo se fue enfadado: me queda un tercio de paciencia como mucho. */
+    /** La mascota se acerca: un cliente que espera recupera un poco de paciencia (una sola vez). */
+    boolean acariciar(double fraccion) {
+        if (acariciado || (fase != Fase.ESPERANDO && fase != Fase.COMIENDO)) return false;
+        acariciado = true;
+        if (fase == Fase.ESPERANDO) paciencia = Math.min(pacienciaMax, paciencia + (int) Math.round(pacienciaMax * fraccion));
+        return true;
+    }
+
     void impacientar() { if (fase == Fase.ESPERANDO) paciencia = Math.min(paciencia, Math.max(40, pacienciaMax / 3)); }
 
     boolean fuera() { return e.isRemoved(); }
@@ -156,6 +167,7 @@ final class Cliente {
                     if (twitchPlato != null) cafe.alLlegarTwitch(this);
                     if (esp != null) cafe.alLlegarEspecial(this);
                     if (critico) cafe.alLlegarCritico(this);
+                    if (paraLlevar) pacienciaMax = paciencia = (int) Math.round(paciencia * 0.65);
                     ponerPose(PoseType.STAND);
                     crearGlobo(w);
                     Sonidos.mundo(w, e.getX(), e.getY(), e.getZ(), "campana", 1.0f, 1.0f);
@@ -180,7 +192,8 @@ final class Cliente {
     void comer() {
         fase = Fase.COMIENDO;
         sirvio = true;
-        comiendo = 70;
+        comiendo = paraLlevar ? 14 : 70;
+        if (paraLlevar) sirvio = false;
         quitarGlobo();
         ponerPose(PoseType.STAND);
     }
@@ -251,8 +264,9 @@ final class Cliente {
         }
         else if (esp != null) titulo = Disp.texto(w, "{\"text\":\"★ " + esp.michi + " ★\",\"color\":\"gold\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
         else if (critico) titulo = Disp.texto(w, "{\"text\":\"★ Crítico gastronómico ★\",\"color\":\"aqua\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.9f, false);
-        else if (nivelClientela > 0 || favorito || grupo != null) {
-            String t = (grupo != null ? "👥 Grupo de " + grupo.tam + (nivelClientela > 0 || favorito ? " · " : "") : "")
+        else if (nivelClientela > 0 || favorito || grupo != null || paraLlevar) {
+            String t = (paraLlevar ? "🥡 Para llevar" + (nivelClientela > 0 || favorito ? " · " : "") : "")
+                    + (grupo != null ? "👥 Grupo de " + grupo.tam + (grupo.cumple ? " · 🎂 ¡Cumpleaños!" : "") + (grupo.grande ? " · Mesa grande" : "") + (nivelClientela > 0 || favorito ? " · " : "") : "")
                     + (nivelClientela > 0 ? Clientela.ICONOS[nivelClientela] + " " + Clientela.NOMBRES[nivelClientela] + (favorito ? " · ♥ ¡Su favorito!" : "") : favorito ? "♥ ¡Su favorito!" : "");
             titulo = Disp.texto(w, "{\"text\":\"" + t + "\",\"color\":\"" + (nivelClientela > 0 ? Clientela.COLORES[nivelClientela] : "light_purple") + "\",\"bold\":true}", e.getX(), ybase() + 0.95, e.getZ(), 0.8f, false);
         }

@@ -11,6 +11,8 @@ final class Resenas {
     private Resenas() {}
 
     static final int MAX = 40;
+    /** Cuantas reseñas vale la de un critico en la media. */
+    static final int PESO_CRITICO = 5;
     /** Con menos resenas que esto la valoracion todavia no cambia nada. */
     static final int MIN_EFECTO = 10;
 
@@ -21,6 +23,7 @@ final class Resenas {
         String plato = "";
         String texto = "";
         long dia;                        // dia (epoch) en que se escribio
+        boolean critico;                 // la escribio un critico gastronomico: pesa 5 veces en la media (desde 0.35.0)
     }
 
     /** Las estrellas por servir: pronto = 5, bien = 4, justo = 3; el plato favorito sube una. */
@@ -54,9 +57,9 @@ final class Resenas {
     /** La media de estrellas (0 si no hay resenas). */
     static double media(List<Resena> lista) {
         if (lista == null || lista.isEmpty()) return 0;
-        int s = 0;
-        for (Resena r : lista) s += r.est;
-        return s / (double) lista.size();
+        int s = 0, w = 0;
+        for (Resena r : lista) { int peso = r.critico ? PESO_CRITICO : 1; s += r.est * peso; w += peso; }
+        return s / (double) w;
     }
 
     /** Cuanto cambia el tiempo entre clientes: <1 = llegan antes. Solo cuenta con {@link #MIN_EFECTO} resenas o mas. */

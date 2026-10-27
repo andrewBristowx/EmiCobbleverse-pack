@@ -14,6 +14,8 @@ final class Personal {
         /** Puestos de 0.32.0; desde 0.34.0 tienen tarea propia: el anfitrion calma a quien se impacienta y el cajero cobra la cuenta en la mesa. */
         ANFITRION("anfitrion", "Anfitrión", "Atiende a los clientes: aguantan más esperando (+5 %, más con el nivel) y va a calmar al que se impacienta (+25 % de paciencia, más con el nivel).", 900, 4, 3, 20, "emi_cafe:cartel", 3, 2),
         CAJERO("cajero", "Cajero", "Va a la mesa a cobrar la cuenta cuando el cliente termina de comer: propina extra (+4 % del pago, más con el nivel).", 700, 5, 4, 20, "emi_cafe:caja_registradora", 7, 2),
+        /** La mascota del cafe (0.35.0): un Pokemon pequeño que pasea y se deja acariciar por los clientes. Solo una. */
+        MASCOTA("mascota", "Mascota", "Un Pokémon que pasea por el café y se deja acariciar: los clientes que esperan recuperan un 12 % de paciencia y los que comen dejan una propina extra (más con su nivel).", 500, 3, 2, 20, "emi_cafe:cocinero_squirtle", 0, 1),
         /** El michigranjero de un huerto o corral (0.24.0): viene con la finca, no se contrata (max 0) y no cuenta en el total. */
         GRANJERO("granjero", "Michigranjero", "Cuida un huerto o un corral y lleva la cosecha a la despensa.", 0, 5, 0, 20, "emi_cafe:icono_granjero", 6, 0);
 
@@ -47,13 +49,13 @@ final class Personal {
     static int uniformePct(java.util.List<Datos.Empleado> l) {
         int pct = 0;
         for (Rol r : Rol.values()) {
-            if (r == Rol.GRANJERO) continue;
+            if (r == Rol.GRANJERO || r == Rol.MASCOTA) continue;
             int n = 0, asp = -1; boolean igual = true;
             for (Datos.Empleado e : l) if (r.id.equals(e.rol)) { n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
             if (n >= 2 && igual) pct += 2;
         }
         int n = 0, asp = -1; boolean igual = true;
-        for (Datos.Empleado e : l) { n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
+        for (Datos.Empleado e : l) { if (Rol.MASCOTA.id.equals(e.rol)) continue; n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
         if (n >= 4 && igual) pct += 3;
         return pct;
     }
@@ -89,11 +91,18 @@ final class Personal {
         {"accessory=santa_hat", "Gorro navideño"}, {"accessory=witch_hat", "Sombrero de bruja"}, {"accessory=pirate", "Pirata"}, {"accessory=crown", "Corona"},
     };
 
+    /** Las mascotas que se pueden elegir (el aspecto de la mascota es un indice de esta lista). */
+    static final String[] MASCOTAS = {"eevee", "pikachu", "meowth", "togepi", "growlithe", "snubbull", "vulpix", "pichu"};
+    static String nombreMascota(int aspecto) { String s = MASCOTAS[Math.floorMod(aspecto, MASCOTAS.length)]; return s.substring(0, 1).toUpperCase() + s.substring(1); }
+
+    /** El nombre del aspecto de un empleado (los michialiens llevan accesorios, la mascota es un Pokemon). */
+    static String nombreAspecto(Datos.Empleado e) { return Rol.MASCOTA.id.equals(e.rol) ? nombreMascota(e.aspecto) : ASPECTOS[Math.floorMod(e.aspecto, ASPECTOS.length)][1]; }
+
     static final String[] NOMBRES = {"Michi", "Luna", "Nube", "Canela", "Fresa", "Moka", "Pepita", "Tofu", "Coco", "Mochi", "Brisa", "Chispa"};
 
     /** Para ordenar la lista por puesto: chefs, meseros, lavaplatos, anfitriones, cajeros y michigranjeros. */
     static int ordenRol(String id) {
-        Rol[] o = {Rol.CHEF, Rol.MESERO, Rol.LAVAPLATOS, Rol.ANFITRION, Rol.CAJERO, Rol.GRANJERO};
+        Rol[] o = {Rol.CHEF, Rol.MESERO, Rol.LAVAPLATOS, Rol.ANFITRION, Rol.CAJERO, Rol.MASCOTA, Rol.GRANJERO};
         for (int i = 0; i < o.length; i++) if (o[i].id.equals(id)) return i;
         return o.length;
     }

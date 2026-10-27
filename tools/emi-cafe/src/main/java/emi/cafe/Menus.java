@@ -235,7 +235,8 @@ final class Menus {
             if (rol == null) continue;
             JsonObject e = new JsonObject();
             e.addProperty("idx", i); e.addProperty("nombre", em.nombre); e.addProperty("rol", rol.nombre); e.addProperty("icono", rol.icono);
-            e.addProperty("aspecto", Personal.ASPECTOS[Math.floorMod(em.aspecto, Personal.ASPECTOS.length)][1]);
+            e.addProperty("aspecto", Personal.nombreAspecto(em));
+            { Recetas.Plato esp = em.especialidad == null || em.especialidad.isEmpty() ? null : Recetas.Plato.de(em.especialidad); e.addProperty("especial", esp == null ? "" : esp.nombre()); }
             int nv = Personal.nivel(em);
             e.addProperty("nivel", nv);
             e.addProperty("costo", Personal.costeSubida(rol, nv));
@@ -283,7 +284,12 @@ final class Menus {
         StringBuilder ev = new StringBuilder(), evt = new StringBuilder();
         if (c.evento != Evento.NINGUNO) { ev.append(c.evento.nombre).append(c.platoDelDia != null ? ": " + c.platoDelDia.nombre() : ""); evt.append(c.evento.descripcion); }
         if (c.region != null) { ev.append(ev.length() > 0 ? " · " : "").append("Semana de ").append(c.region.nombre); evt.append(evt.length() > 0 ? " " : "").append("Clientes y platos típicos de ").append(c.region.nombre).append(" pagan más."); }
-        if (c.temporada != Sabores.Temporada.NINGUNA) { ev.append(ev.length() > 0 ? " · " : "").append(c.temporada.nombre); evt.append(evt.length() > 0 ? " " : "").append(c.temporada.nombre).append(": ").append(c.temporada.descripcion); }
+        if (c.temporada != Sabores.Temporada.NINGUNA) {
+            String ck = c.claveTemporada();
+            String med = dd.medallas.contains(ck) ? " 🏅 Medalla ganada" : " Medalla: " + dd.temporadas.getOrDefault(ck, 0) + "/" + Cafe.META_TEMPORADA;
+            ev.append(ev.length() > 0 ? " · " : "").append(c.temporada.nombre).append(" ·").append(med);
+            evt.append(evt.length() > 0 ? " " : "").append(c.temporada.nombre).append(": ").append(c.temporada.descripcion).append(" Sirve ").append(Cafe.META_TEMPORADA).append(" platos de temporada para ganar la medalla (+400 monedas, +25 estrellas).");
+        }
         o.addProperty("evento", ev.toString());
         o.addProperty("eventoTexto", evt.toString());
         JsonArray cafes = new JsonArray();                                   // todos los vecinos de la ciudad (para ir a su café)
@@ -295,6 +301,7 @@ final class Menus {
             JsonObject e = new JsonObject();
             e.addProperty("nombre", v.nombre); e.addProperty("titulo", od.nombreCafe == null ? "" : od.nombreCafe); e.addProperty("megusta", od.megusta);
             e.addProperty("estilo", Estilo.nivelDe(Estilo.puntos(od.decor, od.estilo, od.pintura))); e.addProperty("rep", Reputacion.nivel(od.rep));
+            e.addProperty("valoracion", od.resenas == null || od.resenas.isEmpty() ? 0.0 : Resenas.media(od.resenas)); e.addProperty("nresenas", od.resenas == null ? 0 : od.resenas.size());
             e.addProperty("abierto", otro != null && otro.estado == Cafe.Estado.ABIERTO); e.addProperty("visitas", otro != null && od.visitas); e.addProperty("gente", otro == null ? 0 : otro.visitantes.size());
             e.addProperty("dentro", otro != null);
             cafes.add(e);
@@ -416,7 +423,7 @@ final class Menus {
         for (Resenas.Resena r : dd.resenas) {
             dist[Math.max(1, Math.min(5, r.est)) - 1]++;
             JsonObject e = new JsonObject();
-            e.addProperty("esp", r.esp.isEmpty() ? "" : r.esp.substring(0, 1).toUpperCase() + r.esp.substring(1)); e.addProperty("est", r.est); e.addProperty("plato", r.plato); e.addProperty("texto", r.texto);
+            e.addProperty("esp", r.esp.isEmpty() ? "" : r.esp.substring(0, 1).toUpperCase() + r.esp.substring(1)); e.addProperty("critico", r.critico); e.addProperty("est", r.est); e.addProperty("plato", r.plato); e.addProperty("texto", r.texto);
             listaRes.add(e);
         }
         rs.addProperty("media", Resenas.media(dd.resenas)); rs.addProperty("n", dd.resenas.size()); rs.addProperty("total", dd.resenasTotal); rs.addProperty("efecto", Resenas.efectoTexto(dd.resenas));

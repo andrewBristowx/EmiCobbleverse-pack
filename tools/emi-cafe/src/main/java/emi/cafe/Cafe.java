@@ -539,9 +539,9 @@ final class Cafe {
         if (estado != Estado.PREPARANDO || construyendo) return "Cambia el uniforme con el café cerrado y sin construir.";
         Datos.Jugador d = dj();
         Datos.Empleado primero = null;
-        for (Datos.Empleado e : d.personal) if (!Personal.Rol.GRANJERO.id.equals(e.rol)) { primero = e; break; }
+        for (Datos.Empleado e : d.personal) if (!Personal.Rol.GRANJERO.id.equals(e.rol) && !Personal.Rol.MASCOTA.id.equals(e.rol)) { primero = e; break; }
         if (primero == null) return "Todavía no tienes personal.";
-        for (Datos.Empleado e : d.personal) if (!Personal.Rol.GRANJERO.id.equals(e.rol)) e.aspecto = primero.aspecto;
+        for (Datos.Empleado e : d.personal) if (!Personal.Rol.GRANJERO.id.equals(e.rol) && !Personal.Rol.MASCOTA.id.equals(e.rol)) e.aspecto = primero.aspecto;
         EmiCafe.datos.guardar(duenio);
         recargarPersonal();
         p.sendMessage(Msg.say("Todo el personal viste ahora «" + Personal.ASPECTOS[Math.floorMod(primero.aspecto, Personal.ASPECTOS.length)][1] + "». Uniforme: +" + Personal.uniformePct(d.personal) + " % al pago."), false);
@@ -579,7 +579,7 @@ final class Cafe {
         Datos.Jugador d = dj();
         if (idx < 0 || idx >= d.personal.size()) return "Ese empleado no existe.";
         Datos.Empleado e = d.personal.get(idx);
-        e.aspecto = (e.aspecto + 1) % Personal.ASPECTOS.length;
+        e.aspecto = (e.aspecto + 1) % (Personal.Rol.MASCOTA.id.equals(e.rol) ? Personal.MASCOTAS.length : Personal.ASPECTOS.length);
         EmiCafe.datos.guardar(duenio);
         recargarPersonal();
         return null;
@@ -707,6 +707,7 @@ final class Cafe {
                 case CHEF -> tareaChef(a);
                 case ANFITRION -> tareaAnfitrion(a);
                 case CAJERO -> tareaCajero(a);
+                case MASCOTA -> tareaMascota(a);
                 default -> { }
             }
             a.espera = a.ocupado() ? 0 : a.t(20);                  // sin tarea: vuelve a mirar dentro de 1 s
@@ -773,6 +774,56 @@ final class Cafe {
             a.vigente = () -> m.cliente == c && c.esperaCuenta();
             return;
         }
+    }
+
+    /** Un chef termina un plato: lo apunta y, a las 40 veces del mismo plato, se hace especialista en el (paga un 15 % mas y lo cocina un 25 % mas rapido). */
+    private void contarCocinado(Ayudante a, Recetas.Plato pl) {
+        if (pl == null) return;
+        int n = a.emp.cocinados.merge(pl.id, 1, Integer::sum);
+        if (n >= ESPECIALISTA_VECES && a.emp.especialidad.isEmpty()) {
+            a.emp.especialidad = pl.id;
+            w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, a.e.getX(), a.e.getY() + 1.2, a.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2);
+            Sonidos.mundo(w, a.e.getX(), a.e.getY(), a.e.getZ(), "subir", 0.8f, 1.3f);
+            aTodos(p -> p.sendMessage(Msg.say("⭐ ¡" + a.emp.nombre + " ya es especialista en " + pl.nombre() + "! Lo cocina más rápido y ese plato paga un 15 % más."), false));
+        }
+        EmiCafe.datos.guardar(duenio);
+    }
+
+    static final int ESPECIALISTA_VECES = Integer.getInteger("emi.cafe.especialista", 40);
+
+    /** La mascota visita a un cliente sentado y se deja acariciar: el que espera recupera un 12 % de paciencia (mas con el nivel) y el que come deja propina. */
+    private void tareaMascota(Ayudante a) {
+        List<Mesa> cand = new ArrayList<>();
+        for (Mesa m : mesas) {
+            Cliente c = m.cliente;
+            if (c == null || c.acariciado || (c.fase != Cliente.Fase.ESPERANDO && c.fase != Cliente.Fase.COMIENDO)) continue;
+            boolean otro = false;
+            for (Ayudante b : ayudantes) if (b != a && b.mesaCalma == m) otro = true;
+            if (!otro) cand.add(m);
+        }
+        if (cand.isEmpty()) return;
+        final Mesa m = cand.get(rnd.nextInt(cand.size()));
+        final Cliente c = m.cliente;
+        double[] aMesa = irJunto(a, m.bloque, pos(a), asiento(m));
+        if (aMesa == null) { a.pasos.clear(); return; }
+        a.mesaCalma = m;
+        a.rotular("visita una mesa");
+        a.paso(aMesa[0], aMesa[1], a.t(30), () -> w.spawnParticles(ParticleTypes.HEART, a.e.getX(), a.e.getY() + 0.7, a.e.getZ(), 1, 0.2, 0.1, 0.2, 0.0), () -> {
+            if (m.cliente != c) return;
+            boolean come = c.fase == Cliente.Fase.COMIENDO;
+            if (!c.acariciar(0.12 + 0.01 * Personal.nivel(a.emp))) return;
+            if (come) {
+                int extra = 3 + Personal.nivel(a.emp);
+                Datos.Jugador dd = dj();
+                dd.monedas += extra; dd.monedasTotal += extra; dd.propinasTotal += extra; ganado += extra; propinas += extra;
+                ganadoPor.merge(duenio, extra, Integer::sum);
+                ServerPlayerEntity dp = jugador(duenio);
+                if (dp != null) Msg.actionBar(dp, Text.literal("+" + extra + " monedas (propina por la mascota " + a.emp.nombre + ")").formatted(Formatting.GOLD));
+            }
+            w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.4, c.e.getZ(), 5, 0.3, 0.2, 0.3, 0.0);
+            dbg(a, "la mascota visito la mesa " + m.bloque.toShortString() + (come ? " (propina)" : " (paciencia)"));
+        }, m.bloque.getX() + 0.5, m.bloque.getZ() + 0.5);
+        a.vigente = () -> m.cliente == c;
     }
 
     private void tareaLavaplatos(Ayudante a) {
@@ -892,6 +943,8 @@ final class Cafe {
             if (receta == null || receta.isEmpty() || !tieneEstaciones(receta) || mesaOcupada(m, a, true)) continue;
             Item plato = c.pedido;
             String nombrePlato = CafeItems.nombre(plato);
+            final Recetas.Plato plD = c.esp == null ? Recetas.Plato.de(plato) : null;
+            final boolean espec = plD != null && plD.id.equals(a.emp.especialidad);                // 0.35.0: lo que mejor cocina, lo cocina un 25 % mas rapido
             double[] f = pos(a);
             boolean ok = true;
             for (int k = 0; k < receta.size(); k++) {
@@ -906,9 +959,10 @@ final class Cafe {
                 double[] fin = b == null ? null : irJunto(a, b, f, null);
                 if (fin == null) { ok = false; break; }
                 int espera = es.tipo == Estacion.Tipo.CAJA ? 24 : es.tipo == Estacion.Tipo.EMPLATAR ? 44 : Math.max(44, Math.min(100, es.ticks / 2));
+                if (espec) espera = Math.max(8, espera * 3 / 4);
                 boolean proceso = es.tipo != Estacion.Tipo.CAJA;
                 final Item ingr = deGranja ? es.ingrediente : null;
-                Runnable alAcabar = ultima ? () -> a.llevar(w, CafeItems.id(plato)) : null;                  // al acabar la ultima, el plato queda en sus manos
+                Runnable alAcabar = ultima ? () -> { a.llevar(w, CafeItems.id(plato)); contarCocinado(a, plD); } : null;                  // al acabar la ultima, el plato queda en sus manos
                 if (ingr != null) { Runnable resto = alAcabar; alAcabar = () -> { tomarDeDespensa(a, c, ingr); if (resto != null) resto.run(); }; }
                 else if (es.tipo == Estacion.Tipo.CAJA && es.ingrediente != null) { Runnable resto = alAcabar; final Item deCaja = es.ingrediente; alAcabar = () -> { gastarCaja(deCaja); if (resto != null) resto.run(); }; }
                 a.paso(fin[0], fin[1], a.t(espera), () -> cocinando(a, proceso), alAcabar, b.getX() + 0.5, b.getZ() + 0.5);
@@ -934,6 +988,7 @@ final class Cafe {
             }
             if (!ok) { a.pasos.clear(); continue; }
             a.mesaChef = m; a.platoChef = c.esp != null ? null : Recetas.Plato.de(plato);
+            c.cocinero = a.emp;
             a.rotular("cocina: " + nombrePlato);
             dbg(a, "cocina " + nombrePlato + (c.esp != null ? " (visitante especial)" : "") + " para la mesa " + m.bloque.toShortString());
             a.vigente = () -> esperaPlato(m, plato) && !mesaOcupada(m, a, false);          // si un mesero ya lleva a esa mesa el plato del dueño, el chef lo deja
@@ -1157,13 +1212,35 @@ final class Cafe {
         Progreso.dar(this, dd, duenio, est);
     }
 
+    /** Platos de temporada que hay que servir en una temporada para ganar su medalla. */
+    static final int META_TEMPORADA = Integer.getInteger("emi.cafe.medalla", 25);
+
+    /** Cuenta un plato de la temporada y, a los {@link #META_TEMPORADA}, da la medalla (una vez por temporada y año): estrellas y monedas. */
+    private void medallaTemporada(ServerPlayerEntity p, Datos.Jugador d, Recetas.Plato pl) {
+        if (temporada == Sabores.Temporada.NINGUNA || !temporada.platos.contains(pl.id)) return;
+        String k = claveTemporada();
+        if (d.medallas.contains(k)) return;
+        int n = d.temporadas.merge(k, 1, Integer::sum);
+        if (n < META_TEMPORADA) return;
+        d.medallas.add(k);
+        d.monedas += 400; d.monedasTotal += 400;
+        Progreso.dar(this, d, p.getUuid(), 25);
+        final String nom = temporada.nombre;
+        aTodos(q -> { q.sendMessage(Msg.say("🏅 ¡Medalla de " + nom + "! Serviste " + META_TEMPORADA + " platos de temporada: +400 monedas y +25 estrellas."), false); Sonidos.jugador(q, "subir", 1f, 1.2f); });
+    }
+
+    String claveTemporada() { java.time.LocalDate f = java.time.LocalDate.now(); return temporada.name() + "-" + (f.getMonthValue() == 1 ? f.getYear() - 1 : f.getYear()); }
+
     /** El cliente deja su resena (los visitantes de Twitch no). */
     private void escribirResena(Cliente c, int estrellas, String plato) {
         if (c.twitchNombre != null) return;
         Datos.Jugador d = dj();
         Resenas.Resena r = new Resenas.Resena();
-        r.esp = c.especie; r.est = c.critico ? Math.max(4, estrellas) : estrellas; r.plato = plato;
-        r.texto = c.critico && estrellas > 1 ? "Una experiencia memorable. Mis felicitaciones al chef." : Resenas.texto(estrellas, plato, rnd);
+        r.esp = c.especie; r.plato = plato; r.critico = c.critico;
+        if (c.critico) {                                                                  // el critico es exigente: sus estrellas pesan 5 veces en la media y cuentan lo que espero
+            r.est = estrellas <= 1 ? 1 : estrellas >= 5 ? 5 : estrellas == 4 ? 4 : 3;
+            r.texto = r.est >= 5 ? "Una experiencia memorable. Mis felicitaciones al chef." : r.est == 4 ? "Muy buena cocina; pulid el servicio y será excelente." : r.est == 3 ? "Correcto, sin más. Se espera más de un café con tanta fama." : "Decepcionante: no volveré.";
+        } else { r.est = estrellas; r.texto = Resenas.texto(estrellas, plato, rnd); }
         r.dia = System.currentTimeMillis() / 86_400_000L;
         double antes = Resenas.media(d.resenas);
         Resenas.anadir(d.resenas, r);
@@ -1472,6 +1549,9 @@ final class Cafe {
      * Llega un grupo de 2 o 3 clientes (0.33.0): se sientan en mesas cercanas y cada uno pide lo suyo. Si se sirve a todos sin que nadie se enfade, el grupo deja un bono; si uno se enfada,
      * los demás se impacientan. Devuelve false si no se pudo crear un grupo (entonces llega un cliente normal).
      */
+    /** Probabilidad (%) de que un grupo sea de cumpleaños (bono doble). */
+    static final int PROB_CUMPLE = Integer.getInteger("emi.cafe.cumple", 15);
+
     boolean grupoNuevo(Mesa primera, List<Mesa> libres) {
         List<Mesa> otras = new ArrayList<>(libres);
         otras.remove(primera);
@@ -1484,7 +1564,14 @@ final class Cafe {
         for (int i = 0; i < tam - 1 && i < otras.size(); i++) { Cliente ci = crearNormal(otras.get(i)); if (ci != null) hechos.add(ci); }
         if (hechos.size() < 2) return true;                                                // un grupo de uno es un cliente normal (ya esta creado)
         Cliente.Grupo g = new Cliente.Grupo(hechos.size());
-        for (Cliente ci : hechos) ci.grupo = g;
+        for (Cliente ci : hechos) { ci.grupo = g; ci.paraLlevar = false; }
+        g.grande = true;                                                                   // mesa grande: cada mesa tiene otra del grupo pegada (a 4,5 bloques o menos)
+        for (Cliente a : hechos) {
+            double mejor = 1e9;
+            for (Cliente b : hechos) if (b != a) mejor = Math.min(mejor, Math.sqrt(a.mesa.bloque.getSquaredDistance(b.mesa.bloque)));
+            if (mejor > 4.5) g.grande = false;
+        }
+        g.cumple = rnd.nextInt(100) < PROB_CUMPLE;
         if (DEBUG) EmiCafe.LOG.info("[grupo] grupo de {} en las mesas {}", hechos.size(), hechos.stream().map(x -> x.mesa.bloque.toShortString()).toList());
         return true;
     }
@@ -1494,12 +1581,13 @@ final class Cafe {
         Cliente.Grupo g = c.grupo;
         g.servidos++;
         if (g.servidos < g.tam || g.enfadados > 0) return;
-        int bono = 12 * g.tam + 5 * nivelRep();
+        int bono = (int) Math.round((12 * g.tam + 5 * nivelRep()) * (1.0 + (g.grande ? 0.5 : 0.0) + (g.cumple ? 1.0 : 0.0)));
         Datos.Jugador dd = dj();
         dd.monedas += bono; dd.monedasTotal += bono;
         ganado += bono;
-        aTodos(p -> p.sendMessage(Msg.say("¡Grupo de " + g.tam + " encantado! Bono del grupo: +" + bono + " monedas."), false));
-        w.spawnParticles(ParticleTypes.HAPPY_VILLAGER, c.e.getX(), c.e.getY() + 1.2, c.e.getZ(), 14, 0.5, 0.4, 0.5, 0.0);
+        aTodos(p -> p.sendMessage(Msg.say((g.cumple ? "🎂 ¡Feliz cumpleaños! " : "") + "¡Grupo de " + g.tam + " encantado!" + (g.grande ? " (mesa grande ×1,5)" : "") + (g.cumple ? " (cumpleaños ×2)" : "") + " Bono del grupo: +" + bono + " monedas."), false));
+        w.spawnParticles(g.cumple ? ParticleTypes.FIREWORK : ParticleTypes.HAPPY_VILLAGER, c.e.getX(), c.e.getY() + 1.2, c.e.getZ(), g.cumple ? 30 : 14, 0.5, 0.4, 0.5, 0.05);
+        if (g.cumple) Sonidos.mundo(w, c.e.getX(), c.e.getY(), c.e.getZ(), "subir", 0.8f, 1.2f);
     }
 
     /** Un miembro de un grupo se fue enfadado: los demas que aun esperan pierden casi toda su paciencia. */
@@ -1561,10 +1649,14 @@ final class Cafe {
     Cliente crearNormal(Mesa m) {
         Cliente c = Cliente.crear(w, ox, m, rnd, null, false, nivelLocal(), rutas, t, dj().libre, this);
         if (c == null) return null;
+        if (nivelLocal() >= 4 && rnd.nextInt(100) < PROB_LLEVAR) c.paraLlevar = true;                    // 0.35.0: pedido para llevar
         m.cliente = c;
         clientes.add(c);
         return c;
     }
+
+    /** Probabilidad (%) de que un cliente suelto pida para llevar (local nivel 4 o mas). */
+    static final int PROB_LLEVAR = Integer.getInteger("emi.cafe.llevar", 15);
 
     boolean forzarCliente() {
         for (Mesa m : mesas) if (m.libre()) return forzarCliente(m);
@@ -1861,6 +1953,8 @@ final class Cafe {
         if (pl != null && c.esp == null) { int mn = Maestria.nivel(dd.maestria.getOrDefault(pl.id, 0)); if (mn > 0) base = (int) Math.round(base * (1.0 + Maestria.PAGO_PCT[mn] / 100.0)); }      // maestria del plato
         if (c.esp == null && !c.critico && c.twitchNombre == null) { int sp = saborPct(c, pl); if (sp > 0) base = (int) Math.round(base * (1.0 + sp / 100.0)); }      // region de la semana y temporada
         if (c.nivelClientela > 0) base = (int) Math.round(base * (1.0 + Clientela.PAGO_PCT[c.nivelClientela] / 100.0));      // clientela habitual: paga mas
+        if (c.paraLlevar) base = (int) Math.round(base * 1.12);                                                                    // para llevar: +12 %
+        if (pl != null && c.esp == null && c.cocinero != null && pl.id.equals(c.cocinero.especialidad)) base = (int) Math.round(base * 1.15);      // el chef especialista en ese plato
         double pac = c.pacienciaRestante();
         int propina = (int) Math.round(base * 0.6 * pac * Estilo.multPropina(nivelEstilo()) * (1.0 + 0.10 * nivel(Recetas.Mejora.PROPINAS) + 0.04 * fn(Funcional.MACETERO)));
         boolean fav = c.favorito;
@@ -1870,7 +1964,7 @@ final class Cafe {
         platos--;
         if (!auto) manos.put(p.getUuid(), null);
         c.comer();
-        if (c.esp == null) { int cu = (int) Math.round(pago * Personal.bonoPropina(dd.personal)); if (cu > 0 && hayCajeros()) { c.cuenta = cu; c.comiendo += 200; } }          // el cajero ira a cobrarla
+        if (c.esp == null) { int cu = (int) Math.round(pago * Personal.bonoPropina(dd.personal)); if (cu > 0 && !c.paraLlevar && hayCajeros()) { c.cuenta = cu; c.comiendo += 200; } }          // el cajero ira a cobrarla
         if (c.grupo != null) alServirGrupo(c);
         escribirResena(c, Resenas.estrellas(pac, fav), pl != null ? pl.nombre() : CafeItems.nombre(carga));
         if (m.plato != null) Disp.quitar(m.plato);
@@ -1883,6 +1977,7 @@ final class Cafe {
         Progreso.dar(this, d, p.getUuid(), (c.esp != null ? 12 : c.critico ? 15 : 2) + (c.nivelClientela >= 3 ? Clientela.ESTRELLAS_VIP : 0));
         if (c.esp == null && !c.critico && c.twitchNombre == null) registrarVisita(dd, c);
         if (pl != null && c.esp == null) registrarMaestria(dd, pl);
+        if (pl != null && c.esp == null) medallaTemporada(p, d, pl);
         if (c.esp != null) { d.especialesServidos++; p.sendMessage(Msg.say("¡" + c.esp.michi + " quedó encantado con «" + c.esp.nombrePlato() + "»!"), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
         if (c.critico) { p.sendMessage(Msg.say("¡El crítico quedó encantado! +15 estrellas y mucha reputación."), false); w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, c.e.getX(), c.e.getY() + 1.0, c.e.getZ(), 20, 0.4, 0.5, 0.4, 0.2); }
         if (fav) { w.spawnParticles(ParticleTypes.HEART, c.e.getX(), c.e.getY() + 1.6, c.e.getZ(), 8, 0.4, 0.3, 0.4, 0.0); }
