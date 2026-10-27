@@ -11,9 +11,11 @@ final class Personal {
         MESERO("mesero", "Mesero", "Lleva a la mesa los platos que quedan listos en las estaciones.", 800, 3, 4, 20 * 5, "emi_cafe:campana", 1, 8),
         LAVAPLATOS("lavaplatos", "Lavaplatos", "Lava solo los platos sucios que quedan en las mesas.", 400, 2, 2, 20 * 9, "emi_cafe:pila_platos", 2, 6),
         CHEF("chef", "Chef", "Cocina por ti el plato de un cliente que espera (tarda un poco, más cuantas más estaciones usa).", 1500, 3, 5, 20, "emi_cafe:cocinero_charmander", 0, 8),
-        /** Puestos de 0.32.0 sin tarea propia: su efecto vale solo por tenerlos contratados (y sube con su nivel). */
-        ANFITRION("anfitrion", "Anfitrión", "Recibe a los clientes con una sonrisa: aguantan más esperando (+6 % por anfitrión, más cuanto más nivel).", 900, 4, 3, 20, "emi_cafe:cartel", 3, 2),
-        CAJERO("cajero", "Cajero", "Cobra con simpatía: más propinas (+5 % por cajero, más cuanto más nivel).", 700, 5, 4, 20, "emi_cafe:caja_registradora", 7, 2),
+        /** Puestos de 0.32.0; desde 0.34.0 tienen tarea propia: el anfitrion calma a quien se impacienta y el cajero cobra la cuenta en la mesa. */
+        ANFITRION("anfitrion", "Anfitrión", "Atiende a los clientes: aguantan más esperando (+5 %, más con el nivel) y va a calmar al que se impacienta (+25 % de paciencia, más con el nivel).", 900, 4, 3, 20, "emi_cafe:cartel", 3, 2),
+        CAJERO("cajero", "Cajero", "Va a la mesa a cobrar la cuenta cuando el cliente termina de comer: propina extra (+4 % del pago, más con el nivel).", 700, 5, 4, 20, "emi_cafe:caja_registradora", 7, 2),
+        /** La mascota del cafe (0.35.0): un Pokemon pequeño que pasea y se deja acariciar por los clientes. Solo una. */
+        MASCOTA("mascota", "Mascota", "Un Pokémon que pasea por el café y se deja acariciar: los clientes que esperan recuperan un 12 % de paciencia y los que comen dejan una propina extra (más con su nivel).", 500, 3, 2, 20, "emi_cafe:cocinero_squirtle", 0, 1),
         /** El michigranjero de un huerto o corral (0.24.0): viene con la finca, no se contrata (max 0) y no cuenta en el total. */
         GRANJERO("granjero", "Michigranjero", "Cuida un huerto o un corral y lleva la cosecha a la despensa.", 0, 5, 0, 20, "emi_cafe:icono_granjero", 6, 0);
 
@@ -36,7 +38,7 @@ final class Personal {
         return b;
     }
 
-    /** Cuanta propina extra dan los cajeros: cada uno 4 % + 1 % por nivel. */
+    /** Cuanto paga de mas la cuenta que cobra cada cajero en la mesa (fraccion del pago): 3 % + 1 % por nivel. Solo vale si llega a la mesa (desde 0.34.0). */
     static double bonoPropina(java.util.List<Datos.Empleado> l) {
         double b = 0;
         for (Datos.Empleado e : l) if (Rol.CAJERO.id.equals(e.rol)) b += (3 + nivel(e)) / 100.0;
@@ -47,13 +49,13 @@ final class Personal {
     static int uniformePct(java.util.List<Datos.Empleado> l) {
         int pct = 0;
         for (Rol r : Rol.values()) {
-            if (r == Rol.GRANJERO) continue;
+            if (r == Rol.GRANJERO || r == Rol.MASCOTA) continue;
             int n = 0, asp = -1; boolean igual = true;
             for (Datos.Empleado e : l) if (r.id.equals(e.rol)) { n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
             if (n >= 2 && igual) pct += 2;
         }
         int n = 0, asp = -1; boolean igual = true;
-        for (Datos.Empleado e : l) { n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
+        for (Datos.Empleado e : l) { if (Rol.MASCOTA.id.equals(e.rol)) continue; n++; if (asp < 0) asp = e.aspecto; else if (asp != e.aspecto) igual = false; }
         if (n >= 4 && igual) pct += 3;
         return pct;
     }
@@ -69,18 +71,21 @@ final class Personal {
     /** Cuantos empleados caben en total (la suma de lo que admite cada puesto); todos los contratados trabajan. */
     static int maxTotal() { int n = 0; for (Rol r : Rol.values()) n += r.max; return n; }
 
-    static final int NIVEL_MAX = 10;
-    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4, 3.4, 4.6, 6.0, 7.6, 9.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
+    static final int NIVEL_MAX = 20;
+    private static final double[] COSTE_SUBIDA = {0.5, 1.0, 1.6, 2.4, 3.4, 4.6, 6.0, 7.6, 9.4, 11.4, 13.6, 16.0, 18.6, 21.4, 24.4, 27.6, 31.0, 34.6, 38.4};      // por el precio de contratar al rol: de nivel 1 a 2, de 2 a 3...
 
-    /** El nivel del empleado (1 a 10). */
+    /** El nivel del empleado (1 a 20). */
     static int nivel(Datos.Empleado e) { return Math.max(1, Math.min(NIVEL_MAX, e.nivel)); }
 
     /** Monedas que cuesta subirlo al nivel siguiente (0 si ya esta al maximo). */
     static int costeSubida(Rol rol, int nivel) { return nivel >= NIVEL_MAX ? 0 : (int) Math.round(rol.precio * COSTE_SUBIDA[nivel - 1]); }
 
-    /** Cuanto mas rapido anda (+12 % por nivel) y trabaja (+15 % por nivel): multiplicadores de 1,0 a 1,48 y de 1,0 a 1,6. */
-    static double velocidad(int nivel) { return 1 + 0.12 * (nivel - 1); }
-    static double trabajo(int nivel) { return 1 + 0.15 * (nivel - 1); }
+    /**
+     * Cuanto mas rapido anda (+12 % por nivel hasta el 10) y trabaja (+15 % por nivel hasta el 10): 1,0 a 2,08 y 1,0 a 2,35. Del nivel 11 al 20 mejora mas despacio
+     * (+4 % y +5 % por nivel; de 2,08 a 2,48 andando y de 2,35 a 2,85 trabajando) para que no atraviesen las paredes ni los clientes se queden sin trabajo.
+     */
+    static double velocidad(int nivel) { return nivel <= 10 ? 1 + 0.12 * (nivel - 1) : 1 + 0.12 * 9 + 0.04 * (nivel - 10); }
+    static double trabajo(int nivel) { return nivel <= 10 ? 1 + 0.15 * (nivel - 1) : 1 + 0.15 * 9 + 0.05 * (nivel - 10); }
 
     /** Los aspectos del Michialien: {propiedades de Cobblemon de emi-plush, nombre}. */
     static final String[][] ASPECTOS = {
@@ -89,7 +94,21 @@ final class Personal {
         {"accessory=santa_hat", "Gorro navideño"}, {"accessory=witch_hat", "Sombrero de bruja"}, {"accessory=pirate", "Pirata"}, {"accessory=crown", "Corona"},
     };
 
+    /** Las mascotas que se pueden elegir (el aspecto de la mascota es un indice de esta lista). */
+    static final String[] MASCOTAS = {"eevee", "pikachu", "meowth", "togepi", "growlithe", "snubbull", "vulpix", "pichu"};
+    static String nombreMascota(int aspecto) { String s = MASCOTAS[Math.floorMod(aspecto, MASCOTAS.length)]; return s.substring(0, 1).toUpperCase() + s.substring(1); }
+
+    /** El nombre del aspecto de un empleado (los michialiens llevan accesorios, la mascota es un Pokemon). */
+    static String nombreAspecto(Datos.Empleado e) { return Rol.MASCOTA.id.equals(e.rol) ? nombreMascota(e.aspecto) : ASPECTOS[Math.floorMod(e.aspecto, ASPECTOS.length)][1]; }
+
     static final String[] NOMBRES = {"Michi", "Luna", "Nube", "Canela", "Fresa", "Moka", "Pepita", "Tofu", "Coco", "Mochi", "Brisa", "Chispa"};
+
+    /** Para ordenar la lista por puesto: chefs, meseros, lavaplatos, anfitriones, cajeros y michigranjeros. */
+    static int ordenRol(String id) {
+        Rol[] o = {Rol.CHEF, Rol.MESERO, Rol.LAVAPLATOS, Rol.ANFITRION, Rol.CAJERO, Rol.MASCOTA, Rol.GRANJERO};
+        for (int i = 0; i < o.length; i++) if (o[i].id.equals(id)) return i;
+        return o.length;
+    }
 
     /** Cuantos hay ya de ese puesto. */
     static int cuantos(java.util.List<Datos.Empleado> l, Rol rol) { int n = 0; for (Datos.Empleado e : l) if (rol.id.equals(e.rol)) n++; return n; }

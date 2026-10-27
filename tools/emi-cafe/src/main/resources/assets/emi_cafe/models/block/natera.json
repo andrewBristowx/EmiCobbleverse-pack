@@ -1,0 +1,162 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/mueble",
+    "mueble": "emi_cafe:block/mueble",
+    "encimera": "emi_cafe:block/encimera",
+    "metal": "emi_cafe:block/metal",
+    "metal_oscuro": "emi_cafe:block/metal_oscuro",
+    "natera_t": "emi_cafe:block/natera_t"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mueble"
+        },
+        "south": {
+          "texture": "#mueble"
+        },
+        "east": {
+          "texture": "#mueble"
+        },
+        "west": {
+          "texture": "#mueble"
+        },
+        "up": {
+          "texture": "#encimera"
+        },
+        "down": {
+          "texture": "#mueble"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        10,
+        3
+      ],
+      "to": [
+        13,
+        12,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        12,
+        5
+      ],
+      "to": [
+        11,
+        17,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#natera_t"
+        },
+        "south": {
+          "texture": "#natera_t"
+        },
+        "east": {
+          "texture": "#natera_t"
+        },
+        "west": {
+          "texture": "#natera_t"
+        },
+        "up": {
+          "texture": "#natera_t"
+        },
+        "down": {
+          "texture": "#natera_t"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        17,
+        7
+      ],
+      "to": [
+        9,
+        19,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal_oscuro"
+        },
+        "south": {
+          "texture": "#metal_oscuro"
+        },
+        "east": {
+          "texture": "#metal_oscuro"
+        },
+        "west": {
+          "texture": "#metal_oscuro"
+        },
+        "up": {
+          "texture": "#metal_oscuro"
+        },
+        "down": {
+          "texture": "#metal_oscuro"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

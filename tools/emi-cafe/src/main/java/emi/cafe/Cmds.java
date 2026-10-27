@@ -341,7 +341,7 @@ final class Cmds {
                             if (cf != null) cf.reconstruir();
                             return null;
                         })))
-                        .then(CommandManager.literal("mejora").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("nivel", IntegerArgumentType.integer(0, 9)).executes(c -> con(c, p -> {
+                        .then(CommandManager.literal("mejora").then(CommandManager.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).then(CommandManager.argument("nivel", IntegerArgumentType.integer(0, 19)).executes(c -> con(c, p -> {
                             Recetas.Mejora m = Recetas.Mejora.de(com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"));
                             if (m == null) return "mesas, velocidad, paciencia, vajilla, ampliar, publicidad, propinas";
                             Datos.Jugador j = EmiCafe.datos.jugador(p.getUuid(), p.getGameProfile().getName());

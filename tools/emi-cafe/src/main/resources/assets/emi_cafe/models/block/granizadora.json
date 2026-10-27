@@ -1,0 +1,162 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "emi_cafe:block/mueble",
+    "mueble": "emi_cafe:block/mueble",
+    "encimera": "emi_cafe:block/encimera",
+    "metal": "emi_cafe:block/metal",
+    "granizadora_t": "emi_cafe:block/granizadora_t",
+    "metal_oscuro": "emi_cafe:block/metal_oscuro"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mueble"
+        },
+        "south": {
+          "texture": "#mueble"
+        },
+        "east": {
+          "texture": "#mueble"
+        },
+        "west": {
+          "texture": "#mueble"
+        },
+        "up": {
+          "texture": "#encimera"
+        },
+        "down": {
+          "texture": "#mueble"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        10,
+        2
+      ],
+      "to": [
+        14,
+        12,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        12,
+        4
+      ],
+      "to": [
+        12,
+        17,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#granizadora_t"
+        },
+        "south": {
+          "texture": "#granizadora_t"
+        },
+        "east": {
+          "texture": "#granizadora_t"
+        },
+        "west": {
+          "texture": "#granizadora_t"
+        },
+        "up": {
+          "texture": "#granizadora_t"
+        },
+        "down": {
+          "texture": "#granizadora_t"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        11.98,
+        7
+      ],
+      "to": [
+        14.02,
+        13,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal_oscuro"
+        },
+        "south": {
+          "texture": "#metal_oscuro"
+        },
+        "east": {
+          "texture": "#metal_oscuro"
+        },
+        "west": {
+          "texture": "#metal_oscuro"
+        },
+        "up": {
+          "texture": "#metal_oscuro"
+        },
+        "down": {
+          "texture": "#metal_oscuro"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

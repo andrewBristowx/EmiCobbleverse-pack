@@ -232,17 +232,14 @@ final class Obras {
                 n -= q;
             }
         }
-        List<Datos.Empleado> pers = d().personal;                                  // cada empleado es un peluche: con el en la mano se elige donde descansa
-        if (pers != null) for (int i = 0; i < pers.size() && !lleno; i++) {
-            ItemStack pl = peluche(pers.get(i), i);
-            if (pl != null && !p.getInventory().insertStack(pl)) lleno = true;
-        }
+        // los peluches de los empleados ya no se meten solos (llenaban el inventario): se sacan desde la pestaña PERSONAL (desde 0.34.0)
         if (lleno) p.sendMessage(Msg.err("Tu inventario de obra está lleno: lo que no cabe se queda guardado hasta que pongas algo."), false);
         p.playerScreenHandler.sendContentUpdates();
     }
 
     /** El peluche de un empleado (el de su aspecto, con su nombre y su numero guardado dentro); null si no existe ese peluche. */
     private ItemStack peluche(Datos.Empleado e, int idx) {
+        if (Personal.Rol.MASCOTA.id.equals(e.rol)) return null;                      // la mascota es un Pokemon: no tiene peluche
         String[] asp = Personal.ASPECTOS[Math.floorMod(e.aspecto, Personal.ASPECTOS.length)];
         Item it = Registries.ITEM.get(Identifier.of("emi_plush", "gatitoalien_" + asp[0].substring(asp[0].indexOf('=') + 1)));
         if (it == null || it == net.minecraft.item.Items.AIR) return null;
@@ -321,12 +318,65 @@ final class Obras {
                 falta -= q;
             }
         }
-        List<Datos.Empleado> pers = d().personal;
-        if (pers != null) for (int i = 0; i < pers.size(); i++) if (!pelu.contains(i)) {
-            ItemStack pl = peluche(pers.get(i), i);
-            if (pl != null && !inv.insertStack(pl)) break;
-        }
         p.playerScreenHandler.sendContentUpdates();
+    }
+
+    // ------------------------------------------------------------ peluches de los empleados bajo demanda (0.34.0)
+
+    /** ¿Lleva ya el peluche de ese empleado? */
+    private boolean llevaPeluche(ServerPlayerEntity p, int idx) {
+        for (ItemStack s : p.getInventory().main) { Integer e = s.isEmpty() ? null : empleadoDe(s); if (e != null && e == idx) return true; }
+        return false;
+    }
+
+    /** Saca el peluche de un empleado al inventario (solo en modo construccion). Devuelve el error, o null. */
+    String darPeluche(ServerPlayerEntity p, int idx) {
+        if (!c.esDuenio(p)) return "Solo el dueño saca peluches.";
+        if (!c.construyendo) return "Los peluches se sacan en el modo construcción (caja registradora → MODO CONSTRUCCIÓN).";
+        List<Datos.Empleado> pers = d().personal;
+        if (pers == null || idx < 0 || idx >= pers.size()) return "Ese empleado no existe.";
+        if (llevaPeluche(p, idx)) return pers.get(idx).nombre + " ya está en tu inventario.";
+        ItemStack pl = peluche(pers.get(idx), idx);
+        if (pl == null) return "No existe el peluche de ese aspecto.";
+        if (!p.getInventory().insertStack(pl)) return "Tu inventario está lleno.";
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+        return null;
+    }
+
+    /** Saca los peluches de todos los empleados de un puesto («todos» = todos, ordenados por puesto). Devuelve el error, o null (y cuantos salieron en {@link #sobrante}). */
+    String darPeluches(ServerPlayerEntity p, String rol) {
+        if (!c.esDuenio(p)) return "Solo el dueño saca peluches.";
+        if (!c.construyendo) return "Los peluches se sacan en el modo construcción (caja registradora → MODO CONSTRUCCIÓN).";
+        List<Datos.Empleado> pers = d().personal;
+        if (pers == null || pers.isEmpty()) return "No tienes empleados.";
+        List<Integer> orden = new ArrayList<>();
+        for (int i = 0; i < pers.size(); i++) if (rol.equals("todos") || pers.get(i).rol.equals(rol)) orden.add(i);
+        orden.sort((x, y) -> Integer.compare(Personal.ordenRol(pers.get(x).rol), Personal.ordenRol(pers.get(y).rol)));
+        int dados = 0; boolean lleno = false;
+        for (int i : orden) {
+            if (llevaPeluche(p, i)) continue;
+            ItemStack pl = peluche(pers.get(i), i);
+            if (pl == null) continue;
+            if (!p.getInventory().insertStack(pl)) { lleno = true; break; }
+            dados++;
+        }
+        p.getInventory().markDirty(); p.playerScreenHandler.sendContentUpdates();
+        if (dados == 0 && !lleno) return "Ya llevas todos esos peluches.";
+        if (dados == 0) return "Tu inventario está lleno.";
+        c.msg(p, "Sacaste " + dados + " peluche" + (dados == 1 ? "" : "s") + (lleno ? " (el inventario se llenó: faltan algunos)" : "") + ". Clic derecho con uno donde quieres que descanse; agachado = sitio automático.");
+        return null;
+    }
+
+    /** Quita del inventario los peluches de empleados que llevas (los guarda). Devuelve cuantos. */
+    int quitarPeluches(ServerPlayerEntity p) {
+        var inv = p.getInventory();
+        int n = 0;
+        for (int i = 0; i < inv.main.size(); i++) {
+            ItemStack s = inv.main.get(i);
+            if (!s.isEmpty() && empleadoDe(s) != null) { inv.main.set(i, ItemStack.EMPTY); n++; }
+        }
+        inv.markDirty(); p.playerScreenHandler.sendContentUpdates();
+        return n;
     }
 
     static int prioridad(String k) {
@@ -647,7 +697,7 @@ final class Obras {
         c.rutas.sucia();
         p.sendMessage(Msg.say("MODO CONSTRUCCIÓN: construyes con lo que tienes (tu inventario, E) y lo que compras en la caja registradora → DECORAR. Clic derecho = poner un bloque; clic izquierdo = quitarlo (te lo devuelve). "
                 + "Estaciones, mesas, caja registradora, cartel y libro también se ponen y se quitan así. Agachado + clic en el suelo = cambiar el suelo. El cartel se pega a la cara sur de una pared. "
-                + "Tus empleados son peluches de tu inventario: clic derecho con uno en el sitio donde quieres que descanse (agachado = vuelve al sitio automático); su nombre se cambia en la pestaña PERSONAL. "
+                + "Tus empleados son peluches: sácalos en la pestaña PERSONAL (botones por puesto) y haz clic derecho con uno en el sitio donde quieres que descanse (agachado = vuelve al sitio automático); su nombre se cambia en la pestaña PERSONAL. "
                 + "Se guarda solo. Clic derecho en la caja registradora = menú (TERMINAR DE CONSTRUIR)."), false);
         return null;
     }
@@ -726,6 +776,7 @@ final class Obras {
         BlockPos pos = pc.getBlockPos();
         if (!construible(pos)) { c.msg(p, "Ahí no se puede construir (solo en tu terreno hasta 9 bloques de alto; no el camino de los clientes, ni la calle, el parque o el seto)"); return ActionResult.FAIL; }
         if (esMesa && antigua && c.mesasPos().size() >= c.numMesas()) { c.msg(p, "No tienes más mesas: mejora el café para tener más"); return ActionResult.FAIL; }
+        if (esMesa && d.libre && mesas().size() >= c.numMesas()) { c.msg(p, "Ya tienes " + mesas().size() + " mesas colocadas, que es lo que admite tu café: quita una para poner esta o mejora «Mesas»"); return ActionResult.FAIL; }
         boolean cartel = bloque == CafeBlocks.CARTEL;
         BlockPos pos2 = pos.east();
         if (cartel && (!construible(pos2) || !c.w.getBlockState(pos2).isReplaceable())) { c.msg(p, "El cartel mide 2 bloques de ancho: necesita sitio libre a la derecha"); return ActionResult.FAIL; }
@@ -1213,8 +1264,8 @@ final class Obras {
             if (tiene >= c.maxCopias()) return "Tu local de nivel " + c.nivelLocal() + " solo admite " + c.maxCopias() + " de «" + extra.nombre + "» (con más nivel caben más).";
         }
         if (art.item().equals(idItem(CafeBlocks.MESA)) || art.item().startsWith("emi_cafe:mesa_")) {
-            int tiene = (d.libre ? mesas().size() : c.mesasPos().size()) + stockMesas();
-            if (tiene >= c.numMesas()) return "No caben más mesas en tu café (" + c.numMesas() + "): mejora «Mesas» o amplía el local.";
+            int puestas = d.libre ? mesas().size() : c.mesasPos().size();          // desde 0.33.1 solo cuentan las mesas COLOCADAS: las guardadas en el almacen no gastan el tope (se puede comprar un diseño para cambiar una mesa)
+            if (d.libre ? puestas >= c.numMesas() : puestas + stockMesas() >= c.numMesas()) return "Ya tienes " + puestas + " mesas colocadas, que es lo que admite tu café (" + c.numMesas() + "): mejora «Mesas» o amplía el local (con el local en nivel 10 ya no hay tope), o quita alguna.";
         }
         if (d.monedas < precio) return "Te faltan " + (precio - d.monedas) + " monedas.";
         Item it = art.objeto();

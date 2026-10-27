@@ -31,7 +31,9 @@ final class Datos {
         String nombre = "";
         int aspecto;
         int felicidad = 70;          // 0 a 100 (0.32.0): sube con jornadas sin enfados y premios, baja con clientes enfadados; cambia lo rapido que trabaja
-        int nivel;                   // 1 a 5 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
+        int nivel;                   // 1 a 20 (0 en los archivos de antes = 1): mas rapido al andar y al trabajar
+        java.util.Map<String, Integer> cocinados = new java.util.LinkedHashMap<>();       // veces que ha cocinado cada plato (chef; desde 0.35.0)
+        String especialidad = "";    // el plato en el que ya es especialista (a las 40 veces): paga un 15 % mas y lo cocina mas rapido
         int[] puesto;                // donde descansa, elegido por el dueño con su peluche en el modo construccion: {x, y de los pies, z} relativos al local (null = automatico)
     }
 
@@ -80,6 +82,12 @@ final class Datos {
         java.util.Map<String, Integer> clientela = new java.util.LinkedHashMap<>();   // clientes servidos por especie (ver Clientela)
         java.util.Map<String, Integer> maestria = new java.util.LinkedHashMap<>();    // veces servido cada plato (ver Maestria)
         int especialesServidos;                                                       // visitantes especiales atendidos en total
+        java.util.Map<String, Integer> stock = new java.util.LinkedHashMap<>();        // existencias de cada caja de ingredientes (objeto -> unidades; lo que falta esta lleno), ver Cafe.gastarCaja (desde 0.33.0)
+        java.util.Map<String, Integer> temporadas = new java.util.LinkedHashMap<>();   // platos de temporada servidos en cada temporada («NAVIDAD-2026»; desde 0.35.0)
+        java.util.Set<String> medallas = new java.util.LinkedHashSet<>();               // las medallas de temporada ya cobradas
+        java.util.List<Resenas.Resena> resenas = new java.util.ArrayList<>();          // las ultimas resenas de los clientes, la mas nueva primero (ver Resenas)
+        int resenasTotal;                                                             // resenas escritas en total
+        long gastoProveedor;                                                          // monedas pagadas al proveedor por reponer las cajas
         java.util.List<Finca> granja = new java.util.ArrayList<>();                   // huertos y corrales (desde 0.24.0)
         java.util.Map<String, Integer> despensa = new java.util.LinkedHashMap<>();    // lo que cosechan: «<objeto>@<calidad 1-5>» -> cantidad (ver Granja)
         long granjaCosechado;                                                         // unidades cosechadas en total

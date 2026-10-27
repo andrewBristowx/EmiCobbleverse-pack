@@ -29,11 +29,11 @@ final class Sabores {
 
     enum Temporada {
         NINGUNA("", "", List.of()),
-        NAVIDAD("Navidad", "Todo se paga un 8 % más y el chocolate y los pasteles un 40 % más.", List.of("chocolate", "pastel", "pastel_chocolate", "panqueques", "te")),
-        SAN_VALENTIN("San Valentín", "Todo se paga un 8 % más y lo dulce con chocolate un 40 % más.", List.of("bayas_chocolate", "helado_chocolate", "pastel_chocolate", "sundae", "crepes_miel")),
-        PRIMAVERA("Primavera", "Todo se paga un 8 % más y lo fresco y ligero un 40 % más.", List.of("ensalada", "ensalada_completa", "limonada", "crepes", "batido")),
-        VERANO("Verano", "Todo se paga un 8 % más y los helados y bebidas frías un 40 % más.", List.of("helado", "helado_bayas", "sundae", "batido", "limonada")),
-        COSECHA("Cosecha", "Todo se paga un 8 % más y lo de calabaza, cebolla y arroz un 40 % más.", List.of("sopa_calabaza", "calabaza_gratinada", "sopa_cebolla", "arroz_leche", "sopa_cebolla_gratinada"));
+        NAVIDAD("Navidad", "Todo se paga un 8 % más y el chocolate, los pasteles y lo de canela un 40 % más.", List.of("chocolate", "pastel", "pastel_chocolate", "panqueques", "te", "chocolate_nata", "galletas_canela", "cafe_canela", "tarta_manzana")),
+        SAN_VALENTIN("San Valentín", "Todo se paga un 8 % más y lo dulce con chocolate o fresas un 40 % más.", List.of("bayas_chocolate", "helado_chocolate", "pastel_chocolate", "sundae", "crepes_miel", "fresas_nata", "fresas_caramelo", "tarta_fresa", "tarta_nata", "copa_fresas")),
+        PRIMAVERA("Primavera", "Todo se paga un 8 % más y lo fresco y ligero (con fresas incluido) un 40 % más.", List.of("ensalada", "ensalada_completa", "limonada", "crepes", "batido", "ensalada_fresa", "setas_salteadas", "tarta_fresa", "fresas_nata")),
+        VERANO("Verano", "Todo se paga un 8 % más y los helados, granizados y bebidas frías un 40 % más.", List.of("helado", "helado_bayas", "sundae", "batido", "limonada", "granizado_fresa", "granizado_coco", "arroz_coco", "copa_fresas", "palomitas")),
+        COSECHA("Cosecha", "Todo se paga un 8 % más y lo de calabaza, cebolla, manzana, maíz y setas un 40 % más.", List.of("sopa_calabaza", "calabaza_gratinada", "sopa_cebolla", "arroz_leche", "sopa_cebolla_gratinada", "sopa_maiz", "tarta_manzana", "manzana_caramelo", "calabaza_canela", "sopa_setas"));
 
         final String nombre, descripcion;
         final List<String> platos;
@@ -69,7 +69,12 @@ final class Sabores {
             Map.entry("buneary", 427), Map.entry("togepi", 175), Map.entry("skitty", 300), Map.entry("chikorita", 152), Map.entry("torchic", 255), Map.entry("mudkip", 258),
             Map.entry("treecko", 252), Map.entry("riolu", 447), Map.entry("munchlax", 446), Map.entry("pichu", 172), Map.entry("ponyta", 77), Map.entry("dratini", 147),
             Map.entry("oddish", 43), Map.entry("espeon", 196), Map.entry("umbreon", 197), Map.entry("vaporeon", 134), Map.entry("flareon", 136), Map.entry("jolteon", 135),
-            Map.entry("leafeon", 470), Map.entry("persian", 53));
+            Map.entry("leafeon", 470), Map.entry("persian", 53),
+            Map.entry("sylveon", 700), Map.entry("glaceon", 471), Map.entry("lucario", 448), Map.entry("ralts", 280), Map.entry("delcatty", 301), Map.entry("roselia", 315),
+            Map.entry("absol", 359), Map.entry("swablu", 333), Map.entry("cyndaquil", 155), Map.entry("totodile", 158), Map.entry("bidoof", 399), Map.entry("ditto", 132),
+            Map.entry("mimikyu", 778), Map.entry("minccino", 572), Map.entry("audino", 531), Map.entry("fennekin", 653), Map.entry("froakie", 656), Map.entry("chespin", 650),
+            Map.entry("rowlet", 722), Map.entry("litten", 725), Map.entry("popplio", 728), Map.entry("grookey", 810), Map.entry("scorbunny", 813), Map.entry("sobble", 816),
+            Map.entry("pawmi", 921), Map.entry("fidough", 926), Map.entry("quaxly", 912), Map.entry("bulbasaur", 1), Map.entry("charmander", 4), Map.entry("squirtle", 7));
 
     static Region regionDe(String especie) {
         int n = DEX.getOrDefault(especie, 0);

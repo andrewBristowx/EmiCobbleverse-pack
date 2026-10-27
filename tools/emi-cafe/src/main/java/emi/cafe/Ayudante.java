@@ -41,6 +41,7 @@ final class Ayudante {
     BooleanSupplier vigente;                        // false = la tarea ya no tiene sentido (el cliente se fue...): se cancela
     Entity llevado;                                 // el plato que lleva en las manos (dibujo)
     Mesa mesaChef, mesaServ, mesaLava;              // la mesa a la que sirve el chef / el mesero / de la que recoge el lavaplatos
+    Mesa mesaCalma, mesaCuenta;                     // la mesa donde el anfitrion calma a un cliente / el cajero cobra la cuenta (0.34.0)
     Recetas.Plato platoChef;
     // la ventanilla del chef: donde deja el plato terminado para que lo lleve un mesero
     BlockPos pase;
@@ -72,9 +73,10 @@ final class Ayudante {
     static Ayudante crear(ServerWorld w, Datos.Empleado emp, double x, double y, double z) {
         Personal.Rol rol = Personal.Rol.de(emp.rol);
         if (rol == null) return null;
-        String aspecto = Personal.ASPECTOS[Math.floorMod(emp.aspecto, Personal.ASPECTOS.length)][0];
+        boolean mascota = rol == Personal.Rol.MASCOTA;
+        String aspecto = mascota ? "" : Personal.ASPECTOS[Math.floorMod(emp.aspecto, Personal.ASPECTOS.length)][0];
         try {
-            PokemonEntity e = PokemonProperties.Companion.parse("gatitoalien " + aspecto + " level=20").createEntity(w);
+            PokemonEntity e = PokemonProperties.Companion.parse(mascota ? Personal.MASCOTAS[Math.floorMod(emp.aspecto, Personal.MASCOTAS.length)] + " level=5" : "gatitoalien " + aspecto + " level=20").createEntity(w);
             e.setAiDisabled(true);
             e.setEnablePoseTypeRecalculation(false);
             e.setInvulnerable(true);
@@ -87,7 +89,7 @@ final class Ayudante {
             e.addCommandTag(Disp.TAG);
             e.refreshPositionAndAngles(x, y, z, 0f, 0f);
             w.spawnEntity(e);
-            e.getPokemon().setScaleModifier((float) Math.max(0.35, Math.min(3.0, 1.0 / Math.max(0.3, e.getHeight()))));
+            e.getPokemon().setScaleModifier((float) Math.max(0.2, Math.min(3.0, (mascota ? 0.6 : 1.0) / Math.max(0.3, e.getHeight()))));
             Entity rotulo = Disp.texto(w, json(emp.nombre, rolNivel(rol, emp), ""), x, y + 1.4, z, 0.9f, false);
             Ayudante a = new Ayudante(rol, emp, e, rotulo, x, z);
             a.hy = y;
@@ -144,7 +146,7 @@ final class Ayudante {
     void limpiar() {
         pasos.clear(); vigente = null; llegado = false; esperaPaso = 0; bloqueo = 0;
         Disp.quitar(llevado); llevado = null;
-        mesaChef = mesaServ = mesaLava = null; platoChef = null;
+        mesaChef = mesaServ = mesaLava = null; platoChef = null; mesaCalma = mesaCuenta = null;
         if (estReserva != null) { estReserva.reserva = null; estReserva = null; }
     }
 
