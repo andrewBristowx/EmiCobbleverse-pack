@@ -446,7 +446,7 @@ public final class MenuPantalla extends Lienzo {
             case "abierto" -> {
                 texto(g, "CAFÉ ABIERTO", LX, CY - 7, VERDE, 1.1f);
                 parrafo(g, "El café está abierto y no hay reloj: cierra cuando quieras desde aquí. Cocina llevando los ingredientes en las manos y sirve con clic derecho al cliente o a su mesa.", LX, CY + 10, LW, GRIS, 0.85f);
-                texto(g, "Platos limpios: " + platosLimpios, LX, CY + 62, platosLimpios == 0 ? ROJO : BLANCO, 1f);
+                texto(g, "Platos limpios: " + (platosLimpios < 0 ? "∞" : String.valueOf(platosLimpios)), LX, CY + 62, platosLimpios == 0 ? ROJO : BLANCO, 1f);
                 if (!evento.isEmpty()) { texto(g, "HOY: " + recortar(evento, 52), LX, CY + 150, ORO, 0.75f); parrafo(g, eventoTexto, LX, CY + 161, LW, GRIS, 0.65f); }
                 else infoCafe(g, CY + 156);
                 if (duenio) {

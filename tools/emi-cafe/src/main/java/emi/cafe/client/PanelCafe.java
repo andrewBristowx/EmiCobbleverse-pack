@@ -86,7 +86,7 @@ final class PanelCafe {
         g.drawText(f, "Serv. " + num(o, "servidos") + " · Enf. " + num(o, "enfadados") + " · Propinas " + num(o, "propinas"), x + P, cy, 0xFFB8B8C8, true);
         cy += FILA;
         int platos = num(o, "platos");
-        g.drawText(f, "Platos limpios: " + platos + (o.has("evento") ? " · " + str(o, "evento", "") : ""), x + P, cy, platos == 0 ? 0xFFFF6B5E : 0xFFFFFFFF, true);
+        g.drawText(f, "Platos limpios: " + (platos < 0 ? "∞" : String.valueOf(platos)) + (o.has("evento") ? " · " + str(o, "evento", "") : ""), x + P, cy, platos == 0 ? 0xFFFF6B5E : 0xFFFFFFFF, true);
         cy += FILA;
 
         // los pedidos
