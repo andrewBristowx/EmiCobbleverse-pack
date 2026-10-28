@@ -84,7 +84,7 @@ final class Cmds {
                             return cf.obras.borrarPlano(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nombre"));
                         })))))
                 .then(CommandManager.literal("buscar").executes(c -> con(c, p -> buscar(p, ""))).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> buscar(p, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"))))))
-                .then(CommandManager.literal("personal").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 20)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
+                .then(CommandManager.literal("personal").then(CommandManager.literal("nombre").then(CommandManager.argument("numero", IntegerArgumentType.integer(1, 99)).then(CommandManager.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString()).executes(c -> con(c, p -> {
                     Cafe cf = Cafes.de(p.getUuid());
                     if (cf == null || !cf.esDuenio(p)) return "Entra primero a tu café con /cafe entrar.";
                     return cf.renombrar(p, IntegerArgumentType.getInteger(c, "numero"), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "texto"));
